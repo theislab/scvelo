@@ -1,21 +1,19 @@
 from setuptools import setup, find_packages
+from pathlib import Path
 import numpy as np
 import versioneer
+
+req_path = Path('requirements.txt')
+if not req_path.is_file():
+    req_path = Path('scvelo.egg-info') / req_path
+with req_path.open() as requirements:
+    requires = [l.strip() for l in requirements]
 
 setup(
     name="scvelo",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    install_requires=['anndata',
-                      'scanpy',
-                      'pandas',
-                      'numpy',
-                      'scipy',
-                      'numba',
-                      'matplotlib',
-                      'scikit-learn',
-                      'h5py',
-                      'loompy'],
+    install_requires=requires,
     packages=find_packages(),
     include_dirs=[np.get_include()],
     author="Volker Bergen",

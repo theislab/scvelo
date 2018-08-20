@@ -5,6 +5,7 @@ figs/
 scripts/
 write/
 
+scvelo.egg-info/
 
 # always-ignore notebooks
 *.ipynb
