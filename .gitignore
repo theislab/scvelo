@@ -1,0 +1,22 @@
+archive/
+cache/
+data/
+figs/
+scripts/
+write/
+
+
+# always-ignore notebooks
+*.ipynb
+
+# OS or Editor files and folders
+.DS_Store
+Thumbs.db
+.ipynb_checkpoints/
+.directory
+/.idea/
+
+# always-ignore directories
+/build/
+docs/build
+/dist/
