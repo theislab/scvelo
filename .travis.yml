@@ -8,7 +8,6 @@ install:
   - pip install -r requirements.txt
   - conda install -c conda-forge python-igraph louvain --yes
   - pip install docutils
-  - python setup.py develop
 
 env: MPLBACKEND=Agg
 
