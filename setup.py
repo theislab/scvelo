@@ -3,11 +3,15 @@ from pathlib import Path
 import numpy as np
 import versioneer
 
-req_path = Path('requirements.txt')
+HERE = Path(__file).parent
+
+req_path = HERE / 'requirements.txt'
 if not req_path.is_file():
     req_path = Path('scvelo.egg-info') / req_path
-with req_path.open() as requirements:
-    requires = [l.strip() for l in requirements]
+requires = [
+    'scanpy' if 'theislab/scanpy' in r else r
+    for r in req_path.read_text().strip().split()
+]
 
 setup(
     name="scvelo",
