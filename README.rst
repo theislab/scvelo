@@ -14,7 +14,7 @@ incorporates intrinsic expression variability.
 
 It is compatible with scanpy_ (`Wolf et al., 2018 <https://doi.org/10.1186/s13059-017-1382-0>`_).
 
-Read the documentation_.
+For getting started, read the documentation_ and take a look at some exemplary notebooks_.
 
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
@@ -29,3 +29,4 @@ Read the documentation_.
 .. _velocyto: http://velocyto.org/
 .. _scanpy: https://github.com/theislab/scanpy
 .. _documentation: https://scvelo.readthedocs.io
+.. _notebooks: https://github.com/theislab/scvelo_notebooks
