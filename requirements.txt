@@ -1,8 +1,8 @@
-anndata>=0.6.9
-matplotlib>=2.2
-pandas>=0.21
-scanpy>=1.2.2
-scikit-learn>=0.19.1
+anndata~=0.6.9
+matplotlib~=2.2
+pandas~=0.21
+git+git://github.com/theislab/scanpy@4c7372#egg=scanpy
+scikit-learn~=0.19.1
 h5py
 joblib
 loompy
