@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import versioneer
 
-HERE = Path(__file).parent
+HERE = Path(__file__).parent
 
 req_path = HERE / 'requirements.txt'
 if not req_path.is_file():
