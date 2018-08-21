@@ -22,7 +22,7 @@ matplotlib.use('agg')
 
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent))
-#from ... import scvelo
+import scvelo
 
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ project = 'scvelo'
 author = 'Volker Bergen'
 copyright = f'{datetime.now():%Y}, {author}'
 
-version = '0.1' #scvelo.__version__.replace('.dirty', '')
+version = scvelo.__version__.replace('.dirty', '')
 release = version
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'

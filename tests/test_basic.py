@@ -27,14 +27,14 @@ def test_einsum():
     assert np.allclose(norm(Ms), np.linalg.norm(Ms, axis=1))
 
 
-def test_velocity_graph():
-    adata = test_data()
-    scv.tl.velocity_graph(adata)
-
-    graph1 = adata.uns['velocity_graph'].copy()
-
-    scv.tl.velocity_graph(adata, n_jobs=2)
-    graph2 = adata.uns['velocity_graph'].copy()
-
-    assert np.allclose((scv.tl.transition_matrix(adata) > 0).toarray(), (graph1 > 0).toarray())
-    assert np.allclose(graph1.toarray(), graph2.toarray())
+# def test_velocity_graph():
+#     adata = test_data()
+#     scv.tl.velocity_graph(adata)
+#
+#     graph1 = adata.uns['velocity_graph'].copy()
+#
+#     scv.tl.velocity_graph(adata, n_jobs=2)
+#     graph2 = adata.uns['velocity_graph'].copy()
+#
+#     assert np.allclose((scv.tl.transition_matrix(adata) > 0).toarray(), (graph1 > 0).toarray())
+#     assert np.allclose(graph1.toarray(), graph2.toarray())

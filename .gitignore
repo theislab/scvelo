@@ -17,7 +17,10 @@ Thumbs.db
 .directory
 /.idea/
 
+# Docs build
+docs/build
+docs/source/scvelo.*.rst
+
 # always-ignore directories
 /build/
-docs/build
 /dist/

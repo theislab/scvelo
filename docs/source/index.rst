@@ -12,11 +12,8 @@ incorporates intrinsic expression variability.
 
 It is compatible with scanpy_ (`Wolf et al., 2018 <https://doi.org/10.1186/s13059-017-1382-0>`_).
 
-Read the documentation_.
-
 .. _velocyto: http://velocyto.org/
 .. _scanpy: https://github.com/theislab/scanpy
-.. _documentation: https://scvelo.readthedocs.io
 
 Report issues and see the code on `GitHub <https://github.com/VolkerBergen/scRNAvelo>`__.
 
@@ -28,4 +25,5 @@ Report issues and see the code on `GitHub <https://github.com/VolkerBergen/scRNA
 
    installation
    usage_principles
+   api
    references

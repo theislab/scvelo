@@ -29,4 +29,4 @@ For getting started, read the documentation_ and take a look at some exemplary n
 .. _velocyto: http://velocyto.org/
 .. _scanpy: https://github.com/theislab/scanpy
 .. _documentation: https://scvelo.readthedocs.io
-.. _notebooks: https://github.com/theislab/scvelo_notebooks
+.. _notebooks: https://nbviewer.jupyter.org/github/theislab/scvelo_notebooks/blob/master/DentateGyrus.ipynb
