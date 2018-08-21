@@ -1,12 +1,11 @@
 language: python
+cache: pip
 python:
   - 3.6
 
-before_install: source .travis_install.sh
-
 install:
   - pip install -r requirements.txt
-  - conda install -c conda-forge python-igraph louvain --yes
+  - pip install python-igraph louvain  # louvain clustering
   - pip install docutils
 
 env: MPLBACKEND=Agg
