@@ -50,7 +50,7 @@ The version identifier is used for multiple purposes:
 * to choose a name and prefix for a 'setup.py sdist' tarball
 ## Theory of Operation
 Versioneer works by adding a special `_version.py` file into your source
-tree, where your `__init__.py` can import it. This `_version.py` knows how to
+tree, where your `datasets.py` can import it. This `_version.py` knows how to
 dynamically ask the VCS tool for version information at import time.
 `_version.py` also contains `$Revision$` markers, and the installation
 process marks `_version.py` to have this marker rewritten with a tag name
@@ -66,7 +66,7 @@ the generated version data.
 See [INSTALL.md](./INSTALL.md) for detailed installation instructions.
 ## Version-String Flavors
 Code which uses Versioneer can learn about its version string at runtime by
-importing `_version` from your main `__init__.py` file and running the
+importing `_version` from your main `datasets.py` file and running the
 `get_versions()` function. From the "outside" (e.g. in `setup.py`), you can
 import the top-level `versioneer.py` and run `get_versions()`.
 Both functions return a dictionary with different flavors of version
@@ -94,7 +94,7 @@ bug report should allow developers to reconstruct the exact code being tested
 developers). `version` is suitable for display in an "about" box or a CLI
 `--version` output: it can be easily compared against release notes and lists
 of bugs fixed in various releases.
-The installer adds the following text to your `__init__.py` to place a basic
+The installer adds the following text to your `datasets.py` to place a basic
 version in `YOURPROJECT.__version__`:
     from ._version import get_versions
     __version__ = get_versions()['version']
@@ -1551,7 +1551,7 @@ def do_setup():
                         })
 
     ipy = os.path.join(os.path.dirname(cfg.versionfile_source),
-                       "__init__.py")
+                       "datasets.py")
     if os.path.exists(ipy):
         try:
             with open(ipy, "r") as f:

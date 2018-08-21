@@ -3,11 +3,6 @@ Installation
 
 If you do not have a working Python 3.6 installation, consider installing Miniconda_.
 
-Running the following installs most of the requirements::
-
-   conda install seaborn scikit-learn statsmodels numba
-   pip install scanpy
-
 Install scvelo from PyPI_ with::
 
   pip install scvelo
