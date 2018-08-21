@@ -1,6 +1,6 @@
-from ..tools.velocity_graph import *
-from ..tools.solver import *
-from ..tools.velocity_embedding import transition_matrix
+from scvelo.tools.velocity_graph import *
+from scvelo.tools.solver import *
+from scvelo.tools.velocity_embedding import transition_matrix
 
 from anndata import AnnData
 from scanpy.api.pp import normalize_per_cell, pca, neighbors
