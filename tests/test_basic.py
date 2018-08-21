@@ -1,21 +1,19 @@
 import scvelo as scv
 import scanpy.api as sc
-
 from scvelo.tools.utils import *
+from scipy import sparse, stats
 
 
-def test_data(n_obs=100, n_vars=10):
-    if False:
-        adata = AnnData(sparse.random(n_obs, n_vars, data_rvs=stats.poisson(1).rvs, density=.6, format='csr'))
-        adata.layers['spliced'] = adata.X
-        adata.layers['unspliced'] = \
-           .5 * adata.X + .3 * sparse.random(n_obs, n_vars, density=.6, data_rvs=stats.poisson(1).rvs, format='csr')
+def test_data(n_obs=1000, n_vars=100):
+    adata = sc.AnnData(sparse.random(n_obs, n_vars, data_rvs=stats.poisson(1).rvs, density=.6, format='csr'))
+    adata.layers['spliced'] = adata.X
+    adata.layers['unspliced'] = \
+       .5 * adata.X + .3 * sparse.random(n_obs, n_vars, density=.6, data_rvs=stats.poisson(1).rvs, format='csr')
 
-    adata = scv.datasets.dentategyrus()
     sc.pp.filter_genes(adata, min_counts=10)
     sc.pp.filter_genes_dispersion(adata)
     sc.pp.normalize_per_cell(adata, layers='all')
-    sc.pp.pca(adata)
+    sc.pp.pca(adata, n_comps=10)
     sc.pp.neighbors(adata, use_rep='X_pca')
     scv.pp.moments(adata)
     return adata
@@ -31,7 +29,6 @@ def test_einsum():
 
 def test_velocity_graph():
     adata = test_data()
-    scv.tl.velocity(adata)
     scv.tl.velocity_graph(adata)
 
     graph1 = adata.uns['velocity_graph'].copy()

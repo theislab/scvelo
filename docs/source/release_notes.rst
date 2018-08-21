@@ -1,6 +1,6 @@
 .. role:: small
 
-Version 0.1 :small:`Aug 20, 2018`
+Version 0.1.2 :small:`Aug 21, 2018`
 ---------------------------------
 
 scvelo provides estimation of stochastic RNA velocity for inferring single cell dynamics.
