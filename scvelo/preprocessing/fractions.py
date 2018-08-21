@@ -29,8 +29,7 @@ def print_fraction_of_abundances(adata, cleanup_layers=True, copy=False):
     print('abundance of ' + str(layers_keys) + ': ' + str(mean_abundances))
 
     if cleanup_layers:
-        layers_keys = adata.layers.keys().copy()
-        for key in layers_keys:  # remove layers that are not needed
+        for key in list(adata.layers.keys()):  # remove layers that are not needed
             if key not in ['spliced', 'unspliced']: del adata.layers[key]
 
     return adata if copy else None
