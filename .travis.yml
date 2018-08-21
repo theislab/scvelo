@@ -4,10 +4,8 @@ python:
   - 3.6
 
 install:
-  - pip install -r requirements.txt
-  - pip install python-igraph louvain  # louvain clustering
-  - pip install docutils
-  - python setup.py install
+  - pip install flit
+  - flit install
 
 env: MPLBACKEND=Agg
 
