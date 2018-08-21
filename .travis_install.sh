@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Deactivate the travis-provided virtual environment and setup a
-# conda-based environment instead
+# Deactivate the travis-provided virtual environment and setup a conda-based environment instead
 deactivate
 
 pushd .
@@ -25,8 +24,3 @@ conda create -n testenv --yes python=$TRAVIS_PYTHON_VERSION pip pytest hdf5 \
       numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION numba scikit-learn statsmodels
 
 source activate testenv
-
-pip install -r requirements.txt
-conda install -c conda-forge python-igraph louvain --yes
-pip install docutils
-python setup.py develop
