@@ -22,5 +22,5 @@ setup(
     license='BSD',
     url="https://github.com/VolkerBergen/scvelo",
     download_url=f"https://github.com/VolkerBergen/scvelo",
-    keywords=["RNAseq", "singlecell", "stochastic", "velocity", "transcriptomics"],
+    keywords=["RNAseq", "singlecell", "stochastic", "velocity", "transcriptomics"]
     )
