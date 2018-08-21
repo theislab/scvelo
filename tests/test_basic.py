@@ -8,7 +8,7 @@ from time import time
 from scipy import sparse, stats
 
 
-def test_data(n_obs=10000, n_vars=100):
+def test_data(n_obs=100, n_vars=10):
     adata = AnnData(sparse.random(n_obs, n_vars, data_rvs=stats.poisson(1).rvs, density=.6, format='csr'))
     adata.layers['spliced'] = adata.X
     adata.layers['unspliced'] = \
