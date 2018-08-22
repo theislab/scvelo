@@ -14,6 +14,8 @@ incorporates intrinsic expression variability.
 
 It is compatible with scanpy_ (`Wolf et al., 2018 <https://doi.org/10.1186/s13059-017-1382-0>`_).
 
+It is very efficient in terms of memory and runtime (<1GB and <1min for 30,000 cells).
+
 For getting started, read the documentation_ and take a look at some exemplary notebooks_.
 
 

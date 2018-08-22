@@ -66,7 +66,7 @@ class Cosines:
         return [async_id, vals, rows, cols]
 
 
-def velocity_graph(adata, vkey='velocity', n_recurse_neighbors=2, n_neighbors=None, n_jobs=1, sqrt_transform=False, copy=False):
+def velocity_graph(adata, vkey='velocity', n_recurse_neighbors=2, n_neighbors=None, sqrt_transform=False, copy=False):
     """Computes a velocity graph based on cosine similarities
     The cosine similarities are computed between velocities and potential cell state transitions
 
@@ -116,7 +116,7 @@ def velocity_graph(adata, vkey='velocity', n_recurse_neighbors=2, n_neighbors=No
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        if n_jobs == 1:
+        if True:
             _, vals, rows, cols = cos.compute(range(adata.n_obs))  # list(map(cos.compute, range(adata.n_obs)))
         else:
             from multiprocessing import Pool
