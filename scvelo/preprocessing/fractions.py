@@ -2,7 +2,7 @@ import numpy as np
 
 
 def print_fraction_of_abundances(adata, cleanup_layers=True, copy=False):
-    """Computes the fraction of abundances of spliced, unspliced and ambiguous counts
+    """Fraction of spliced/unspliced/ambiguous abundances
 
     Arguments
     ---------

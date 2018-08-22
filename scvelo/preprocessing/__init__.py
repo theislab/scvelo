@@ -32,11 +32,11 @@ def read_loom_layers(file_name, backup_url=None):
             print("OS error: {0}".format(OSError))
 
     with loompy.connect(file_name, 'r') as lc:
-        X = lc.layer['spliced'][:, :].sparse().T.tocsr()
+        X = lc.layer['spliced'].sparse().T.tocsr()
 
         layers = OrderedDict()
-        layers['spliced'] = lc.layer["spliced"][:, :].sparse().T.tocsr()
-        layers['unspliced'] = lc.layer["unspliced"][:, :].sparse().T.tocsr()
+        layers['spliced'] = lc.layer["spliced"].sparse().T.tocsr()
+        layers['unspliced'] = lc.layer["unspliced"].sparse().T.tocsr()
 
         obs = dict(lc.col_attrs)
         obs['obs_names'] = obs.pop('CellID')
