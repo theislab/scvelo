@@ -13,7 +13,7 @@ def test_einsum():
 
 
 def test_velocity_graph():
-    adata = scv.datasets.toy_data(n_obs=100)
+    adata = scv.datasets.toy_data(n_obs=1000)
     scv.pp.recipe_velocity(adata)
     scv.tl.velocity(adata)
 
