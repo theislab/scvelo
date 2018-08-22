@@ -5,7 +5,7 @@ import scvelo as scv
 
 def test_einsum():
     adata = scv.datasets.toy_data(n_obs=100, n_vars=100)
-    adata = scv.pp.recipe_velocity(adata)
+    scv.pp.recipe_velocity(adata)
     Ms, Mu = adata.layers['Ms'], adata.layers['Mu']
     assert np.allclose(prod_sum_obs(Ms, Mu), np.sum(Ms * Mu, 0))
     assert np.allclose(prod_sum_var(Ms, Mu), np.sum(Ms * Mu, 1))
@@ -14,8 +14,10 @@ def test_einsum():
 
 def test_velocity_graph():
     adata = scv.datasets.toy_data(n_obs=1000, n_vars=100)
-    scv.tl.velocity_graph(adata)
+    scv.pp.recipe_velocity(adata)
+    scv.tl.velocity(adata)
 
+    scv.tl.velocity_graph(adata)
     graph1 = adata.uns['velocity_graph'].copy()
 
     scv.tl.velocity_graph(adata, n_jobs=2)
