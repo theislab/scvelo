@@ -1,4 +1,4 @@
-"""scvelo - Stochastic RNA velocity for inferring single cell dynamics"""
+"""scvelo - stochastic single cell RNA velocity"""
 
 from . import preprocessing as pp
 from . import tools as tl

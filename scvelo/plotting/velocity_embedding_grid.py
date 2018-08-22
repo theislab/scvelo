@@ -72,21 +72,18 @@ def velocity_embedding_grid(adata, basis='umap', vbasis='velocity', density=1, c
 
     Arguments
     ---------
-    adata: `AnnData`
+    adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-
-    basis: `str` (default: `tsne`)
-        Key for embedding coordinates
-
-    vbasis: `str` (default: `velocity`)
-        Key for velocity embedding coordinates
-
+    basis: `str` (default: `'umap'`)
+        Key for embedding coordinates.
+    vbasis: `str` (default: `'velocity'`)
+        Key for velocity embedding coordinates.
     color : `str` or `None` (default: `None`)
-        Key for annotations of observations/cells or variables/genes
+        Key for annotations of observations/cells or variables/genes.
 
     Returns
     -------
-        If `show==False` a `matplotlib.Axis`
+        `matplotlib.Axis` if `show==False`
     """
     if ax is None: ax = pl.figure(None, (14, 10), dpi=120).gca()
 

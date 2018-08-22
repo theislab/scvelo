@@ -4,27 +4,19 @@ from ..preprocessing.moments import second_order_moments
 
 def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='all', layers='all', color=None,
              fontsize=8, color_map='RdBu_r', size=.2, alpha=.5, ax=None, **kwargs):
-    """Phase and velocity plot for set of genes
+    """Phase and velocity plot for set of genes.
+
     The phase plot shows pliced against unspliced expressions with steady-state fit.
     Further the embedding is shown colored by velocity and expression.
 
     Arguments
     ---------
-    adata: `AnnData`
+    adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-
-    gene_list: str or list of str, default=None
-
-    basis: str, default='tsne'
-        plots embedding obsm['X_' + basis]
-
-    expr_plot: bool, default=True
-        plots gene expression in embedding
-
-    velo_plot: bool, default=True
-        plots gene velocity in embedding
-
-    phase: 'var', 'cv', 's2', 'u2', 'us'
+    var_names: `str` or list of `str` (default: `None`)
+        Which variables to show.
+    basis: `str` (default: `'umap'`)
+        Key for embedding coordinates.
     """
     var_names = [var_names] if isinstance(var_names, str) else var_names
     var_names = [var for var in var_names if var in adata.var_names] if isinstance(var_names, list) \

@@ -67,36 +67,30 @@ class Cosines:
 
 
 def velocity_graph(adata, vkey='velocity', n_recurse_neighbors=2, n_neighbors=None, sqrt_transform=False, copy=False):
-    """Computes a velocity graph based on cosine similarities
-    The cosine similarities are computed between velocities and potential cell state transitions
+    """Computes a velocity graph based on cosine similarities.
+
+    The cosine similarities are computed between velocities and potential cell state transitions.
 
     Arguments
     ---------
-    adata: `AnnData`
-        Annotated data matrix
-
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
     vkey: `str` (default: `'velocity'`)
-        Name of velocity estimates to be used
-
+        Name of velocity estimates to be used.
     n_neighbors: `int` or `None` (default: None)
-        Use fixed number of neighbors or do recursive neighbor search (if `None`)
-
+        Use fixed number of neighbors or do recursive neighbor search (if `None`).
     n_recurse_neighbors: `int` (default: 2)
-        Number of recursions to be done for neighbors search
-
-    n_jobs: `int` (default: 1)
-        Number of jobs to be performed in parallel for single core (`n_jobs==1`) or multi cores (`n_jobs > 1`)
-
+        Number of recursions to be done for neighbors search.
     sqrt_transform: `bool` (default: `False`)
-        Whether to variance-transform the cell states and velocities before computing cosine similarities
-
-    copy: `bool`, (default: `False`)
-        Return a copy instead of writing to adata
+        Whether to variance-transform the cell states and velocities before computing cosine similarities.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to adata.
 
     Returns
     -------
     Returns or updates `adata` with the attributes
-    `'velocity_graph'`: sparse matrix (`.uns`) with transition probabilities
+    velocity_graph: `.uns`
+        sparse matrix with transition probabilities
     """
     if vkey not in adata.layers.keys(): velocity(adata)
 

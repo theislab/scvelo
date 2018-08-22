@@ -6,27 +6,20 @@ def principal_curve(adata, basis='pca', n_comps=4, clusters_list=None, copy=Fals
     
     Arguments
     ---------
-    adata: `AnnData`
-        Annotated data matrix
-    
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
     basis: `str` (default: `'pca'`)
-        Basis to use for computing the principal curve
-    
-    n_comps: `int` (default: `4`)
-        
-    clusters_list:
-        
-        
+        Basis to use for computing the principal curve.
+    n_comps: `int` (default: 4)
+        Number of pricipal components to be used.
     copy: `bool`, (default: `False`)
-        Return a copy instead of writing to adata
+        Return a copy instead of writing to adata.
     
     Returns
     -------
     Returns or updates `adata` with the attributes
-    `'principal_curve'`: dictionary (`.uns`) containing
-        projections - the matrix of the projection
-        ixsort - the order ot the points (as in argsort)
-        arclength - the length of the arc from the beginning to the point
+    principal_curve: `.uns`
+        dictionary containing `projections`, `ixsort` and `arclength`
     """
     import rpy2.robjects as robjects
     from rpy2.robjects.packages import importr

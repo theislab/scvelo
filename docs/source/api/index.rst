@@ -15,8 +15,9 @@ Preprocessing (pp)
 .. autosummary::
    :toctree: .
 
-   pp.print_fraction_of_abundances
-   pp.moments
+   preprocessing.show_proportions
+   preprocessing.moments
+   preprocessing.recipe_velocity
 
 
 Tools (tl)
@@ -25,9 +26,9 @@ Tools (tl)
 .. autosummary::
    :toctree: .
 
-   tl.velocity
-   tl.velocity_graph
-   tl.velocity_embedding
+   tools.velocity
+   tools.velocity_graph
+   tools.velocity_embedding
 
 
 Plotting (pl)
@@ -36,9 +37,9 @@ Plotting (pl)
 .. autosummary::
    :toctree: .
 
-   pl.velocity
-   pl.velocity_embedding
-   pl.velocity_embedding_grid
+   plotting.velocity
+   plotting.velocity_embedding
+   plotting.velocity_embedding_grid
 
 
 Datasets
@@ -48,3 +49,4 @@ Datasets
    :toctree: .
 
    datasets.dentategyrus
+   datasets.toy_data

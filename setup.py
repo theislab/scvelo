@@ -22,7 +22,7 @@ setup(
     include_dirs=[np.get_include()],
     author="Volker Bergen",
     author_email="volker.bergen@helmholtz-muenchen.de",
-    description='Stochastic RNA velocity for inferring single cell dynamics',
+    description='stochastic single cell RNA velocity ',
     license='BSD',
     url="https://github.com/VolkerBergen/scvelo",
     download_url=f"https://github.com/VolkerBergen/scvelo",

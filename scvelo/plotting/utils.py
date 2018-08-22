@@ -49,7 +49,7 @@ def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=
     adata: `AnnData`
         Annotated data matrix.
 
-    basis: str, default='tsne'
+    basis: `str` (default='tsne')
         plots embedding obsm['X_' + basis]
 
     x: `str`, `np.ndarray` or `None` (default: `None`)

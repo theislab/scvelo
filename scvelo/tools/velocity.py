@@ -10,34 +10,31 @@ def velocity(adata, vkey='velocity', mode='stochastic', fit_offset=False, fit_of
 
     Arguments
     ---------
-    adata: `AnnData`
-        Annotated data matrix
-
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
     vkey: `str` (default: `'velocity'`)
-        Name under which to refer to the computed velocities for `velocity_graph` and `velocity_embedding`
-
-    mode: {{`'deterministic'`, `'stochastic'`, `'bayes'`}} (default: `'stochastic'`)
+        Name under which to refer to the computed velocities for `velocity_graph` and `velocity_embedding`.
+    mode: `'deterministic'`, `'stochastic'` or `'bayes'` (default: `'stochastic'`)
         Whether to run the estimation using the deterministic or stochastic model of transcriptional dynamics.
-        `'bayes'` solves the stochastic model while also allowing heteroscedasticity, but is slower than `'stochastic'`
-
+        `'bayes'` solves the stochastic model and accounts for heteroscedasticity, but is slower than `'stochastic'`.
     fit_offset: `bool` (default: `False`)
-        Whether to fit with offset for first order moment dynamics (accounting for ambiguous reads)
-
+        Whether to fit with offset for first order moment dynamics.
     fit_offset2: `bool`, (default: `False`)
-        Whether to fit with offset for second order moment dynamics (accounting for ambiguous reads)
-
+        Whether to fit with offset for second order moment dynamics.
     filter_genes: `bool` (default: `True`)
-        Whether to remove genes that are not used for further velocity analysis
-
-    copy: `bool`, (default: `False`)
-        Return a copy instead of writing to adata
+        Whether to remove genes that are not used for further velocity analysis.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to `adata`.
 
     Returns
     -------
     Returns or updates `adata` with the attributes
-    vkey: matrix (`.layers`) with velocity vectors for each individual cell
-    `'variance_velocity'`: matrix (`.layers`) with velocity vectors for the cell variances
-    `'_offset', '_offset2', '_beta', '_gamma', '_r2'`: velocity parameters (`.var`)
+    velocity: `.layers`
+        velocity vectors for each individual cell
+    variance_velocity: `.layers`
+        velocity vectors for the cell variances
+    velocity_offset, velocity_beta, velocity_gamma, velocity_r2: `.var`
+        parameters
     """
     if 'Ms' not in adata.layers.keys(): moments(adata)
     Ms, Mu = adata.layers['Ms'], adata.layers['Mu']

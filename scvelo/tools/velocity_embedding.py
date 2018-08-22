@@ -6,18 +6,16 @@ def transition_matrix(adata, vkey='velocity', scale=10):
 
     Arguments
     ---------
-    adata: `AnnData`
-        Annotated data matrix
-
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
     vkey: `str` (default: `'velocity'`)
-        Name of velocity estimates to be used
-
+        Name of velocity estimates to be used.
     scale: `float` (default: 10)
-        scale parameter of gaussian kernel
+        Scale parameter of gaussian kernel.
 
     Returns
     -------
-    sparse matrix with transition probabilities
+    Returns sparse matrix with transition probabilities.
     """
     if vkey+'_graph' not in adata.uns:
         raise ValueError(
@@ -37,25 +35,22 @@ def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, retain_sc
 
     Arguments
     ---------
-    adata: `AnnData`
-        Annotated data matrix
-
-    basis: `string` (default: `'tsne'`)
-        Which embedding to use
-
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    basis: `str` (default: `'tsne'`)
+        Which embedding to use.
     vkey: `str` (default: `'velocity'`)
-        Name of velocity estimates to be used
-
+        Name of velocity estimates to be used.
     scale: `int` (default: 10)
-        scale parameter of gaussian kernel for transition matrix
-
+        Scale parameter of gaussian kernel for transition matrix.
     retain_scale: `bool` (default: `False`)
-        Whether to retain scale from high dimensional space in embedding
+        Whether to retain scale from high dimensional space in embedding.
 
     Returns
     -------
     Returns or updates `adata` with the attributes
-    `'velocity_' + basis`: coordinates of quivers on embedding (`.obsm`)
+    velocity_umap: `.obsm`
+        coordinates of velocity projection on embedding
     """
     T = transition_matrix(adata, vkey, scale)
 

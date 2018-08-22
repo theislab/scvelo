@@ -1,24 +1,22 @@
 import numpy as np
 
 
-def print_fraction_of_abundances(adata, cleanup_layers=True, copy=False):
+def show_proportions(adata, cleanup_layers=True, copy=False):
     """Fraction of spliced/unspliced/ambiguous abundances
 
     Arguments
     ---------
-    adata: `AnnData`
-        Annotated data matrix
-
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
     cleanup_layers: `bool` (default: `True`)
-        Delete all layers except 'spliced' and 'unspliced'
-
-    copy: `bool`, (default: `False`)
-        Return a copy instead of writing to adata
+        Whether to free all layers except `spliced` and `unspliced`.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to adata.
 
     Returns
     -------
     Prints the fractions of abundances.
-    Returns or updates `adata` with all layers freed except `spliced` and `unspliced` (`cleanup_layers == True`).
+    Returns or updates `adata` with all layers freed except `spliced` and `unspliced`.
     """
     layers_keys = [key for key in ['spliced', 'unspliced', 'ambiguous'] if key in adata.layers.keys()]
     tot_mol_cell_layers = [adata.layers[key].sum(1) for key in layers_keys]

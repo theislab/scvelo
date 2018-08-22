@@ -4,27 +4,26 @@ from ..logging import *
 
 
 def moments(adata, renormalize=False, mode='connectivities', copy=False):
-    """Computes first order moments for velocity estimation
+    """Computes first order moments for velocity estimation.
 
     Arguments
     ---------
-    adata: `AnnData`
+    adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-
     renormalize: `bool` (default: `True`)
-        Renormalize the moments by total counts per cell to its median
-
-    mode: {{`'connectivities'`, `'distances'`}}  (default: `'connectivities'`)
-
-
-    copy: `bool`, (default: `False`)
-        Return a copy instead of writing to adata
+        Renormalize the moments by total counts per cell to its median.
+    mode: `'connectivities'` or `'distances'`  (default: `'connectivities'`)
+        Distance metric to use for moment computation.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to adata.
 
     Returns
     -------
     Returns or updates `adata` with the attributes
-    `'Ms'`: dense matrix (`.layers`) with first order moments of spliced counts.
-    `'Mu'`: dense matrix (`.layers`) with first order moments of unspliced counts.
+    Ms: `.layers`
+        dense matrix with first order moments of spliced counts.
+    Mu: `.layers`
+        dense matrix with first order moments of unspliced counts.
     """
     if 'neighbors' not in adata.uns:
         raise ValueError('You need to run `pp.neighbors` first to compute a neighborhood graph.')
@@ -56,7 +55,7 @@ def moments(adata, renormalize=False, mode='connectivities', copy=False):
 
 
 def second_order_moments(adata):
-    """Computes second order moments for stochastic velocity estimation
+    """Computes second order moments for stochastic velocity estimation.
 
     Arguments
     ---------
@@ -82,7 +81,7 @@ def second_order_moments(adata):
 
 
 def second_order_moments_u(adata):
-    """Computes second order moments for stochastic velocity estimation
+    """Computes second order moments for stochastic velocity estimation.
 
     Arguments
     ---------
