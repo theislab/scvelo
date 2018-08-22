@@ -23,5 +23,5 @@ def toy_data(n_obs):
     adata = dentategyrus()
     indices = np.random.choice(adata.n_obs, n_obs)
     adata = adata[indices]
-    adata.obs_names = range(adata.n_obs)
+    adata.obs_names = np.array(range(adata.n_obs), dtype='str')
     return adata
