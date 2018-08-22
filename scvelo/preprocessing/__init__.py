@@ -45,6 +45,5 @@ def read_loom_layers(file_name, backup_url=None):
         var['var_names'] = var.pop('Gene')
 
         adata = AnnData(X, obs=obs, var=var, layers=layers)
-        lc.close()
 
     return adata
