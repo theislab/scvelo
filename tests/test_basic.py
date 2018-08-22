@@ -14,7 +14,7 @@ def test_einsum():
 
 def test_velocity_graph():
     adata = scv.datasets.toy_data(n_obs=1000)
-    scv.pp.recipe_velocity(adata)
+    scv.pp.recipe_velocity(adata, n_top_genes=300)
     scv.tl.velocity(adata)
 
     scv.tl.velocity_graph(adata)

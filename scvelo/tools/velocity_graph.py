@@ -3,14 +3,17 @@ from scanpy.api import Neighbors
 from scipy.sparse import coo_matrix
 
 
-def get_indices(dist, n_neighbors):
-    row_idx = np.where((dist > 0).sum(1) != n_neighbors - 1)[0]
-    col_idx = dist[row_idx].indices.reshape((-1, n_neighbors))[:, -1]
+def get_indices(dist):
+    n_neighbors = (dist > 0).sum(1).min()
+    rows_idx = np.where((dist > 0).sum(1) > n_neighbors)[0]
 
-    dist[row_idx, col_idx] = 0
+    for row_idx in rows_idx:
+        col_idx = dist[row_idx].indices[n_neighbors:]
+        dist[row_idx, col_idx] = 0
+
     dist.eliminate_zeros()
 
-    indices = dist.indices.reshape((-1, n_neighbors - 1))
+    indices = dist.indices.reshape((-1, n_neighbors))
     return indices, dist
 
 
@@ -103,11 +106,10 @@ def velocity_graph(adata, vkey='velocity', n_recurse_neighbors=2, n_neighbors=No
         keys = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()]
         neighs = Neighbors(adata)
         neighs.compute_neighbors(n_neighbors=n_neighbors, use_rep=keys[-1], n_pcs=10)
-        indices = get_indices(dist=neighs.distances, n_neighbors=n_neighbors)[0]
+        indices = get_indices(dist=neighs.distances)[0]
         n_recurse_neighbors = 1
     else:
-        indices = get_indices(dist=adata.uns['neighbors']['distances'],
-                              n_neighbors=adata.uns['neighbors']['params']['n_neighbors'])[0]
+        indices = get_indices(dist=adata.uns['neighbors']['distances'])[0]
 
     cos = Cosines(adata.layers['Ms'][:, adata.var['velocity_genes']],
                   adata.layers[vkey][:, adata.var['velocity_genes']], indices, n_recurse_neighbors, sqrt_transform)
