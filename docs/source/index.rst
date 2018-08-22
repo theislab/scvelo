@@ -12,9 +12,9 @@ velocyto_ (`La Manno et al., 2018 <https://doi.org/10.1038/s41586-018-0414-6>`_)
 and are based on a deterministic model of transcriptional dynamics. scvelo uses a stochastic formulation and
 incorporates intrinsic expression variability.
 
-It is compatible with scanpy_ (`Wolf et al., 2018 <https://doi.org/10.1186/s13059-017-1382-0>`_).
-
-It is very efficient in terms of memory and runtime (<1GB and <1min for 30,000 cells).
+It is compatible with scanpy_ (`Wolf et al., 2018 <https://doi.org/10.1186/s13059-017-1382-0>`_). Making use of sparse
+implementation, iterative neighbors search and other techniques, it is remarkably efficient in terms of memory and
+runtime without loss in accuracy (<1GB and <1min for 30,000 cells on a MacBook Pro 2017 with 2,3 GHz i5).
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
     :target: https://pypi.org/project/scvelo
