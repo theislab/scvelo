@@ -5,7 +5,7 @@ import scvelo as scv
 
 def test_einsum():
     adata = scv.datasets.toy_data(n_obs=100)
-    scv.pp.recipe_velocity(adata)
+    scv.pp.recipe_velocity(adata, n_top_genes=300)
     Ms, Mu = adata.layers['Ms'], adata.layers['Mu']
     assert np.allclose(prod_sum_obs(Ms, Mu), np.sum(Ms * Mu, 0))
     assert np.allclose(prod_sum_var(Ms, Mu), np.sum(Ms * Mu, 1))
