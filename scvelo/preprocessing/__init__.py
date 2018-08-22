@@ -56,7 +56,7 @@ def recipe_velocity(adata, min_counts=10, n_top_genes=3000, copy=False):
     filter_genes_dispersion(adata, n_top_genes=n_top_genes)
     normalize_per_cell(adata, layers='all')
     pca(adata, n_comps=30)
-    neighbors(adata, use_rep='X_pca')
+    neighbors(adata, n_neighbors=30, use_rep='X_pca')
 
     moments(adata)
     return adata if copy else None
