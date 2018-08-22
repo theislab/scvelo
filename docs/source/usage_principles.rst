@@ -9,7 +9,7 @@ Import scvelo (velocity specific workflows) and scanpy (basic workflows) as::
 Read the file into a data object
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We read the data file (loom, h5ad, xlsx, csv, tab, txt ...) to an :class:`~anndata.AnnData` object::
+Read the data file (loom, h5ad, xlsx, csv, tab, txt ...) to an :class:`~anndata.AnnData` object::
 
    adata = sc.read(filename, cache=True)
 
@@ -26,20 +26,20 @@ For instance, the data matrices relevant for velocity analysis can be retrieved 
 
 Basic preprocessing
 ^^^^^^^^^^^^^^^^^^^
-We select genes (according to detection and variability) and normalize each cell by total counts::
+Select genes (according to detection and variability) and normalize each cell by total counts::
 
     sc.pp.filter_genes(adata, **params)
     sc.pp.filter_genes_dispersion(adata, **params)
 
     sc.pp.normalize_per_cell(adata, layers='all', **params)
 
-We then compute the neighbor graph in PCA space on the logarithmized data::
+Then compute the neighbor graph in PCA space on the logarithmized data::
 
    sc.pp.log1p(adata, **params)
    sc.pp.pca(adata, **params)
    sc.pp.neighbors(adata, use_rep='X_pca', **params)
 
-Finally, we compute the moments of spliced and unspliced counts which will be used for velocity estimation::
+Finally, compute the moments of spliced and unspliced counts which will be used for velocity estimation::
 
    scv.pp.moments(adata, **params)
 
@@ -48,7 +48,7 @@ That's all, no extensive preparation needed and it takes a few seconds to run th
 Velocity Tools
 ^^^^^^^^^^^^^^
 
-Now we are hitting the core of the package.
+Now you are hitting the core of the package.
 
 Estimating the velocities for each individual cell is done in a single line::
 
@@ -59,13 +59,13 @@ The velocities are vectors in gene expression space obtained by using a closed-f
 solves a stochastic model of transcriptional dynamics. The stochastic model incorporates intrinsic expression variability.
 The solution to the deterministic model is obtained by setting mode to 'deterministic'.
 
-Now, we compute the velocity graph which finds the most likely cell transitions according to the velocity prediction
+Compute the velocity graph which finds the most likely cell transitions according to the velocity prediction
 (based on cosine correlation) and serves as a Markov transition matrix::
 
    scv.tl.velocity_graph(adata, **params)
 
 
-Using the graph we can project the velocities into any embedding (such as UMAP)::
+Using the graph you can easily project the velocities into any embedding (such as UMAP)::
 
    scv.tl.velocity_embedding(adata, basis='umap', **params)
 

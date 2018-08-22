@@ -28,7 +28,7 @@ runtime without loss in accuracy (<1GB and <1min for 30,000 cells on a MacBook P
 .. _velocyto: http://velocyto.org/
 .. _scanpy: https://github.com/theislab/scanpy
 
-Report issues and see the code on `GitHub <https://github.com/VolkerBergen/scRNAvelo>`__.
+Report issues and see the code on `GitHub <https://github.com/theislab/scvelo>`__.
 
 .. include:: release_notes.rst
 
