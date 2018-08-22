@@ -8,7 +8,7 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
                        legend_loc='right margin', legend_fontsize=None, legend_fontweight=None,
                        color_map=None, palette=None, frameon=False, right_margin=None, left_margin=None,
                        size=None, title=None, show=None, save=None, ax=None, **kwargs):
-    """Scatter plot with single cell velocities along observations or variables axes.
+    """Scatter plot with velocities along `.obs` or `.var` axes.
     Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
 
     Arguments

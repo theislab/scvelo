@@ -5,8 +5,8 @@ from ..preprocessing.moments import second_order_moments
 def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='all', layers='all', color=None,
              fontsize=8, color_map='RdBu_r', size=.2, alpha=.5, ax=None, **kwargs):
     """Phase and velocity plot for set of genes
-
-    The phase plot shows Plots spliced against unspliced expressions with steady-state fit along with expression and velocity in embedding
+    The phase plot shows pliced against unspliced expressions with steady-state fit.
+    Further the embedding is shown colored by velocity and expression.
 
     Arguments
     ---------

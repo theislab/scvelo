@@ -5,7 +5,8 @@ from scanpy.api import read
 
 
 def dentategyrus():
-    """Dentate gyrus is part of the hippocampus involved in learning, episodic memory formation and spatial coding.
+    """Dentate Gyrus dataset from Hochgerner et al. (2018)
+    Dentate gyrus is part of the hippocampus involved in learning, episodic memory formation and spatial coding.
     It is measured using 10X Genomics Chromium and described in Hochgerner et al. (2018).
     The data consists of 25,919 genes across 3,396 cells and provides several interesting characteristics.
     """

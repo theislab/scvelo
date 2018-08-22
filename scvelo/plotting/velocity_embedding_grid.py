@@ -67,7 +67,7 @@ def velocity_embedding_grid(adata, basis='umap', vbasis='velocity', density=1, c
                             legend_loc='right margin', legend_fontsize=None, legend_fontweight=None,
                             color_map=None, palette=None, frameon=False, right_margin=None, left_margin=None,
                             size=None, title=None, show=None, save=None, ax=None, **kwargs):
-    """Scatter plot with single cell velocities on a grid along observations or variables axes.
+    """Scatter plot with grid velocities along `.obs` or `.var` axes.
     Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
 
     Arguments
