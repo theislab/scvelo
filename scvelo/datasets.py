@@ -1,7 +1,8 @@
 """Builtin Datasets.
 """
 
-from scanpy.api import read
+import scanpy.api as sc
+from scipy import sparse, stats
 
 
 def dentategyrus():
@@ -12,5 +13,13 @@ def dentategyrus():
     """
     filename = 'data/DentateGyrus/10X43_1.loom'
     url = 'http://pklab.med.harvard.edu/velocyto/DG1/10X43_1.loom'
-    adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
+    adata = sc.read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
+    return adata
+
+
+def toy_data(n_obs, n_vars):
+    adata = sc.AnnData(sparse.random(n_obs, n_vars, data_rvs=stats.poisson(1).rvs, density=.6, format='csr'))
+    adata.layers['spliced'] = adata.X
+    adata.layers['unspliced'] = \
+       .5 * adata.X + .3 * sparse.random(n_obs, n_vars, density=.6, data_rvs=stats.poisson(1).rvs, format='csr')
     return adata

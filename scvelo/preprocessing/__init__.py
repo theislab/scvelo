@@ -47,3 +47,14 @@ def read_loom_layers(file_name, backup_url=None):
         adata = AnnData(X, obs=obs, var=var, layers=layers)
 
     return adata
+
+
+def recipe_velocity(adata):
+    from scanpy.api.pp import \
+        filter_genes, filter_genes_dispersion, normalize_per_cell, pca, neighbors
+    filter_genes(adata, min_counts=10)
+    filter_genes_dispersion(adata)
+    normalize_per_cell(adata, layers='all')
+    pca(adata, n_comps=10)
+    neighbors(adata, use_rep='X_pca')
+    moments(adata)
