@@ -49,14 +49,14 @@ def read_loom_layers(file_name, backup_url=None):
     return adata
 
 
-def recipe_velocity(adata, min_counts=10, n_top_genes=3000, copy=False):
+def recipe_velocity(adata, min_counts=10, n_top_genes=3000, n_neighbors=15, copy=False):
     from scanpy.api.pp import \
         filter_genes, filter_genes_dispersion, normalize_per_cell, pca, neighbors
     filter_genes(adata, min_counts=min_counts)
     filter_genes_dispersion(adata, n_top_genes=n_top_genes)
     normalize_per_cell(adata, layers='all')
     pca(adata, n_comps=30)
-    neighbors(adata, n_neighbors=30, use_rep='X_pca')
+    neighbors(adata, n_neighbors=n_neighbors, use_rep='X_pca')
 
     moments(adata)
     return adata if copy else None
