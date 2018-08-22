@@ -2,7 +2,7 @@
 """
 
 import scanpy.api as sc
-from scipy import sparse, stats
+import numpy as np
 
 
 def dentategyrus():
@@ -17,9 +17,14 @@ def dentategyrus():
     return adata
 
 
-def toy_data(n_obs, n_vars):
-    adata = sc.AnnData(sparse.random(n_obs, n_vars, data_rvs=stats.poisson(1).rvs, density=.6, format='csr'))
-    adata.layers['spliced'] = adata.X
-    adata.layers['unspliced'] = \
-       .5 * adata.X + .3 * sparse.random(n_obs, n_vars, density=.6, data_rvs=stats.poisson(1).rvs, format='csr')
+def toy_data(n_obs):
+    # from scipy import sparse, stats
+    # adata = sc.AnnData(sparse.random(n_obs, n_vars, data_rvs=stats.poisson(1).rvs, density=.6, format='csr'))
+    # adata.layers['spliced'] = adata.X
+    # adata.layers['unspliced'] = \
+    #    .5 * adata.X + .3 * sparse.random(n_obs, n_vars, density=.6, data_rvs=stats.poisson(1).rvs, format='csr')
+    adata = dentategyrus()
+    indices = np.random.choice(adata.n_obs, n_obs)
+    adata = adata[indices]
+    adata.obs_names = range(adata.n_obs)
     return adata
