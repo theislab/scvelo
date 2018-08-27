@@ -14,7 +14,7 @@ incorporates intrinsic expression variability.
 
 It is compatible with scanpy_ (`Wolf et al., 2018 <https://doi.org/10.1186/s13059-017-1382-0>`_). Making use of sparse
 implementation, iterative neighbors search and other techniques, it is remarkably efficient in terms of memory and
-runtime without loss in accuracy (<1GB and <1min for 30,000 cells on a MacBook Pro 2017 with 2,3 GHz i5).
+runtime without loss in accuracy (<1GB and <1min for 30,000 cells on a MacBook Pro 2017 with 2.3 GHz i5).
 
 For getting started, read the documentation_ and take a look at some exemplary notebooks_.
 

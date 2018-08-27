@@ -1,7 +1,7 @@
 from .moments import moments
 
 
-def recipe_velocity(adata, min_counts=10, n_top_genes=3000, n_pcs=30, n_neighbors=30, log=True, copy=False):
+def recipe_velocity(adata, min_counts=10, n_top_genes=None, n_pcs=30, n_neighbors=30, log=True, copy=False):
     """Filtering, normalization, neighbors graph and moments.
 
     Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
@@ -44,7 +44,7 @@ def recipe_velocity(adata, min_counts=10, n_top_genes=3000, n_pcs=30, n_neighbor
     filter_genes(adata, min_counts=min_counts)
     normalize_per_cell(adata, key_n_counts='n_counts_all')
 
-    if n_top_genes < adata.n_vars: filter_genes_dispersion(adata, n_top_genes=n_top_genes)
+    filter_genes_dispersion(adata, n_top_genes=n_top_genes)
     normalize_per_cell(adata, layers='all')
     if log: log1p(adata)
     pca(adata, n_comps=n_pcs)
