@@ -9,7 +9,8 @@ req_path = HERE / 'requirements.txt'
 if not req_path.is_file():
     req_path = Path('scvelo.egg-info') / req_path
 requires = [
-    'scanpy' if 'theislab/scanpy' in r else r
+    'scanpy' if ('theislab/scanpy' in r) else
+    'anndata' if ('theislab/anndata' in r) else r
     for r in req_path.read_text().strip().split('\n')
 ]
 
