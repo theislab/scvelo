@@ -1,33 +1,8 @@
-from .velocity_graph import *
-
-
-def transition_matrix(adata, vkey='velocity', scale=10):
-    """Computes transition probabilities by applying Gaussian kernel to cosine similarities x scale
-
-    Arguments
-    ---------
-    adata: :class:`~anndata.AnnData`
-        Annotated data matrix.
-    vkey: `str` (default: `'velocity'`)
-        Name of velocity estimates to be used.
-    scale: `float` (default: 10)
-        Scale parameter of gaussian kernel.
-
-    Returns
-    -------
-    Returns sparse matrix with transition probabilities.
-    """
-    if vkey+'_graph' not in adata.uns:
-        raise ValueError(
-            'You need to run `tl.velocity_graph` first to compute cosine correlations.')
-
-    T = np.expm1(adata.uns[vkey + '_graph'] * scale)
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        T = T.multiply(csr_matrix(1. / T.sum(1)))
-
-    return T
+from ..logging import logg, settings
+from .utils import norm
+from .transition_matrix import transition_matrix
+import numpy as np
+import warnings
 
 
 def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, retain_scale=False, copy=False):

@@ -1,8 +1,10 @@
-from .velocity_graph import *
-from ..preprocessing.moments import *
-from .velocity_embedding import transition_matrix
+from ..logging import logg
+from .utils import prod_sum_var, norm
+from ..preprocessing.moments import moments
+from .transition_matrix import transition_matrix
 
 from scanpy.api.pp import neighbors
+import numpy as np
 
 
 def score_transition(adata, vkey='velocity', scale=10, copy=False):

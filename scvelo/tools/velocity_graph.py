@@ -1,6 +1,10 @@
-from .velocity import *
+from ..logging import logg, settings
+from .utils import norm
+from .velocity import velocity
 from scanpy.api import Neighbors
 from scipy.sparse import coo_matrix
+import numpy as np
+import warnings
 
 
 def get_indices(dist):

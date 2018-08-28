@@ -1,7 +1,8 @@
-from .utils import *
 from scanpy.api.pl import scatter
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import norm as normal
+import numpy as np
+import matplotlib.pyplot as pl
 
 
 def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=None, min_mass=.5):

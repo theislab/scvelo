@@ -1,6 +1,7 @@
-from .utils import *
-import warnings
+from .utils import prod_sum_obs
 from scipy.optimize import minimize
+import numpy as np
+import warnings
 
 
 def solve_cov(x, y, fit_offset=False):
