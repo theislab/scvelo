@@ -31,8 +31,8 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
             lb, ub = np.percentile(c, perc)
             c = np.clip(c, lb, ub)
     elif c is None:  # color by cluster or louvain or grey if no color is specified
-        c = get_colors(adata, 'clusters') if 'clusters' in adata.obs_keys() \
-            else get_colors(adata, 'louvain') if 'louvain' in adata.obs_keys() else 'grey'
+        c = get_colors(adata, 'clusters') if 'clusters' in adata.obs.keys() \
+            else get_colors(adata, 'louvain') if 'louvain' in adata.obs.keys() else 'grey'
     else:  # continuous coloring
         lb, ub = np.percentile(c, perc)
         c = np.clip(c, lb, ub)

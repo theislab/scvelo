@@ -47,7 +47,7 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
 
     ix_choice = np.random.choice(adata.n_obs, size=int(density * adata.n_obs), replace=False)
 
-    X, V, C = X_emb[ix_choice], V_emb[ix_choice], interpret_colorkey(adata, color, layer, perc=[2, 98])[ix_choice]
+    X, V, C = X_emb[ix_choice], V_emb[ix_choice], interpret_colorkey(adata, color, layer)[ix_choice]
 
     if is_color_like(C[0]):
         pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=C, angles='xy', scale_units='xy', cmap=color_map, **_kwargs)
