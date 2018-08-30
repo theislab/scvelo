@@ -39,8 +39,8 @@ def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='al
 
         # spliced/unspliced phase portrait with steady-state estimate
         ax = pl.subplot(gs[v * n_col])
-        scatter(adata, x=s, y=u, color=color, frameon=True, title=var,
-                xlabel='spliced', ylabel='unspliced', ax=ax, fontsize=fontsize, size=size, alpha=alpha, **kwargs)
+        scatter(adata, x=s, y=u, color=color, frameon=True, title=var, xlabel='spliced', ylabel='unspliced',
+                show=False, ax=ax, fontsize=fontsize, size=size, alpha=alpha, **kwargs)
 
         xnew = np.linspace(0, s.max() * 1.02)
         for fit in fits:
@@ -57,8 +57,8 @@ def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='al
         for l, layer in enumerate(layers):
             ax = pl.subplot(gs[v*n_col + l + 1])
             title = 'expression' if layer == 'Ms' else layer
-            scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map,
-                    title=title, fontsize=fontsize, size=size, alpha=alpha, ax=ax, **kwargs)
+            scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map, title=title,
+                    fontsize=fontsize, size=size, alpha=alpha, show=False, ax=ax, **kwargs)
 
         if mode == 'stochastic' is not None:
             ss, us = second_order_moments(adata)
@@ -68,9 +68,8 @@ def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='al
             y = 2 * (us - u * s) + u + 2 * s * \
                 adata.var['stochastic_velocity_offset'][ix] / adata.var['stochastic_velocity_beta'][ix]
 
-            scatter(adata, x=x, y=y, color=color, title=var, fontsize=40/n_col,
-                    xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$',
-                    ax=ax, **kwargs)
+            scatter(adata, x=x, y=y, color=color, title=var, fontsize=40/n_col, show=False, ax=ax,
+                    xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$', **kwargs)
 
             xnew = np.linspace(x.min(), x.max() * 1.02)
             fits = adata.layers.keys() if fits == 'all' else fits
