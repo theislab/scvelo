@@ -1,11 +1,11 @@
 git+https://github.com/theislab/anndata.git@bbef0bc#egg=anndata
 git+https://github.com/theislab/scanpy.git@6c1daba#egg=scanpy
-matplotlib~=2.2
-pandas~=0.21
 scikit-learn~=0.19.1
+matplotlib~=2.2
+loompy~=2.0.12
+pandas~=0.21
 h5py
 joblib
-loompy
 natsort
 networkx
 numba

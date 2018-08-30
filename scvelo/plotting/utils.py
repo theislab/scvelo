@@ -40,7 +40,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
 
 
 def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=None, ylabel=None, color_map=None,
-            size=None, alpha=1, fontsize=None, frameon=False, title=None, show=None, colorbar=False, save=None, ax=None, **kwargs):
+            size=None, alpha=1, fontsize=None, frameon=False, title=None, show=True, colorbar=False, save=None, ax=None, **kwargs):
     """Scatter plot along observations or variables axes.
     Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
 
@@ -94,11 +94,12 @@ def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=
         cb.locator = (MaxNLocator(nbins=3))
         cb.update_ticks()
 
-    return ax
+    if show: pl.show()
+    else: return ax
 
 
 def phase(adata, var=None, x=None, y=None, color='louvain', fits='all', xlabel='spliced', ylabel='unspliced',
-          fontsize=None, ax=None, **kwargs):
+          fontsize=None, show=True, ax=None, **kwargs):
     if isinstance(var, str) and (var in adata.var_names):
         if (x is None) or (y is None):
             ix = np.where(adata.var_names == var)[0][0]
@@ -116,4 +117,5 @@ def phase(adata, var=None, x=None, y=None, color='louvain', fits='all', xlabel='
         pl.plot(xnew, adata.var[fit+'_gamma'][ix] / adata.var[fit+'_beta'][ix] * xnew
                 + adata.var[fit+'_offset'][ix] / adata.var[fit+'_beta'][ix], c='k', linestyle=linestyle)
 
-    return ax
+    if show: pl.show()
+    else: return ax

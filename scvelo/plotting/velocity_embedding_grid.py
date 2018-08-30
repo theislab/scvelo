@@ -67,7 +67,7 @@ def velocity_embedding_grid(adata, basis='umap', vbasis='velocity', density=1, c
                             use_raw=True, sort_order=True, alpha=.2, groups=None, components=None, projection='2d',
                             legend_loc='right margin', legend_fontsize=None, legend_fontweight=None,
                             color_map=None, palette=None, frameon=False, right_margin=None, left_margin=None,
-                            size=None, title=None, show=None, save=None, ax=None, **kwargs):
+                            size=None, title=None, show=True, save=None, ax=None, **kwargs):
     """Scatter plot with grid velocities along `.obs` or `.var` axes.
     Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
 
@@ -115,4 +115,4 @@ def velocity_embedding_grid(adata, basis='umap', vbasis='velocity', density=1, c
         pl.plot(curve[:, 0], curve[:, 1], c="k", lw=3, zorder=2000000)
 
     if show: pl.show()
-    return ax
+    else: return ax

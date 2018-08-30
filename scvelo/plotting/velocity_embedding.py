@@ -7,7 +7,7 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
                        use_raw=True, sort_order=True, alpha=.2, groups=None, components=None, projection='2d',
                        legend_loc='right margin', legend_fontsize=None, legend_fontweight=None,
                        color_map=None, palette=None, frameon=False, right_margin=None, left_margin=None,
-                       size=None, title=None, show=None, save=None, ax=None, **kwargs):
+                       size=None, title=None, show=True, save=None, ax=None, **kwargs):
     """Scatter plot with velocities along `.obs` or `.var` axes.
     Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
 
@@ -55,5 +55,4 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
         pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], C, angles='xy', scale_units='xy', cmap=color_map, **_kwargs)
 
     if show: pl.show()
-
-    return ax
+    else: return ax
