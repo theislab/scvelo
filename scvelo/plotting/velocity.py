@@ -19,8 +19,8 @@ def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='al
         Key for embedding coordinates.
     """
     var_names = [var_names] if isinstance(var_names, str) else var_names
-    var_names = [var for var in var_names if var in adata.var_names] if isinstance(var_names, list) \
-        else adata.var_names[(adata.layers['spliced'] > 0).sum(0).argsort()[::-1][:4]]
+    var_names = [var for var in var_names if var in adata.var_names[adata.var.velocity_genes]] \
+        if isinstance(var_names, list) else adata.var_names[(adata.layers['spliced'] > 0).sum(0).argsort()[::-1][:4]]
 
     layers = ['velocity', 'Ms', 'variance_velocity'] if layers == 'all' else layers
     layers = [layer for layer in layers if layer in adata.layers.keys()]

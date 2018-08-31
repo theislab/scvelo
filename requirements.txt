@@ -1,4 +1,4 @@
-git+https://github.com/theislab/anndata.git@bbef0bc#egg=anndata
+git+https://github.com/theislab/anndata.git@db905235#egg=anndata
 git+https://github.com/theislab/scanpy.git@6c1daba#egg=scanpy
 scikit-learn~=0.19.1
 matplotlib~=2.2
