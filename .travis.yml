@@ -4,14 +4,11 @@ python:
   - 3.6
 
 install:
-  - pip install -r requirements.txt
-  - pip install python-igraph louvain  # louvain clustering
-  - pip install docutils
-  - python setup.py install
+  - pip install flit
+  - flit install
 
 env: MPLBACKEND=Agg
 
 script:
   - pytest
-  - python setup.py check --restructuredtext --strict
-  - rst2html.py --halt=2 README.rst >/dev/null
+  - rst2html.py --strict README.rst >/dev/null
