@@ -3,16 +3,8 @@ from pathlib import Path
 import numpy as np
 import versioneer
 
-HERE = Path(__file__).parent
-
-req_path = HERE / 'requirements.txt'
-if not req_path.is_file():
-    req_path = Path('scvelo.egg-info') / req_path
-requires = [
-    'scanpy' if ('theislab/scanpy' in r) else
-    'anndata' if ('theislab/anndata' in r) else r
-    for r in req_path.read_text().strip().split('\n')
-]
+req_path = Path('requirements.txt')
+requires = [r for r in req_path.read_text().strip().split('\n')]
 
 with open('README.rst') as readme_f:
     readme = readme_f.read()
