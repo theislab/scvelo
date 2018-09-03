@@ -38,8 +38,8 @@ def moments(adata, renormalize=False, mode='connectivities', copy=False):
 
     connectivities += connectivities.dot(connectivities*.5)
 
-    adata.layers['Ms'] = csr_matrix.dot(connectivities, adata.layers['spliced']).toarray()
-    adata.layers['Mu'] = csr_matrix.dot(connectivities, adata.layers['unspliced']).toarray()
+    adata.layers['Ms'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['spliced'])).A
+    adata.layers['Mu'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['unspliced'])).A
 
     if renormalize:
         adata.layers['Ms'] = adata.layers['Ms'] / adata.layers['Ms'].sum(1)[:, None] * np.median(adata.layers['Ms'].sum(1))
@@ -74,8 +74,9 @@ def second_order_moments(adata):
     connectivities = adata.uns['neighbors']['connectivities'] > 0
     connectivities = connectivities.multiply(1. / connectivities.sum(1))
 
-    Mss = csr_matrix.dot(connectivities, adata.layers['spliced'].multiply(adata.layers['spliced'])).toarray()
-    Mus = csr_matrix.dot(connectivities, adata.layers['spliced'].multiply(adata.layers['unspliced'])).toarray()
+    s, u = csr_matrix(adata.layers['spliced']), csr_matrix(adata.layers['spliced'])
+    Mss = csr_matrix.dot(connectivities, s.multiply(s)).A
+    Mus = csr_matrix.dot(connectivities, s.multiply(u)).A
 
     return Mss, Mus
 
@@ -99,6 +100,7 @@ def second_order_moments_u(adata):
     connectivities = adata.uns['neighbors']['connectivities'] > 0
     connectivities = connectivities.multiply(1. / connectivities.sum(1))
 
-    Muu = csr_matrix.dot(connectivities, adata.layers['unspliced'].multiply(adata.layers['unspliced'])).toarray()
+    u = csr_matrix(adata.layers['spliced'])
+    Muu = csr_matrix.dot(connectivities, u.multiply(u)).A
 
     return Muu
