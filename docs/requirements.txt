@@ -1,6 +1,4 @@
 # Just until rtd.org understands pyproject.toml
-scikit-learn
-matplotlib
 scanpy
 get_version
 setuptools
