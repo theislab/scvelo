@@ -18,6 +18,6 @@ def test_velocity_graph():
     scv.tl.velocity(adata)
 
     scv.tl.velocity_graph(adata)
-    graph1 = adata.uns['velocity_graph'].copy()
+    graph = adata.uns['velocity_graph'].copy()
 
-    assert np.allclose((scv.tl.transition_matrix(adata) > 0).toarray(), (graph1 > 0).toarray())
+    assert np.allclose((scv.tl.transition_matrix(adata) > 0).toarray(), (graph > 0).toarray())
