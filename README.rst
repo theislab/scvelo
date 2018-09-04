@@ -1,4 +1,4 @@
-scvelo – stochastic single cell RNA velocity 
+scvelo – stochastic single cell RNA velocity
 ============================================
 
 |PyPI| |Docs| |travis|
@@ -19,16 +19,19 @@ runtime without loss in accuracy (<1GB and <1min for 30,000 cells on a MacBook P
 Usage Principles
 ----------------
 
-Install scvelo from PyPI using `pip install scvelo==0.1.3`.
+Install scvelo from PyPI using::
+
+    pip install scvelo
+
 
 Import scvelo (velocity specific workflows) and scanpy (basic workflows) as::
 
     import scvelo as scv
     import scanpy.api as sc
 
-After reading your data file (loom, h5ad, xlsx, csv, etc.) via `adata = sc.read(filename, **params)`,
+After reading your data file (loom, h5ad, xlsx, csv, etc.) via ``adata = sc.read(filename, **params)``,
 applying some basic preprocessing (gene selection, normalization, etc.), e.g. using
-`scv.pp.recipe_velocity(adata, **params)`, velocity estimation is performed using::
+``scv.pp.recipe_velocity(adata, **params)``, velocity estimation is performed using::
 
     scv.tl.velocity(adata, mode='stochastic', **params)
 
@@ -46,13 +49,13 @@ For further details - and highly recommended for getting started - read the docu
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
     :target: https://pypi.org/project/scvelo
-    
+
 .. |Docs| image:: https://readthedocs.org/projects/scvelo/badge/?version=latest
    :target: https://scvelo.readthedocs.io
 
 .. |travis| image:: https://travis-ci.org/theislab/scvelo.svg?branch=master
    :target: https://travis-ci.org/theislab/scvelo
-   
+
 .. _velocyto: http://velocyto.org/
 .. _scanpy: https://github.com/theislab/scanpy
 .. _documentation: https://scvelo.readthedocs.io
