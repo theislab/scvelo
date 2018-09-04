@@ -33,9 +33,11 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
     elif c is None:  # color by cluster or louvain or grey if no color is specified
         c = get_colors(adata, 'clusters') if 'clusters' in adata.obs.keys() \
             else get_colors(adata, 'louvain') if 'louvain' in adata.obs.keys() else 'grey'
-    else:  # continuous coloring
+    elif isinstance(c, np.ndarray):  # continuous coloring
         lb, ub = np.percentile(c, perc)
         c = np.clip(c, lb, ub)
+    else:
+        raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
     return c
 
 
