@@ -24,3 +24,5 @@ docs/source/api/scvelo.*
 # always-ignore directories
 /build/
 /dist/
+
+.coverage
