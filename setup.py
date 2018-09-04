@@ -2,9 +2,9 @@
 # until this is ready: https://github.com/takluyver/flit/issues/158
 
 from pathlib import Path
-import re
-import setuptools
 from flit import common, inifile
+import re, setuptools
+
 
 fields_same_name = ['name', 'version', 'author', 'author_email', 'description', 'classifiers']
 fields_diff_name = {'description': 'summary', 'url': 'home_page'}
