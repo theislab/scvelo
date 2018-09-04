@@ -27,7 +27,7 @@ def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, retain_sc
     velocity_umap: `.obsm`
         coordinates of velocity projection on embedding
     """
-    T = transition_matrix(adata, vkey, scale)
+    T = transition_matrix(adata, vkey=vkey, basis=basis, scale=scale)
 
     logg.info('computing velocity embedding', r=True)
 

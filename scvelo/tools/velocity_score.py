@@ -13,7 +13,7 @@ def score_transition(adata, vkey='velocity', scale=10, copy=False):
         raise ValueError(
             'You need to run `tl.velocity` first.')
 
-    dX = transition_matrix(adata, vkey, scale).multiply(adata.layers['Ms']) - adata.layers['Ms']
+    dX = transition_matrix(adata, vkey=vkey, scale=scale).multiply(adata.layers['Ms']) - adata.layers['Ms']
     dX -= dX.mean(1)[:, None]
 
     V = adata.layers[vkey].copy()
