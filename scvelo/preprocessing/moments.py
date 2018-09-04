@@ -74,7 +74,7 @@ def second_order_moments(adata):
     connectivities = adata.uns['neighbors']['connectivities'] > 0
     connectivities = connectivities.multiply(1. / connectivities.sum(1))
 
-    s, u = csr_matrix(adata.layers['spliced']), csr_matrix(adata.layers['spliced'])
+    s, u = csr_matrix(adata.layers['spliced']), csr_matrix(adata.layers['unspliced'])
     Mss = csr_matrix.dot(connectivities, s.multiply(s)).A
     Mus = csr_matrix.dot(connectivities, s.multiply(u)).A
 
@@ -100,7 +100,7 @@ def second_order_moments_u(adata):
     connectivities = adata.uns['neighbors']['connectivities'] > 0
     connectivities = connectivities.multiply(1. / connectivities.sum(1))
 
-    u = csr_matrix(adata.layers['spliced'])
+    u = csr_matrix(adata.layers['unspliced'])
     Muu = csr_matrix.dot(connectivities, u.multiply(u)).A
 
     return Muu
