@@ -19,7 +19,7 @@ def setuptools_requirement_format(req):
         return name
 
 
-def setup(ini_path=Path('flit.ini'), package_data=None):
+def setup(ini_path=Path('pyproject.toml'), package_data=None):
     ini_info = inifile.read_pkg_ini(ini_path)
     module = common.Module(ini_info['module'], ini_path.parent)
     metadata = common.make_metadata(module, ini_info)
@@ -41,8 +41,7 @@ def setup(ini_path=Path('flit.ini'), package_data=None):
         kwargs['py_modules'] = [module.name]
 
     if metadata.requires_dist:
-        kwargs['install_requires'] = [setuptools_requirement_format(req)
-                                        for req in metadata.requires_dist]
+        kwargs['install_requires'] = [setuptools_requirement_format(req) for req in metadata.requires_dist]
         print(kwargs['install_requires'])
 
     if ini_info['scripts']:
