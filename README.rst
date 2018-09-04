@@ -16,7 +16,32 @@ It is compatible with scanpy_ (`Wolf et al., 2018 <https://doi.org/10.1186/s1305
 implementation, iterative neighbors search and other techniques, it is remarkably efficient in terms of memory and
 runtime without loss in accuracy (<1GB and <1min for 30,000 cells on a MacBook Pro 2017 with 2.3 GHz i5).
 
-For getting started, read the documentation_ and take a look at some exemplary notebooks_.
+Usage Principles
+----------------
+
+Install scvelo from PyPI using `pip install scvelo==0.1.3`.
+
+Import scvelo (velocity specific workflows) and scanpy (basic workflows) as::
+
+    import scvelo as scv
+    import scanpy.api as sc
+
+After reading your data file (loom, h5ad, xlsx, csv, etc.) via `adata = sc.read(filename, **params)`,
+applying some basic preprocessing (gene selection, normalization, etc.), e.g. using
+`scv.pp.recipe_velocity(adata, **params)`, velocity estimation is performed using::
+
+    scv.tl.velocity(adata, mode='stochastic', **params)
+
+The velocity vectors are translated into likely cell transitions with::
+
+    scv.tl.velocity_graph(adata, **params)
+
+Finally the velocities can be projected and visualized in any embedding (e.g. UMAP) using::
+
+    scv.tl.velocity_embedding(adata, basis='umap', **params)
+    scv.pl.velocity_embedding(adata, basis='umap', **params)
+
+For further details - and highly recommended for getting started - read the documentation_ and take a look at some exemplary notebooks_.
 
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
