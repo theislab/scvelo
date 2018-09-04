@@ -47,7 +47,7 @@ def recipe_velocity(adata, min_counts=10, n_top_genes=None, n_pcs=30, n_neighbor
     filter_genes_dispersion(adata, n_top_genes=n_top_genes)
     normalize_per_cell(adata, layers='all')
     if log: log1p(adata)
-    pca(adata, n_comps=n_pcs)
+    pca(adata, n_comps=n_pcs, svd_solver='arpack')
     neighbors(adata, n_neighbors=n_neighbors, use_rep='X_pca')
 
     moments(adata)
