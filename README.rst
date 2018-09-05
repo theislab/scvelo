@@ -19,10 +19,7 @@ runtime without loss in accuracy (<1GB and <1min for 30,000 cells on a MacBook P
 Usage Principles
 ----------------
 
-Install scvelo from PyPI using::
-
-    pip install scvelo
-
+Install scvelo from PyPI using ``pip install scvelo``.
 
 Import scvelo (velocity specific workflows) and scanpy (basic workflows) as::
 
