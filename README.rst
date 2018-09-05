@@ -41,7 +41,7 @@ Finally the velocities can be projected and visualized in any embedding (e.g. UM
     scv.tl.velocity_embedding(adata, basis='umap', **params)
     scv.pl.velocity_embedding(adata, basis='umap', **params)
 
-For further details - and highly recommended for getting started - read the documentation_ and take a look at some exemplary notebooks_.
+I highly recommend reading the documentation_ and taking a look at some exemplary notebooks_.
 
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
@@ -56,4 +56,4 @@ For further details - and highly recommended for getting started - read the docu
 .. _velocyto: http://velocyto.org/
 .. _scanpy: https://github.com/theislab/scanpy
 .. _documentation: https://scvelo.readthedocs.io
-.. _notebooks: https://nbviewer.jupyter.org/github/theislab/scvelo_notebooks/blob/master/DentateGyrus.ipynb
+.. _notebooks: https://nbviewer.jupyter.org/github/theislab/scvelo_notebooks/tree/master/
