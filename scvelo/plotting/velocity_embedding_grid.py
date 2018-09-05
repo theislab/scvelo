@@ -1,3 +1,5 @@
+from ..tools.velocity_embedding import velocity_embedding as tl_velocity_embedding
+from .utils import quiver_autoscale
 from scanpy.api.pl import scatter
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import norm as normal
@@ -62,7 +64,7 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
     return grid_coord, grid_velocity
 
 
-def velocity_embedding_grid(adata, basis='umap', vbasis='velocity', density=1, color=None,
+def velocity_embedding_grid(adata, basis='umap', vbasis='velocity', density=1, scale=1, color=None,
                             min_mass=.5, smooth=.5, n_neighbors=None, principal_curve=False,
                             use_raw=True, sort_order=True, alpha=.2, groups=None, components=None, projection='2d',
                             legend_loc='right margin', legend_fontsize=None, legend_fontweight=None,
@@ -86,28 +88,27 @@ def velocity_embedding_grid(adata, basis='umap', vbasis='velocity', density=1, c
     -------
         `matplotlib.Axis` if `show==False`
     """
-    if ax is None: ax = pl.figure(None, (14, 10), dpi=120).gca()
+    vbasis += '_' + basis
+    if vbasis not in adata.obsm_keys():
+        tl_velocity_embedding(adata, basis=basis, vkey=vbasis)
 
+    X, V = compute_velocity_on_grid(X_emb=adata.obsm['X_' + basis][:, :2], V_emb=adata.obsm[vbasis],
+                                    density=density, smooth=smooth, n_neighbors=n_neighbors, min_mass=min_mass)
+
+    _kwargs = {"width": .001, "color": 'black', "edgecolors": 'k',
+               "headwidth": 4.5, "headlength": 5, "headaxislength": 3, "linewidth": .2}
+    _kwargs.update(kwargs)
+
+    scale *= 3.5 * quiver_autoscale(X[:, 0], X[:, 1], V[:, 0], V[:, 1], **_kwargs)
+
+    if ax is None: ax = pl.figure(None, (14, 10), dpi=120).gca()
     scatter(adata, color=color, use_raw=use_raw, sort_order=sort_order, alpha=alpha, basis=basis,
             groups=groups, components=components, projection=projection, legend_loc=legend_loc,
             legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, color_map=color_map,
             palette=palette, frameon=frameon, right_margin=right_margin, left_margin=left_margin,
             size=size, title=title, show=False, save=save, ax=ax)
 
-    vbasis += '_' + basis
-    if vbasis not in adata.obsm_keys():
-        raise ValueError(
-            'You need to run `tl.velocity_embedding` first to compute embedded velocity vectors.')
-
-    X_emb = adata.obsm['X_' + basis][:, :2]
-    V_emb = adata.obsm[vbasis]
-
-    _kwargs = {"scale": .5, "width": .001, "color": 'black', "edgecolors": 'k', "headwidth": 4.5, "headlength": 5,
-                   "headaxislength": 3, "linewidth": .2}
-    _kwargs.update(kwargs)
-
-    X, V = compute_velocity_on_grid(X_emb, V_emb, density, smooth, n_neighbors, min_mass)
-    pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], angles='xy', scale_units='xy', **_kwargs)
+    pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], angles='xy', scale_units='xy', scale=scale, **_kwargs)
 
     if principal_curve:
         curve = adata.uns['principal_curve']['projections']

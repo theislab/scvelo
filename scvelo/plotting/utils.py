@@ -20,12 +20,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
     if perc is None: perc = [2, 98]
     if isinstance(c, str):
         if c in adata.obs.keys():  # color by observation key
-            if adata.obs[c].dtype.name == 'category':
-                c = get_colors(adata, basis=c)
-            else:
-                c = adata.obs[c]
-                lb, ub = np.percentile(c, perc)
-                c = np.clip(c, lb, ub)
+            c = get_colors(adata, basis=c) if adata.obs[c].dtype.name == 'category' else adata.obs[c]
         elif c in adata.var_names:  # color by var in specific layer
             c = adata[:, c].layers[layer] if layer in adata.layers.keys() else adata[:, c].X
             lb, ub = np.percentile(c, perc)
@@ -39,6 +34,13 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
     else:
         raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
     return c
+
+
+def quiver_autoscale(X, Y, U, V, **_kwargs):
+    Q = pl.quiver(X, X, V, V, angles='xy', scale_units='xy', scale=None)
+    Q._init()
+    pl.clf()
+    return Q.scale
 
 
 def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=None, ylabel=None, color_map=None,
