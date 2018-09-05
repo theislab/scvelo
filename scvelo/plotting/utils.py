@@ -43,7 +43,7 @@ def quiver_autoscale(X, Y, U, V, **_kwargs):
     return Q.scale
 
 
-def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=None, ylabel=None, color_map=None,
+def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=None, ylabel=None, color_map=None, perc=None,
             size=None, alpha=1, fontsize=None, frameon=False, title=None, show=True, colorbar=False, save=None, ax=None, **kwargs):
     """Scatter plot along observations or variables axes.
     Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
@@ -73,7 +73,7 @@ def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=
             X_emb = adata.obsm['X_' + basis][:, :2]
             x, y = X_emb[:, 0], X_emb[:, 1]
 
-    pl.scatter(x, y, c=interpret_colorkey(adata, color, layer), cmap=color_map, s=size, alpha=alpha, **kwargs)
+    pl.scatter(x, y, c=interpret_colorkey(adata, color, layer, perc), cmap=color_map, s=size, alpha=alpha, **kwargs)
 
     if isinstance(title, str):
         pl.title(title, fontsize=fontsize)
