@@ -38,11 +38,6 @@ def velocity(adata, vkey='velocity', mode='stochastic', fit_offset=False, fit_of
     velocity_offset, velocity_beta, velocity_gamma, velocity_r2: `.var`
         parameters
     """
-    if 'spliced' in adata.layers.keys():
-        n_counts = adata.layers['spliced'][:2].sum(1)
-        if not np.allclose(n_counts[0], n_counts[1]):
-            logg.warn('forgot to normalize?')
-
     if 'Ms' not in adata.layers.keys(): moments(adata)
     Ms, Mu = adata.layers['Ms'], adata.layers['Mu']
 
