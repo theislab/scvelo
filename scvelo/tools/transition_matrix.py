@@ -1,10 +1,9 @@
 from scipy.spatial.distance import pdist, squareform
-from scipy.sparse import csr_matrix
+from .utils import normalize_sparse
 import numpy as np
-import warnings
 
 
-def transition_matrix(adata, vkey='velocity', basis=None, direction="forward", scale=10):
+def transition_matrix(adata, vkey='velocity', basis=None, direction="forward", diffuse_prob=0, scale=10):
     """Computes transition probabilities by applying Gaussian kernel to cosine similarities x scale
 
     Arguments
@@ -17,6 +16,8 @@ def transition_matrix(adata, vkey='velocity', basis=None, direction="forward", s
         Restrict transition to embedding if specified
     direction: `'forward'` or `'backward'` (default: `'foward'`)
         Whether to use the transition matrix to push forward or to pull backward
+    diffuse_prob:
+        Fraction to account for diffusion kernel (Brownian motion)
     scale: `float` (default: 10)
         Scale parameter of gaussian kernel.
 
@@ -29,20 +30,17 @@ def transition_matrix(adata, vkey='velocity', basis=None, direction="forward", s
             'You need to run `tl.velocity_graph` first to compute cosine correlations.')
 
     T = np.expm1(adata.uns[vkey + '_graph'] * scale)
+    T = .5 * T + .5 * (adata.uns['neighbors']['distances'] > 0).multiply(T)
 
-    dists = adata.uns['neighbors']['distances']
-    T = .5 * T + .5 * (dists > 0).multiply(T)
+    if direction == 'backward': T = T.T
+    T = normalize_sparse(T)
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        T = T.multiply(csr_matrix(1. / T.sum(1)))
-
-    if basis in adata.obsm.keys():
-        if direction == 'backward': T = T.T
-        X_emb = adata.obsm['X_' + basis]
-        dists_emb = (T > 0).multiply(squareform(pdist(X_emb)))
-        kernel = np.expm1(-dists_emb**2 / dists_emb.data.mean()**2 / 2)
-        T = T.multiply(kernel)
-        T = T.multiply(csr_matrix(1. / T.sum(1)))
+    if basis is not None and 'X_' + basis in adata.obsm.keys():
+        dists_emb = (T > 0).multiply(squareform(pdist(adata.obsm['X_' + basis])))
+        sigma = dists_emb.mean()
+        kernel_locality = np.expm1(-.5 * dists_emb.multiply(dists_emb) / sigma**2)
+        T = T.multiply(kernel_locality)
+        T = (1-diffuse_prob) * T + diffuse_prob * np.expm1(-.5 * dists_emb.multiply(dists_emb) / (sigma/2)**2)
+        T = normalize_sparse(T)
 
     return T
