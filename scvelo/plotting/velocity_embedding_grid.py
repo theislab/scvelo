@@ -3,8 +3,8 @@ from .utils import quiver_autoscale
 from scanpy.api.pl import scatter
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import norm as normal
-import numpy as np
 import matplotlib.pyplot as pl
+import numpy as np
 
 
 def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=None, min_mass=.5):
@@ -69,7 +69,7 @@ def velocity_embedding_grid(adata, basis='umap', vbasis='velocity', density=1, s
                             use_raw=True, sort_order=True, alpha=.2, groups=None, components=None, projection='2d',
                             legend_loc='right margin', legend_fontsize=None, legend_fontweight=None,
                             color_map=None, palette=None, frameon=False, right_margin=None, left_margin=None,
-                            size=None, title=None, show=True, save=None, ax=None, **kwargs):
+                            size=None, title=None, show=True, figsize=(14,10), dpi=80, save=None, ax=None, **kwargs):
     """Scatter plot with grid velocities along `.obs` or `.var` axes.
     Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
 
@@ -101,7 +101,7 @@ def velocity_embedding_grid(adata, basis='umap', vbasis='velocity', density=1, s
 
     scale *= 3.5 * quiver_autoscale(X[:, 0], X[:, 1], V[:, 0], V[:, 1], **_kwargs)
 
-    if ax is None: ax = pl.figure(None, (14, 10), dpi=120).gca()
+    if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
     scatter(adata, color=color, use_raw=use_raw, sort_order=sort_order, alpha=alpha, basis=basis,
             groups=groups, components=components, projection=projection, legend_loc=legend_loc,
             legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, color_map=color_map,

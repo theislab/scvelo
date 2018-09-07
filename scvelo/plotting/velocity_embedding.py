@@ -1,14 +1,16 @@
 from ..tools.velocity_embedding import velocity_embedding as tl_velocity_embedding
-from .utils import *
+from .utils import interpret_colorkey, quiver_autoscale
 from scanpy.api.pl import scatter
 from matplotlib.colors import is_color_like
+import matplotlib.pyplot as pl
+import numpy as np
 
 
 def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, density=1, scale=1, color=None,
                        use_raw=True, sort_order=True, alpha=.2, groups=None, components=None, projection='2d',
                        legend_loc='right margin', legend_fontsize=None, legend_fontweight=None,
                        color_map=None, palette=None, frameon=False, right_margin=None, left_margin=None,
-                       size=None, title=None, show=True, save=None, ax=None, **kwargs):
+                       size=None, title=None, show=True, figsize=(14,10), dpi=120, save=None, ax=None, **kwargs):
     """Scatter plot with velocities along `.obs` or `.var` axes.
     Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
 
@@ -40,7 +42,7 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
 
     scale *= 2 * quiver_autoscale(X[:, 0], X[:, 1], V[:, 0], V[:, 1], **_kwargs)
 
-    if ax is None: ax = pl.figure(None, (14, 10), dpi=160).gca()
+    if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
     scatter(adata, color=color, use_raw=use_raw, sort_order=sort_order, alpha=alpha, basis=basis,
             groups=groups, components=components, projection=projection, legend_loc=legend_loc,
             legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, color_map=color_map,
