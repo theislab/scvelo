@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib.colors import rgb2hex
-from matplotlib.ticker import MaxNLocator
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 def get_colors(adata, basis):
@@ -37,69 +35,10 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
 
 
 def quiver_autoscale(X, Y, U, V, **_kwargs):
-    Q = pl.quiver(X, X, V, V, angles='xy', scale_units='xy', scale=None)
+    Q = pl.quiver(X, Y, U, V, angles='xy', scale_units='xy', scale=None)
     Q._init()
     pl.clf()
     return Q.scale
-
-
-def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=None, ylabel=None, color_map=None, perc=None,
-            size=None, alpha=1, fontsize=None, frameon=False, title=None, show=True, colorbar=False, save=None, ax=None, **kwargs):
-    """Scatter plot along observations or variables axes.
-    Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
-
-    Arguments
-    ---------
-    adata: `AnnData`
-        Annotated data matrix.
-
-    basis: `str` (default='tsne')
-        plots embedding obsm['X_' + basis]
-
-    x: `str`, `np.ndarray` or `None` (default: `None`)
-        x coordinate
-
-    y: `str`, `np.ndarray` or `None` (default: `None`)
-        y coordinate
-
-    color : `str` or `None` (default: `None`)
-        Key for annotations of observations/cells or variables/genes
-
-    Returns
-    -------
-        If `show==False` a `matplotlib.Axis`
-    """
-    if (x is None) | (y is None):
-            X_emb = adata.obsm['X_' + basis][:, :2]
-            x, y = X_emb[:, 0], X_emb[:, 1]
-
-    pl.scatter(x, y, c=interpret_colorkey(adata, color, layer, perc), cmap=color_map, s=size, alpha=alpha, **kwargs)
-
-    if isinstance(title, str):
-        pl.title(title, fontsize=fontsize)
-
-    if isinstance(xlabel, str) or isinstance(ylabel, str):
-        pl.xlabel(xlabel, fontsize=fontsize)
-        pl.ylabel(ylabel, fontsize=fontsize)
-
-    if not frameon: pl.axis('off')
-
-    if isinstance(save, str):
-        pl.savefig(save)
-
-    if ax is not None:
-        ax.xaxis.set_major_locator(MaxNLocator(nbins=3))
-        ax.yaxis.set_major_locator(MaxNLocator(nbins=3))
-        labelsize = int(fontsize * .75) if fontsize is not None else None
-        ax.tick_params(axis='both', which='major', labelsize=labelsize)
-
-    if colorbar and (ax is not None):
-        cb = pl.colorbar(orientation='vertical', cax= inset_axes(ax, width="2%", height="30%", loc=4, borderpad=0))
-        cb.locator = (MaxNLocator(nbins=3))
-        cb.update_ticks()
-
-    if show: pl.show()
-    else: return ax
 
 
 def phase(adata, var=None, x=None, y=None, color='louvain', fits='all', xlabel='spliced', ylabel='unspliced',

@@ -1,9 +1,12 @@
-from .utils import *
 from ..preprocessing.moments import second_order_moments
+from .scatter import scatter
+from matplotlib.ticker import MaxNLocator
+import matplotlib.pyplot as pl
+import numpy as np
 
 
 def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='all', layers='all', color=None,
-             fontsize=8, color_map='RdBu_r', size=.2, alpha=.5, ax=None, **kwargs):
+             fontsize=8, color_map='RdBu_r', size=.2, alpha=.5, dpi=120, ax=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
     The phase plot shows pliced against unspliced expressions with steady-state fit.
@@ -30,7 +33,7 @@ def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='al
 
     n_row, n_col = len(var_names), (1 + len(layers) + (mode == 'stochastic')*2)
 
-    ax = pl.figure(figsize=(3*n_col, 2*n_row), dpi=120) if ax is None else ax
+    ax = pl.figure(figsize=(3*n_col, 2*n_row), dpi=dpi) if ax is None else ax
     gs = pl.GridSpec(n_row, n_col, wspace=0.3, hspace=0.5)
 
     for v, var in enumerate(var_names):
