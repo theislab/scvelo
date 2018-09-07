@@ -1,9 +1,18 @@
 from scipy.sparse import csr_matrix
-import numpy as np
-from ..logging import *
+from ..logging import logg, settings
 
 
-def moments(adata, renormalize=False, mode='connectivities', copy=False):
+def normalize_layers(adata, layers={'spliced', 'unspliced'}, copy=False):
+    """Normalize by total counts to median
+    """
+    from scanpy.api.pp import normalize_per_cell, filter_cells
+    for layer in layers:
+        subset, counts = filter_cells(adata.layers[layer], min_counts=1)
+        adata.layers[layer] = normalize_per_cell(adata.layers[layer], None, counts, copy=True)
+    return adata if copy else None
+
+
+def moments(adata, mode='connectivities', n_neighbors=30, n_pcs=50, renormalize=False, copy=False):
     """Computes first order moments for velocity estimation.
 
     Arguments
@@ -25,32 +34,31 @@ def moments(adata, renormalize=False, mode='connectivities', copy=False):
     Mu: `.layers`
         dense matrix with first order moments of unspliced counts.
     """
-    if 'neighbors' not in adata.uns:
-        raise ValueError('You need to run `pp.neighbors` first to compute a neighborhood graph.')
+    if 'neghbors' not in adata.uns.keys():
+        from scanpy.api.pp import neighbors, pca
+        if 'X_pca' not in adata.obsm.keys(): pca(adata, n_comps=n_pcs, svd_solver='arpack')
+        neighbors(adata, n_neighbors=n_neighbors, use_rep='X_pca')
+
+    if mode not in adata.uns['neighbors']:
+        raise ValueError('mode can only be  \'connectivities\' or \'distances\'')
 
     logg.info('computing moments', r=True)
+    normalize_layers(adata)
 
-    if mode in adata.uns['neighbors']: connectivities = adata.uns['neighbors'][mode]
-    else: raise ValueError('mode can only be  \'connectivities\' or \'distances\'')
-
+    connectivities = adata.uns['neighbors'][mode]
     connectivities.setdiag(1)
     connectivities = connectivities.multiply(1. / connectivities.sum(1))
-
     connectivities += connectivities.dot(connectivities*.5)
 
     adata.layers['Ms'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['spliced'])).A
     adata.layers['Mu'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['unspliced'])).A
-
-    if renormalize:
-        adata.layers['Ms'] = adata.layers['Ms'] / adata.layers['Ms'].sum(1)[:, None] * np.median(adata.layers['Ms'].sum(1))
-        adata.layers['Mu'] = adata.layers['Mu'] / adata.layers['Mu'].sum(1)[:, None] * np.median(adata.layers['Mu'].sum(1))
+    if renormalize: normalize_layers(adata, layers={'Ms', 'Mu'})
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
         'added to `.layers`\n'
         '    \'Ms\', moments of spliced abundances\n'
         '    \'Mu\', moments of unspliced abundances')
-
     return adata if copy else None
 
 
@@ -68,8 +76,7 @@ def second_order_moments(adata):
     Mus: Second order moments for spliced with unspliced abundances
     """
     if 'neighbors' not in adata.uns:
-        raise ValueError(
-            'You need to run `pp.neighbors` first to compute a neighborhood graph.')
+        raise ValueError('You need to run `pp.neighbors` first to compute a neighborhood graph.')
 
     connectivities = adata.uns['neighbors']['connectivities'] > 0
     connectivities = connectivities.multiply(1. / connectivities.sum(1))
@@ -94,8 +101,7 @@ def second_order_moments_u(adata):
     Muu: Second order moments for unspliced abundances
     """
     if 'neighbors' not in adata.uns:
-        raise ValueError(
-            'You need to run `pp.neighbors` first to compute a neighborhood graph.')
+        raise ValueError('You need to run `pp.neighbors` first to compute a neighborhood graph.')
 
     connectivities = adata.uns['neighbors']['connectivities'] > 0
     connectivities = connectivities.multiply(1. / connectivities.sum(1))

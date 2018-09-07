@@ -70,3 +70,14 @@ def cleanup(adata, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
             if key not in keep: del adata.layers[key]
 
     return adata if copy else None
+
+
+def filter_and_normalize(adata, min_counts=10, n_top_genes=10000, log=True, copy=False):
+    from scanpy.api.pp import filter_genes, filter_genes_dispersion, normalize_per_cell, log1p
+    filter_genes(adata, min_counts=min_counts)
+    if n_top_genes is None or n_top_genes < adata.shape[1]:
+        normalize_per_cell(adata)
+        filter_genes_dispersion(adata, n_top_genes=n_top_genes)
+    normalize_per_cell(adata)
+    if log: log1p(adata)
+    return adata if copy else None

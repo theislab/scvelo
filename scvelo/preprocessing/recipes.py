@@ -42,11 +42,14 @@ def recipe_velocity(adata, min_counts=10, n_top_genes=None, n_pcs=30, n_neighbor
     from scanpy.api.pp import filter_genes, filter_genes_dispersion, normalize_per_cell, log1p, pca, neighbors
 
     filter_genes(adata, min_counts=min_counts)
-    normalize_per_cell(adata, key_n_counts='n_counts_all')
 
-    filter_genes_dispersion(adata, n_top_genes=n_top_genes)
-    normalize_per_cell(adata, layers='all')
+    if n_top_genes is None or n_top_genes < adata.shape[1]:
+        normalize_per_cell(adata)
+        filter_genes_dispersion(adata, n_top_genes=n_top_genes)
+
+    normalize_per_cell(adata)
     if log: log1p(adata)
+
     pca(adata, n_comps=n_pcs, svd_solver='arpack')
     neighbors(adata, n_neighbors=n_neighbors, use_rep='X_pca')
 
