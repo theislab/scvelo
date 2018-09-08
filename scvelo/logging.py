@@ -1,9 +1,11 @@
 from scanpy import settings
 from scanpy import logging as logg
-from scanpy.logging import print_memory_usage
 
 from datetime import datetime
 from time import time
+
+from anndata import logging
+print_memory_usage = logging.print_memory_usage
 
 
 def get_passed_time():
