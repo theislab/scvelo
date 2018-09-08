@@ -38,9 +38,10 @@ def moments(adata, n_neighbors=30, n_pcs=30, mode='connectivities', renormalize=
     Mu: `.layers`
         dense matrix with first order moments of unspliced counts.
     """
-    if 'neghbors' not in adata.uns.keys():
+    if 'neighbors' not in adata.uns.keys() or n_neighbors > adata.uns['neighbors']['params']['n_neighbors']:
         from scanpy.api.pp import neighbors, pca
-        if 'X_pca' not in adata.obsm.keys(): pca(adata, n_comps=n_pcs, svd_solver='arpack')
+        if 'X_pca' not in adata.obsm.keys() or n_pcs > adata.obsm['X_pca'].shape[1]:
+            pca(adata, n_comps=n_pcs, svd_solver='arpack')
         neighbors(adata, n_neighbors=n_neighbors, use_rep='X_pca')
 
     if mode not in adata.uns['neighbors']:
