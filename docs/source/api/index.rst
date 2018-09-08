@@ -16,8 +16,8 @@ Preprocessing (pp)
    :toctree: .
 
    pp.show_proportions
+   pp.filter_and_normalize
    pp.moments
-   pp.recipe_velocity
 
 
 Tools (tl)
