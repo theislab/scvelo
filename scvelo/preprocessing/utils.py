@@ -73,6 +73,38 @@ def cleanup(adata, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
 
 
 def filter_and_normalize(adata, min_counts=10, n_top_genes=10000, log=True, copy=False):
+    """Filtering, normalization and log transform
+
+    Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
+
+    Runs the following steps
+
+    .. code:: python
+
+        sc.pp.filter_genes(adata, min_counts=10)
+        sc.pp.normalize_per_cell(adata)
+        sc.pp.filter_genes_dispersion(adata, n_top_genes=10000)
+        sc.pp.normalize_per_cell(adata)
+        if log: sc.pp.log1p(adata)
+
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    min_counts: `int` (default: 10)
+        Minimum number of gene counts per cell.
+    n_top_genes: `int` (default: 10000)
+        Number of genes to keep.
+    log: `bool` (default: `True`)
+        Take logarithm.
+    copy: `bool` (default: `False`)
+        Return a copy of `adata` instead of updating it.
+
+    Returns
+    -------
+    Returns or updates `adata` depending on `copy`.
+    """
     from scanpy.api.pp import filter_genes, filter_genes_dispersion, normalize_per_cell, log1p
     filter_genes(adata, min_counts=min_counts)
     if n_top_genes is None or n_top_genes < adata.shape[1]:
@@ -80,4 +112,13 @@ def filter_and_normalize(adata, min_counts=10, n_top_genes=10000, log=True, copy
         filter_genes_dispersion(adata, n_top_genes=n_top_genes)
     normalize_per_cell(adata)
     if log: log1p(adata)
+    return adata if copy else None
+
+
+def recipe_velocity(adata, min_counts=10, n_top_genes=None, n_pcs=30, n_neighbors=30, log=True, copy=False):
+    """Runs pp.filter_and_normalize() and pp.moments()
+    """
+    from .moments import moments
+    filter_and_normalize(adata, min_counts=min_counts, n_top_genes=n_top_genes, log=log)
+    moments(adata, n_neighbors=n_neighbors, n_pcs=n_pcs)
     return adata if copy else None

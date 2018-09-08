@@ -12,17 +12,21 @@ def normalize_layers(adata, layers={'spliced', 'unspliced'}, copy=False):
     return adata if copy else None
 
 
-def moments(adata, mode='connectivities', n_neighbors=30, n_pcs=50, renormalize=False, copy=False):
+def moments(adata, n_neighbors=30, n_pcs=30, mode='connectivities', renormalize=False, copy=False):
     """Computes first order moments for velocity estimation.
 
     Arguments
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    renormalize: `bool` (default: `True`)
-        Renormalize the moments by total counts per cell to its median.
+    n_neighbors: `int` (default: 30)
+        Number of neighbors to use.
+    n_pcs: `int` (default: 30)
+        Number of principal components to use.
     mode: `'connectivities'` or `'distances'`  (default: `'connectivities'`)
         Distance metric to use for moment computation.
+    renormalize: `bool` (default: `False`)
+        Renormalize the moments by total counts per cell to its median.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to adata.
 
