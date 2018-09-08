@@ -19,7 +19,7 @@ Thumbs.db
 
 # Docs build
 docs/build
-docs/source/api/scvelo.*
+docs/source/api/docs.*
 
 # always-ignore directories
 /build/

@@ -1,4 +1,4 @@
-.. automodule:: scvelo
+.. automodule:: docs.source.api
 
 API
 ===
@@ -15,9 +15,9 @@ Preprocessing (pp)
 .. autosummary::
    :toctree: .
 
-   preprocessing.show_proportions
-   preprocessing.moments
-   preprocessing.recipe_velocity
+   pp.show_proportions
+   pp.moments
+   pp.recipe_velocity
 
 
 Tools (tl)
@@ -26,9 +26,9 @@ Tools (tl)
 .. autosummary::
    :toctree: .
 
-   tools.velocity
-   tools.velocity_graph
-   tools.velocity_embedding
+   tl.velocity
+   tl.velocity_graph
+   tl.velocity_embedding
 
 
 Plotting (pl)
@@ -37,9 +37,9 @@ Plotting (pl)
 .. autosummary::
    :toctree: .
 
-   plotting.velocity
-   plotting.velocity_embedding
-   plotting.velocity_embedding_grid
+   pl.velocity
+   pl.velocity_embedding
+   pl.velocity_embedding_grid
 
 
 Datasets
