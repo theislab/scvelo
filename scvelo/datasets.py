@@ -17,6 +17,14 @@ def dentategyrus():
     return adata
 
 
+def forebrain():
+    filename = 'data/ForebrainGlut/hgForebrainGlut.loom'
+    url = 'http://pklab.med.harvard.edu/velocyto/hgForebrainGlut/hgForebrainGlut.loom'
+    adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
+    adata.var_names_make_unique()
+    return adata
+
+
 def toy_data(n_obs):
     """Random samples from Dentate Gyrus.
     """
