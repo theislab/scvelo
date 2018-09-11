@@ -16,4 +16,4 @@ or work with the latest version on GitHub_ by calling (after installing scanpy_)
 .. _Miniconda: http://conda.pydata.org/miniconda.html
 .. _PyPI: https://pypi.org/project/scvelo
 .. _GitHub: https://github.com/theislab/scvelo
-.. _scanpy: https://github.com/theislab/scanpy
+.. _scanpy: https://scanpy.readthedocs.io/en/latest/installation.html
