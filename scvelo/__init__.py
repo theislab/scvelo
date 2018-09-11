@@ -1,10 +1,9 @@
 """scvelo - stochastic single cell RNA velocity"""
 
-from get_version import get_version
+from .get_version import get_version
 __version__ = get_version(__file__)
 del get_version
 
-from scanpy.readwrite import read
 from . import preprocessing as pp
 from . import tools as tl
 from . import plotting as pl
