@@ -10,11 +10,7 @@ home-page = 'https://scvelo.readthedocs.io'
 license = 'BSD'
 description-file = 'README.rst'
 requires-python = '~=3.6'
-requires = [
-	'scanpy~=1.3.1',
-	'get_version',
-	'setuptools',
-]
+requires = ['scanpy~=1.3.1', 'setuptools']
 requires-extra = { doc = ['docutils'], test = ['pytest', 'loompy'] }
 keywords = 'RNAseq singlecell stochastic velocity transcriptomics'
 classifiers = [  # https://pypi.org/pypi?%3Aaction=list_classifiers
