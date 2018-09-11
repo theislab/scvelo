@@ -72,7 +72,7 @@ def cleanup(adata, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
     return adata if copy else None
 
 
-def filter_and_normalize(adata, min_counts=10, n_top_genes=10000, log=True, copy=False):
+def filter_and_normalize(adata, min_counts=10, n_top_genes=4000, log=True, copy=False):
     """Filtering, normalization and log transform
 
     Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
