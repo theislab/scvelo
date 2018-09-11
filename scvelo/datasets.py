@@ -18,6 +18,9 @@ def dentategyrus():
 
 
 def forebrain():
+    """Developing human forebrain.
+    Forebrain tissue of a week 10 embryo, focusing on the glutamatergic neuronal lineage.
+    """
     filename = 'data/ForebrainGlut/hgForebrainGlut.loom'
     url = 'http://pklab.med.harvard.edu/velocyto/hgForebrainGlut/hgForebrainGlut.loom'
     adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)

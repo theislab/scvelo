@@ -56,15 +56,3 @@ Datasets
    datasets.toy_data
    datasets.dentategyrus
    datasets.forebrain
-
-
-Logging:
-~~~~~~~~
-
-.. autosummary::
-   :toctree: .
-
-   logging.print_version
-   logging.print_versions
-   logging.print_memory_usage
-   logging.get_passed_time
