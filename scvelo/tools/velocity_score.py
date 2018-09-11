@@ -13,7 +13,7 @@ def score_transition(adata, vkey='velocity', scale=10, copy=False):
         raise ValueError(
             'You need to run `tl.velocity` first.')
 
-    dX = transition_matrix(adata, vkey=vkey, scale=scale).multiply(adata.layers['Ms']) - adata.layers['Ms']
+    dX = transition_matrix(adata, vkey=vkey, scale=scale).dot(adata.layers['Ms']) - adata.layers['Ms']
     dX -= dX.mean(1)[:, None]
 
     V = adata.layers[vkey].copy()
@@ -67,7 +67,8 @@ def random_subsample(adata, frac=.5):
     return adata_subset
 
 
-def score_robustness(adata, adata_subset, vkey='velocity', copy=False):
+def score_robustness(adata, adata_subset=None, vkey='velocity', copy=False):
+    if adata_subset is None: adata_subset = random_subsample(adata)
     V = adata[adata.obs['subset']].layers[vkey]
     V_subset = adata_subset.layers[vkey]
 
