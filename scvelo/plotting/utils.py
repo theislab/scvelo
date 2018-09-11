@@ -59,44 +59,6 @@ def plot_colorbar(ax, orientation='vertical'):
     cb.update_ticks()
 
 
-def plot_legend(ax, legend_loc=None, legend_fontsize=None, right_margin=None):
-    if legend_loc.startswith('on data') and legend_fontsize is None:
-        legend_fontsize = rcParams['legend.fontsize']
-    elif legend_fontsize is None:
-        legend_fontsize = rcParams['legend.fontsize']
-    if right_margin is None and len(categoricals) > 0:
-        if legend_loc == 'right margin': right_margin = 0.5
-
-    legend = None
-    if legend_loc.startswith('on data'):
-        if legend_fontweight is None:
-            legend_fontweight = 'bold'
-        for name, pos in centroids.items():
-            ax.text(pos[0], pos[1], name, weight=legend_fontweight, verticalalignment='center',
-                    horizontalalignment='center', fontsize=legend_fontsize)
-        all_pos = np.zeros((len(adata.obs[key].cat.categories), 2))
-        for iname, name in enumerate(adata.obs[key].cat.categories):
-            if name in centroids:
-                all_pos[iname] = centroids[name]
-            else:
-                all_pos[iname] = [np.nan, np.nan]
-        utils._tmp_cluster_pos = all_pos
-        if legend_loc == 'on data export':
-            filename = settings.writedir + 'pos.csv'
-            logg.msg('exporting label positions to {}'.format(filename), v=1)
-            if settings.writedir != '' and not os.path.exists(settings.writedir):
-                os.makedirs(settings.writedir)
-            np.savetxt(filename, all_pos, delimiter=',')
-    elif legend_loc == 'right margin':
-        legend = ax.legend(
-            frameon=False, loc='center left',
-            bbox_to_anchor=(1, 0.5),
-            ncol=(1 if len(adata.obs[key].cat.categories) <= 14
-                  else 2 if len(adata.obs[key].cat.categories) <= 30 else 3),
-            fontsize=legend_fontsize)
-
-
-
 # def phase(adata, var=None, x=None, y=None, color='louvain', fits='all', xlabel='spliced', ylabel='unspliced',
 #           fontsize=None, show=True, ax=None, **kwargs):
 #     if isinstance(var, str) and (var in adata.var_names):
