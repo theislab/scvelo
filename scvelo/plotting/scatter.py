@@ -1,4 +1,4 @@
-from .utils import interpret_colorkey, get_components, plot_colorbar
+from .utils import interpret_colorkey, get_components, plot_colorbar, savefig
 import matplotlib.pyplot as pl
 import scanpy.api.pl as scpl
 from matplotlib.ticker import MaxNLocator
@@ -40,21 +40,25 @@ def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=
         for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0]*len(colors), figsize[1]), dpi=dpi))):
             scatter(adata, basis=basis, layer=layer, color=color[i], xlabel=xlabel, ylabel=ylabel, color_map=color_map,
                     perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
-                    colorbar=colorbar, components=components, figsize=(7, 5), dpi=80, save=save, ax=pl.subplot(gs),
+                    colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=pl.subplot(gs),
                     use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
                     legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                     palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)
-        pl.show()
+        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        if show: pl.show()
+        else: return ax
 
     elif len(layers) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(layers), pl.figure(None, (figsize[0] * len(layers), figsize[1]), dpi=dpi))):
             scatter(adata, basis=basis, layer=layers[i], color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
                     perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
-                    colorbar=colorbar, components=components, figsize=(7, 5), dpi=80, save=save, ax=pl.subplot(gs),
+                    colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=pl.subplot(gs),
                     use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
                     legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                     palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)
-        pl.show()
+        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        if show: pl.show()
+        else: return ax
 
     else:
         if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
@@ -66,7 +70,7 @@ def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=
                               groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                               legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, color_map=color_map,
                               palette=palette, right_margin=right_margin, left_margin=left_margin,
-                              size=size, title=title, frameon=frameon, show=False, ax=ax, **kwargs)
+                              size=size, title=title, frameon=frameon, show=False, save=None, ax=ax, **kwargs)
         else:
             if is_embedding:
                 X_emb = adata.obsm['X_' + basis][:, get_components(components)]
@@ -95,7 +99,8 @@ def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=
 
             if not frameon: pl.axis('off')
             if colorbar: plot_colorbar(ax)
-            if isinstance(save, str): pl.savefig(save)
+
+        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
 
         if show: pl.show()
         else: return ax

@@ -1,8 +1,12 @@
+import os
 import numpy as np
 import pandas as pd
+from matplotlib import rcParams
 import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from scanpy.plotting.utils import savefig_or_show
+from ..logging import logg, settings
 
 
 zeileis_26 = [
@@ -58,6 +62,12 @@ def plot_colorbar(ax, orientation='vertical'):
     cb = pl.colorbar(orientation=orientation, cax=inset_axes(ax, width="2%", height="30%", loc=4, borderpad=0))
     cb.locator = (MaxNLocator(nbins=3))
     cb.update_ticks()
+
+
+def savefig(writekey, show=False, dpi=None, save=None):
+    """Save current figure to file.
+    """
+    savefig_or_show('velocity_' + writekey + '_' if writekey != '' else 'velocity_', dpi=dpi, save=save, show=show)
 
 
 # def phase(adata, var=None, x=None, y=None, color='louvain', fits='all', xlabel='spliced', ylabel='unspliced',

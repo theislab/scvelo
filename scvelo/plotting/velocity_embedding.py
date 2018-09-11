@@ -1,5 +1,5 @@
 from ..tools.velocity_embedding import velocity_embedding as tl_velocity_embedding
-from .utils import interpret_colorkey, quiver_autoscale, get_components
+from .utils import interpret_colorkey, quiver_autoscale, get_components, savefig
 from .scatter import scatter
 from matplotlib.colors import is_color_like
 import matplotlib.pyplot as pl
@@ -10,7 +10,7 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
                        perc=None, color=None, use_raw=True, sort_order=True, alpha=.2, groups=None, components=None,
                        projection='2d', legend_loc='none', legend_fontsize=None, legend_fontweight=None,
                        color_map=None, palette=None, frameon=False, right_margin=None, left_margin=None,
-                       size=1, title=None, show=True, figsize=(14,10), dpi=120, save=None, ax=None,
+                       size=1, title=None, show=True, figsize=(14,10), dpi=150, save=None, ax=None,
                        xlabel=None, ylabel=None, colorbar=False, fontsize=None, **kwargs):
     """Scatter plot with velocities along `.obs` or `.var` axes.
     Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
@@ -48,10 +48,12 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
                                alpha=alpha, groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                                legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                                color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
-                               left_margin=left_margin, size=size, title=title, show=False, figsize=(14, 10), dpi=120,
-                               save=save, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel, colorbar=colorbar,
+                               left_margin=left_margin, size=size, title=title, show=False, figsize=figsize, dpi=dpi,
+                               save=None, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel, colorbar=colorbar,
                                fontsize=fontsize, **kwargs)
-        pl.show()
+        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        if show: pl.show()
+        else: return ax
 
     elif len(layers) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(layers), pl.figure(None, (figsize[0] * len(layers), figsize[1]), dpi=dpi))):
@@ -60,10 +62,12 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
                                groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                                legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                                color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
-                               left_margin=left_margin, size=size, title=title, show=False, figsize=(14, 10), dpi=120,
-                               save=save, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel, colorbar=colorbar,
+                               left_margin=left_margin, size=size, title=title, show=False, figsize=figsize, dpi=dpi,
+                               save=None, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel, colorbar=colorbar,
                                fontsize=fontsize, **kwargs)
-        pl.show()
+        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        if show: pl.show()
+        else: return ax
 
     else:
         ix_choice = np.random.choice(adata.n_obs, size=int(density * adata.n_obs), replace=False)
@@ -83,10 +87,12 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
 
         ax = scatter(adata, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
                      perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
-                     colorbar=colorbar, components=components, figsize=(7, 5), dpi=80, save=save, ax=ax, zorder=0,
+                     colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=ax, zorder=0,
                      use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
                      legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                      palette=palette, right_margin=right_margin, left_margin=left_margin, ** kwargs)
+
+        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
 
         if show: pl.show()
         else: return ax
