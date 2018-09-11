@@ -1,12 +1,13 @@
 .. role:: small
 
 
-Version 0.1.6 :small:`Sep 11, 2018`
+Version 0.1.7 :small:`Sep 11, 2018`
 -----------------------------------
 Plotting:
 
-- quiver autoscaling
+- support saving plots as pdf, png etc.
 - support multiple colors and layers
+- quiver autoscaling for velocity plots
 - attributes added: figsize and dpi
 
 Preprocessing:
