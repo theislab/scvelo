@@ -6,15 +6,17 @@ from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
+zeileis_26 = [
+    "#023fa5", "#7d87b9", "#bec1d4", "#d6bcc0", "#bb7784", "#8e063b", "#4a6fe3",
+    "#8595e1", "#b5bbe3", "#e6afb9", "#e07b91", "#d33f6a", "#11c638", "#8dd593",
+    "#c6dec7", "#ead3c6", "#f0b98d", "#ef9708", "#0fcfc0", "#9cded6", "#d5eae7",
+    "#f3e1eb", "#f6c4e1", "#f79cd4", '#7f7f7f', "#c7c7c7", "#1CE6FF", "#336600"]
+
+
 def get_colors(adata, basis):
-    if basis+'_colors' in adata.uns.keys():
-        clusters_colors = adata.uns[basis + '_colors']
-    else:
-        colormap = np.vstack((pl.cm.tab20b(np.linspace(0., 1, 20))[::2], pl.cm.tab20c(np.linspace(0, 1, 20))[1::2],
-                              pl.cm.tab20b(np.linspace(0., 1, 20))[1::2], pl.cm.tab20c(np.linspace(0, 1, 20))[0::2]))
-        clusters_colors = [rgb2hex(c) for c in colormap[:len(adata.obs[basis])]]
+    clusters_colors = adata.uns[basis + '_colors'] if basis+'_colors' in adata.uns.keys() else zeileis_26
     cluster_ix = adata.obs[basis].cat.codes
-    return np.array([clusters_colors[cluster_ix[i]] for i in range(adata.X.shape[0])])
+    return np.array([clusters_colors[cluster_ix[i]] for i in range(adata.n_obs)])
 
 
 def bound(c, perc=None):
