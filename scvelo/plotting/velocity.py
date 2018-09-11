@@ -6,7 +6,7 @@ import numpy as np
 
 
 def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='all', layers='all', color=None,
-             fontsize=8, color_map='RdBu_r', size=.2, alpha=.5, dpi=120, ax=None, **kwargs):
+             perc=[2,98], fontsize=8, color_map='RdBu_r', size=.2, alpha=.5, dpi=120, ax=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
     The phase plot shows pliced against unspliced expressions with steady-state fit.
@@ -61,7 +61,7 @@ def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='al
             ax = pl.subplot(gs[v*n_col + l + 1])
             title = 'expression' if layer == 'Ms' else layer
             scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map, title=title,
-                    fontsize=fontsize, size=size, alpha=alpha, show=False, ax=ax, **kwargs)
+                    perc=perc, fontsize=fontsize, size=size, alpha=alpha, show=False, ax=ax, **kwargs)
 
         if mode == 'stochastic' is not None:
             ss, us = second_order_moments(adata)
@@ -72,7 +72,7 @@ def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='al
                 adata.var['stochastic_velocity_offset'][ix] / adata.var['stochastic_velocity_beta'][ix]
 
             scatter(adata, x=x, y=y, color=color, title=var, fontsize=40/n_col, show=False, ax=ax,
-                    xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$', **kwargs)
+                    perc=perc, xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$', **kwargs)
 
             xnew = np.linspace(x.min(), x.max() * 1.02)
             fits = adata.layers.keys() if fits == 'all' else fits
