@@ -30,6 +30,11 @@ Tools (tl)
    tl.velocity_graph
    tl.velocity_embedding
 
+   tl.transition_matrix
+   tl.terminal_states
+   tl.score_smoothness
+   tl.score_transition
+
 
 Plotting (pl)
 ~~~~~~~~~~~~~
@@ -48,5 +53,18 @@ Datasets
 .. autosummary::
    :toctree: .
 
-   datasets.dentategyrus
    datasets.toy_data
+   datasets.dentategyrus
+   datasets.forebrain
+
+
+Logging:
+~~~~~~~~
+
+.. autosummary::
+   :toctree: .
+
+   logging.print_version
+   logging.print_versions
+   logging.print_memory_usage
+   logging.get_passed_time
