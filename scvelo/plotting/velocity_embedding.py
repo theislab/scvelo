@@ -12,7 +12,7 @@ def velocity_embedding(adata, basis='umap', vkey='velocity', density=1, scale=1,
                        color_map=None, colorbar=False, palette=None, size=5, alpha=1, perc=None, sort_order=True,
                        groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                        legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
-                       fontsize=None, figsize=(7,5), dpi=80, frameon=False, show=True, save=None, ax=None, **kwargs):
+                       fontsize=None, figsize=(14,10), dpi=150, frameon=False, show=True, save=None, ax=None, **kwargs):
     """\
     Scatter plot of velocities on the embedding
 

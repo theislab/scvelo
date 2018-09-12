@@ -48,7 +48,7 @@ def velocity_embedding_grid(adata, basis='umap', vkey='velocity', density=1, sca
                             color_map=None, colorbar=False, palette=None, size=5, alpha=1, perc=None, sort_order=True,
                             groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                             legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
-                            fontsize=None, figsize=(7,5), dpi=80, frameon=False, show=True, save=None, ax=None, **kwargs):
+                            fontsize=None, figsize=(7,5), dpi=100, frameon=False, show=True, save=None, ax=None, **kwargs):
     """\
     Scatter plot of velocities for the grid points on the embedding
 
