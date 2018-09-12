@@ -21,13 +21,12 @@ Usage Principles
 
 Install scvelo from PyPI using ``pip install scvelo``.
 
-Import scvelo (velocity specific workflows) and scanpy (basic workflows) as::
+Import scvelo as::
 
     import scvelo as scv
-    import scanpy.api as sc
 
-Read your data file (loom, h5ad, xlsx, csv, etc.) with ``adata = sc.read(filename, **params)``,
-apply some basic preprocessing (gene selection, normalization, etc.), e.g. using
+Read your data file (loom, h5ad, xlsx, csv, etc.) with ``adata = scv.read(filename, **params)``,
+if not done yet apply some basic preprocessing (gene selection, normalization, etc.), e.g. using
 ``scv.pp.filter_and_normalize(adata, **params)``,
 compute moments with ``scv.pp.moments(adata, **params)``, and perform velocity estimation::
 
