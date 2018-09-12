@@ -5,6 +5,14 @@ import numpy as np
 import warnings
 
 
+def quiver_autoscale(X, Y, U, V):
+    import matplotlib.pyplot as pl
+    Q = pl.quiver(X, Y, U, V, angles='xy', scale_units='xy', scale=None)
+    Q._init()
+    pl.clf()
+    return Q.scale
+
+
 def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, retain_scale=False, copy=False):
     """Computes the single cell velocities in the embedding
 
@@ -27,7 +35,7 @@ def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, retain_sc
     velocity_umap: `.obsm`
         coordinates of velocity projection on embedding
     """
-    T = transition_matrix(adata, vkey=vkey, basis=basis, scale=scale)
+    T = transition_matrix(adata, vkey=vkey, basis=None, scale=scale)
 
     logg.info('computing velocity embedding', r=True)
 
@@ -60,6 +68,8 @@ def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, retain_sc
         delta = T.dot(adata.X) - adata.X
         cos_proj = (adata.obsm[vkey] * delta).sum(1) / norm(delta)
         V_emb *= np.clip(cos_proj, 0, 1)
+
+    V_emb /= (2.2 * quiver_autoscale(X_emb[:, 0], X_emb[:, 1], V_emb[:, 0], V_emb[:, 1]))
 
     vkey += '_' + basis
     adata.obsm[vkey] = V_emb

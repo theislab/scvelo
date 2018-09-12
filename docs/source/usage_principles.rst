@@ -1,18 +1,17 @@
 Usage Principles
 ----------------
 
-Import scvelo (velocity specific workflows) and scanpy (basic workflows) as::
+Import scvelo as::
 
     import scvelo as scv
-    import scanpy.api as sc
+
 
 Read the file into a data object
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Read the data file (loom, h5ad, xlsx, csv, tab, txt ...) to an :class:`~anndata.AnnData` object::
 
-   adata = sc.read(filename, cache=True)
-
+   adata = scv.read(filename, cache=True)
 
 which stores the data matrix (``adata.X``) with dimension :math:`n_{\mathrm{obs}} \times n_{\mathrm{vars}}`,
 annotation of observations (``adata.obs``) and variables (``adata.var``), unstructured annotation (``adata.uns``) and
@@ -26,24 +25,19 @@ For instance, the data matrices relevant for velocity analysis can be retrieved 
 
 Basic preprocessing
 ^^^^^^^^^^^^^^^^^^^
-Select genes (according to detection and variability) and normalize each cell by total counts::
 
-    sc.pp.filter_genes(adata, **params)
-    sc.pp.filter_genes_dispersion(adata, **params)
+If you have not preprocessed you data yet you may simply run the following line which selects genes (according to detection and
+variability) and normalizes each cell by total counts::
 
-    sc.pp.normalize_per_cell(adata, layers='all', **params)
+    scv.pp.filter_and_normalize(adata, **params)
 
-Then compute the neighbor graph in PCA space on the logarithmized data::
+You may consider using scanpy_ for further preprocessing (such as correcting for batch effects).
 
-   sc.pp.log1p(adata, **params)
-   sc.pp.pca(adata, **params)
-   sc.pp.neighbors(adata, use_rep='X_pca', **params)
-
-Finally, compute the moments of spliced and unspliced counts which will be used for velocity estimation::
+For processing of spliced and unspliced counts it suffices to compute their moments (which automatically normalizes the counts)::
 
    scv.pp.moments(adata, **params)
 
-That's all, no extensive preparation needed and it takes a few seconds to run these lines.
+That's all, no extensive preparation is needed.
 
 Velocity Tools
 ^^^^^^^^^^^^^^
@@ -65,7 +59,7 @@ Compute the velocity graph which finds the most likely cell transitions accordin
    scv.tl.velocity_graph(adata, **params)
 
 
-Using the graph you can easily project the velocities into any embedding (such as UMAP)::
+Using the graph you can easily project the velocities into any embedding (such as UMAP, e.g. obtained with scanpy_)::
 
    scv.tl.velocity_embedding(adata, basis='umap', **params)
 
@@ -80,3 +74,5 @@ For big datasets it might be useful to visualize the velocities on a grid::
 
    scv.pl.velocity_embedding_grid(adata, basis='umap', **params)
 
+
+.. _scanpy: https://scanpy.readthedocs.io/en/latest/api

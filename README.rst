@@ -19,19 +19,16 @@ runtime without loss in accuracy (<1GB and <1min for 30,000 cells on a MacBook P
 Usage Principles
 ----------------
 
-Install scvelo from PyPI using::
+Install scvelo from PyPI using ``pip install scvelo``.
 
-    pip install scvelo
-
-
-Import scvelo (velocity specific workflows) and scanpy (basic workflows) as::
+Import scvelo as::
 
     import scvelo as scv
-    import scanpy.api as sc
 
-After reading your data file (loom, h5ad, xlsx, csv, etc.) via ``adata = sc.read(filename, **params)``,
-applying some basic preprocessing (gene selection, normalization, etc.), e.g. using
-``scv.pp.recipe_velocity(adata, **params)``, velocity estimation is performed using::
+Read your data file (loom, h5ad, xlsx, csv, etc.) with ``adata = scv.read(filename, **params)``,
+if not done yet preprocess you data (gene selection, normalization, etc.), e.g. using
+``scv.pp.filter_and_normalize(adata, **params)``,
+compute moments with ``scv.pp.moments(adata, **params)``, and perform velocity estimation::
 
     scv.tl.velocity(adata, mode='stochastic', **params)
 
@@ -44,7 +41,7 @@ Finally the velocities can be projected and visualized in any embedding (e.g. UM
     scv.tl.velocity_embedding(adata, basis='umap', **params)
     scv.pl.velocity_embedding(adata, basis='umap', **params)
 
-For further details - and highly recommended for getting started - read the documentation_ and take a look at some exemplary notebooks_.
+I highly recommend going through the documentation_ and some exemplary notebooks_.
 
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
@@ -59,4 +56,4 @@ For further details - and highly recommended for getting started - read the docu
 .. _velocyto: http://velocyto.org/
 .. _scanpy: https://github.com/theislab/scanpy
 .. _documentation: https://scvelo.readthedocs.io
-.. _notebooks: https://nbviewer.jupyter.org/github/theislab/scvelo_notebooks/blob/master/DentateGyrus.ipynb
+.. _notebooks: https://nbviewer.jupyter.org/github/theislab/scvelo_notebooks/tree/master/

@@ -1,5 +1,25 @@
 .. role:: small
 
+
+Version 0.1.8 :small:`Sep 12, 2018`
+-----------------------------------
+Plotting:
+
+- support saving plots as pdf, png etc.
+- support multiple colors and layers
+- quiver autoscaling for velocity plots
+- attributes added: figsize and dpi
+
+Preprocessing:
+
+- filter_and_normalize() instead of recipe_velocity()
+- normalization of layers is done automatically when computing moments
+
+Tools:
+
+- terminal_states: computes root and end points via eigenvalue decomposition
+
+
 Version 0.1.5 :small:`Sep 4, 2018`
 ----------------------------------
 - Support writing loom files

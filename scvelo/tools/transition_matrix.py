@@ -1,10 +1,9 @@
 from scipy.spatial.distance import pdist, squareform
-from scipy.sparse import csr_matrix
+from .utils import normalize_sparse
 import numpy as np
-import warnings
 
 
-def transition_matrix(adata, vkey='velocity', basis=None, direction="forward", scale=10, locality = 2):
+def transition_matrix(adata, vkey='velocity', basis=None, backward=False, scale=10, weight_diffusion=0, scale_diffusion=1):
     """Computes transition probabilities by applying Gaussian kernel to cosine similarities x scale
 
     Arguments
@@ -15,57 +14,42 @@ def transition_matrix(adata, vkey='velocity', basis=None, direction="forward", s
         Name of velocity estimates to be used.
     basis: `str` or `None` (default: `None`)
         Restrict transition to embedding if specified
-    direction: `'forward'` or `'backward'` (default: `'foward'`)
-        Whether to use the transition matrix to push forward or to pull backward
+    backward: `bool` (default: `False`)
+        Whether to use the transition matrix to push forward (`False`) or to pull backward (`True`)
     scale: `float` (default: 10)
         Scale parameter of gaussian kernel.
-    p: 'float' (default: 0.5)
-        Relative weight to be given to the cosine correlations. Must be in [0, 1].
+    weight_diffusion: `float` (default: 0)
+        Relative weight to be given to diffusion kernel (Brownian motion)
+    scale_diffusion: `float` (default: 1)
+        Scale of diffusion kernel. 
 
     Returns
     -------
     Returns sparse matrix with transition probabilities.
     """
-    
-    #%% check inputs
     if vkey+'_graph' not in adata.uns:
-        raise ValueError(
-            'You need to run `tl.velocity_graph` first to compute cosine correlations.')
-        
-    if direction not in ['forward', 'backward']:
-        raise ValueError(
-            'You need to choose a valid direction')
-        
-    if basis != None and 'X_' + str(basis) not in adata.obsm.keys():
-        raise ValueError(
-                'You need to chose a valid basis')
-    #%% contruct the desired transition matrix
-
-    # get the veclocity based transition matrix
+        raise ValueError('You need to run `tl.velocity_graph` first to compute cosine correlations.')
+ 
     T = np.expm1(adata.uns[vkey + '_graph'] * scale)
 
-    # get the distance based transition matrix
-    dists = adata.uns['neighbors']['distances']
-    
-    # combine the two
-    T = 0.5 * T + .5 * (dists > 0).multiply(T)
+    # weight direct neighbors with 1 and indirect (recurse) neighbors with 0.5
+    T = .5 * T + .5 * (adata.uns['neighbors']['distances'] > 0).multiply(T)
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        T = T.multiply(csr_matrix(1. / T.sum(1)))
-        
-    if direction == 'backward': 
-        T = T.T
-        T = T.multiply(csr_matrix(1. / T.sum(1)))
+    if backward: T = T.T
+    T = normalize_sparse(T)
 
-    # compute distances in the embedding to smooth the matrix
     if 'X_' + str(basis) in adata.obsm.keys():
-        X_emb = adata.obsm['X_' + basis]
-        dists_emb = (T > 0).multiply(squareform(pdist(X_emb)))
-        kernel = np.expm1(-dists_emb**2 / dists_emb.data.mean()**2 / 2 * 1/locality)
-        T = T.multiply(kernel)
+        dists_emb = (T > 0).multiply(squareform(pdist(adata.obsm['X_' + basis])))
+        scale_diffusion *= dists_emb.data.mean()
         
-        # must renormalise
-        T = T.multiply(csr_matrix(1. / T.sum(1)))
+        diffusion_kernel = dists_emb.copy()
+        diffusion_kernel.data = np.exp(-.5 * dists_emb.data ** 2 / scale_diffusion ** 2)
+        T = T.multiply(diffusion_kernel)  # combine velocity based kernel with diffusion based kernel
+
+        if 0 < weight_diffusion < 1:  # add another diffusion kernel (Brownian motion - like)
+            diffusion_kernel.data = np.exp(-.5 * dists_emb.data ** 2 / (scale_diffusion/2) ** 2)
+            T = (1-weight_diffusion) * T + weight_diffusion * diffusion_kernel
+
+        T = normalize_sparse(T)
 
     return T
