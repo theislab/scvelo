@@ -1,33 +1,28 @@
 from .utils import interpret_colorkey, get_components, plot_colorbar, savefig
+from .docs import doc_scatter, doc_params
 import matplotlib.pyplot as pl
 import scanpy.api.pl as scpl
 from matplotlib.ticker import MaxNLocator
 
 
-def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=None, ylabel=None, color_map=None,
-            perc=None, size=5, alpha=1, fontsize=None, colorbar=False, groups=None, use_raw=None, sort_order=True,
-            legend_loc='none', legend_fontsize=None, legend_fontweight=None, projection='2d', palette=None,
-            right_margin=None, left_margin=None, components=None, frameon=False, title=None, show=True, figsize=(7,5),
-            dpi=80, save=None, ax=None, zorder=0, **kwargs):
-    """Scatter plot along observations or variables axes.
-    Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
+@doc_params(scatter=doc_scatter)
+def scatter(adata, x=None, y=None, basis='umap', color=None, use_raw=None, layer=None, color_map=None, colorbar=False,
+            palette=None, size=5, alpha=1, perc=None, sort_order=True, groups=None, components=None, projection='2d',
+            legend_loc='none', legend_fontsize=None, legend_fontweight=None, right_margin=None, left_margin=None,
+            xlabel=None, ylabel=None, title=None, fontsize=None, figsize=(7,5), dpi=80, frameon=False, show=True,
+            save=None, ax=None, **kwargs):
+    """\
+    Scatter plot along observations or variables axes.
 
     Arguments
     ---------
-    adata: `AnnData`
+    adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-
-    basis: `str` (default='tsne')
-        plots embedding obsm['X_' + basis]
-
     x: `str`, `np.ndarray` or `None` (default: `None`)
         x coordinate
-
     y: `str`, `np.ndarray` or `None` (default: `None`)
         y coordinate
-
-    color : `str` or `None` (default: `None`)
-        Key for annotations of observations/cells or variables/genes
+    {scatter}
 
     Returns
     -------
@@ -82,7 +77,7 @@ def scatter(adata, x=None, y=None, basis='umap', layer=None, color=None, xlabel=
                 labelsize = int(fontsize * .75) if fontsize is not None else None
                 ax.tick_params(axis='both', which='major', labelsize=labelsize)
             c = interpret_colorkey(adata, color, layer, perc)
-            pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, zorder=zorder, **kwargs)
+            pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, zorder=0, **kwargs)
 
             if isinstance(xlabel, str) and isinstance(ylabel, str):
                 pl.xlabel(xlabel, fontsize=fontsize)

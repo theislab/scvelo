@@ -1,30 +1,36 @@
 from ..tools.velocity_embedding import velocity_embedding as tl_velocity_embedding
 from .utils import interpret_colorkey, get_components, savefig
 from .scatter import scatter
+from .docs import doc_scatter, doc_params
+
 from matplotlib.colors import is_color_like
 import matplotlib.pyplot as pl
 import numpy as np
 
-
-def velocity_embedding(adata, basis='umap', vkey='velocity', layer=None, density=1, scale=1,
-                       perc=None, color=None, use_raw=True, sort_order=True, alpha=.2, groups=None, components=None,
-                       projection='2d', legend_loc='none', legend_fontsize=None, legend_fontweight=None,
-                       color_map=None, palette=None, frameon=False, right_margin=None, left_margin=None,
-                       size=1, title=None, show=True, figsize=(14,10), dpi=150, save=None, ax=None,
-                       xlabel=None, ylabel=None, colorbar=False, fontsize=None, **kwargs):
-    """Scatter plot with velocities along `.obs` or `.var` axes.
-    Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
+@doc_params(scatter=doc_scatter)
+def velocity_embedding(adata, basis='umap', vkey='velocity', density=1, scale=1, color=None, use_raw=None, layer=None,
+                       color_map=None, colorbar=False, palette=None, size=5, alpha=1, perc=None, sort_order=True,
+                       groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
+                       legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
+                       fontsize=None, figsize=(7,5), dpi=80, frameon=False, show=True, save=None, ax=None, **kwargs):
+    """\
+    Scatter plot of velocities on the embedding
 
     Arguments
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    basis: `str` (default: `'umap'`)
-        Key for embedding coordinates.
-    vkey: `str` (default: `'velocity'`)
-        Key for velocity embedding coordinates.
-    color : `str` or `None` (default: `None`)
+    x: `str`, `np.ndarray` or `None` (default: `None`)
+        x coordinate
+    y: `str`, `np.ndarray` or `None` (default: `None`)
+        y coordinate
+    vkey: `str` or `None` (default: `None`)
         Key for annotations of observations/cells or variables/genes.
+    density: `float` (default: 1)
+        Amount of velocities to show - 0 none to 1 all
+    scale: `float` (default: 1)
+        Length of velocities in the embedding.
+    {scatter}
 
     Returns
     -------
@@ -96,7 +102,7 @@ def velocity_embedding(adata, basis='umap', vkey='velocity', layer=None, density
 
         ax = scatter(adata, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
                      perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
-                     colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=ax, zorder=0,
+                     colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=ax,
                      use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
                      legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                      palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)

@@ -1,6 +1,8 @@
 from ..tools.velocity_embedding import quiver_autoscale, velocity_embedding
 from .utils import get_components, savefig
 from .scatter import scatter
+from .docs import doc_scatter, doc_params
+
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import norm as normal
 import matplotlib.pyplot as pl
@@ -8,31 +10,6 @@ import numpy as np
 
 
 def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=None, min_mass=.5):
-    """Computes the velocities for the grid points on the embedding
-
-    Arguments
-    ---------
-    X_emb: np.ndarray
-        embedding coordinates
-
-    V_emb: np.ndarray
-        embedded single cell velocity (obtained with 'velocity_embedding')
-
-    density: float, default=1
-
-    smooth: float, default=.5
-
-    n_neighbors: int
-
-    min_mass: float, default=.5
-
-    Returns
-    -------
-    grid_coord: np.array
-        grid point coordinates
-    grid_velocity: np.array
-        velocity for each grid point in the embedding
-    """
     # prepare grid
     n_obs, n_dim = X_emb.shape
 
@@ -65,26 +42,41 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
     return X_grid, V_grid
 
 
-def velocity_embedding_grid(adata, basis='umap', vkey='velocity', layer=None, density=1, scale=1, X=None, V=None,
-                            color=None, perc=None, min_mass=.5, smooth=.5, n_neighbors=None, principal_curve=False,
-                            use_raw=True, sort_order=True, alpha=.2, groups=None, components=None, projection='2d',
-                            legend_loc='none', legend_fontsize=None, legend_fontweight=None,
-                            color_map=None, palette=None, frameon=False, right_margin=None, left_margin=None,
-                            size=None, title=None, show=True, figsize=(14,10), dpi=150,
-                            xlabel=None, ylabel=None, colorbar=False, fontsize=None, save=None, ax=None, **kwargs):
-    """Scatter plot with grid velocities along `.obs` or `.var` axes.
-    Color the plot using annotations of observations (`.obs`), variables (`.var`) or expression of genes (`.var_names`).
+@doc_params(scatter=doc_scatter)
+def velocity_embedding_grid(adata, basis='umap', vkey='velocity', density=1, scale=1, min_mass=.5, smooth=.5,
+                            n_neighbors=None, X=None, V=None, principal_curve=False, color=None, use_raw=None, layer=None,
+                            color_map=None, colorbar=False, palette=None, size=5, alpha=1, perc=None, sort_order=True,
+                            groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
+                            legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
+                            fontsize=None, figsize=(7,5), dpi=80, frameon=False, show=True, save=None, ax=None, **kwargs):
+    """\
+    Scatter plot of velocities for the grid points on the embedding
 
     Arguments
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    basis: `str` (default: `'umap'`)
-        Key for embedding coordinates.
-    vbasis: `str` (default: `'velocity'`)
-        Key for velocity embedding coordinates.
-    color : `str` or `None` (default: `None`)
+    x: `str`, `np.ndarray` or `None` (default: `None`)
+        x coordinate
+    y: `str`, `np.ndarray` or `None` (default: `None`)
+        y coordinate
+    vkey: `str` or `None` (default: `None`)
         Key for annotations of observations/cells or variables/genes.
+    density: `float` (default: 1)
+        Amount of velocities to show - 0 none to 1 all
+    scale: `float` (default: 1)
+        Length of velocities in the embedding.
+    min_mass: `float` (default: 0.5)
+        Minimum threshold for mass to be shown.
+    smooth: `float` (default: 0.5)
+        Multiplication factor for scale in Gaussian kernel around grid point.
+    n_neighbors: `int` (default: None)
+        Number of neighbors to consider around grid point.
+    X: `np.ndarray` (default: None)
+        embedding grid point coordinates
+    V: `np.ndarray` (default: None)
+        embedding grid velocity coordinates
+    {scatter}
 
     Returns
     -------
@@ -163,7 +155,7 @@ def velocity_embedding_grid(adata, basis='umap', vkey='velocity', layer=None, de
 
         ax = scatter(adata, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
                      perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
-                     colorbar=colorbar, components=components, figsize=(7, 5), dpi=80, save=None, ax=ax, zorder=0,
+                     colorbar=colorbar, components=components, figsize=(7, 5), dpi=80, save=None, ax=ax,
                      use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
                      legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                      palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)

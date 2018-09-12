@@ -6,11 +6,11 @@ from matplotlib.ticker import MaxNLocator
 import matplotlib.pyplot as pl
 
 
-def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='all', layers='all', color=None, perc=[2,98],
-             fontsize=8, color_map='RdBu_r', size=.2, alpha=.5, dpi=120, ax=None, save=None, show=True, **kwargs):
+def velocity(adata, var_names=None, basis='umap', mode=None, fits='all', layers='all', color=None, color_map='RdBu_r',
+             perc=[2,98], size=.2, alpha=.5, fontsize=8, figsize=(3,2), dpi=120, show=True, save=None, ax=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
-    The phase plot shows pliced against unspliced expressions with steady-state fit.
+    The phase plot shows spliced against unspliced expressions with steady-state fit.
     Further the embedding is shown colored by velocity and expression.
 
     Arguments
@@ -21,6 +21,36 @@ def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='al
         Which variables to show.
     basis: `str` (default: `'umap'`)
         Key for embedding coordinates.
+    mode: `'stochastic'` or `None` (default: `None`)
+        Whether to show show covariability phase portrait.
+    fits: `str` or list of `str` (default: `'all'`)
+        Which steady-state estimates to show.
+    layers: `str` or list of `str` (default: `'all'`)
+        Which layers to show.
+    color: `str`,  list of `str` or `None` (default: `None`)
+        Key for annotations of observations/cells or variables/genes
+    color_map: `str` (default: `matplotlib.rcParams['image.cmap']`)
+        String denoting matplotlib color map.
+    perc: tuple, e.g. [2,98] (default: `None`)
+        Specify percentile for continuous coloring.
+    size: `float` (default: 5)
+        Point size.
+    alpha: `float` (default: 1)
+        Set blending - 0 transparent to 1 opaque.
+    fontsize: `float` (default: `None`)
+        Label font size.
+    figsize: tuple (default: `(7,5)`)
+        Figure size.
+    dpi: `int` (default: 80)
+        Figure dpi.
+    show: `bool`, optional (default: `None`)
+        Show the plot, do not return axis.
+    save: `bool` or `str`, optional (default: `None`)
+        If `True` or a `str`, save the figure. A string is appended to the default filename.
+        Infer the filetype if ending on {'.pdf', '.png', '.svg'}.
+    ax: `matplotlib.Axes`, optional (default: `None`)
+        A matplotlib axes object. Only works if plotting a single component.
+
     """
     var_names = [var_names] if isinstance(var_names, str) else var_names
     var_names = [var for var in var_names if var in adata.var_names[adata.var.velocity_genes]] \
@@ -34,7 +64,7 @@ def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='al
 
     n_row, n_col = len(var_names), (1 + len(layers) + (mode == 'stochastic')*2)
 
-    ax = pl.figure(figsize=(3*n_col, 2*n_row), dpi=dpi) if ax is None else ax
+    ax = pl.figure(figsize=(figsize[0]*n_col, figsize[1]*n_row), dpi=dpi) if ax is None else ax
     gs = pl.GridSpec(n_row, n_col, wspace=0.3, hspace=0.5)
 
     for v, var in enumerate(var_names):
@@ -64,7 +94,7 @@ def velocity(adata, var_names=None, basis='umap', mode='deterministic', fits='al
             scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map, title=title,
                     perc=perc, fontsize=fontsize, size=size, alpha=alpha, show=False, ax=ax, save=False, **kwargs)
 
-        if mode == 'stochastic' is not None:
+        if mode == 'stochastic':
             ss, us = second_order_moments(adata)
 
             ax = pl.subplot(gs[v*n_col + len(layers) + 1])

@@ -3,10 +3,9 @@
 API
 ===
 
-Import scvelo and scanpy as::
+Import scveloas::
 
    import scvelo as scv
-   import scanpy.api as sc
 
 
 Preprocessing (pp)
@@ -42,6 +41,7 @@ Plotting (pl)
 .. autosummary::
    :toctree: .
 
+   pl.scatter
    pl.velocity
    pl.velocity_embedding
    pl.velocity_embedding_grid
