@@ -26,18 +26,18 @@ For instance, the data matrices relevant for velocity analysis can be retrieved 
 Basic preprocessing
 ^^^^^^^^^^^^^^^^^^^
 
-If you have not preprocessed you data yet you may run the following line which selects genes (according to detection and
+If you have not preprocessed you data yet you may simply run the following line which selects genes (according to detection and
 variability) and normalizes each cell by total counts::
 
     scv.pp.filter_and_normalize(adata, **params)
 
-You may also perform any other sort of preprocessing (such as correcting for batch effects, e.g. using scanpy_)
+You may consider using scanpy_ for further preprocessing (such as correcting for batch effects).
 
-For processing of spliced and unspliced counts it suffices to compute moments of the abundances using::
+For processing of spliced and unspliced counts it suffices to compute their moments (which automatically normalizes the counts)::
 
    scv.pp.moments(adata, **params)
 
-It automatically normalizes spliced and unspliced abundances. That's all, no extensive preparation is needed.
+That's all, no extensive preparation is needed.
 
 Velocity Tools
 ^^^^^^^^^^^^^^
