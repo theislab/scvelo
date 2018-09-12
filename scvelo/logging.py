@@ -18,7 +18,7 @@ def print_version():
 
 
 def print_versions():
-    for mod in ['scvelo', 'scanpy', 'anndata', 'setuptools', 'numpy', 'matplotlib']:
+    for mod in ['scvelo', 'scanpy', 'anndata', 'loompy']:
         mod_name = mod[0] if isinstance(mod, tuple) else mod
         mod_install = mod[1] if isinstance(mod, tuple) else mod
         try: print('{}=={}'.format(mod_install, __import__(mod_name).__version__), end='  ')
