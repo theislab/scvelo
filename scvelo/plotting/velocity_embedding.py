@@ -9,7 +9,7 @@ import numpy as np
 
 @doc_params(scatter=doc_scatter)
 def velocity_embedding(adata, basis='umap', vkey='velocity', density=1, scale=1, color=None, use_raw=None, layer=None,
-                       color_map=None, colorbar=False, palette=None, size=5, alpha=1, perc=None, sort_order=True,
+                       color_map=None, colorbar=False, palette=None, size=10, alpha=.2, perc=None, sort_order=True,
                        groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                        legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
                        fontsize=None, figsize=(14,10), dpi=150, frameon=False, show=True, save=None, ax=None, **kwargs):

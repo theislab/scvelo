@@ -45,7 +45,7 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
 @doc_params(scatter=doc_scatter)
 def velocity_embedding_grid(adata, basis='umap', vkey='velocity', density=1, scale=1, min_mass=.5, smooth=.5,
                             n_neighbors=None, X=None, V=None, principal_curve=False, color=None, use_raw=None, layer=None,
-                            color_map=None, colorbar=False, palette=None, size=5, alpha=1, perc=None, sort_order=True,
+                            color_map=None, colorbar=False, palette=None, size=5, alpha=.2, perc=None, sort_order=True,
                             groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                             legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
                             fontsize=None, figsize=(7,5), dpi=100, frameon=False, show=True, save=None, ax=None, **kwargs):
