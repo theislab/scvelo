@@ -1,7 +1,7 @@
 .. role:: small
 
 
-Version 0.1.7 :small:`Sep 11, 2018`
+Version 0.1.8 :small:`Sep 12, 2018`
 -----------------------------------
 Plotting:
 
