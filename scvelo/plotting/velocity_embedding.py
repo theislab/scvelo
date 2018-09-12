@@ -1,12 +1,12 @@
 from ..tools.velocity_embedding import velocity_embedding as tl_velocity_embedding
-from .utils import interpret_colorkey, quiver_autoscale, get_components, savefig
+from .utils import interpret_colorkey, get_components, savefig
 from .scatter import scatter
 from matplotlib.colors import is_color_like
 import matplotlib.pyplot as pl
 import numpy as np
 
 
-def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, density=1, scale=1, autoscale=True,
+def velocity_embedding(adata, basis='umap', vkey='velocity', layer=None, density=1, scale=1,
                        perc=None, color=None, use_raw=True, sort_order=True, alpha=.2, groups=None, components=None,
                        projection='2d', legend_loc='none', legend_fontsize=None, legend_fontweight=None,
                        color_map=None, palette=None, frameon=False, right_margin=None, left_margin=None,
@@ -21,7 +21,7 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
         Annotated data matrix.
     basis: `str` (default: `'umap'`)
         Key for embedding coordinates.
-    vbasis: `str` (default: `'velocity'`)
+    vkey: `str` (default: `'velocity'`)
         Key for velocity embedding coordinates.
     color : `str` or `None` (default: `None`)
         Key for annotations of observations/cells or variables/genes.
@@ -30,21 +30,16 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
     -------
         `matplotlib.Axis` if `show==False`
     """
-    vkey = vbasis + '_' + basis
-    if vkey not in adata.obsm_keys(): tl_velocity_embedding(adata, basis=basis, vkey=vkey)
-
-    ix_choice = np.random.choice(adata.n_obs, size=int(density * adata.n_obs), replace=False)
-    X = adata.obsm['X_' + basis][:, get_components(components)][ix_choice]
-    V = adata.obsm[vkey][ix_choice]
-    if autoscale: scale *= 2 * quiver_autoscale(X[:, 0], X[:, 1], V[:, 0], V[:, 1])
-
     colors = color if isinstance(color, (list, tuple)) else [color]
     layers = layer if isinstance(layer, (list, tuple)) else [layer]
+    vkeys = vkey if isinstance(vkey, (list, tuple)) else [vkey]
+    for key in vkeys:
+        if key + '_' + basis not in adata.obsm_keys(): tl_velocity_embedding(adata, basis=basis, vkey=key)
 
     if len(colors) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0] * len(colors), figsize[1]), dpi=dpi))):
-            velocity_embedding(adata, basis=basis, vbasis=vbasis, layer=layer, density=density, scale=scale,
-                               autoscale=False, perc=perc, color=colors[i], use_raw=use_raw, sort_order=sort_order,
+            velocity_embedding(adata, basis=basis, vkey=vkey, layer=layer, density=density, scale=scale,
+                               perc=perc, color=colors[i], use_raw=use_raw, sort_order=sort_order,
                                alpha=alpha, groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                                legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                                color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
@@ -57,7 +52,21 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
 
     elif len(layers) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(layers), pl.figure(None, (figsize[0] * len(layers), figsize[1]), dpi=dpi))):
-            velocity_embedding(adata, basis=basis, vbasis=vbasis, layer=layers[i], density=density, scale=scale, autoscale=False,
+            velocity_embedding(adata, basis=basis, vkey=vkey, layer=layers[i], density=density, scale=scale,
+                               perc=None, color=color, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
+                               groups=groups, components=components, projection=projection, legend_loc=legend_loc,
+                               legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
+                               color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
+                               left_margin=left_margin, size=size, title=title, show=False, figsize=figsize, dpi=dpi,
+                               save=None, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel, colorbar=colorbar,
+                               fontsize=fontsize, **kwargs)
+        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        if show: pl.show()
+        else: return ax
+
+    elif len(vkeys) > 1:
+        for i, gs in enumerate(pl.GridSpec(1, len(vkeys), pl.figure(None, (figsize[0] * len(vkeys), figsize[1]), dpi=dpi))):
+            velocity_embedding(adata, basis=basis, vkey=vkeys[i], layer=layer, density=density, scale=scale,
                                perc=None, color=color, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
                                groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                                legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
@@ -72,7 +81,7 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
     else:
         ix_choice = np.random.choice(adata.n_obs, size=int(density * adata.n_obs), replace=False)
         X = adata.obsm['X_' + basis][:, get_components(components)][ix_choice]
-        V = adata.obsm[vkey][ix_choice]
+        V = adata.obsm[vkey + '_' + basis][ix_choice]
 
         if color_map is None: color_map = 'viridis_r' if (color == 'root' or color == 'end') else 'RdBu_r'
         _kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .0005,
@@ -90,7 +99,7 @@ def velocity_embedding(adata, basis='umap', vbasis='velocity', layer=None, densi
                      colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=ax, zorder=0,
                      use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
                      legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
-                     palette=palette, right_margin=right_margin, left_margin=left_margin, ** kwargs)
+                     palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
 

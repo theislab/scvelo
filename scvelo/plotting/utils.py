@@ -1,12 +1,9 @@
-import os
 import numpy as np
 import pandas as pd
-from matplotlib import rcParams
 import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scanpy.plotting.utils import savefig_or_show
-from ..logging import logg, settings
 
 
 zeileis_26 = [
@@ -49,13 +46,6 @@ def get_components(components=None):
     if components is None: components = '1,2'
     if isinstance(components, str): components = components.split(',')
     return np.array(components).astype(int) - 1
-
-
-def quiver_autoscale(X, Y, U, V):
-    Q = pl.quiver(X, Y, U, V, angles='xy', scale_units='xy', scale=None)
-    Q._init()
-    pl.clf()
-    return Q.scale
 
 
 def plot_colorbar(ax, orientation='vertical'):
