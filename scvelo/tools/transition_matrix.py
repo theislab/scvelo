@@ -3,7 +3,7 @@ from .utils import normalize_sparse
 import numpy as np
 
 
-def transition_matrix(adata, vkey='velocity', basis=None, backward=False, diffuse_prob=0, scale=10):
+def transition_matrix(adata, vkey='velocity', basis=None, backward=False, scale=10, weight_diffusion=0, scale_diffusion=1):
     """Computes transition probabilities by applying Gaussian kernel to cosine similarities x scale
 
     Arguments
@@ -39,14 +39,14 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, diffus
 
     if 'X_' + str(basis) in adata.obsm.keys():
         dists_emb = (T > 0).multiply(squareform(pdist(adata.obsm['X_' + basis])))
-        sigma = dists_emb.data.mean()
+        scale_diffusion *= dists_emb.data.mean()
         diffusion_kernel = dists_emb.copy()
-        diffusion_kernel.data = np.exp(-.5 * dists_emb.data ** 2 / sigma ** 2)
+        diffusion_kernel.data = np.exp(-.5 * dists_emb.data ** 2 / scale_diffusion ** 2)
         T = T.multiply(diffusion_kernel)  # combine velocity based kernel with diffusion based kernel
 
-        if diffuse_prob > 0:  # add another diffusion kernel (Brownian motion - like)
-            diffusion_kernel.data = np.exp(-.5 * dists_emb.data ** 2 / (sigma/2) ** 2)
-            T = (1-diffuse_prob) * T + diffuse_prob * diffusion_kernel
+        if 0 < weight_diffusion < 1:  # add another diffusion kernel (Brownian motion - like)
+            diffusion_kernel.data = np.exp(-.5 * dists_emb.data ** 2 / (scale_diffusion/2) ** 2)
+            T = (1-weight_diffusion) * T + weight_diffusion * diffusion_kernel
 
         T = normalize_sparse(T)
 
