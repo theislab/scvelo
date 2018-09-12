@@ -39,11 +39,15 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, diffus
 
     if 'X_' + str(basis) in adata.obsm.keys():
         dists_emb = (T > 0).multiply(squareform(pdist(adata.obsm['X_' + basis])))
-        sigma = dists_emb.mean()
-        diffusion_kernel = np.expm1(-.5 * dists_emb.multiply(dists_emb) / sigma**2)
+        sigma = dists_emb.data.mean()
+        diffusion_kernel = dists_emb.copy()
+        diffusion_kernel.data = np.exp(-.5 * dists_emb.data ** 2 / sigma ** 2)
         T = T.multiply(diffusion_kernel)  # combine velocity based kernel with diffusion based kernel
+
         if diffuse_prob > 0:  # add another diffusion kernel (Brownian motion - like)
-            T = (1-diffuse_prob) * T + diffuse_prob * np.expm1(-.5 * dists_emb.multiply(dists_emb) / (sigma/2)**2)
+            diffusion_kernel.data = np.exp(-.5 * dists_emb.data ** 2 / (sigma/2) ** 2)
+            T = (1-diffuse_prob) * T + diffuse_prob * diffusion_kernel
+
         T = normalize_sparse(T)
 
     return T
