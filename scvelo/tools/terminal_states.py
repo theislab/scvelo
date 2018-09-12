@@ -17,15 +17,17 @@ def eigs(T, k=10, eps=1e-3):                            # cred to M. Lange
     return eigval, eigvec
 
 
-def terminal_states(adata, vkey='velocity', basis=None, diffuse_prob=0, eps=1e-3, copy=False):
+def terminal_states(adata, vkey='velocity', basis=None, weight_diffusion=0, scale_diffusion=1, eps=1e-3, copy=False):
     logg.info('computing root cells', r=True, end=' ')
-    T = transition_matrix(adata, vkey=vkey, basis=basis, diffuse_prob=diffuse_prob, backward=True)
+    T = transition_matrix(adata, vkey=vkey, basis=basis,
+                          weight_diffusion=weight_diffusion, scale_diffusion=scale_diffusion, backward=True)
     _, eigvec = eigs(T, eps=eps)
     adata.obs['root'] = scale(eigvec.sum(1))
     logg.info('using ' + str(eigvec.shape[1]) + ' eigenvectors with eigenvalue 1.')
 
     logg.info('computing end points', end=' ')
-    T = transition_matrix(adata, vkey=vkey, basis=basis)
+    T = transition_matrix(adata, vkey=vkey,
+                          weight_diffusion=weight_diffusion, scale_diffusion=scale_diffusion, basis=basis)
     _, eigvec = eigs(T, eps=eps)
     adata.obs['end'] = scale(eigvec.sum(1))
     logg.info('using ' + str(eigvec.shape[1]) + ' eigenvectors with eigenvalue 1.')
