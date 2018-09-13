@@ -97,7 +97,9 @@ def velocity_embedding(adata, basis='umap', vkey='velocity', density=1, scale=1,
 
         if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
 
-        C = interpret_colorkey(adata, color, layer, perc)[ix_choice]
+        C = interpret_colorkey(adata, color, layer, perc)
+        if len(C) == len(adata.n_obs): C = C[ix_choice]
+
         if is_color_like(C[0]): pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=C, zorder=1, **_kwargs)
         else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], C, zorder=1, **_kwargs)
 
