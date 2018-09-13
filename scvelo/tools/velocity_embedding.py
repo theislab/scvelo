@@ -1,6 +1,7 @@
 from ..logging import logg, settings
 from .utils import norm
 from .transition_matrix import transition_matrix
+from scipy.sparse import issparse
 import numpy as np
 import warnings
 
@@ -35,7 +36,7 @@ def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, retain_sc
     velocity_umap: `.obsm`
         coordinates of velocity projection on embedding
     """
-    T = transition_matrix(adata, vkey=vkey, basis=None, scale=scale)
+    T = transition_matrix(adata, vkey=vkey, scale=scale)
 
     logg.info('computing velocity embedding', r=True)
 
@@ -66,7 +67,8 @@ def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, retain_sc
 
     if retain_scale:
         delta = T.dot(adata.X) - adata.X
-        cos_proj = (adata.obsm[vkey] * delta).sum(1) / norm(delta)
+        if issparse(delta): delta = delta.A
+        cos_proj = (adata.layers[vkey] * delta).sum(1) / norm(delta)
         V_emb *= np.clip(cos_proj, 0, 1)
 
     V_emb /= (2.2 * quiver_autoscale(X_emb[:, 0], X_emb[:, 1], V_emb[:, 0], V_emb[:, 1]))

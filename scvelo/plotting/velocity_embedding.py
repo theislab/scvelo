@@ -7,6 +7,7 @@ from matplotlib.colors import is_color_like
 import matplotlib.pyplot as pl
 import numpy as np
 
+
 @doc_params(scatter=doc_scatter)
 def velocity_embedding(adata, basis='umap', vkey='velocity', density=1, scale=1, color=None, use_raw=None, layer=None,
                        color_map=None, colorbar=False, palette=None, size=10, alpha=.2, perc=None, sort_order=True,
