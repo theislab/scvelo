@@ -43,8 +43,7 @@ def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, self_tran
     logg.info('computing velocity embedding', r=True)
 
     if 'X_' + basis not in adata.obsm_keys():
-        raise ValueError(
-            'You need to run `tl.{}` first to compute embedded velocity vectors.').format(basis)
+        raise ValueError('You need compute the embedding first.')
 
     X_emb = adata.obsm['X_' + basis][:, :2]
     V_emb = np.zeros((adata.n_obs, 2))
