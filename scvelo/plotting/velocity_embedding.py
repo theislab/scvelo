@@ -9,8 +9,8 @@ import numpy as np
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding(adata, basis='umap', vkey='velocity', density=1, scale=1, color=None, use_raw=None, layer=None,
-                       color_map=None, colorbar=False, palette=None, size=10, alpha=.2, perc=None, sort_order=True,
+def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, color=None, use_raw=None, layer=None,
+                       color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
                        groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                        legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
                        fontsize=None, figsize=(14,10), dpi=150, frameon=False, show=True, save=None, ax=None, **kwargs):
@@ -37,6 +37,7 @@ def velocity_embedding(adata, basis='umap', vkey='velocity', density=1, scale=1,
     -------
         `matplotlib.Axis` if `show==False`
     """
+    if basis is None: basis = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()][-1]
     colors = color if isinstance(color, (list, tuple)) else [color]
     layers = layer if isinstance(layer, (list, tuple)) else [layer]
     vkeys = vkey if isinstance(vkey, (list, tuple)) else [vkey]
@@ -90,7 +91,10 @@ def velocity_embedding(adata, basis='umap', vkey='velocity', density=1, scale=1,
         X = adata.obsm['X_' + basis][:, get_components(components)][ix_choice]
         V = adata.obsm[vkey + '_' + basis][ix_choice]
 
-        if color_map is None: color_map = 'viridis_r' if (color == 'root' or color == 'end') else 'RdBu_r'
+        if color_map is None:
+            color_map = 'viridis_r' if isinstance(color, str) and (color == 'root' or color == 'end') else 'RdBu_r'
+        if color is None:
+            color = 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else 'grey'
         _kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .0005,
                    "edgecolors": 'k', "headwidth": 9, "headlength": 10, "headaxislength": 6, "linewidth": .25}
         _kwargs.update(kwargs)
@@ -98,7 +102,7 @@ def velocity_embedding(adata, basis='umap', vkey='velocity', density=1, scale=1,
         if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
 
         C = interpret_colorkey(adata, color, layer, perc)
-        if len(C) == len(adata.n_obs): C = C[ix_choice]
+        if len(C) == adata.n_obs: C = C[ix_choice]
 
         if is_color_like(C[0]): pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=C, zorder=1, **_kwargs)
         else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], C, zorder=1, **_kwargs)

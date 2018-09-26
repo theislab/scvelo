@@ -18,7 +18,7 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
         m, M = np.min(X_emb[:, dim_i]), np.max(X_emb[:, dim_i])
         m = m - .01 * np.abs(M - m)
         M = M + .01 * np.abs(M - m)
-        gr = np.linspace(m, M, 70 * density)
+        gr = np.linspace(m, M, 50 * density)
         grs.append(gr)
 
     meshes_tuple = np.meshgrid(*grs)
@@ -37,15 +37,15 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
     V_grid = (V_emb[neighs] * weight[:, :, None]).sum(1) / np.maximum(1, p_mass)[:, None]
     X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
 
-    V_grid /= 3.5 * quiver_autoscale(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1])
+    V_grid /= 3 * quiver_autoscale(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1])
 
     return X_grid, V_grid
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding_grid(adata, basis='umap', vkey='velocity', density=1, scale=1, min_mass=.5, smooth=.5,
+def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale=1, min_mass=.5, smooth=.5,
                             n_neighbors=None, X=None, V=None, principal_curve=False, color=None, use_raw=None, layer=None,
-                            color_map=None, colorbar=False, palette=None, size=5, alpha=.2, perc=None, sort_order=True,
+                            color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
                             groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                             legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
                             fontsize=None, figsize=(7,5), dpi=100, frameon=False, show=True, save=None, ax=None, **kwargs):
@@ -82,6 +82,7 @@ def velocity_embedding_grid(adata, basis='umap', vkey='velocity', density=1, sca
     -------
         `matplotlib.Axis` if `show==False`
     """
+    if basis is None: basis = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()][-1]
     colors = color if isinstance(color, (list, tuple)) else [color]
     layers = layer if isinstance(layer, (list, tuple)) else [layer]
     vkeys = vkey if isinstance(vkey, (list, tuple)) else [vkey]
@@ -143,7 +144,8 @@ def velocity_embedding_grid(adata, basis='umap', vkey='velocity', density=1, sca
                    "edgecolors": 'k', "headwidth": 4.5, "headlength": 5, "headaxislength": 3, "linewidth": .2}
         _kwargs.update(kwargs)
 
-        if color_map is None: color_map = 'viridis_r' if (color == 'root' or color == 'end') else 'RdBu_r'
+        if color_map is None:
+            color_map = 'viridis_r' if isinstance(color, str) and (color == 'root' or color == 'end') else 'RdBu_r'
         if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
 
         pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], **_kwargs, zorder=1)

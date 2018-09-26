@@ -6,7 +6,7 @@ from matplotlib.ticker import MaxNLocator
 
 
 @doc_params(scatter=doc_scatter)
-def scatter(adata, x=None, y=None, basis='umap', color=None, use_raw=None, layer=None, color_map=None, colorbar=False,
+def scatter(adata, x=None, y=None, basis=None, color=None, use_raw=None, layer=None, color_map=None, colorbar=False,
             palette=None, size=5, alpha=1, perc=None, sort_order=True, groups=None, components=None, projection='2d',
             legend_loc='none', legend_fontsize=None, legend_fontweight=None, right_margin=None, left_margin=None,
             xlabel=None, ylabel=None, title=None, fontsize=None, figsize=(7,5), dpi=100, frameon=False, show=True,
@@ -28,6 +28,7 @@ def scatter(adata, x=None, y=None, basis='umap', color=None, use_raw=None, layer
     -------
         If `show==False` a `matplotlib.Axis`
     """
+    if basis is None: basis = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()][-1]
     colors = color if isinstance(color, (list, tuple)) else [color]
     layers = layer if isinstance(layer, (list, tuple)) else [layer]
 
@@ -57,15 +58,21 @@ def scatter(adata, x=None, y=None, basis='umap', color=None, use_raw=None, layer
 
     else:
         if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
-        if color_map is None: color_map = 'viridis_r' if (color == 'root' or color == 'end') else 'RdBu_r'
+        if color_map is None:
+            color_map = 'viridis_r' if isinstance(color, str) and (color == 'root' or color == 'end') else 'RdBu_r'
+        if color is None:
+            color = 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else 'grey'
         is_embedding = (x is None) | (y is None)
 
-        if color in adata.obs and adata.obs[color].dtype.name == 'category' and is_embedding:
+        if isinstance(color, str) and color in adata.obs.keys() \
+                and adata.obs[color].dtype.name == 'category' and is_embedding:
+
             ax = scpl.scatter(adata, color=color, use_raw=use_raw, sort_order=sort_order, alpha=alpha, basis=basis,
                               groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                               legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, color_map=color_map,
-                              palette=palette, right_margin=right_margin, left_margin=left_margin,
-                              size=size, title=title, frameon=frameon, show=False, save=None, ax=ax, **kwargs)
+                              palette=palette, right_margin=right_margin, left_margin=left_margin, size=size,
+                              title=title, frameon=frameon, show=False, save=None, ax=ax, **kwargs)
+
         else:
             if is_embedding:
                 X_emb = adata.obsm['X_' + basis][:, get_components(components)]
@@ -76,6 +83,7 @@ def scatter(adata, x=None, y=None, basis='umap', color=None, use_raw=None, layer
                 ax.yaxis.set_major_locator(MaxNLocator(nbins=3))
                 labelsize = int(fontsize * .75) if fontsize is not None else None
                 ax.tick_params(axis='both', which='major', labelsize=labelsize)
+
             c = interpret_colorkey(adata, color, layer, perc)
             pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, zorder=0, **kwargs)
 
@@ -93,7 +101,7 @@ def scatter(adata, x=None, y=None, basis='umap', color=None, use_raw=None, layer
             elif isinstance(color, str): pl.title(color, fontsize=fontsize)
 
             if not frameon: pl.axis('off')
-            if colorbar: plot_colorbar(ax)
+            if colorbar and len(c) == adata.n_obs and c.dtype: plot_colorbar(ax)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
 

@@ -14,6 +14,7 @@ zeileis_26 = [
 
 
 def get_colors(adata, basis):
+    if adata.obs[basis].dtype.name != 'category': adata.obs[basis] = pd.Categorical(adata.obs[basis])
     clusters_colors = adata.uns[basis + '_colors'] if basis+'_colors' in adata.uns.keys() else zeileis_26
     cluster_ix = adata.obs[basis].cat.codes
     return np.array([clusters_colors[cluster_ix[i]] for i in range(adata.n_obs)])
@@ -25,19 +26,20 @@ def bound(c, perc=None):
 
 
 def interpret_colorkey(adata, c=None, layer=None, perc=None):
-    if (c == 'louvain' or c == 'clusters') and adata.obs[c].dtype.name != 'category':
-        adata.obs[c] = pd.Categorical(adata.obs[c])
     if isinstance(c, str):
+        if (c == 'louvain' or c == 'clusters') and adata.obs[c].dtype.name != 'category':
+            adata.obs[c] = pd.Categorical(adata.obs[c])
         if c in adata.obs.keys():  # color by observation key
-            c = get_colors(adata, basis=c) if adata.obs[c].dtype.name == 'category' else adata.obs[c]
+            c = get_colors(adata, basis=c) if adata.obs[c].dtype.name == 'category' \
+                else adata.obs[c] if perc is None else bound(adata.obs[c], perc=perc)
         elif c in adata.var_names:  # color by var in specific layer
             c = adata[:, c].layers[layer] if layer in adata.layers.keys() else adata[:, c].X
-        c = c if perc is None else bound(c, perc=perc)
+            if perc is not None: c = bound(c, perc=perc)
     elif c is None:  # color by cluster or louvain or grey if no color is specified
         c = get_colors(adata, 'clusters') if 'clusters' in adata.obs.keys() \
             else get_colors(adata, 'louvain') if 'louvain' in adata.obs.keys() else 'grey'
-    elif isinstance(c, np.ndarray) and len(c.flatten()) == len(adata.obs):  # continuous coloring
-        c = c.flatten() if perc is None else bound(c.flatten(), perc=perc)
+    elif len(np.array(c).flatten()) == adata.n_obs:  # continuous coloring
+        c = np.array(c).flatten() if perc is None else bound(np.array(c).flatten(), perc=perc)
     else: raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
     return c
 
