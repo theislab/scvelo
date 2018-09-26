@@ -1,8 +1,10 @@
 """Builtin Datasets.
 """
 
-from scanpy.api import read
+from .read_load import read, load
+from .preprocessing.utils import cleanup
 import numpy as np
+import pandas as pd
 
 
 def dentategyrus():
@@ -14,6 +16,14 @@ def dentategyrus():
     filename = 'data/DentateGyrus/10X43_1.loom'
     url = 'http://pklab.med.harvard.edu/velocyto/DG1/10X43_1.loom'
     adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
+    cleanup(adata, clean='all')
+
+    url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/write/DG_clusters.npy'
+    url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/write/DG_umap.npy'
+
+    adata.obs['louvain'] = pd.Categorical(load('./data/DentateGyrus/DG_clusters.npy', url_louvain))
+    adata.obsm['X_umap'] = load('./data/DentateGyrus/DG_umap.npy', url_umap)
+
     return adata
 
 
