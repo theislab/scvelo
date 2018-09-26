@@ -1,4 +1,5 @@
 .. role:: small
+.. role:: smaller
 
 
 Version 0.1.8 :small:`Sep 12, 2018`
@@ -17,7 +18,7 @@ Preprocessing:
 
 Tools:
 
-- terminal_states: computes root and end points via eigenvalue decomposition
+- terminal_states: computes root and end points via eigenvalue decomposition :smaller:`thanks to M Lange`
 
 
 Version 0.1.5 :small:`Sep 4, 2018`
