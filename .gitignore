@@ -8,6 +8,12 @@ write/
 
 scvelo.egg-info/
 
+# Python / Byte-compiled / optimized / DLL
+__pycache__/
+*.py[cod]
+*.so
+.cache
+
 # always-ignore notebooks
 *.ipynb
 
