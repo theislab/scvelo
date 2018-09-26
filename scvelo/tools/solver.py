@@ -8,14 +8,19 @@ def solve_cov(x, y, fit_offset=False):
     """Solution to least squares: gamma = cov(X,Y) / var(X)
     """
     n_obs, n_var = x.shape
-    if fit_offset:
-        cov_xy, cov_xx = prod_sum_obs(x, y) / n_obs, prod_sum_obs(x, x) / n_obs
-        mean_x, mean_y = x.mean(0), y.mean(0)
-        numerator_offset = cov_xx * mean_y - cov_xy * mean_x
-        numerator_gamma = cov_xy - mean_x * mean_y
-        offset, gamma = (numerator_offset, numerator_gamma) / (cov_xx - mean_x * mean_x)
-    else:
-        offset, gamma = np.zeros(n_var), prod_sum_obs(x, y) / prod_sum_obs(x, x)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+
+        if fit_offset:
+            cov_xy, cov_xx = prod_sum_obs(x, y) / n_obs, prod_sum_obs(x, x) / n_obs
+            mean_x, mean_y = x.mean(0), y.mean(0)
+            numerator_offset = cov_xx * mean_y - cov_xy * mean_x
+            numerator_gamma = cov_xy - mean_x * mean_y
+            offset, gamma = (numerator_offset, numerator_gamma) / (cov_xx - mean_x * mean_x)
+        else:
+            offset, gamma = np.zeros(n_var), prod_sum_obs(x, y) / prod_sum_obs(x, x)
+
     return offset, gamma
 
 
