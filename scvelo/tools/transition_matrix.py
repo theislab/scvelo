@@ -1,6 +1,7 @@
 from scipy.spatial.distance import pdist, squareform
 from .utils import normalize_sparse
 import numpy as np
+import scipy
 
 
 def transition_matrix(adata, vkey='velocity', basis=None, backward=False, scale=10, weight_diffusion=0, scale_diffusion=1):
@@ -35,7 +36,12 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, scale=
     # weight direct neighbors with 1 and indirect (recurse) neighbors with 0.5
     T = .5 * T + .5 * (adata.uns['neighbors']['distances'] > 0).multiply(T)
 
-    if backward: T = T.T
+    if backward: 
+        T = T.T
+        
+        # one needs to make sure that every state has at least a small probability for a self loop
+	# otherwise, the transposed transition matrix could be ill defined if there are empty rows
+        
     T = normalize_sparse(T)
 
     if 'X_' + str(basis) in adata.obsm.keys():
