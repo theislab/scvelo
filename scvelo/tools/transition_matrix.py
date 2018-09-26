@@ -49,6 +49,10 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
     T = .5 * T + .5 * direct_neighbors.multiply(T)
 
     if backward: T = T.T
+        
+        # one needs to make sure that every state has at least a small probability for a self loop
+	# otherwise, the transposed transition matrix could be ill defined if there are empty rows
+        
     T = normalize_sparse(T)
 
     if 'X_' + str(basis) in adata.obsm.keys():

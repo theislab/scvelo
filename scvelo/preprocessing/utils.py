@@ -84,6 +84,7 @@ def filter_and_normalize(adata, min_counts=10, n_top_genes=4000, log=True, copy=
         sc.pp.filter_genes(adata, min_counts=10)
         sc.pp.normalize_per_cell(adata)
         sc.pp.filter_genes_dispersion(adata, n_top_genes=10000)
+        adata.raw = sc.pp.log1p(adata, copy = True)
         sc.pp.normalize_per_cell(adata)
         if log: sc.pp.log1p(adata)
 
@@ -110,6 +111,8 @@ def filter_and_normalize(adata, min_counts=10, n_top_genes=4000, log=True, copy=
     if n_top_genes is None or n_top_genes < adata.shape[1]:
         normalize_per_cell(adata)
         filter_genes_dispersion(adata, n_top_genes=n_top_genes)
+    
+    adata.raw = log1p(adata, copy = True)
     normalize_per_cell(adata)
     if log: log1p(adata)
     return adata if copy else None
