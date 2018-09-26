@@ -2,6 +2,8 @@ from ..logging import logg, settings
 from ..preprocessing.moments import moments, second_order_moments
 from .solver import solve_cov, solve2_inv, solve2_mle
 from .utils import prod_sum_obs
+from .velocity_confidence import velocity_confidence
+
 import numpy as np
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -90,5 +92,7 @@ def velocity(adata, vkey='velocity', mode='stochastic', fit_offset=False, fit_of
     logg.hint(
         'added to `.layers`\n'
         '    \'' + vkey + '\', velocity vectors for each individual cell')
+
+    velocity_confidence(adata, vkey)
 
     return adata if copy else None

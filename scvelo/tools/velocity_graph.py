@@ -1,29 +1,10 @@
 from ..logging import logg, settings
-from .utils import norm
+from .utils import norm, cosine, get_indices, get_iterative_indices
 from .velocity import velocity
 from scanpy.api import Neighbors
 from scipy.sparse import coo_matrix
 import numpy as np
 import warnings
-
-
-def get_indices(dist):
-    n_neighbors = (dist > 0).sum(1).min()
-    rows_idx = np.where((dist > 0).sum(1) > n_neighbors)[0]
-
-    for row_idx in rows_idx:
-        col_idx = dist[row_idx].indices[n_neighbors:]
-        dist[row_idx, col_idx] = 0
-
-    dist.eliminate_zeros()
-
-    indices = dist.indices.reshape((-1, n_neighbors))
-    return indices, dist
-
-
-def get_iterative_indices(indices, index, n_recurse_neighbors):
-    return indices[get_iterative_indices(indices, index, n_recurse_neighbors-1)] \
-        if n_recurse_neighbors > 1 else indices[index]
 
 
 class Cosines:
@@ -46,9 +27,8 @@ class Cosines:
                 knn_ixs = np.unique(get_iterative_indices(self.indices, i, self.n_recurse_neighbors))
                 dX = self.X[knn_ixs] - self.X[i, None]
                 dX = np.sqrt(np.abs(dX)) * np.sign(dX)
-                dX -= dX.mean(1)[:, None]
 
-                vals.extend(np.einsum('ij, j', dX, self.V[i]) / (norm(dX) * self.V_norm[i])[None, :])
+                vals.extend(cosine(dX, self.V[i], self.V_norm[i]))
                 rows.extend(np.ones(len(knn_ixs)) * i)
                 cols.extend(knn_ixs)
 
@@ -56,16 +36,13 @@ class Cosines:
             for i in ixs:
                 knn_ixs = np.unique(get_iterative_indices(self.indices, i, self.n_recurse_neighbors))
                 dX = self.X[knn_ixs] - self.X[i, None]
-                dX -= dX.mean(1)[:, None]
-
-                vals.extend(np.einsum('ij, j', dX, self.V[i]) / (norm(dX) * self.V_norm[i])[None, :])
+                vals.extend(cosine(dX, self.V[i], self.V_norm[i]))
                 rows.extend(np.ones(len(knn_ixs)) * i)
                 cols.extend(knn_ixs)
         async_id = int(ixs[0] / len(ixs))  # keep track of order
 
         vals = np.hstack(vals)
-        vals[np.isnan(vals)] = 0
-        vals = np.clip(vals, 1e-10, 1)
+        vals[np.isnan(vals)] = 1e-10  # actually zero; just to store these entries in sparse matrix.
 
         return [async_id, vals, rows, cols]
 
@@ -129,9 +106,16 @@ def velocity_graph(adata, vkey='velocity', n_recurse_neighbors=2, n_neighbors=No
                 cols.extend(r[3])
 
     graph = coo_matrix((vals, (rows, cols)), shape=(adata.n_obs, adata.n_obs))
+    graph_neg = graph.copy()
+
+    graph.data = np.clip(graph.data, 0, 1)
+    graph_neg.data = np.clip(graph_neg.data, -1, 0)
+
     graph.eliminate_zeros()
+    graph_neg.eliminate_zeros()
 
     adata.uns[vkey+'_graph'] = graph.tocsr()
+    adata.uns[vkey+'_graph_neg'] = graph_neg.tocsr()
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(

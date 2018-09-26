@@ -3,7 +3,8 @@ from .utils import normalize_sparse
 import numpy as np
 
 
-def transition_matrix(adata, vkey='velocity', basis=None, backward=False, scale=10, weight_diffusion=0, scale_diffusion=1):
+def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_transitions=True, scale=10,
+                      use_negative_cosines=False, weight_diffusion=0, scale_diffusion=1):
     """Computes transition probabilities by applying Gaussian kernel to cosine similarities x scale
 
     Arguments
@@ -29,11 +30,23 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, scale=
     """
     if vkey+'_graph' not in adata.uns:
         raise ValueError('You need to run `tl.velocity_graph` first to compute cosine correlations.')
- 
-    T = np.expm1(adata.uns[vkey + '_graph'] * scale)
+
+    graph = adata.uns[vkey + '_graph'].copy()
+
+    if self_transitions:
+        confidence = graph.max(1).A.flatten()
+        ub = np.percentile(confidence, 98)
+        self_prob = np.clip(ub - confidence, 0, 1)
+        graph.setdiag(self_prob)
+
+    T = np.expm1(graph * scale)  # equivalent to np.exp(adata.uns[vkey + '_graph'].A * scale) - 1
+    T = T - np.expm1(-adata.uns[vkey + '_graph_neg'] * scale) if use_negative_cosines \
+        else T + (adata.uns[vkey + '_graph_neg'] < 0) * 1e-10
 
     # weight direct neighbors with 1 and indirect (recurse) neighbors with 0.5
-    T = .5 * T + .5 * (adata.uns['neighbors']['distances'] > 0).multiply(T)
+    direct_neighbors = adata.uns['neighbors']['distances'] > 0
+    direct_neighbors.setdiag(1)
+    T = .5 * T + .5 * direct_neighbors.multiply(T)
 
     if backward: T = T.T
     T = normalize_sparse(T)

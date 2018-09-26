@@ -3,7 +3,6 @@ from .utils import norm
 from .transition_matrix import transition_matrix
 from scipy.sparse import issparse
 import numpy as np
-import warnings
 
 
 def quiver_autoscale(X, Y, U, V):
@@ -14,7 +13,8 @@ def quiver_autoscale(X, Y, U, V):
     return Q.scale
 
 
-def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, retain_scale=False, copy=False):
+def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
+                       retain_scale=False, copy=False):
     """Computes the single cell velocities in the embedding
 
     Arguments
@@ -36,7 +36,9 @@ def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, retain_sc
     velocity_umap: `.obsm`
         coordinates of velocity projection on embedding
     """
-    T = transition_matrix(adata, vkey=vkey, scale=scale)
+    T = transition_matrix(adata, vkey=vkey, scale=scale, self_transitions=self_transitions, use_negative_cosines=use_negative_cosines)
+    T.setdiag(0)
+    T.eliminate_zeros()
 
     logg.info('computing velocity embedding', r=True)
 
@@ -47,31 +49,24 @@ def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, retain_sc
     X_emb = adata.obsm['X_' + basis][:, :2]
     V_emb = np.zeros((adata.n_obs, 2))
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        if adata.n_obs < 8192:
-            TA = T.A
-            for i in range(adata.n_obs):
-                indices = T[i].indices
-                diff = X_emb[indices] - X_emb[i, None]
-                diff /= norm(diff)[:, None]
-                diff[np.isnan(diff)] = 0  # zero diff in a steady-state
-                V_emb[i] = TA[i, indices].dot(diff) - diff.sum(0) / len(indices)
-        else:
-            for i in range(adata.n_obs):
-                indices = T[i].indices
-                diff = X_emb[indices] - X_emb[i, None]
-                diff /= norm(diff)[:, None]
-                diff[np.isnan(diff)] = 0  # zero diff in a steady-state
-                V_emb[i] = T[i].data.dot(diff) - diff.sum(0) / len(indices)
+    TA = T.A if adata.n_obs < 8192 else None
+    sparse = False if adata.n_obs < 8192 else True
+
+    for i in range(adata.n_obs):
+        indices = T[i].indices
+        dX = X_emb[indices] - X_emb[i, None]  # shape (n_neighbors, 2)
+        if not retain_scale: dX /= norm(dX)[:, None]
+        dX[np.isnan(dX)] = 0  # zero diff in a steady-state
+        probs = T[i].data if sparse else TA[i, indices]
+        V_emb[i] = probs.dot(dX) - probs.mean() * dX.sum(0)  # probs.sum() / len(indices)
 
     if retain_scale:
         delta = T.dot(adata.X) - adata.X
         if issparse(delta): delta = delta.A
         cos_proj = (adata.layers[vkey] * delta).sum(1) / norm(delta)
-        V_emb *= np.clip(cos_proj, 0, 1)
+        V_emb *= np.clip(cos_proj[:, None] * 10, 0, 1)
 
-    V_emb /= (2.2 * quiver_autoscale(X_emb[:, 0], X_emb[:, 1], V_emb[:, 0], V_emb[:, 1]))
+    V_emb /= (3 * quiver_autoscale(X_emb[:, 0], X_emb[:, 1], V_emb[:, 0], V_emb[:, 1]))
 
     vkey += '_' + basis
     adata.obsm[vkey] = V_emb
