@@ -44,7 +44,6 @@ def cleanup(adata, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
     -------
     Returns or updates `adata` with selection of attributes kept.
     """
-
     if any(['obs' in clean, 'all' in clean]):
         for key in list(adata.obs.keys()):
             if key not in keep: del adata.obs[key]
@@ -53,13 +52,14 @@ def cleanup(adata, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
         for key in list(adata.var.keys()):
             if key not in keep: del adata.var[key]
 
-    if any(['obsm' in clean, 'all' in clean]):
-        for key in list(adata.obsm.keys()):
-            if key not in keep: del adata.obsm[key]
+    # obsm and varm cannot be deleted when only 1 key left -> PR for anndata
+    #if any(['obsm' in clean, 'all' in clean]):
+    #    for key in list(adata.obsm.keys()):
+    #        if key not in keep: del adata.obsm[key]
 
-    if any(['varm' in clean, 'all' in clean]):
-        for key in list(adata.varm.keys()):
-            if key not in keep: del adata.varm[key]
+    #if any(['varm' in clean, 'all' in clean]):
+    #    for key in list(adata.varm.keys()):
+    #        if key not in keep: del adata.varm[key]
 
     if any(['uns' in clean, 'all' in clean]):
         for key in list(adata.uns.keys()):

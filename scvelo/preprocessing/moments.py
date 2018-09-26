@@ -12,6 +12,13 @@ def normalize_layers(adata, layers={'spliced', 'unspliced'}, copy=False):
     return adata if copy else None
 
 
+def get_connectivities(adata, mode):
+    connectivities = adata.uns['neighbors'][mode]
+    connectivities.setdiag(1)
+    connectivities = connectivities.multiply(1. / connectivities.sum(1))
+    return connectivities
+
+
 def moments(adata, n_neighbors=30, n_pcs=30, mode='connectivities', renormalize=False, copy=False):
     """Computes first order moments for velocity estimation.
 
@@ -50,10 +57,8 @@ def moments(adata, n_neighbors=30, n_pcs=30, mode='connectivities', renormalize=
     logg.info('computing moments', r=True)
     normalize_layers(adata)
 
-    connectivities = adata.uns['neighbors'][mode]
-    connectivities.setdiag(1)
-    connectivities = connectivities.multiply(1. / connectivities.sum(1))
-    connectivities += connectivities.dot(connectivities*.5)
+    connectivities = get_connectivities(adata, mode)
+    #connectivities += connectivities.dot(connectivities*.5)
 
     adata.layers['Ms'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['spliced'])).A
     adata.layers['Mu'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['unspliced'])).A
@@ -83,9 +88,7 @@ def second_order_moments(adata):
     if 'neighbors' not in adata.uns:
         raise ValueError('You need to run `pp.neighbors` first to compute a neighborhood graph.')
 
-    connectivities = adata.uns['neighbors']['connectivities'] > 0
-    connectivities = connectivities.multiply(1. / connectivities.sum(1))
-
+    connectivities = get_connectivities(adata, 'connectivities')
     s, u = csr_matrix(adata.layers['spliced']), csr_matrix(adata.layers['unspliced'])
     Mss = csr_matrix.dot(connectivities, s.multiply(s)).A
     Mus = csr_matrix.dot(connectivities, s.multiply(u)).A
@@ -108,9 +111,7 @@ def second_order_moments_u(adata):
     if 'neighbors' not in adata.uns:
         raise ValueError('You need to run `pp.neighbors` first to compute a neighborhood graph.')
 
-    connectivities = adata.uns['neighbors']['connectivities'] > 0
-    connectivities = connectivities.multiply(1. / connectivities.sum(1))
-
+    connectivities = get_connectivities(adata, 'connectivities')
     u = csr_matrix(adata.layers['unspliced'])
     Muu = csr_matrix.dot(connectivities, u.multiply(u)).A
 
