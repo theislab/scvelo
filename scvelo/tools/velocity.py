@@ -79,7 +79,7 @@ def velocity(adata, vkey='velocity', mode='stochastic', fit_offset=False, fit_of
 
     gamma[np.isnan(gamma)], r2[np.isnan(r2)], res[np.isnan(res)] = 0, 0, 0
 
-    pars = [offset, offset2, beta, gamma, r2] if stochastic else [offset, beta, gamma, r2]
+    pars = [offset, offset2, beta, gamma, r2.round(2)] if stochastic else [offset, beta, gamma, r2.round(2)]
     pars_str = ['_offset', '_offset2', '_beta', '_gamma', '_r2'] if stochastic else ['_offset', '_beta', '_gamma', '_r2']
     for i, par in enumerate(pars_str): adata.var[vkey + par] = pars[i]
 
