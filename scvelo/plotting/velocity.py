@@ -1,7 +1,9 @@
 from ..preprocessing.moments import second_order_moments
+from ..tools import rank_velocity_genes
 from .scatter import scatter
 from .utils import savefig
 import numpy as np
+import pandas as pd
 from matplotlib.ticker import MaxNLocator
 import matplotlib.pyplot as pl
 
@@ -52,9 +54,9 @@ def velocity(adata, var_names=None, basis='umap', mode=None, fits='all', layers=
         A matplotlib axes object. Only works if plotting a single component.
 
     """
-    var_names = [var_names] if isinstance(var_names, str) else var_names
-    var_names = [var for var in var_names if var in adata.var_names[adata.var.velocity_genes]] \
-        if isinstance(var_names, list) else adata.var_names[(adata.layers['spliced'] > 0).sum(0).argsort()[::-1][:4]]
+    var_names = [var_names] if isinstance(var_names, str) else var_names if var_names is not None \
+        else rank_velocity_genes(adata, n_genes=4)
+    var_names = pd.unique([var for var in var_names if var in adata.var_names[adata.var.velocity_genes]])
 
     layers = ['velocity', 'Ms', 'variance_velocity'] if layers == 'all' else layers
     layers = [layer for layer in layers if layer in adata.layers.keys()]
