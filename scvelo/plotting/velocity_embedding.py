@@ -6,6 +6,7 @@ from .docs import doc_scatter, doc_params
 from matplotlib.colors import is_color_like
 import matplotlib.pyplot as pl
 import numpy as np
+import pandas as pd
 
 
 @doc_params(scatter=doc_scatter)
@@ -38,9 +39,9 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, c
         `matplotlib.Axis` if `show==False`
     """
     if basis is None: basis = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()][-1]
-    colors = color if isinstance(color, (list, tuple)) else [color]
-    layers = layer if isinstance(layer, (list, tuple)) else [layer]
-    vkeys = vkey if isinstance(vkey, (list, tuple)) else [vkey]
+    colors = pd.unique(color) if isinstance(color, (list, tuple, np.ndarray, np.record)) else [color]
+    layers = layer if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
+    vkeys = vkey if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
     for key in vkeys:
         if key + '_' + basis not in adata.obsm_keys(): tl_velocity_embedding(adata, basis=basis, vkey=key)
 

@@ -1,7 +1,9 @@
 from .utils import interpret_colorkey, get_components, plot_colorbar, savefig
 from .docs import doc_scatter, doc_params
-import matplotlib.pyplot as pl
 import scanpy.api.pl as scpl
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
 
 
@@ -28,9 +30,8 @@ def scatter(adata, x=None, y=None, basis=None, color=None, use_raw=None, layer=N
     -------
         If `show==False` a `matplotlib.Axis`
     """
-    if basis is None: basis = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()][-1]
-    colors = color if isinstance(color, (list, tuple)) else [color]
-    layers = layer if isinstance(layer, (list, tuple)) else [layer]
+    colors = pd.unique(color) if isinstance(color, (list, tuple, np.ndarray, np.record)) else [color]
+    layers = layer if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
 
     if len(colors) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0]*len(colors), figsize[1]), dpi=dpi))):
@@ -60,13 +61,15 @@ def scatter(adata, x=None, y=None, basis=None, color=None, use_raw=None, layer=N
         if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
         if color_map is None:
             color_map = 'viridis_r' if isinstance(color, str) and (color == 'root' or color == 'end') else 'RdBu_r'
+
         if color is None:
             color = 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else 'grey'
+        is_categorical = True if isinstance(color, str) and color in {'louvain', 'clusters', 'grey'} else False
         is_embedding = (x is None) | (y is None)
+        if is_embedding and basis is None:
+            basis = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()][-1]
 
-        if isinstance(color, str) and color in adata.obs.keys() \
-                and adata.obs[color].dtype.name == 'category' and is_embedding:
-
+        if is_categorical and is_embedding:
             ax = scpl.scatter(adata, color=color, use_raw=use_raw, sort_order=sort_order, alpha=alpha, basis=basis,
                               groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                               legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, color_map=color_map,
@@ -85,6 +88,9 @@ def scatter(adata, x=None, y=None, basis=None, color=None, use_raw=None, layer=N
                 ax.tick_params(axis='both', which='major', labelsize=labelsize)
 
             c = interpret_colorkey(adata, color, layer, perc)
+            if layer is not None and 'velocity' in layer and isinstance(color, str) and color in adata.var_names:
+                ub = np.percentile(np.abs(c), 98)
+                kwargs.update({"vmin": -ub, "vmax": ub})
             pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, zorder=0, **kwargs)
 
             if isinstance(xlabel, str) and isinstance(ylabel, str):
@@ -101,7 +107,7 @@ def scatter(adata, x=None, y=None, basis=None, color=None, use_raw=None, layer=N
             elif isinstance(color, str): pl.title(color, fontsize=fontsize)
 
             if not frameon: pl.axis('off')
-            if colorbar and len(c) == adata.n_obs and c.dtype: plot_colorbar(ax)
+            if colorbar and len(c) == adata.n_obs and not is_categorical: plot_colorbar(ax)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
 
