@@ -3,24 +3,21 @@ import pandas as pd
 import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from scanpy.plotting.utils import savefig_or_show
+from scanpy.plotting.utils import savefig_or_show, default_palette, adjust_palette
 
 
-zeileis_26 = [
-    "#023fa5", "#7d87b9", "#bec1d4", "#d6bcc0", "#bb7784", "#8e063b", "#4a6fe3",
-    "#8595e1", "#b5bbe3", "#e6afb9", "#e07b91", "#d33f6a", "#11c638", "#8dd593",
-    "#c6dec7", "#ead3c6", "#f0b98d", "#ef9708", "#0fcfc0", "#9cded6", "#d5eae7",
-    "#f3e1eb", "#f6c4e1", "#f79cd4", '#7f7f7f', "#c7c7c7", "#1CE6FF", "#336600"]
-
-
-def get_colors(adata, basis):
-    if adata.obs[basis].dtype.name != 'category': adata.obs[basis] = pd.Categorical(adata.obs[basis])
-    clusters_colors = adata.uns[basis + '_colors'] if basis+'_colors' in adata.uns.keys() else zeileis_26
-    cluster_ix = adata.obs[basis].cat.codes
-    return np.array([clusters_colors[cluster_ix[i]] for i in range(adata.n_obs)])
+def get_colors(adata, c):
+    if adata.obs[c].dtype.name != 'category': adata.obs[c] = pd.Categorical(adata.obs[c])
+    if c+'_colors' not in adata.uns.keys():
+        palette = default_palette(None)
+        palette_adjusted = adjust_palette(palette, length=len(adata.obs[c].cat.categories))
+        adata.uns[c + '_colors'] = palette_adjusted[:len(adata.obs[c].cat.categories)].by_key()['color']
+    cluster_ix = adata.obs[c].cat.codes
+    return np.array([adata.uns[c + '_colors'][cluster_ix[i]] for i in range(adata.n_obs)])
 
 
 def bound(c, perc=None):
+    if isinstance(perc, int): perc = [perc, 100] if perc < 50 else perc[0, perc]
     lb, ub = np.percentile(c, perc)
     return np.clip(c, lb, ub)
 
@@ -30,7 +27,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
         if (c == 'louvain' or c == 'clusters') and adata.obs[c].dtype.name != 'category':
             adata.obs[c] = pd.Categorical(adata.obs[c])
         if c in adata.obs.keys():  # color by observation key
-            c = get_colors(adata, basis=c) if adata.obs[c].dtype.name == 'category' \
+            c = get_colors(adata, c) if adata.obs[c].dtype.name == 'category' \
                 else adata.obs[c] if perc is None else bound(adata.obs[c], perc=perc)
         elif c in adata.var_names:  # color by var in specific layer
             c = adata[:, c].layers[layer] if layer in adata.layers.keys() else adata[:, c].X
