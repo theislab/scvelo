@@ -21,7 +21,7 @@ def show_proportions(adata, copy=False):
     mean_abundances = np.round(
         [np.mean(tot_mol_cell / np.sum(tot_mol_cell_layers, 0)) for tot_mol_cell in tot_mol_cell_layers], 2)
 
-    print('abundance of ' + str(layers_keys) + ': ' + str(mean_abundances))
+    print('Abundance of ' + str(layers_keys) + ': ' + str(mean_abundances))
 
     return adata if copy else None
 
@@ -52,15 +52,6 @@ def cleanup(adata, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
         for key in list(adata.var.keys()):
             if key not in keep: del adata.var[key]
 
-    # obsm and varm cannot be deleted when only 1 key left -> PR for anndata
-    #if any(['obsm' in clean, 'all' in clean]):
-    #    for key in list(adata.obsm.keys()):
-    #        if key not in keep: del adata.obsm[key]
-
-    #if any(['varm' in clean, 'all' in clean]):
-    #    for key in list(adata.varm.keys()):
-    #        if key not in keep: del adata.varm[key]
-
     if any(['uns' in clean, 'all' in clean]):
         for key in list(adata.uns.keys()):
             if key not in keep: del adata.uns[key]
@@ -72,7 +63,7 @@ def cleanup(adata, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
     return adata if copy else None
 
 
-def filter_and_normalize(adata, min_counts=10, n_top_genes=4000, log=True, copy=False):
+def filter_and_normalize(adata, min_counts=10, n_top_genes=None, log=True, copy=False):
     """Filtering, normalization and log transform
 
     Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
@@ -107,7 +98,7 @@ def filter_and_normalize(adata, min_counts=10, n_top_genes=4000, log=True, copy=
     """
     from scanpy.api.pp import filter_genes, filter_genes_dispersion, normalize_per_cell, log1p
     filter_genes(adata, min_counts=min_counts)
-    if n_top_genes is None or n_top_genes < adata.shape[1]:
+    if n_top_genes is not None and n_top_genes < adata.shape[1]:
         normalize_per_cell(adata)
         filter_genes_dispersion(adata, n_top_genes=n_top_genes)
     normalize_per_cell(adata)
