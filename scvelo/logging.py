@@ -1,5 +1,6 @@
-from scanpy import settings
 from scanpy import logging as logg
+from scanpy import settings
+settings.verbosity = 3   # global verbosity level: show errors(0), warnings(1), info(2) and hints(3)
 
 from datetime import datetime
 from time import time
