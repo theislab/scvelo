@@ -1,10 +1,10 @@
-from .utils import interpret_colorkey, get_components, plot_colorbar, savefig
+from .utils import is_categorical, update_axes, set_label, set_title, default_basis, default_color, default_color_map, \
+    interpret_colorkey, get_components, set_colorbar, savefig
 from .docs import doc_scatter, doc_params
 import scanpy.api.pl as scpl
+import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as pl
-from matplotlib.ticker import MaxNLocator
 
 
 @doc_params(scatter=doc_scatter)
@@ -31,7 +31,7 @@ def scatter(adata, x=None, y=None, basis=None, color=None, use_raw=None, layer=N
         If `show==False` a `matplotlib.Axis`
     """
     colors = pd.unique(color) if isinstance(color, (list, tuple, np.ndarray, np.record)) else [color]
-    layers = layer if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
+    layers = pd.unique(layer) if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
 
     if len(colors) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0]*len(colors), figsize[1]), dpi=dpi))):
@@ -58,18 +58,14 @@ def scatter(adata, x=None, y=None, basis=None, color=None, use_raw=None, layer=N
         else: return ax
 
     else:
-        if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
-        if color_map is None:
-            color_map = 'viridis_r' if isinstance(color, str) and (color == 'root' or color == 'end') else 'RdBu_r'
+        ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
+        color = default_color(adata) if color is None else color
+        color_map = default_color_map(color) if color_map is None else color_map
 
-        if color is None:
-            color = 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else 'grey'
-        is_categorical = True if isinstance(color, str) and color in {'louvain', 'clusters', 'grey'} else False
         is_embedding = (x is None) | (y is None)
-        if is_embedding and basis is None:
-            basis = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()][-1]
+        basis = default_basis(adata) if basis is None and is_embedding else basis
 
-        if is_categorical and is_embedding:
+        if is_categorical(adata, color) and is_embedding:
             ax = scpl.scatter(adata, color=color, use_raw=use_raw, sort_order=sort_order, alpha=alpha, basis=basis,
                               groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                               legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, color_map=color_map,
@@ -80,36 +76,21 @@ def scatter(adata, x=None, y=None, basis=None, color=None, use_raw=None, layer=N
             if is_embedding:
                 X_emb = adata.obsm['X_' + basis][:, get_components(components)]
                 x, y = X_emb[:, 0], X_emb[:, 1]
-                ax.tick_params(which='both', bottom=False, left=False, labelbottom=False, labelleft=False)
-            else:
-                ax.xaxis.set_major_locator(MaxNLocator(nbins=3))
-                ax.yaxis.set_major_locator(MaxNLocator(nbins=3))
-                labelsize = int(fontsize * .75) if fontsize is not None else None
-                ax.tick_params(axis='both', which='major', labelsize=labelsize)
+            ax = update_axes(ax, fontsize, is_embedding)
 
             c = interpret_colorkey(adata, color, layer, perc)
             if layer is not None and 'velocity' in layer and isinstance(color, str) and color in adata.var_names:
                 ub = np.percentile(np.abs(c), 98)
                 kwargs.update({"vmin": -ub, "vmax": ub})
+
             pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, zorder=0, **kwargs)
 
-            if isinstance(xlabel, str) and isinstance(ylabel, str):
-                pl.xlabel(xlabel, fontsize=fontsize)
-                pl.ylabel(ylabel, fontsize=fontsize)
-            elif basis is not None:
-                component_name = ('DC' if basis == 'diffmap' else 'tSNE' if basis == 'tsne' else 'UMAP' if basis == 'umap'
-                else 'PC' if basis == 'pca' else basis.replace('draw_graph_', '').upper() if 'draw_graph' in basis else basis)
-                pl.xlabel(component_name + '1')
-                pl.ylabel(component_name + '2')
-
-            if isinstance(title, str): pl.title(title, fontsize=fontsize)
-            elif isinstance(layer, str) and isinstance(color, str): pl.title(color + ' ' + layer, fontsize=fontsize)
-            elif isinstance(color, str): pl.title(color, fontsize=fontsize)
+            set_label(xlabel, ylabel, fontsize, basis)
+            set_title(title, layer, color, fontsize)
 
             if not frameon: pl.axis('off')
-            if colorbar and len(c) == adata.n_obs and not is_categorical: plot_colorbar(ax)
+            if colorbar and not is_categorical(adata, color): set_colorbar(ax)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-
         if show: pl.show()
         else: return ax

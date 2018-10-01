@@ -21,8 +21,9 @@ def dentategyrus():
     url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/write/DG_clusters.npy'
     url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/write/DG_umap.npy'
 
-    adata.obs['louvain'] = pd.Categorical(load('./data/DentateGyrus/DG_clusters.npy', url_louvain))
+    adata.obs['louvain'] = load('./data/DentateGyrus/DG_clusters.npy', url_louvain)
     adata.obsm['X_umap'] = load('./data/DentateGyrus/DG_umap.npy', url_umap)
+    adata._sanitize()
 
     return adata
 

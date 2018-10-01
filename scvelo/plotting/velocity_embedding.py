@@ -1,5 +1,5 @@
-from ..tools.velocity_embedding import velocity_embedding as tl_velocity_embedding
-from .utils import interpret_colorkey, get_components, savefig
+from ..tools.velocity_embedding import velocity_embedding as compute_velocity_embedding
+from .utils import interpret_colorkey, default_basis, get_components, savefig
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -38,12 +38,12 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, c
     -------
         `matplotlib.Axis` if `show==False`
     """
-    if basis is None: basis = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()][-1]
+    basis = default_basis(adata) if basis is None else basis
     colors = pd.unique(color) if isinstance(color, (list, tuple, np.ndarray, np.record)) else [color]
-    layers = layer if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
-    vkeys = vkey if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
+    layers = pd.unique(layer) if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
+    vkeys = pd.unique(vkey) if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
     for key in vkeys:
-        if key + '_' + basis not in adata.obsm_keys(): tl_velocity_embedding(adata, basis=basis, vkey=key)
+        if key + '_' + basis not in adata.obsm_keys(): compute_velocity_embedding(adata, basis=basis, vkey=key)
 
     if len(colors) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0] * len(colors), figsize[1]), dpi=dpi))):
@@ -88,25 +88,21 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, c
         else: return ax
 
     else:
+        ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
+
         ix_choice = np.random.choice(adata.n_obs, size=int(density * adata.n_obs), replace=False)
         X = adata.obsm['X_' + basis][:, get_components(components)][ix_choice]
         V = adata.obsm[vkey + '_' + basis][ix_choice]
 
-        if color_map is None:
-            color_map = 'viridis_r' if isinstance(color, str) and (color == 'root' or color == 'end') else 'RdBu_r'
-        if color is None:
-            color = 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else 'grey'
         _kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .0005,
                    "edgecolors": 'k', "headwidth": 9, "headlength": 10, "headaxislength": 6, "linewidth": .25}
         _kwargs.update(kwargs)
 
-        if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
+        c = interpret_colorkey(adata, color, layer, perc)
+        c = c[ix_choice] if len(c) == adata.n_obs else c
 
-        C = interpret_colorkey(adata, color, layer, perc)
-        if len(C) == adata.n_obs: C = C[ix_choice]
-
-        if is_color_like(C[0]): pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=C, zorder=1, **_kwargs)
-        else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], C, zorder=1, **_kwargs)
+        if is_color_like(c[0]): pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=c, zorder=1, **_kwargs)
+        else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=1, **_kwargs)
 
         ax = scatter(adata, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
                      perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
@@ -116,6 +112,5 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, c
                      palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-
         if show: pl.show()
         else: return ax

@@ -1,5 +1,5 @@
 from ..tools.velocity_embedding import quiver_autoscale, velocity_embedding
-from .utils import get_components, savefig
+from .utils import default_basis, get_components, savefig
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -83,17 +83,17 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
     -------
         `matplotlib.Axis` if `show==False`
     """
-    if basis is None: basis = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()][-1]
+    basis = default_basis(adata) if basis is None else basis
     colors = pd.unique(color) if isinstance(color, (list, tuple, np.ndarray, np.record)) else [color]
-    layers = layer if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
-    vkeys = vkey if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
+    layers = pd.unique(layer) if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
+    vkeys = pd.unique(vkey) if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
     for key in vkeys:
         if key + '_' + basis not in adata.obsm_keys(): velocity_embedding(adata, basis=basis, vkey=key)
 
     if X is None and V is None:
         X, V = compute_velocity_on_grid(X_emb=adata.obsm['X_' + basis][:, get_components(components)],
-                                        V_emb=adata.obsm[vkeys[0] + '_' + basis], density=density, smooth=smooth,
-                                        n_neighbors=n_neighbors, min_mass=min_mass)
+                                        V_emb=adata.obsm[vkeys[0] + '_' + basis], density=density,
+                                        smooth=smooth, n_neighbors=n_neighbors, min_mass=min_mass)
 
     if len(colors) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0] * len(colors), figsize[1]), dpi=dpi))):
@@ -141,14 +141,11 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
         else: return ax
 
     else:
+        ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
+
         _kwargs = {"scale": scale, "angles": 'xy', "scale_units": 'xy', "width": .001, "color": 'black',
                    "edgecolors": 'k', "headwidth": 4.5, "headlength": 5, "headaxislength": 3, "linewidth": .2}
         _kwargs.update(kwargs)
-
-        if color_map is None:
-            color_map = 'viridis_r' if isinstance(color, str) and (color == 'root' or color == 'end') else 'RdBu_r'
-        if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
-
         pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], **_kwargs, zorder=1)
 
         if principal_curve:
@@ -164,6 +161,5 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
                      palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-
         if show: pl.show()
         else: return ax

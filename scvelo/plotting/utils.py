@@ -1,43 +1,96 @@
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scanpy.plotting.utils import savefig_or_show, default_palette, adjust_palette
+from matplotlib.colors import is_color_like
+from pandas.api.types import is_categorical as cat
 
 
-def get_colors(adata, c):
-    if adata.obs[c].dtype.name != 'category': adata.obs[c] = pd.Categorical(adata.obs[c])
-    if c+'_colors' not in adata.uns.keys():
-        palette = default_palette(None)
-        palette_adjusted = adjust_palette(palette, length=len(adata.obs[c].cat.categories))
-        adata.uns[c + '_colors'] = palette_adjusted[:len(adata.obs[c].cat.categories)].by_key()['color']
-    cluster_ix = adata.obs[c].cat.codes
-    return np.array([adata.uns[c + '_colors'][cluster_ix[i]] for i in range(adata.n_obs)])
+def is_categorical(adata, c):
+    adata._sanitize()  # Indentify array of categorical type and transform where applicable
+    return isinstance(c, str) and (c in adata.obs.keys() and cat(adata.obs[c]) or is_color_like(c))
 
 
-def bound(c, perc=None):
+def default_basis(adata):
+    keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
+    if len(keys) > 0:
+        return keys[-1]
+    else:
+        raise ValueError('No basis specified')
+
+
+def update_axes(ax, fontsize, is_embedding):
+    if is_embedding:
+        ax.tick_params(which='both', bottom=False, left=False, labelbottom=False, labelleft=False)
+    else:
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=3))
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=3))
+        labelsize = int(fontsize * .75) if fontsize is not None else None
+        ax.tick_params(axis='both', which='major', labelsize=labelsize)
+    return ax
+
+
+def set_label(xlabel, ylabel, fontsize=None, basis=None):
+    if isinstance(xlabel, str) and isinstance(ylabel, str):
+        pl.xlabel(xlabel, fontsize=fontsize)
+        pl.ylabel(ylabel, fontsize=fontsize)
+    elif basis is not None:
+        component_name = ('DC' if basis == 'diffmap' else 'tSNE' if basis == 'tsne' else 'UMAP' if basis == 'umap'
+        else 'PC' if basis == 'pca' else basis.replace('draw_graph_', '').upper() if 'draw_graph' in basis else basis)
+        pl.xlabel(component_name + '1')
+        pl.ylabel(component_name + '2')
+
+
+def set_title(title, layer=None, color=None, fontsize=None):
+    if isinstance(title, str):
+        pl.title(title, fontsize=fontsize)
+    elif isinstance(layer, str) and isinstance(color, str):
+        pl.title(color + ' ' + layer, fontsize=fontsize)
+    elif isinstance(color, str):
+        pl.title(color, fontsize=fontsize)
+
+
+def default_color(adata):
+    return 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else 'grey'
+
+
+def default_color_map(c):
+    return 'viridis_r' if isinstance(c, str) and c in {'root', 'end'} else 'RdBu_r'
+
+
+def clip(c, perc=None):
     if isinstance(perc, int): perc = [perc, 100] if perc < 50 else perc[0, perc]
     lb, ub = np.percentile(c, perc)
     return np.clip(c, lb, ub)
 
 
+def get_colors(adata, c):
+    if is_color_like(c):
+        return c
+    else:
+        if c+'_colors' not in adata.uns.keys():
+            palette = default_palette(None)
+            palette_adjusted = adjust_palette(palette, length=len(adata.obs[c].cat.categories))
+            adata.uns[c + '_colors'] = palette_adjusted[:len(adata.obs[c].cat.categories)].by_key()['color']
+        cluster_ix = adata.obs[c].cat.codes
+        return np.array([adata.uns[c + '_colors'][cluster_ix[i]] for i in range(adata.n_obs)])
+
+
 def interpret_colorkey(adata, c=None, layer=None, perc=None):
-    if isinstance(c, str):
-        if (c == 'louvain' or c == 'clusters') and adata.obs[c].dtype.name != 'category':
-            adata.obs[c] = pd.Categorical(adata.obs[c])
+    if c is None: c = default_color(adata)
+    if is_categorical(adata, c): c = get_colors(adata, c)
+    elif isinstance(c, str):
         if c in adata.obs.keys():  # color by observation key
-            c = get_colors(adata, c) if adata.obs[c].dtype.name == 'category' \
-                else adata.obs[c] if perc is None else bound(adata.obs[c], perc=perc)
+            c = adata.obs[c]
         elif c in adata.var_names:  # color by var in specific layer
             c = adata[:, c].layers[layer] if layer in adata.layers.keys() else adata[:, c].X
-            if perc is not None: c = bound(c, perc=perc)
-    elif c is None:  # color by cluster or louvain or grey if no color is specified
-        c = get_colors(adata, 'clusters') if 'clusters' in adata.obs.keys() \
-            else get_colors(adata, 'louvain') if 'louvain' in adata.obs.keys() else 'grey'
+        if perc is not None: c = clip(c, perc=perc)
     elif len(np.array(c).flatten()) == adata.n_obs:  # continuous coloring
-        c = np.array(c).flatten() if perc is None else bound(np.array(c).flatten(), perc=perc)
-    else: raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
+        c = np.array(c).flatten()
+        if perc is not None: c = clip(c, perc=perc)
+    else:
+        raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
     return c
 
 
@@ -47,7 +100,7 @@ def get_components(components=None):
     return np.array(components).astype(int) - 1
 
 
-def plot_colorbar(ax, orientation='vertical'):
+def set_colorbar(ax, orientation='vertical'):
     cb = pl.colorbar(orientation=orientation, cax=inset_axes(ax, width="2%", height="30%", loc=4, borderpad=0))
     cb.locator = (MaxNLocator(nbins=3))
     cb.update_ticks()
