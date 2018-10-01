@@ -26,7 +26,7 @@ def velocity_confidence(adata, vkey='velocity', copy=False):
         R[i] = np.mean(np.einsum('ij, j', Vi_neighs, V[i]) / (norm(Vi_neighs) * V_norm[i])[None, :])
 
     adata.obs[vkey + '_length'] = V_norm.round(2)
-    adata.obs[vkey + '_confidence'] = R.round(2)
+    adata.obs[vkey + '_confidence'] = R
 
     logg.hint(
         'added to `.obs`\n'
