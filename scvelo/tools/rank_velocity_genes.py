@@ -1,21 +1,52 @@
-"""Rank genes according to unspliced/spliced correlation and differential expression.
-"""
-
-import numpy as np
-from scipy.sparse import issparse
 from ..logging import logg, settings
-from scanpy.utils import select_groups
+from ..plotting.utils import clip
+from scipy.sparse import issparse
+import numpy as np
 
 
-def get_mean_var(X):
-    mean = X.mean(axis=0).A1 if issparse(X) else X.mean(axis=0)
-    mean_sq = X.multiply(X).mean(axis=0).A1 if issparse(X) else np.multiply(X, X).mean(axis=0)
-    var = (mean_sq - mean**2) * (X.shape[0]/(X.shape[0]-1))
+def get_mean_var(X, ignore_zeros=False, perc=None):
+    data = X.data if issparse(X) else X
+    mask_nans = np.isnan(data) | np.isinf(data) | np.isneginf(data)
+
+    n_nonzeros = (X != 0).sum(0)
+    n_counts = n_nonzeros if ignore_zeros else X.shape[0]
+
+    if mask_nans.sum() > 0:
+        if issparse(X):
+            data[np.isnan(data) | np.isinf(data) | np.isneginf(data)] = 0
+            n_nans = n_nonzeros - (X != 0).sum(0)
+        else:
+            X[mask_nans] = 0
+            n_nans = mask_nans.sum(0)
+        n_counts -= n_nans
+
+    if perc is not None: data = clip(data, perc)
+
+    mean = (X.sum(0) / n_counts).A1 if issparse(X) else X.sum(0) / n_counts
+    mean_sq = (X.multiply(X).sum(0) / n_counts).A1 if issparse(X) else np.multiply(X, X).sum(0) / n_counts
+    var = (mean_sq - mean ** 2) * (X.shape[0] / (X.shape[0] - 1))
+
+    mean[np.isnan(mean)] = 0
+    var[np.isnan(var)] = 0
     return mean, var
 
 
+def select_groups(adata, groups='all', key='louvain'):
+    """Get subset of groups in adata.obs[key].
+    """
+    categories = adata.obs[key].cat.categories
+    groups_masks = np.array([categories[i] == adata.obs[key].values for i, name in enumerate(categories)])
+    if groups == 'all':
+        groups = categories.values
+    else:
+        groups_ids = [np.where(categories.values == name)[0][0] for name in groups]
+        groups_masks = groups_masks[groups_ids]
+        groups = categories[groups_ids].values
+    return groups, groups_masks
+
+
 def rank_velocity_genes(adata, groupby=None, groups='all', n_genes=10, method='t-test_overestim_var', use_raw=True, copy=False):
-    """Rank genes for characterizing groups.
+    """Rank genes for characterizing groups according to unspliced/spliced correlation and differential expression.
     Parameters
     ----------
     adata : :class:`~anndata.AnnData`
