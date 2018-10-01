@@ -71,8 +71,8 @@ def get_colors(adata, c):
     else:
         if c+'_colors' not in adata.uns.keys():
             palette = default_palette(None)
-            palette_adjusted = adjust_palette(palette, length=len(adata.obs[c].cat.categories))
-            adata.uns[c + '_colors'] = palette_adjusted[:len(adata.obs[c].cat.categories)].by_key()['color']
+            palette = adjust_palette(palette, length=len(adata.obs[c].cat.categories))
+            adata.uns[c + '_colors'] = palette[:len(adata.obs[c].cat.categories)].by_key()['color']
         cluster_ix = adata.obs[c].cat.codes
         return np.array([adata.uns[c + '_colors'][cluster_ix[i]] for i in range(adata.n_obs)])
 
@@ -110,6 +110,23 @@ def savefig(writekey, show=False, dpi=None, save=None):
     """Save current figure to file.
     """
     savefig_or_show('velocity_' + writekey + '_' if writekey != '' else 'velocity_', dpi=dpi, save=save, show=show)
+
+
+def hist(arrays, bins, alpha=.5, colors=None, labels=None, xlabel=None, ylabel=None, ax=None):
+    ax = pl.figure(None, (8, 4), dpi=120) if ax is None else ax
+    arrays = arrays if isinstance(arrays, (list, tuple, np.ndarray, np.record)) else [arrays]
+
+    palette = default_palette(None)[::3][:len(arrays)].by_key()['color']
+    colors = palette if colors is None or len(colors) < len(arrays) else colors
+
+    for i, array in enumerate(arrays):
+        pl.hist(array, bins=bins, alpha=alpha,
+                color=colors[i],
+                label=labels[i] if labels is not None else None)
+    pl.legend()
+    pl.xlabel(xlabel if xlabel is not None else '')
+    pl.ylabel(ylabel if xlabel is not None else '')
+    pl.show()
 
 
 # def phase(adata, var=None, x=None, y=None, color='louvain', fits='all', xlabel='spliced', ylabel='unspliced',
