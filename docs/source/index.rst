@@ -1,7 +1,7 @@
+|PyPI| |Docs| |travis|
+
 scvelo – stochastic single cell RNA velocity
 ==========================================================
-
-|PyPI| |Docs| |travis|
 
 **scvelo** is a scalable toolkit for estimating and analyzing stochastic RNA velocities in single cells.
 
@@ -16,6 +16,8 @@ It is compatible with scanpy_ (`Wolf et al., 2018 <https://doi.org/10.1186/s1305
 implementation, iterative neighbors search and other techniques, it is remarkably efficient in terms of memory and
 runtime without loss in accuracy (<1GB and <1min for 30,000 cells on a MacBook Pro 2017 with 2.3 GHz i5).
 
+I highly recommend going through some exemplary notebooks_.
+
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
     :target: https://pypi.org/project/scvelo
 
@@ -27,6 +29,7 @@ runtime without loss in accuracy (<1GB and <1min for 30,000 cells on a MacBook P
 
 .. _velocyto: http://velocyto.org/
 .. _scanpy: https://github.com/theislab/scanpy
+.. _notebooks: https://nbviewer.jupyter.org/github/theislab/scvelo_notebooks/tree/master/
 
 Report issues and see the code on `GitHub <https://github.com/theislab/scvelo>`__.
 
