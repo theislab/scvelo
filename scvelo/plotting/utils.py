@@ -55,8 +55,9 @@ def default_color(adata):
     return 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else 'grey'
 
 
-def default_color_map(c):
-    return 'viridis_r' if isinstance(c, str) and c in {'root', 'end'} else 'RdBu_r'
+def default_color_map(adata, c):
+    return 'viridis_r' if isinstance(c, str) and c in adata.obs.keys() and not is_categorical(adata, c)\
+                          and adata.obs[c].min() == 0 and adata.obs[c].max() == 1 else 'RdBu_r'
 
 
 def clip(c, perc=None):
@@ -102,7 +103,9 @@ def get_components(components=None):
 
 def set_colorbar(ax, orientation='vertical'):
     cb = pl.colorbar(orientation=orientation, cax=inset_axes(ax, width="2%", height="30%", loc=4, borderpad=0))
-    cb.locator = (MaxNLocator(nbins=3))
+    cb.set_alpha(1)
+    cb.draw_all()
+    cb.locator = MaxNLocator(nbins=3, integer=True)
     cb.update_ticks()
 
 

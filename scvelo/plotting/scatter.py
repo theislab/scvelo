@@ -60,7 +60,7 @@ def scatter(adata, x=None, y=None, basis=None, color=None, use_raw=None, layer=N
     else:
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
         color = default_color(adata) if color is None else color
-        color_map = default_color_map(color) if color_map is None else color_map
+        color_map = default_color_map(adata, color) if color_map is None else color_map
 
         is_embedding = (x is None) | (y is None)
         basis = default_basis(adata) if basis is None and is_embedding else basis
