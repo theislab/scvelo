@@ -4,7 +4,7 @@ from .get_version import get_version
 __version__ = get_version(__file__)
 del get_version
 
-from .read_load import read, load
+from .read_load import read, load, clean_obs_names, merge
 from .logging import settings
 
 from . import preprocessing as pp
