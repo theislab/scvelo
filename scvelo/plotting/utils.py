@@ -1,3 +1,4 @@
+from .. import settings
 import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
@@ -20,14 +21,21 @@ def default_basis(adata):
         raise ValueError('No basis specified')
 
 
-def update_axes(ax, fontsize, is_embedding):
-    if is_embedding:
-        ax.tick_params(which='both', bottom=False, left=False, labelbottom=False, labelleft=False)
+def update_axes(ax, fontsize, is_embedding, frameon):
+    frameon = settings._frameon if frameon is None else frameon
+    if frameon:
+        if is_embedding:
+            ax.tick_params(which='both', bottom=False, left=False, labelbottom=False, labelleft=False)
+        else:
+            ax.xaxis.set_major_locator(MaxNLocator(nbins=3, integer=True))
+            ax.yaxis.set_major_locator(MaxNLocator(nbins=3, integer=True))
+            labelsize = int(fontsize * .75) if fontsize is not None else None
+            ax.tick_params(axis='both', which='major', labelsize=labelsize)
     else:
-        ax.xaxis.set_major_locator(MaxNLocator(nbins=3))
-        ax.yaxis.set_major_locator(MaxNLocator(nbins=3))
-        labelsize = int(fontsize * .75) if fontsize is not None else None
-        ax.tick_params(axis='both', which='major', labelsize=labelsize)
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+        ax.tick_params(which='both', bottom=False, left=False, labelbottom=False, labelleft=False)
+        ax.set_frame_on(False)
     return ax
 
 
@@ -49,6 +57,15 @@ def set_title(title, layer=None, color=None, fontsize=None):
         pl.title(color + ' ' + layer, fontsize=fontsize)
     elif isinstance(color, str):
         pl.title(color, fontsize=fontsize)
+
+
+def set_frame(ax, frameon):
+    frameon = settings._frameon if frameon is None else frameon
+    if not frameon:
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+        ax.set_frame_on(False)
+    return ax
 
 
 def default_color(adata):
@@ -123,9 +140,7 @@ def hist(arrays, bins, alpha=.5, colors=None, labels=None, xlabel=None, ylabel=N
     colors = palette if colors is None or len(colors) < len(arrays) else colors
 
     for i, array in enumerate(arrays):
-        pl.hist(array, bins=bins, alpha=alpha,
-                color=colors[i],
-                label=labels[i] if labels is not None else None)
+        pl.hist(array, bins=bins, alpha=alpha, color=colors[i], label=labels[i] if labels is not None else None)
     pl.legend()
     pl.xlabel(xlabel if xlabel is not None else '')
     pl.ylabel(ylabel if xlabel is not None else '')

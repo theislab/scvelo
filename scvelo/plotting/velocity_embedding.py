@@ -14,7 +14,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, c
                        color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
                        groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                        legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
-                       fontsize=None, figsize=(14,10), dpi=150, frameon=False, show=True, save=None, ax=None, **kwargs):
+                       fontsize=None, figsize=(14,10), dpi=150, frameon=None, show=True, save=None, ax=None, **kwargs):
     """\
     Scatter plot of velocities on the embedding
 
@@ -90,6 +90,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, c
     else:
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
+        color, layer, vkey = colors[0], layers[0], vkeys[0]
         ix_choice = np.random.choice(adata.n_obs, size=int(density * adata.n_obs), replace=False)
         X = adata.obsm['X_' + basis][:, get_components(components)][ix_choice]
         V = adata.obsm[vkey + '_' + basis][ix_choice]

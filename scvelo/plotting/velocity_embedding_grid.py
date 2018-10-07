@@ -49,7 +49,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
                             color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
                             groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                             legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
-                            fontsize=None, figsize=(7,5), dpi=100, frameon=False, show=True, save=None, ax=None, **kwargs):
+                            fontsize=None, figsize=(7,5), dpi=100, frameon=None, show=True, save=None, ax=None, **kwargs):
     """\
     Scatter plot of velocities for the grid points on the embedding
 
@@ -89,6 +89,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
     vkeys = pd.unique(vkey) if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
     for key in vkeys:
         if key + '_' + basis not in adata.obsm_keys(): velocity_embedding(adata, basis=basis, vkey=key)
+    color, layer, vkey = colors[0], layers[0], vkeys[0]
 
     if X is None and V is None:
         X, V = compute_velocity_on_grid(X_emb=adata.obsm['X_' + basis][:, get_components(components)],
