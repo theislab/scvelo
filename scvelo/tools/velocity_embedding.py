@@ -1,7 +1,6 @@
 from ..logging import logg, settings
 from .utils import norm
 from .transition_matrix import transition_matrix
-from ..plotting.utils import default_basis
 from scipy.sparse import issparse
 import numpy as np
 
@@ -43,7 +42,11 @@ def velocity_embedding(adata, basis=None, vkey='velocity', scale=10, self_transi
 
     logg.info('computing velocity embedding', r=True)
 
-    basis = default_basis(adata) if basis is None else basis
+    if basis is None:
+        keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
+        if len(keys) > 0: keys = keys[-1]
+        else: raise ValueError('No basis specified')
+
     if 'X_' + basis not in adata.obsm_keys():
         raise ValueError('You need compute the embedding first.')
 
