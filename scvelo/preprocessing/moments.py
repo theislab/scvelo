@@ -13,7 +13,7 @@ def normalize_layers(adata, layers={'spliced', 'unspliced'}, copy=False):
 
 
 def get_connectivities(adata, mode):
-    connectivities = adata.uns['neighbors'][mode]
+    connectivities = adata.uns['neighbors'][mode] > 0
     connectivities.setdiag(1)
     connectivities = connectivities.multiply(1. / connectivities.sum(1))
     return connectivities
