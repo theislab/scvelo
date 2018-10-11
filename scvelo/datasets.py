@@ -16,7 +16,7 @@ def dentategyrus():
     filename = 'data/DentateGyrus/10X43_1.loom'
     url = 'http://pklab.med.harvard.edu/velocyto/DG1/10X43_1.loom'
     adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
-    cleanup(adata, clean='all')
+    cleanup(adata, clean='all', keep={'spliced', 'unspliced', 'ambiguous'})
 
     url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/write/DG_clusters.npy'
     url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/write/DG_umap.npy'
@@ -46,4 +46,5 @@ def toy_data(n_obs):
     indices = np.random.choice(adata.n_obs, n_obs)
     adata = adata[indices]
     adata.obs_names = np.array(range(adata.n_obs), dtype='str')
+    adata.var_names_make_unique()
     return adata
