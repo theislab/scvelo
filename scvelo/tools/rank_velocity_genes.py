@@ -1,6 +1,7 @@
 from ..logging import logg, settings
 from ..plotting.utils import clip
 from scipy.sparse import issparse
+from scanpy.preprocessing.simple import filter_genes_dispersion
 import numpy as np
 
 
@@ -80,12 +81,18 @@ def rank_velocity_genes(adata, groupby=None, groups='all', n_genes=10, method='t
 
     adata = adata.copy() if copy else adata
 
-    counts = adata.layers['unspliced'] > 0
-    n_counts = counts.sum(0).A1 if issparse(counts) else counts.sum(0)
-    filter_counts = n_counts > np.percentile(n_counts, 70)
+    n_counts = (adata.layers['unspliced'] > 0).sum(0)
+    n_counts = n_counts.A1 if issparse(adata.layers['unspliced']) else n_counts
+    filter_counts = n_counts > np.percentile(n_counts, 80)
 
-    filter_r2 = adata.var.velocity_r2 > np.percentile(adata.var.velocity_r2[adata.var.velocity_r2 > 0], 70)
-    idx_sub = filter_counts & filter_r2
+    r2 = adata.var.velocity_r2
+    filter_r2 = r2 > np.percentile(r2[r2 > 0], 80)
+
+    dispersions = adata.var.dispersions_norm if 'dispersions_norm' in adata.var.keys() \
+        else filter_genes_dispersion(adata.X)['dispersions_norm']
+    filter_dispersions = dispersions > np.percentile(dispersions, 20)
+
+    idx_sub = filter_counts & filter_r2 & filter_dispersions & adata.var['velocity_genes']
 
     adata_sub = adata[:, idx_sub]
     if groupby is None:
