@@ -110,7 +110,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, c
                      colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=ax,
                      use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
                      legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
-                     palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)
+                     palette=palette, right_margin=right_margin, left_margin=left_margin)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if show: pl.show()
