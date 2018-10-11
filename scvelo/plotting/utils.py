@@ -6,6 +6,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scanpy.plotting.utils import savefig_or_show, default_palette, adjust_palette
 from matplotlib.colors import is_color_like
 from pandas.api.types import is_categorical as cat
+from scipy.sparse import issparse
 
 
 def is_categorical(adata, c):
@@ -103,6 +104,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
             c = adata.obs[c]
         elif c in adata.var_names:  # color by var in specific layer
             c = adata[:, c].layers[layer] if layer in adata.layers.keys() else adata[:, c].X
+            c = c.A.flatten() if issparse(c) else c
         if perc is not None: c = clip(c, perc=perc)
     elif len(np.array(c).flatten()) == adata.n_obs:  # continuous coloring
         c = np.array(c).flatten()
