@@ -11,6 +11,9 @@ def get_passed_time():
     now = time()
     elapsed = now - settings._previous_time
     settings._previous_time = now
+
+    from functools import reduce
+    elapsed = "%d:%02d:%02d.%02d" % reduce(lambda ll, b: divmod(ll[0], b) + ll[1:], [(elapsed*100,), 100, 60, 60])
     return elapsed
 
 
