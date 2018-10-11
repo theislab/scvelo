@@ -1,6 +1,7 @@
 from ..logging import logg, settings
 from .utils import norm
 from .transition_matrix import transition_matrix
+from ..plotting.utils import default_basis
 from scipy.sparse import issparse
 import numpy as np
 
@@ -13,7 +14,7 @@ def quiver_autoscale(X, Y, U, V):
     return Q.scale
 
 
-def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
+def velocity_embedding(adata, basis=None, vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
                        retain_scale=False, copy=False):
     """Computes the single cell velocities in the embedding
 
@@ -42,6 +43,7 @@ def velocity_embedding(adata, basis='tsne', vkey='velocity', scale=10, self_tran
 
     logg.info('computing velocity embedding', r=True)
 
+    basis = default_basis(adata) if basis is None else basis
     if 'X_' + basis not in adata.obsm_keys():
         raise ValueError('You need compute the embedding first.')
 
