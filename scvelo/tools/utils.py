@@ -21,6 +21,14 @@ def norm(A):
     return np.sqrt(np.einsum('ij, ij -> i', A, A))
 
 
+def R_squared(residual, total):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        r2 = np.ones(residual.shape[1]) - prod_sum_obs(residual, residual) / prod_sum_obs(total, total)
+    r2[np.isnan(r2)] = 0
+    return r2
+
+
 def cosine(dX, v, v_norm):
     dX -= dX.mean(-1)[:, None]
     return np.einsum('ij, j', dX, v) / (norm(dX) * v_norm)[None, :]
