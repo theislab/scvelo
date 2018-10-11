@@ -6,9 +6,10 @@ import numpy as np
 import pandas as pd
 from matplotlib.ticker import MaxNLocator
 import matplotlib.pyplot as pl
+from scipy.sparse import issparse
 
 
-def velocity(adata, var_names=None, basis='umap', mode=None, fits='all', layers='all', color=None, color_map='RdBu_r',
+def velocity(adata, var_names=None, basis='umap', mode=None, fits='all', layers='all', use_raw=False, color=None, color_map='RdBu_r',
              perc=[2,98], size=.2, alpha=.5, fontsize=8, figsize=(3,2), dpi=120, show=True, save=None, ax=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
@@ -58,7 +59,8 @@ def velocity(adata, var_names=None, basis='umap', mode=None, fits='all', layers=
         else rank_velocity_genes(adata, n_genes=4)
     var_names = pd.unique([var for var in var_names if var in adata.var_names[adata.var.velocity_genes]])
 
-    layers = ['velocity', 'Ms', 'variance_velocity'] if layers == 'all' else layers
+    (skey, ukey) = ('spliced', 'unspliced') if use_raw else ('Ms', 'Mu')
+    layers = ['velocity', skey, 'variance_velocity'] if layers == 'all' else layers
     layers = [layer for layer in layers if layer in adata.layers.keys()]
 
     fits = adata.layers.keys() if fits == 'all' else fits
@@ -71,7 +73,8 @@ def velocity(adata, var_names=None, basis='umap', mode=None, fits='all', layers=
 
     for v, var in enumerate(var_names):
         ix = np.where(adata.var_names == var)[0][0]
-        s, u = adata.layers['Ms'][:, ix], adata.layers['Mu'][:, ix]
+        s, u = adata.layers[skey][:, ix], adata.layers[ukey][:, ix]
+        if issparse(s): s, u = s.A, u.A
 
         # spliced/unspliced phase portrait with steady-state estimate
         ax = pl.subplot(gs[v * n_col])
@@ -92,7 +95,7 @@ def velocity(adata, var_names=None, basis='umap', mode=None, fits='all', layers=
         # velocity and expression plots
         for l, layer in enumerate(layers):
             ax = pl.subplot(gs[v*n_col + l + 1])
-            title = 'expression' if layer == 'Ms' else layer
+            title = 'expression' if layer == skey else layer
             scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map, title=title,
                     perc=perc, fontsize=fontsize, size=size, alpha=alpha, show=False, ax=ax, save=False, **kwargs)
 
