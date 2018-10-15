@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.sparse import issparse
 
 
 def show_proportions(adata, copy=False):
@@ -63,7 +64,7 @@ def cleanup(adata, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
     return adata if copy else None
 
 
-def filter_and_normalize(adata, min_counts=10, n_top_genes=None, log=True, copy=False):
+def filter_and_normalize(adata, min_counts=10, min_counts_u=None, n_top_genes=None, log=True, copy=False):
     """Filtering, normalization and log transform
 
     Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
@@ -98,9 +99,17 @@ def filter_and_normalize(adata, min_counts=10, n_top_genes=None, log=True, copy=
     """
     from scanpy.api.pp import filter_genes, filter_genes_dispersion, normalize_per_cell, log1p
     filter_genes(adata, min_counts=min_counts)
+
+    if 'unspliced' in adata.layers.keys():
+        counts = adata.layers['unspliced'] > 0
+        counts = counts.sum(0).A1 if issparse(counts) else counts.sum(0)
+        min_counts_u = min_counts / 2 if min_counts_u is None else min_counts_u
+        adata._inplace_subset_var(counts > min_counts_u)
+
     if n_top_genes is not None and n_top_genes < adata.shape[1]:
         normalize_per_cell(adata)
         filter_genes_dispersion(adata, n_top_genes=n_top_genes)
+
     normalize_per_cell(adata)
     if log: log1p(adata)
     return adata if copy else None
