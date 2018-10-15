@@ -46,7 +46,8 @@ def select_groups(adata, groups='all', key='louvain'):
     return groups, groups_masks
 
 
-def rank_velocity_genes(adata, groupby=None, groups='all', n_genes=10, method='t-test_overestim_var', use_raw=True, copy=False):
+def rank_velocity_genes(adata, groupby=None, groups='all', n_genes=10, min_counts=None, min_r2=None, min_dispersion=None,
+                        method='t-test_overestim_var', use_raw=True, copy=False):
     """Rank genes for characterizing groups according to unspliced/spliced correlation and differential expression.
     Parameters
     ----------
@@ -83,14 +84,17 @@ def rank_velocity_genes(adata, groupby=None, groups='all', n_genes=10, method='t
 
     n_counts = (adata.layers['unspliced'] > 0).sum(0)
     n_counts = n_counts.A1 if issparse(adata.layers['unspliced']) else n_counts
-    filter_counts = n_counts > np.percentile(n_counts, 80)
+    min_counts = np.percentile(n_counts, 80) if min_counts is None else min_counts
+    filter_counts = n_counts > min_counts
 
     r2 = adata.var.velocity_r2
-    filter_r2 = r2 > np.percentile(r2[r2 > 0], 80)
+    min_r2 = np.percentile(r2[r2 > 0], 80) if min_r2 is None else min_r2
+    filter_r2 = r2 > min_r2
 
     dispersions = adata.var.dispersions_norm if 'dispersions_norm' in adata.var.keys() \
         else filter_genes_dispersion(adata.X)['dispersions_norm']
-    filter_dispersions = dispersions > np.percentile(dispersions, 20)
+    min_dispersion = np.percentile(dispersions, 20) if min_dispersion is None else min_dispersion
+    filter_dispersions = dispersions > min_dispersion
 
     idx_sub = filter_counts & filter_r2 & filter_dispersions & adata.var['velocity_genes']
 
