@@ -2,20 +2,91 @@ from ..logging import logg, settings
 from ..preprocessing.moments import moments, second_order_moments
 from .solver import solve_cov, solve2_inv, solve2_mle
 from .utils import R_squared
-from .velocity_confidence import velocity_confidence
-
-from scipy.sparse import issparse
 import numpy as np
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
-def velocity(adata, vkey='velocity', mode='stochastic', fit_offset=False, fit_offset2=False, filter_genes=False, copy=False):
+class Velocity:
+    def __init__(self, adata=None, Ms=None, Mu=None, residual=None):
+        self._adata = adata
+        self._Ms = adata.layers['Ms'] if Ms is None else Ms
+        self._Mu = adata.layers['Mu'] if Mu is None else Mu
+
+        n_obs, n_vars = self._Ms.shape
+        self._residual, self._residual2 = residual, None
+        self._offset, self._offset2 = np.zeros(n_vars, dtype=np.float32), np.zeros(n_vars, dtype=np.float32)
+        self._gamma, self._r2 = np.zeros(n_vars, dtype=np.float32), np.zeros(n_vars, dtype=np.float32)
+        self._beta, self._velocity_genes = np.ones(n_vars, dtype=np.float32), np.ones(n_vars, dtype=bool)
+
+    def compute_deterministic(self, fit_offset=False):
+        self._offset, self._gamma = solve_cov(self._Ms, self._Mu, fit_offset)
+        self._residual = self._Mu - self._gamma * self._Ms
+        if fit_offset: self._residual -= self._offset
+
+        self._r2 = R_squared(self._residual, total=self._Mu - self._Mu.mean(0))
+        self._velocity_genes = (self._r2 > .01) & (self._gamma > .01)
+
+    def compute_stochastic(self, fit_offset=False, fit_offset2=False, mode=None):
+        if self._residual is None: self.compute_deterministic(fit_offset)
+        idx = self._velocity_genes
+        is_subset = True if len(set(idx)) > 1 else False
+
+        _adata = self._adata[:, idx] if is_subset else self._adata
+        _Ms = self._Ms[:, idx] if is_subset else self._Ms
+        _Mu = self._Mu[:, idx] if is_subset else self._Mu
+        _residual = self._residual[:, idx] if is_subset else self._residual
+
+        _Mss, _Mus = second_order_moments(_adata)
+
+        var_ss = 2 * _Mss - _Ms
+        cov_us = 2 * _Mus + _Mu
+
+        _offset2, _gamma2 = solve_cov(var_ss, cov_us, fit_offset2)
+
+        # initialize covariance matrix
+        res_std = _residual.std(0)
+        res2_std = (cov_us - _gamma2 * var_ss - _offset2).std(0)
+
+        # solve multiple regression
+        self._offset[idx], self._offset2[idx], self._gamma[idx] = \
+            solve2_mle(_Ms, _Mu, _Mus, _Mss, fit_offset, fit_offset2) if mode == 'bayes' \
+                else solve2_inv(_Ms, _Mu, var_ss, cov_us, res_std, res2_std, fit_offset, fit_offset2)
+
+        self._residual = self._Mu - self._gamma * self._Ms
+        if fit_offset: self._residual -= self._offset
+
+        _residual2 = (cov_us - 2 * _Ms * _Mu) - self._gamma[idx] * (var_ss - 2 * _Ms ** 2)
+        if fit_offset: _residual2 += 2 * self._offset[idx] * _Ms
+        if fit_offset2: _residual2 -= self._offset2[idx]
+        if is_subset:
+            self._residual2 = np.zeros(self._Ms.shape, dtype=np.float32)
+            self._residual2[:, idx] = _residual2
+        else:
+            self._residual2 = _residual2
+
+        # if mode == 'alpha':
+        #     Muu = second_order_moments_u(adata)
+        #     offset2u, alpha = solve_cov(np.ones(Mu.shape) + 2 * Mu, 2 * Muu - Mu)
+        #     pars.extend([offset2u, alpha])
+        #     pars_str.extend(['_offset2u', '_alpha'])
+
+    def get_residuals(self):
+        return self._residual, self._residual2
+
+    def get_pars(self):
+        return self._offset, self._offset2, self._beta, self._gamma, self._r2, self._velocity_genes
+
+    def get_pars_names(self):
+        return ['_offset', '_offset2', '_beta', '_gamma', '_r2', '_genes']
+
+
+def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False, copy=False):
     """Estimates velocities in a gene-specific manner
 
     Arguments
     ---------
-    adata: :class:`~anndata.AnnData`
+    data: :class:`~anndata.AnnData`
         Annotated data matrix.
     vkey: `str` (default: `'velocity'`)
         Name under which to refer to the computed velocities for `velocity_graph` and `velocity_embedding`.
@@ -41,82 +112,34 @@ def velocity(adata, vkey='velocity', mode='stochastic', fit_offset=False, fit_of
     velocity_offset, velocity_beta, velocity_gamma, velocity_r2: `.var`
         parameters
     """
+    adata = data.copy() if copy else data
     if 'Ms' not in adata.layers.keys(): moments(adata)
-    Ms, Mu = adata.layers['Ms'], adata.layers['Mu']
 
     logg.info('computing velocities', r=True)
+    velo = Velocity(adata)
+    velo.compute_deterministic(fit_offset)
 
-    beta = np.ones(adata.n_vars, dtype="float32")  # estimate all rates in units of the splicing rate
-
-    n_counts = (adata.layers['unspliced'] > 0).sum(0)
-    velocity_genes = n_counts.A1 > 10 if issparse(adata.layers['unspliced']) else n_counts > 10
-
-    #lb_s, ub_s = np.percentile(Ms, [2, 98], axis=0)
-    #lb_u, ub_u = np.percentile(Mu, [2, 98], axis=0)
-    #idx = ((Ms <= lb_s) & (Mu < lb_u)) | ((Ms >= ub_s) & (Mu > ub_u))
-
-    offset, gamma = solve_cov(Ms, Mu, fit_offset)
-
-    stochastic = any([mode in item for item in ['stochastic', 'bayes', 'alpha']])
+    stochastic = any([mode is not None and mode in item for item in ['stochastic', 'bayes', 'alpha']])
     if stochastic:
-        res, tot = Mu - gamma[None, :] * Ms - offset[None, :], Mu - Mu.mean(0)
-        r2 = R_squared(res, tot)
-        velocity_genes = (r2 > .01) & (gamma > .01) & velocity_genes
+        if filter_genes and len(set(velo._velocity_genes)) > 1:
+            idx = velo._velocity_genes
+            adata._inplace_subset_var(idx)
+            velo = Velocity(adata, residual=velo._residual[:, idx])
+        velo.compute_stochastic(fit_offset, fit_offset2, mode)
+        adata.layers[vkey], adata.layers['variance_' + vkey] = velo.get_residuals()
+    else:
+        adata.layers[vkey], _ = velo.get_residuals()
 
-        _Ms, _Mu = Ms[:, velocity_genes], Mu[:, velocity_genes]
-        Mss, Mus = second_order_moments(adata[:, velocity_genes])
-        offset2, gamma2 = solve_cov(2 * Mss - _Ms, 2 * Mus + _Mu, fit_offset2)
-        #offset2, gamma2 = offset[velocity_genes], gamma[velocity_genes]
-
-        # initialize covariance matrix
-        res_std = res[:, velocity_genes].std(0)
-        res2_std = (2 * Mus + _Mu - gamma2[None, :] * (2 * Mss - _Ms) - offset2[None, :]).std(0)
-
-        # solve multiple regression
-        offset[velocity_genes], offset2, gamma[velocity_genes] = \
-            solve2_mle(_Ms, _Mu, Mus, Mss, fit_offset, fit_offset2) if mode == 'bayes' \
-                else solve2_inv(_Ms, _Mu, 2 * Mss - _Ms, 2 * Mus + _Mu, res_std, res2_std, fit_offset, fit_offset2)
-
-        _offset2 = np.zeros(adata.n_vars)
-        _offset2[velocity_genes] = offset2
-        adata.layers['variance_velocity'] = np.zeros(adata.shape)
-        adata.layers['variance_velocity'][:, velocity_genes]\
-            = beta[None, velocity_genes] * (2 * Mus - 2 * _Ms * _Mu + _Mu) - \
-              gamma[None, velocity_genes] * (2 * Mss - 2 * _Ms ** 2 - _Ms) - \
-              offset2 + 2 * offset[None, velocity_genes] * _Ms
-
-        # if mode == 'alpha':
-        #     Muu = second_order_moments_u(adata)
-        #     offset2u, alpha = solve_cov(np.ones(Mu.shape) + 2 * Mu, 2 * Muu - Mu)
-        #     pars.extend([offset2u, alpha])
-        #     pars_str.extend(['_offset2u', '_alpha'])
-
-    residual = Mu - gamma[None, :] * Ms - offset[None, :]
-    residual[np.isnan(residual)] = 0
-    adata.layers[vkey] = residual
-
-    r2 = R_squared(residual=residual, total=Mu - Mu.mean(0))
-    gamma[np.isnan(gamma)] = 0
-    velocity_genes = velocity_genes & (r2 > .01) & (gamma > .01)
-
-    pars = [offset, _offset2, beta, gamma, r2.round(2)] if stochastic else [offset, beta, gamma, r2.round(2)]
-    pars_str = ['_offset', '_offset2', '_beta', '_gamma', '_r2'] if stochastic else ['_offset', '_beta', '_gamma', '_r2']
-    for i, par in enumerate(pars_str): adata.var[vkey + par] = pars[i]
-
-    if False:
-        u, s = adata.layers['unspliced'].A, adata.layers['spliced'].A
-        r2_raw = R_squared(residual=u - gamma[None, :] * s - offset[None, :], total=u - u.mean(0))
-        adata.var[vkey + '_r2_raw'] = r2_raw
-        velocity_genes = velocity_genes & (r2_raw > .01)
-
-    adata.var['velocity_genes'] = velocity_genes
-    if filter_genes: adata._inplace_subset_var(velocity_genes)
+    pars = velo.get_pars()
+    for i, key in enumerate(velo.get_pars_names()):
+        if len(set(pars[i])) > 1: adata.var[vkey + key] = pars[i]
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
-        'added to `.layers`\n'
-        '    \'' + vkey + '\', velocity vectors for each individual cell')
+        'added \n'
+        '    \'' + vkey + '\', velocity vectors for each individual cell (adata.layers)')
 
-    velocity_confidence(adata, vkey)
+    if filter_genes and len(set(velo._velocity_genes)) > 1:  # re-initialize after filtering
+        adata._inplace_subset_var(velo._velocity_genes)
 
     return adata if copy else None
