@@ -1,4 +1,5 @@
 from scipy.sparse import csr_matrix
+import numpy as np
 from ..logging import logg, settings
 
 
@@ -12,11 +13,11 @@ def normalize_layers(adata, layers={'spliced', 'unspliced'}, copy=False):
     return adata if copy else None
 
 
-def get_connectivities(adata, mode):
+def get_connectivities(adata, mode='connectivities'):
     connectivities = adata.uns['neighbors'][mode] > 0
     connectivities.setdiag(1)
     connectivities = connectivities.multiply(1. / connectivities.sum(1))
-    return connectivities
+    return connectivities.tocsr().astype(np.float32)
 
 
 def moments(adata, n_neighbors=30, n_pcs=30, mode='connectivities', renormalize=False, copy=False):
@@ -60,8 +61,8 @@ def moments(adata, n_neighbors=30, n_pcs=30, mode='connectivities', renormalize=
     connectivities = get_connectivities(adata, mode)
     #connectivities += connectivities.dot(connectivities*.5)
 
-    adata.layers['Ms'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['spliced'])).A
-    adata.layers['Mu'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['unspliced'])).A
+    adata.layers['Ms'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['spliced'])).astype(np.float32).A
+    adata.layers['Mu'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['unspliced'])).astype(np.float32).A
     if renormalize: normalize_layers(adata, layers={'Ms', 'Mu'})
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
@@ -88,10 +89,10 @@ def second_order_moments(adata):
     if 'neighbors' not in adata.uns:
         raise ValueError('You need to run `pp.neighbors` first to compute a neighborhood graph.')
 
-    connectivities = get_connectivities(adata, 'connectivities')
+    connectivities = get_connectivities(adata)
     s, u = csr_matrix(adata.layers['spliced']), csr_matrix(adata.layers['unspliced'])
-    Mss = csr_matrix.dot(connectivities, s.multiply(s)).A
-    Mus = csr_matrix.dot(connectivities, s.multiply(u)).A
+    Mss = csr_matrix.dot(connectivities, s.multiply(s)).astype(np.float32).A
+    Mus = csr_matrix.dot(connectivities, s.multiply(u)).astype(np.float32).A
 
     return Mss, Mus
 
@@ -111,8 +112,8 @@ def second_order_moments_u(adata):
     if 'neighbors' not in adata.uns:
         raise ValueError('You need to run `pp.neighbors` first to compute a neighborhood graph.')
 
-    connectivities = get_connectivities(adata, 'connectivities')
+    connectivities = get_connectivities(adata)
     u = csr_matrix(adata.layers['unspliced'])
-    Muu = csr_matrix.dot(connectivities, u.multiply(u)).A
+    Muu = csr_matrix.dot(connectivities, u.multiply(u)).astype(np.float32).A
 
     return Muu
