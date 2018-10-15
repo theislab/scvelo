@@ -21,6 +21,12 @@ def norm(A):
     return np.sqrt(np.einsum('ij, ij -> i', A, A))
 
 
+def vector_norm(x):
+    """computes the L2-norm along axis 1 (e.g. genes or embedding dimensions) equivalent to np.linalg.norm(A, axis=1)
+    """
+    return np.sqrt(np.einsum('i, i -> ', x, x))
+
+
 def R_squared(residual, total):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -29,9 +35,13 @@ def R_squared(residual, total):
     return r2
 
 
-def cosine(dX, v, v_norm):
+def cosine_correlation(dX, Vi):
     dX -= dX.mean(-1)[:, None]
-    return np.einsum('ij, j', dX, v) / (norm(dX) * v_norm)[None, :]
+    Vi_norm = vector_norm(Vi)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        result = np.zeros(dX.shape[0]) if Vi_norm == 0 else np.einsum('ij, j', dX, Vi) / (norm(dX) * Vi_norm)[None, :]
+    return result
 
 
 def normalize_sparse(X):
@@ -69,5 +79,7 @@ def get_indices(dist):
 
 
 def get_iterative_indices(indices, index, n_recurse_neighbors):
-    return indices[get_iterative_indices(indices, index, n_recurse_neighbors-1)] \
-        if n_recurse_neighbors > 1 else indices[index]
+    def iterate_indices(indices, index, n_recurse_neighbors):
+        return indices[iterate_indices(indices, index, n_recurse_neighbors - 1)] \
+            if n_recurse_neighbors > 1 else indices[index]
+    return np.unique(iterate_indices(indices, index, n_recurse_neighbors))
