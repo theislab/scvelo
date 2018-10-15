@@ -79,7 +79,7 @@ def default_color_map(adata, c):
 
 
 def clip(c, perc=None):
-    if isinstance(perc, int): perc = [perc, 100] if perc < 50 else perc[0, perc]
+    if isinstance(perc, int): perc = [perc, 100] if perc < 50 else [0, perc]
     lb, ub = np.percentile(c, perc)
     return np.clip(c, lb, ub)
 
