@@ -20,7 +20,8 @@ def solve_cov(x, y, fit_offset=False):
             offset, gamma = (numerator_offset, numerator_gamma) / (cov_xx - mean_x * mean_x)
         else:
             offset, gamma = np.zeros(n_var), prod_sum_obs(x, y) / prod_sum_obs(x, x)
-
+    offset[np.isnan(offset)] = 0
+    gamma[np.isnan(gamma)] = 0
     return offset, gamma
 
 
@@ -54,6 +55,10 @@ def solve2_inv(x, y, x2, y2, res_std=None, res2_std=None, fit_offset=False, fit_
         for i in range(n_var):
             A = np.c_[x[:, i]]
             gamma[i] = np.linalg.pinv(A.T.dot(A)).dot(A.T.dot(y[:, i]))
+
+    offset[np.isnan(offset)] = 0
+    offset_ss[np.isnan(offset_ss)] = 0
+    gamma[np.isnan(gamma)] = 0
 
     return offset, offset_ss, gamma
 
