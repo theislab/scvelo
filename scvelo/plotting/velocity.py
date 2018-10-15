@@ -65,6 +65,7 @@ def velocity(adata, var_names=None, basis='umap', mode=None, fits='all', layers=
 
     fits = adata.layers.keys() if fits == 'all' else fits
     fits = [fit for fit in fits if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
+    stochastic_fits = [fit for fit in fits if 'variance_' + fit in adata.layers.keys()]
 
     n_row, n_col = len(var_names), (1 + len(layers) + (mode == 'stochastic')*2)
 
@@ -72,20 +73,22 @@ def velocity(adata, var_names=None, basis='umap', mode=None, fits='all', layers=
     gs = pl.GridSpec(n_row, n_col, wspace=0.3, hspace=0.5)
 
     for v, var in enumerate(var_names):
-        ix = np.where(adata.var_names == var)[0][0]
-        s, u = adata.layers[skey][:, ix], adata.layers[ukey][:, ix]
+        _adata = adata[:, var]
+        s, u = _adata.layers[skey], _adata.layers[ukey]
         if issparse(s): s, u = s.A, u.A
 
         # spliced/unspliced phase portrait with steady-state estimate
         ax = pl.subplot(gs[v * n_col])
-        scatter(adata, x=s, y=u, color=color, frameon=True, title=var, xlabel='spliced', ylabel='unspliced',
+        scatter(adata, basis=var, color=color, frameon=True, title=var, xlabel='spliced', ylabel='unspliced',
                 show=False, save=False, ax=ax, fontsize=fontsize, size=size, alpha=alpha, **kwargs)
 
         xnew = np.linspace(0, s.max() * 1.02)
         for fit in fits:
-            linestyle = '--' if 'stochastic' in fit else '-'
-            pl.plot(xnew, adata.var[fit + '_gamma'][ix] / adata.var[fit + '_beta'][ix] * xnew
-                    + adata.var[fit + '_offset'][ix] / adata.var[fit + '_beta'][ix], c='k', linestyle=linestyle)
+            linestyle = '--' if fit in stochastic_fits else '-'
+            gamma = _adata.var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
+            beta = _adata.var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
+            offset = _adata.var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
+            pl.plot(xnew, gamma / beta * xnew + offset / beta, c='k', linestyle=linestyle)
         if v == len(var_names)-1: pl.legend(fits, loc='lower right', prop={'size': .5*fontsize})
 
         ax.xaxis.set_major_locator(MaxNLocator(nbins=3))
@@ -100,23 +103,26 @@ def velocity(adata, var_names=None, basis='umap', mode=None, fits='all', layers=
                     perc=perc, fontsize=fontsize, size=size, alpha=alpha, show=False, ax=ax, save=False, **kwargs)
 
         if mode == 'stochastic':
-            ss, us = second_order_moments(adata)
+            ss, us = second_order_moments(_adata)
+            ss, us = ss.flatten(), us.flatten()
+            fit = stochastic_fits[0]
 
             ax = pl.subplot(gs[v*n_col + len(layers) + 1])
+            offset = _adata.var[fit + '_offset'] if fit + '_offset' in adata.var.keys() else 0
+            beta = _adata.var[fit + '_beta'] if fit + '_beta' in adata.var.keys() else 1
             x = 2 * (ss - s**2) - s
-            y = 2 * (us - u * s) + u + 2 * s * \
-                adata.var['stochastic_velocity_offset'][ix] / adata.var['stochastic_velocity_beta'][ix]
+            y = 2 * (us - u * s) + u + 2 * s * offset / beta
 
-            scatter(adata, x=x, y=y, color=color, title=var, fontsize=40/n_col, show=False, ax=ax, save=False,
+            scatter(adata, x=x, y=y, color=color, title=var, fontsize=40/n_col, show=False, frameon=True, ax=ax, save=False,
                     perc=perc, xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$', **kwargs)
 
             xnew = np.linspace(x.min(), x.max() * 1.02)
-            fits = adata.layers.keys() if fits == 'all' else fits
-            fits = [fit for fit in fits if 'velocity' in fit]
-            for fit in fits:
-                linestyle = '--' if 'stochastic' in fit else '-'
-                pl.plot(xnew, adata.var[fit + '_gamma'][ix] / adata.var[fit + '_beta'][ix] * xnew +
-                        adata.var[fit + '_offset2'][ix] / adata.var[fit + '_beta'][ix], c='k', linestyle=linestyle)
+            for fit in stochastic_fits:
+                gamma = _adata.var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
+                beta = _adata.var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
+                offset2 = _adata.var[fit + '_offset2'].values if fit + '_offset2' in adata.var.keys() else 0
+
+                pl.plot(xnew, gamma / beta * xnew + offset2 / beta, c='k', linestyle='--')
             if v == len(var_names) - 1: pl.legend(fits, loc='lower right', prop={'size': 34/n_col})
 
     if isinstance(save, str): savefig('', dpi=dpi, save=save, show=show)
