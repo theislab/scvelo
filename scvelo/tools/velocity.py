@@ -8,7 +8,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class Velocity:
-    def __init__(self, adata=None, Ms=None, Mu=None, residual=None):
+    def __init__(self, adata=None, Ms=None, Mu=None, subset=None, residual=None):
         self._adata = adata
         self._Ms = adata.layers['Ms'] if Ms is None else Ms
         self._Mu = adata.layers['Mu'] if Mu is None else Mu
@@ -18,9 +18,11 @@ class Velocity:
         self._offset, self._offset2 = np.zeros(n_vars, dtype=np.float32), np.zeros(n_vars, dtype=np.float32)
         self._gamma, self._r2 = np.zeros(n_vars, dtype=np.float32), np.zeros(n_vars, dtype=np.float32)
         self._beta, self._velocity_genes = np.ones(n_vars, dtype=np.float32), np.ones(n_vars, dtype=bool)
+        self._subset = subset
 
     def compute_deterministic(self, fit_offset=False):
-        self._offset, self._gamma = solve_cov(self._Ms, self._Mu, fit_offset)
+        self._offset, self._gamma = solve_cov(self._Ms, self._Mu, fit_offset) if self._subset is None \
+            else solve_cov(self._Ms[self._subset], self._Mu[self._subset], fit_offset)
         self._residual = self._Mu - self._gamma * self._Ms
         if fit_offset: self._residual -= self._offset
 
@@ -81,7 +83,8 @@ class Velocity:
         return ['_offset', '_offset2', '_beta', '_gamma', '_r2', '_genes']
 
 
-def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False, copy=False):
+def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False,
+             groups=None, groupby=None, subset_for_fitting=None, copy=False):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -115,20 +118,41 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
     adata = data.copy() if copy else data
     if 'Ms' not in adata.layers.keys(): moments(adata)
 
+    groups = [groups] if isinstance(groups, str) else groups
+    if isinstance(groups, (list, tuple, np.ndarray, np.record)):
+        groupby = groupby if groupby in adata.obs.keys() else 'clusters' if 'clusters' in adata.obs.keys() \
+            else 'louvain' if 'louvain' in adata.obs.keys() else None
+        if groupby is not None:
+            groups = np.array([key in groups for key in adata.obs[groupby]])
+        else: raise ValueError('groupby attribute not valid.')
+
+    _adata = adata if groups is None else adata[groups]
+
     logg.info('computing velocities', r=True)
-    velo = Velocity(adata)
+
+    velo = Velocity(_adata, subset=subset_for_fitting)
     velo.compute_deterministic(fit_offset)
 
     stochastic = any([mode is not None and mode in item for item in ['stochastic', 'bayes', 'alpha']])
     if stochastic:
+        vkey2 = 'variance_' + vkey
         if filter_genes and len(set(velo._velocity_genes)) > 1:
             idx = velo._velocity_genes
             adata._inplace_subset_var(idx)
-            velo = Velocity(adata, residual=velo._residual[:, idx])
+            velo = Velocity(_adata, residual=velo._residual[:, idx], subset=subset_for_fitting)
         velo.compute_stochastic(fit_offset, fit_offset2, mode)
-        adata.layers[vkey], adata.layers['variance_' + vkey] = velo.get_residuals()
+        if groups is None:
+            adata.layers[vkey], adata.layers[vkey2] = velo.get_residuals()
+        else:
+            if vkey not in adata.layers.keys(): adata.layers[vkey] = np.zeros(adata.shape, dtype=np.float32)
+            if vkey2 not in adata.layers.keys(): adata.layers[vkey2] = np.zeros(adata.shape, dtype=np.float32)
+            adata.layers[vkey][groups], adata.layers[vkey2][groups] = velo.get_residuals()
     else:
-        adata.layers[vkey], _ = velo.get_residuals()
+        if groups is None:
+            adata.layers[vkey], _ = velo.get_residuals()
+        else:
+            if vkey not in adata.layers.keys(): adata.layers[vkey] = np.zeros(adata.shape, dtype=np.float32)
+            adata.layers[vkey][groups], _ = velo.get_residuals()
 
     pars = velo.get_pars()
     for i, key in enumerate(velo.get_pars_names()):
