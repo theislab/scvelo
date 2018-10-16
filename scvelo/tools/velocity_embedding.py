@@ -44,7 +44,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', scale=10, self_transi
 
     if basis is None:
         keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
-        if len(keys) > 0: keys = keys[-1]
+        if len(keys) > 0: basis = keys[-1]
         else: raise ValueError('No basis specified')
 
     if 'X_' + basis not in adata.obsm_keys():
