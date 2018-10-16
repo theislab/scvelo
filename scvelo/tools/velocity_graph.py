@@ -2,7 +2,6 @@ from ..logging import logg, settings, ProgressReporter
 from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
 from .rank_velocity_genes import rank_velocity_genes
-from scanpy.api import Neighbors
 from scipy.sparse import coo_matrix
 import numpy as np
 
@@ -41,8 +40,10 @@ class VelocityGraph:
         if n_neighbors is None and 'neighbors' in adata.uns.keys():
             self.indices = get_indices(dist=adata.uns['neighbors']['distances'])[0]
         else:
-            keys = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()]
+            from scanpy.api import Neighbors
             neighs = Neighbors(adata)
+
+            keys = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()]
             neighs.compute_neighbors(n_neighbors=n_neighbors, use_rep=keys[-1], n_pcs=10)
             self.indices = get_indices(dist=neighs.distances)[0]
 
