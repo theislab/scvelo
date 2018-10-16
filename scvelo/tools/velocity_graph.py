@@ -1,4 +1,4 @@
-from ..logging import logg, settings
+from ..logging import logg, settings, ProgressReporter
 from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
 from .rank_velocity_genes import rank_velocity_genes
@@ -51,6 +51,7 @@ class VelocityGraph:
 
     def compute_cosines(self):
         vals, rows, cols, n_obs = [], [], [], self.X.shape[0]
+        progress = ProgressReporter(n_obs)
         for i in range(n_obs):
             neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors)
             if self.V[i].max() != 0 or self.V[i].min() != 0:
@@ -62,6 +63,8 @@ class VelocityGraph:
             vals.extend(val)
             rows.extend(np.ones(len(neighs_idx)) * i)
             cols.extend(neighs_idx)
+            progress.update()
+        progress.finish()
 
         vals = np.hstack(vals)
         vals[np.isnan(vals)] = 1e-10  # actually zero; just to store these entries in sparse matrix.
@@ -109,7 +112,7 @@ def velocity_graph(adata, vkey='velocity', n_neighbors=None, n_recurse_neighbors
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
-        'added to `.uns`\n'
-        '    \'' + vkey + '_graph\', sparse matrix with cosine correlations')
+        'added \n'
+        '    \'' + vkey + '_graph\', sparse matrix with cosine correlations (adata.uns)')
 
     return adata if copy else None

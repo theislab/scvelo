@@ -3,6 +3,7 @@ from scanpy import settings
 settings.verbosity = 3   # global verbosity level: show errors(0), warnings(1), info(2) and hints(3)
 settings._frameon = False
 
+import sys
 from datetime import datetime
 from time import time
 
@@ -29,6 +30,26 @@ def print_versions():
         try: print('{}=={}'.format(mod_install, __import__(mod_name).__version__), end='  ')
         except (ImportError, AttributeError): pass
     print()
+
+
+class ProgressReporter:
+    def __init__(self, total, interval=3):
+        self.count = 0
+        self.total = total
+        self.timestamp = time()
+        self.interval = interval
+
+    def update(self):
+        self.count += 1
+        if time() - self.timestamp > self.interval or self.count == self.total:
+            self.timestamp = time()
+            percent = int(self.count * 100 / self.total)
+            sys.stdout.write('\r' + '... %d%%' % percent)
+            sys.stdout.flush()
+
+    def finish(self):
+        sys.stdout.write('\r')
+        sys.stdout.flush()
 
 
 from anndata.logging import print_memory_usage
