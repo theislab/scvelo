@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 
-def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=None, min_mass=.5):
+def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=None, min_mass=None):
     # prepare grid
     n_obs, n_dim = X_emb.shape
 
@@ -31,11 +31,12 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
     nn.fit(X_emb)
     dists, neighs = nn.kneighbors(X_grid)
 
-    std = np.mean([(g[1] - g[0]) for g in grs])
-    weight = normal.pdf(loc=0, scale=smooth * std, x=dists)
+    scale = np.mean([(g[1] - g[0]) for g in grs]) * smooth
+    weight = normal.pdf(x=dists, scale=scale)
     p_mass = weight.sum(1)
 
     V_grid = (V_emb[neighs] * weight[:, :, None]).sum(1) / np.maximum(1, p_mass)[:, None]
+    if min_mass is None: min_mass = np.clip(np.percentile(p_mass, 99) / 100, 1e-2, 1)
     X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
 
     V_grid /= 3 * quiver_autoscale(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1])
@@ -44,7 +45,7 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale=1, min_mass=.5, smooth=.5,
+def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale=1, smooth=.5, min_mass=None,
                             n_neighbors=None, X=None, V=None, principal_curve=False, color=None, use_raw=None, layer=None,
                             color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
                             groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
