@@ -6,6 +6,7 @@ del get_version
 
 from .read_load import read, load, clean_obs_names, merge
 from .logging import settings
+from .tools.run import run_all
 from .tools.velocity import Velocity
 from .tools.velocity_graph import VelocityGraph
 
