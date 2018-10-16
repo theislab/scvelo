@@ -64,7 +64,8 @@ def cleanup(adata, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
     return adata if copy else None
 
 
-def filter_and_normalize(adata, min_counts=10, min_counts_u=None, n_top_genes=None, log=True, copy=False):
+def filter_and_normalize(adata, min_counts=3, min_counts_u=3, min_cells=None, min_cells_u=None, n_top_genes=None,
+                         log=True, copy=False):
     """Filtering, normalization and log transform
 
     Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
@@ -98,13 +99,18 @@ def filter_and_normalize(adata, min_counts=10, min_counts_u=None, n_top_genes=No
     Returns or updates `adata` depending on `copy`.
     """
     from scanpy.api.pp import filter_genes, filter_genes_dispersion, normalize_per_cell, log1p
-    filter_genes(adata, min_counts=min_counts)
+
+    def filter_genes_u(adata, min_counts_u=None, min_cells_u=None):
+        counts = adata.layers['unspliced'] if min_counts_u is not None else adata.layers['unspliced'] > 0
+        counts = counts.sum(0).A1 if issparse(counts) else counts.sum(0)
+        adata._inplace_subset_var(counts >= (min_counts_u if min_counts_u is not None else min_cells_u))
+
+    if min_counts is not None: filter_genes(adata, min_counts=min_counts)
+    if min_cells is not None: filter_genes(adata, min_cells=min_cells)
 
     if 'unspliced' in adata.layers.keys():
-        counts = adata.layers['unspliced'] > 0
-        counts = counts.sum(0).A1 if issparse(counts) else counts.sum(0)
-        min_counts_u = min_counts / 2 if min_counts_u is None else min_counts_u
-        adata._inplace_subset_var(counts > min_counts_u)
+        if min_counts_u is not None: filter_genes_u(adata, min_counts_u=min_counts_u)
+        if min_cells_u is not None: filter_genes_u(adata, min_cells_u=min_cells_u)
 
     if n_top_genes is not None and n_top_genes < adata.shape[1]:
         normalize_per_cell(adata)
@@ -115,10 +121,10 @@ def filter_and_normalize(adata, min_counts=10, min_counts_u=None, n_top_genes=No
     return adata if copy else None
 
 
-def recipe_velocity(adata, min_counts=10, n_top_genes=None, n_pcs=30, n_neighbors=30, log=True, copy=False):
+def recipe_velocity(adata, min_counts=3, min_counts_u=3, n_top_genes=None, n_pcs=30, n_neighbors=30, log=True, copy=False):
     """Runs pp.filter_and_normalize() and pp.moments()
     """
     from .moments import moments
-    filter_and_normalize(adata, min_counts=min_counts, n_top_genes=n_top_genes, log=log)
+    filter_and_normalize(adata, min_counts=min_counts, min_counts_u=min_counts_u, n_top_genes=n_top_genes, log=log)
     moments(adata, n_neighbors=n_neighbors, n_pcs=n_pcs)
     return adata if copy else None
