@@ -3,6 +3,7 @@ from .utils import norm
 from .transition_matrix import transition_matrix
 from scipy.sparse import issparse
 import numpy as np
+import warnings
 
 
 def quiver_autoscale(X, Y, U, V):
@@ -56,13 +57,15 @@ def velocity_embedding(adata, basis=None, vkey='velocity', scale=10, self_transi
     TA = T.A if adata.n_obs < 8192 else None
     sparse = False if adata.n_obs < 8192 else True
 
-    for i in range(adata.n_obs):
-        indices = T[i].indices
-        dX = X_emb[indices] - X_emb[i, None]  # shape (n_neighbors, 2)
-        if not retain_scale: dX /= norm(dX)[:, None]
-        dX[np.isnan(dX)] = 0  # zero diff in a steady-state
-        probs = T[i].data if sparse else TA[i, indices]
-        V_emb[i] = probs.dot(dX) - probs.mean() * dX.sum(0)  # probs.sum() / len(indices)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for i in range(adata.n_obs):
+            indices = T[i].indices
+            dX = X_emb[indices] - X_emb[i, None]  # shape (n_neighbors, 2)
+            if not retain_scale: dX /= norm(dX)[:, None]
+            dX[np.isnan(dX)] = 0  # zero diff in a steady-state
+            probs = T[i].data if sparse else TA[i, indices]
+            V_emb[i] = probs.dot(dX) - probs.mean() * dX.sum(0)  # probs.sum() / len(indices)
 
     if retain_scale:
         delta = T.dot(adata.X) - adata.X
