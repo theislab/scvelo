@@ -31,12 +31,12 @@ def convert_to_loom(adata, basis=None):
         def __init__(self, adata, basis=None):
             self.S = adata.layers['spliced'].T
             self.U = adata.layers['unspliced'].T
-            self.A = adata.layers['ambiguous'].T
+            self.S = self.S.A if issparse(self.S) else self.S
+            self.U = self.U.A if issparse(self.U) else self.U
 
-            if issparse(self.S):
-                self.S = self.S.A
-                self.U = self.U.A
-                self.A = self.A.A
+            if 'ambiguous' in adata.layers.keys():
+                self.A = adata.layers['ambiguous'].T
+                if issparse(self.A): self.A = self.A.A
 
             self.initial_cell_size = self.S.sum(0)
             self.initial_Ucell_size = self.U.sum(0)
@@ -47,7 +47,7 @@ def convert_to_loom(adata, basis=None):
                 self.ca[key] = np.array(adata.obs[key].values)
             for key in adata.var.keys():
                 self.ra[key] = np.array(adata.var[key].values)
-            if basis is not None:
+            if 'X_' + basis in adata.obsm.keys():
                 self.ts = adata.obsm['X_' + basis]
 
             if 'clusters' in self.ca:
