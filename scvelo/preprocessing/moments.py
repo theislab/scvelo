@@ -20,12 +20,12 @@ def get_connectivities(adata, mode='connectivities'):
     return connectivities.tocsr().astype(np.float32)
 
 
-def moments(adata, n_neighbors=30, n_pcs=30, mode='connectivities', renormalize=False, copy=False):
+def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', renormalize=False, plot=False, copy=False):
     """Computes first order moments for velocity estimation.
 
     Arguments
     ---------
-    adata: :class:`~anndata.AnnData`
+    data: :class:`~anndata.AnnData`
         Annotated data matrix.
     n_neighbors: `int` (default: 30)
         Number of neighbors to use.
@@ -46,10 +46,14 @@ def moments(adata, n_neighbors=30, n_pcs=30, mode='connectivities', renormalize=
     Mu: `.layers`
         dense matrix with first order moments of unspliced counts.
     """
+    adata = data.copy() if copy else data
     if 'neighbors' not in adata.uns.keys() or n_neighbors > adata.uns['neighbors']['params']['n_neighbors']:
         from scanpy.api.pp import neighbors, pca
         if 'X_pca' not in adata.obsm.keys() or n_pcs > adata.obsm['X_pca'].shape[1]:
             pca(adata, n_comps=n_pcs, svd_solver='arpack')
+            if plot:
+                from scanpy.plotting.tools import pca_variance_ratio
+                pca_variance_ratio(adata)
         neighbors(adata, n_neighbors=n_neighbors, use_rep='X_pca')
 
     if mode not in adata.uns['neighbors']:

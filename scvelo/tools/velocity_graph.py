@@ -21,7 +21,7 @@ def vals_to_csr(vals, rows, cols, shape):
 
 class VelocityGraph:
     def __init__(self, adata, xkey='Ms', vkey='velocity', n_neighbors=None, n_recurse_neighbors=None,
-                 n_top_genes=None, sqrt_trafo=False, use_copy=False):
+                 n_top_genes=None, sqrt_transform=False):
         subset = rank_velocity_genes(adata, n_genes=n_top_genes, min_r2=.1, min_dispersion=0, min_counts=10) \
             if (n_top_genes is not None and n_top_genes < adata.var['velocity_genes'].sum()) \
             else adata.var['velocity_genes'] if 'velocity_genes' in adata.var.keys() \
@@ -30,8 +30,8 @@ class VelocityGraph:
         self.X = np.array(adata[:, subset].layers[xkey].copy(), dtype=np.float32)
         self.V = np.array(adata[:, subset].layers[vkey].copy(), dtype=np.float32)
 
-        self.sqrt_trafo = sqrt_trafo
-        if sqrt_trafo: self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
+        self.sqrt_transform = sqrt_transform
+        if sqrt_transform: self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
         self.V -= self.V.mean(1)[:, None]
 
         self.n_recurse_neighbors = 1 if n_neighbors is not None \
@@ -57,7 +57,7 @@ class VelocityGraph:
             neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors)
             if self.V[i].max() != 0 or self.V[i].min() != 0:
                 dX = self.X[neighs_idx] - self.X[i, None]  # 60% of runtime
-                if self.sqrt_trafo: dX = np.sqrt(np.abs(dX)) * np.sign(dX)
+                if self.sqrt_transform: dX = np.sqrt(np.abs(dX)) * np.sign(dX)
                 val = cosine_correlation(dX, self.V[i])  # 40% of runtime
             else:
                 val = np.zeros(len(neighs_idx))
@@ -73,7 +73,7 @@ class VelocityGraph:
         self.graph, self.graph_neg = vals_to_csr(vals, rows, cols, shape=(n_obs, n_obs))
 
 
-def velocity_graph(adata, vkey='velocity', n_neighbors=None, n_recurse_neighbors=None, sqrt_transform=False,
+def velocity_graph(data, vkey='velocity', n_neighbors=None, n_recurse_neighbors=None, sqrt_transform=False,
                    n_top_genes=None, copy=False, use_copy=False):
     """Computes a velocity graph based on cosine similarities.
 
@@ -81,7 +81,7 @@ def velocity_graph(adata, vkey='velocity', n_neighbors=None, n_recurse_neighbors
 
     Arguments
     ---------
-    adata: :class:`~anndata.AnnData`
+    data: :class:`~anndata.AnnData`
         Annotated data matrix.
     vkey: `str` (default: `'velocity'`)
         Name of velocity estimates to be used.
@@ -100,12 +100,13 @@ def velocity_graph(adata, vkey='velocity', n_neighbors=None, n_recurse_neighbors
     velocity_graph: `.uns`
         sparse matrix with transition probabilities
     """
-    if vkey not in adata.layers.keys(): velocity(adata)
+    adata = data.copy() if copy else data
+    if vkey not in adata.layers.keys(): velocity(adata, vkey=vkey)
 
     logg.info('computing velocity graph', r=True)
 
     vgraph = VelocityGraph(adata, vkey=vkey, n_neighbors=n_neighbors, n_recurse_neighbors=n_recurse_neighbors,
-                           n_top_genes=n_top_genes, sqrt_trafo=sqrt_transform, use_copy=use_copy)
+                           n_top_genes=n_top_genes, sqrt_transform=sqrt_transform, use_copy=use_copy)
     vgraph.compute_cosines()
 
     adata.uns[vkey+'_graph'] = vgraph.graph

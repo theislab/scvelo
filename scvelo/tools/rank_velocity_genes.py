@@ -46,12 +46,12 @@ def select_groups(adata, groups='all', key='louvain'):
     return groups, groups_masks
 
 
-def rank_velocity_genes(adata, groupby=None, groups='all', n_genes=10, min_counts=None, min_r2=None, min_dispersion=None,
+def rank_velocity_genes(data, groupby=None, groups='all', n_genes=10, min_counts=None, min_r2=None, min_dispersion=None,
                         method='t-test_overestim_var', use_raw=True, copy=False):
     """Rank genes for characterizing groups according to unspliced/spliced correlation and differential expression.
     Parameters
     ----------
-    adata : :class:`~anndata.AnnData`
+    data : :class:`~anndata.AnnData`
         Annotated data matrix.
     groupby : `str`
         The key of the observations grouping to consider.
@@ -77,6 +77,7 @@ def rank_velocity_genes(adata, groupby=None, groups='all', n_genes=10, min_count
         gene for each group. Ordered according to scores.
 
     """
+    adata = data.copy() if copy else data
     logg.info('ranking velocity genes', r=True)
     if method not in {'t-test', 't-test_overestim_var'}: raise ValueError('Method not available.')
 

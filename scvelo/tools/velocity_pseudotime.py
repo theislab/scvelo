@@ -1,12 +1,12 @@
 import numpy as np
 
 
-def principal_curve(adata, basis='pca', n_comps=4, clusters_list=None, copy=False):
+def principal_curve(data, basis='pca', n_comps=4, clusters_list=None, copy=False):
     """Computes the principal curve
     
     Arguments
     ---------
-    adata: :class:`~anndata.AnnData`
+    data: :class:`~anndata.AnnData`
         Annotated data matrix.
     basis: `str` (default: `'pca'`)
         Basis to use for computing the principal curve.
@@ -21,6 +21,7 @@ def principal_curve(adata, basis='pca', n_comps=4, clusters_list=None, copy=Fals
     principal_curve: `.uns`
         dictionary containing `projections`, `ixsort` and `arclength`
     """
+    adata = data.copy() if copy else data
     import rpy2.robjects as robjects
     from rpy2.robjects.packages import importr
 

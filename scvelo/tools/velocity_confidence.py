@@ -7,7 +7,8 @@ from scanpy.api.pp import neighbors
 import numpy as np
 
 
-def velocity_confidence(adata, vkey='velocity', copy=False):
+def velocity_confidence(data, vkey='velocity', copy=False):
+    adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
         raise ValueError(
             'You need to run `tl.velocity` first.')
@@ -28,14 +29,13 @@ def velocity_confidence(adata, vkey='velocity', copy=False):
     adata.obs[vkey + '_length'] = V_norm.round(2)
     adata.obs[vkey + '_confidence'] = R
 
-    logg.hint(
-        'added to `.obs`\n'
-        '    ' + vkey + '_confidence')
+    logg.hint('added \'' + vkey + '_confidence\' (adata.obs)')
 
     return adata if copy else None
 
 
-def velocity_confidence_transition(adata, vkey='velocity', scale=10, copy=False):
+def velocity_confidence_transition(data, vkey='velocity', scale=10, copy=False):
+    adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
         raise ValueError(
             'You need to run `tl.velocity` first.')
@@ -50,9 +50,7 @@ def velocity_confidence_transition(adata, vkey='velocity', scale=10, copy=False)
 
     adata.obs[vkey + '_confidence_transition'] = prod_sum_var(dX, V) / (norm(dX) * norm(V))
 
-    logg.hint(
-        'added to `.obs`\n'
-        '    ' + vkey + '_confidence_transition')
+    logg.hint('added \'' + vkey + '_confidence_transition\' (adata.obs)')
 
     return adata if copy else None
 
@@ -68,7 +66,8 @@ def random_subsample(adata, frac=.5):
     return adata_subset
 
 
-def score_robustness(adata, adata_subset=None, vkey='velocity', copy=False):
+def score_robustness(data, adata_subset=None, vkey='velocity', copy=False):
+    adata = data.copy() if copy else data
     if adata_subset is None: adata_subset = random_subsample(adata)
     V = adata[adata.obs['subset']].layers[vkey]
     V_subset = adata_subset.layers[vkey]

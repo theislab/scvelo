@@ -25,8 +25,11 @@ def eigs(T, k=10, eps=1e-3, perc=None):
     return eigvals, eigvecs
 
 
-def terminal_states(adata, vkey='velocity', self_transitions=False, basis=None, weight_diffusion=0, scale_diffusion=1,
+def terminal_states(data, vkey='velocity', self_transitions=False, basis=None, weight_diffusion=0, scale_diffusion=1,
                     eps=1e-3, copy=False):
+    """Computes terminal states (root and end points) via eigenvalue decomposition.
+    """
+    adata = data.copy() if copy else data
     connectivities = get_connectivities(adata, 'distances')
 
     logg.info('computing root cells', r=True, end=' ')
@@ -49,7 +52,7 @@ def terminal_states(adata, vkey='velocity', self_transitions=False, basis=None, 
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
-        'added to `.obs`\n'
-        '    \'root\', root cells of Markov diffusion process\n'
-        '    \'end\', end points of Markov diffusion process')
+        'added\n'
+        '    \'root\', root cells of Markov diffusion process (adata.obs)\n'
+        '    \'end\', end points of Markov diffusion process (adata.obs)')
     return adata if copy else None

@@ -14,13 +14,13 @@ def quiver_autoscale(X, Y, U, V):
     return Q.scale
 
 
-def velocity_embedding(adata, basis=None, vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
+def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
                        retain_scale=False, copy=False):
     """Computes the single cell velocities in the embedding
 
     Arguments
     ---------
-    adata: :class:`~anndata.AnnData`
+    data: :class:`~anndata.AnnData`
         Annotated data matrix.
     basis: `str` (default: `'tsne'`)
         Which embedding to use.
@@ -37,6 +37,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', scale=10, self_transi
     velocity_umap: `.obsm`
         coordinates of velocity projection on embedding
     """
+    adata = data.copy() if copy else data
     T = transition_matrix(adata, vkey=vkey, scale=scale, self_transitions=self_transitions, use_negative_cosines=use_negative_cosines)
     T.setdiag(0)
     T.eliminate_zeros()
@@ -80,8 +81,8 @@ def velocity_embedding(adata, basis=None, vkey='velocity', scale=10, self_transi
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
-        'added to `.obsm`\n'
-        '    \'' + vkey + '\', embedded velocity vectors')
+        'added\n'
+        '    \'' + vkey + '\', embedded velocity vectors (adata.obsm)')
 
     return adata if copy else None
 
