@@ -2,15 +2,13 @@ import numpy as np
 from scipy.sparse import issparse
 
 
-def show_proportions(adata, copy=False):
+def show_proportions(adata):
     """Fraction of spliced/unspliced/ambiguous abundances
 
     Arguments
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    copy: `bool` (default: `False`)
-        Return a copy instead of writing to adata.
 
     Returns
     -------
@@ -24,15 +22,13 @@ def show_proportions(adata, copy=False):
 
     print('Abundance of ' + str(layers_keys) + ': ' + str(mean_abundances))
 
-    return adata if copy else None
 
-
-def cleanup(adata, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
+def cleanup(data, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
     """Deletes attributes not needed.
 
     Arguments
     ---------
-    adata: :class:`~anndata.AnnData`
+    data: :class:`~anndata.AnnData`
         Annotated data matrix.
     cleanup: `str` or list of `str` (default: `layers`)
         Which attributes to consider for freeing memory.
@@ -45,6 +41,8 @@ def cleanup(adata, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
     -------
     Returns or updates `adata` with selection of attributes kept.
     """
+    adata = data.copy() if copy else data
+
     if any(['obs' in clean, 'all' in clean]):
         for key in list(adata.obs.keys()):
             if key not in keep: del adata.obs[key]
@@ -64,8 +62,8 @@ def cleanup(adata, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
     return adata if copy else None
 
 
-def filter_and_normalize(adata, min_counts=3, min_counts_u=3, min_cells=None, min_cells_u=None, n_top_genes=None,
-                         log=True, copy=False):
+def filter_and_normalize(data, min_counts=3, min_counts_u=3, min_cells=None, min_cells_u=None, n_top_genes=None,
+                         log=True, plot=False, copy=False):
     """Filtering, normalization and log transform
 
     Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
@@ -83,7 +81,7 @@ def filter_and_normalize(adata, min_counts=3, min_counts_u=3, min_cells=None, mi
 
     Arguments
     ---------
-    adata: :class:`~anndata.AnnData`
+    data: :class:`~anndata.AnnData`
         Annotated data matrix.
     min_counts: `int` (default: 10)
         Minimum number of gene counts per cell.
@@ -98,6 +96,7 @@ def filter_and_normalize(adata, min_counts=3, min_counts_u=3, min_cells=None, mi
     -------
     Returns or updates `adata` depending on `copy`.
     """
+    adata = data.copy() if copy else data
     from scanpy.api.pp import filter_genes, filter_genes_dispersion, normalize_per_cell, log1p
 
     def filter_genes_u(adata, min_counts_u=None, min_cells_u=None):
@@ -114,7 +113,14 @@ def filter_and_normalize(adata, min_counts=3, min_counts_u=3, min_cells=None, mi
 
     if n_top_genes is not None and n_top_genes < adata.shape[1]:
         normalize_per_cell(adata)
-        filter_genes_dispersion(adata, n_top_genes=n_top_genes)
+
+        filter_result = filter_genes_dispersion(adata.X, n_top_genes=n_top_genes, log=False)
+        if plot:
+            from scanpy.plotting.preprocessing import filter_genes_dispersion as plot_filter_genes_dispersion
+            plot_filter_genes_dispersion(filter_result, log=True)
+        adata._inplace_subset_var(filter_result.gene_subset)
+
+        #filter_genes_dispersion(adata, n_top_genes=n_top_genes)
 
     normalize_per_cell(adata)
     if log: log1p(adata)
