@@ -10,9 +10,9 @@ import pandas as pd
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, color=None, use_raw=None, layer=None,
-                       color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
-                       groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
+def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, X=None, V=None, color=None, use_raw=None,
+                       layer=None, color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None,
+                       sort_order=True, groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                        legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
                        fontsize=None, figsize=(14,10), dpi=150, frameon=None, show=True, save=None, ax=None, **kwargs):
     """\
@@ -43,12 +43,13 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, c
     layers = pd.unique(layer) if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
     vkeys = pd.unique(vkey) if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
     for key in vkeys:
-        if key + '_' + basis not in adata.obsm_keys(): compute_velocity_embedding(adata, basis=basis, vkey=key)
+        if key + '_' + basis not in adata.obsm_keys() and V is None:
+            compute_velocity_embedding(adata, basis=basis, vkey=key)
 
     if len(colors) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0] * len(colors), figsize[1]), dpi=dpi))):
             velocity_embedding(adata, basis=basis, vkey=vkey, layer=layer, density=density, scale=scale,
-                               perc=perc, color=colors[i], use_raw=use_raw, sort_order=sort_order,
+                               perc=perc, color=colors[i], use_raw=use_raw, sort_order=sort_order, X=X, V=V,
                                alpha=alpha, groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                                legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                                color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
@@ -62,7 +63,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, c
     elif len(layers) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(layers), pl.figure(None, (figsize[0] * len(layers), figsize[1]), dpi=dpi))):
             velocity_embedding(adata, basis=basis, vkey=vkey, layer=layers[i], density=density, scale=scale,
-                               perc=None, color=color, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
+                               perc=None, color=color, use_raw=use_raw, sort_order=sort_order, X=X, V=V, alpha=alpha,
                                groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                                legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                                color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
@@ -76,7 +77,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, c
     elif len(vkeys) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(vkeys), pl.figure(None, (figsize[0] * len(vkeys), figsize[1]), dpi=dpi))):
             velocity_embedding(adata, basis=basis, vkey=vkeys[i], layer=layer, density=density, scale=scale,
-                               perc=None, color=color, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
+                               perc=None, color=color, use_raw=use_raw, sort_order=sort_order, X=X, V=V, alpha=alpha,
                                groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                                legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                                color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
@@ -92,18 +93,18 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, c
 
         color, layer, vkey = colors[0], layers[0], vkeys[0]
         ix_choice = np.random.choice(adata.n_obs, size=int(density * adata.n_obs), replace=False)
-        X = adata.obsm['X_' + basis][:, get_components(components)][ix_choice]
-        V = adata.obsm[vkey + '_' + basis][ix_choice]
+        X = adata.obsm['X_' + basis][:, get_components(components)][ix_choice] if X is None else X[:, :2][ix_choice]
+        V = adata.obsm[vkey + '_' + basis][ix_choice] if V is None else V[:, :2][ix_choice]
 
-        _kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .0005,
-                   "edgecolors": 'k', "headwidth": 9, "headlength": 10, "headaxislength": 6, "linewidth": .25}
-        _kwargs.update(kwargs)
+        quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .0005,
+                         "edgecolors": 'k', "headwidth": 9, "headlength": 10, "headaxislength": 6, "linewidth": .25}
+        quiver_kwargs.update(kwargs)
 
         c = interpret_colorkey(adata, color, layer, perc)
         c = c[ix_choice] if len(c) == adata.n_obs else c
 
-        if is_color_like(c[0]): pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=c, zorder=1, **_kwargs)
-        else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=1, **_kwargs)
+        if is_color_like(c[0]): pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=c, zorder=1, **quiver_kwargs)
+        else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=1, **quiver_kwargs)
 
         ax = scatter(adata, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
                      perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,

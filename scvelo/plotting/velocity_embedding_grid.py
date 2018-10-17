@@ -46,7 +46,7 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
 
 @doc_params(scatter=doc_scatter)
 def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale=1, smooth=.5, min_mass=None,
-                            n_neighbors=None, X=None, V=None, principal_curve=False, color=None, use_raw=None, layer=None,
+                            n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, principal_curve=False, color=None, use_raw=None, layer=None,
                             color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
                             groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                             legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
@@ -89,17 +89,19 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
     layers = pd.unique(layer) if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
     vkeys = pd.unique(vkey) if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
     for key in vkeys:
-        if key + '_' + basis not in adata.obsm_keys(): velocity_embedding(adata, basis=basis, vkey=key)
+        if key + '_' + basis not in adata.obsm_keys() and V is None:
+            velocity_embedding(adata, basis=basis, vkey=key)
     color, layer, vkey = colors[0], layers[0], vkeys[0]
 
-    if X is None and V is None:
-        X, V = compute_velocity_on_grid(X_emb=adata.obsm['X_' + basis][:, get_components(components)],
-                                        V_emb=adata.obsm[vkeys[0] + '_' + basis], density=density,
-                                        smooth=smooth, n_neighbors=n_neighbors, min_mass=min_mass)
+    if X_grid is None or V_grid is None:
+        X_emb  = adata.obsm['X_' + basis][:, get_components(components)] if X is None else X[:, :2]
+        V_emb = adata.obsm[vkey + '_' + basis] if V is None else V[:, :2]
+        X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=density,
+                                                  smooth=smooth, n_neighbors=n_neighbors, min_mass=min_mass)
 
     if len(colors) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0] * len(colors), figsize[1]), dpi=dpi))):
-            velocity_embedding_grid(adata, basis=basis, vkey=vkey, layer=layer, density=density, scale=scale, X=X, V=V,
+            velocity_embedding_grid(adata, basis=basis, vkey=vkey, layer=layer, density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
                                     perc=perc, color=colors[i], min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
                                     principal_curve=principal_curve, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
                                     groups=groups, components=components, projection=projection, legend_loc=legend_loc,
@@ -114,7 +116,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
 
     elif len(layers) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(layers), pl.figure(None, (figsize[0] * len(layers), figsize[1]), dpi=dpi))):
-            velocity_embedding_grid(adata, basis=basis, vkey=vkey, layer=layers[i], density=density, scale=scale, X=X, V=V,
+            velocity_embedding_grid(adata, basis=basis, vkey=vkey, layer=layers[i], density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
                                     perc=perc, color=color, min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
                                     principal_curve=principal_curve, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
                                     groups=groups, components=components, projection=projection, legend_loc=legend_loc,
@@ -129,7 +131,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
 
     elif len(vkeys) > 1:
         for i, gs in enumerate(pl.GridSpec(1, len(vkeys), pl.figure(None, (figsize[0] * len(vkeys), figsize[1]), dpi=dpi))):
-            velocity_embedding_grid(adata, basis=basis, vkey=vkeys[i], layer=layer, density=density, scale=scale, X=X, V=V,
+            velocity_embedding_grid(adata, basis=basis, vkey=vkeys[i], layer=layer, density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
                                     perc=perc, color=color, min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
                                     principal_curve=principal_curve, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
                                     groups=groups, components=components, projection=projection, legend_loc=legend_loc,
@@ -145,10 +147,10 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
     else:
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
-        _kwargs = {"scale": scale, "angles": 'xy', "scale_units": 'xy', "width": .001, "color": 'black',
+        quiver_kwargs = {"scale": scale, "angles": 'xy', "scale_units": 'xy', "width": .001, "color": 'black',
                    "edgecolors": 'k', "headwidth": 4.5, "headlength": 5, "headaxislength": 3, "linewidth": .2}
-        _kwargs.update(kwargs)
-        pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], **_kwargs, zorder=1)
+        quiver_kwargs.update(kwargs)
+        pl.quiver(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1], **quiver_kwargs, zorder=1)
 
         if principal_curve:
             curve = adata.uns['principal_curve']['projections']
