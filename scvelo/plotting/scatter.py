@@ -93,6 +93,7 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                 y = adata[:, basis].layers['unspliced'] if use_raw else adata[:, basis].layers['Mu']
                 x, y = x.A if issparse(x) else x, y.A if issparse(y) else y
                 xlabel, ylabel, title = 'spliced', 'unspliced', basis
+                frameon = True if frameon is None else frameon
 
             elif is_embedding:
                 X_emb = adata.obsm['X_' + basis][:, get_components(components)]
