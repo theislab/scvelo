@@ -2,16 +2,19 @@ from ..logging import logg, settings
 from ..preprocessing.moments import moments, second_order_moments
 from .solver import solve_cov, solve2_inv, solve2_mle
 from .utils import R_squared
+from scipy.sparse import issparse
 import numpy as np
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class Velocity:
-    def __init__(self, adata=None, Ms=None, Mu=None, subset=None, residual=None):
+    def __init__(self, adata=None, Ms=None, Mu=None, subset=None, residual=None, use_raw=False,):
         self._adata = adata
-        self._Ms = adata.layers['Ms'] if Ms is None else Ms
-        self._Mu = adata.layers['Mu'] if Mu is None else Mu
+        self._Ms = adata.layers['spliced'] if use_raw else adata.layers['Ms'] if Ms is None else Ms
+        self._Mu = adata.layers['unspliced'] if use_raw else adata.layers['Mu'] if Mu is None else Mu
+        self._Ms = self._Ms.A if issparse(self._Ms) else self._Ms
+        self._Mu = self._Mu.A if issparse(self._Mu) else self._Mu
 
         n_obs, n_vars = self._Ms.shape
         self._residual, self._residual2 = residual, None
@@ -84,7 +87,7 @@ class Velocity:
 
 
 def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False,
-             groups=None, groupby=None, subset_for_fitting=None, copy=False):
+             groups=None, groupby=None, subset_for_fitting=None, use_raw=False, copy=False):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -116,7 +119,7 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
         parameters
     """
     adata = data.copy() if copy else data
-    if 'Ms' not in adata.layers.keys(): moments(adata)
+    if not use_raw and 'Ms' not in adata.layers.keys(): moments(adata)
 
     groups = [groups] if isinstance(groups, str) else groups
     if isinstance(groups, (list, tuple, np.ndarray, np.record)):
@@ -130,7 +133,7 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
 
     logg.info('computing velocities', r=True)
 
-    velo = Velocity(_adata, subset=subset_for_fitting)
+    velo = Velocity(_adata, subset=subset_for_fitting, use_raw=use_raw)
     velo.compute_deterministic(fit_offset)
 
     stochastic = any([mode is not None and mode in item for item in ['stochastic', 'bayes', 'alpha']])
