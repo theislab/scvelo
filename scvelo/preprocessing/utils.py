@@ -62,8 +62,14 @@ def cleanup(data, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
     return adata if copy else None
 
 
-def filter_and_normalize(data, min_counts=3, min_counts_u=3, min_cells=None, min_cells_u=None, n_top_genes=None,
-                         log=True, plot=False, copy=False):
+def set_initial_size(adata, layers={'spliced', 'unspliced'}):
+    if all([layer in adata.layers.keys() for layer in layers]):
+        for layer in layers:
+            X = adata.layers[layer]
+            adata.obs['initial_size_' + layer] = X.sum(1).A1.copy() if issparse(X) else X.sum(1).copy()
+
+
+def filter_genes(data, min_counts=3, min_counts_u=3, min_cells=None, min_cells_u=None, copy=False):
     """Filtering, normalization and log transform
 
     Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
@@ -97,12 +103,15 @@ def filter_and_normalize(data, min_counts=3, min_counts_u=3, min_cells=None, min
     Returns or updates `adata` depending on `copy`.
     """
     adata = data.copy() if copy else data
-    from scanpy.api.pp import filter_genes, filter_genes_dispersion, normalize_per_cell, log1p
+    from scanpy.api.pp import filter_genes
 
     def filter_genes_u(adata, min_counts_u=None, min_cells_u=None):
         counts = adata.layers['unspliced'] if min_counts_u is not None else adata.layers['unspliced'] > 0
         counts = counts.sum(0).A1 if issparse(counts) else counts.sum(0)
         adata._inplace_subset_var(counts >= (min_counts_u if min_counts_u is not None else min_cells_u))
+
+    # compute initial counts per cell first
+    if all([key in adata.layers.keys() for key in {'spliced', 'unspliced'}]): set_initial_size(adata)
 
     if min_counts is not None: filter_genes(adata, min_counts=min_counts)
     if min_cells is not None: filter_genes(adata, min_cells=min_cells)
@@ -111,19 +120,73 @@ def filter_and_normalize(data, min_counts=3, min_counts_u=3, min_cells=None, min
         if min_counts_u is not None: filter_genes_u(adata, min_counts_u=min_counts_u)
         if min_cells_u is not None: filter_genes_u(adata, min_cells_u=min_cells_u)
 
+    return adata if copy else None
+
+
+def filter_genes_dispersion(data, n_top_genes=None, flavor='seurat', copy=False):
+    adata = data.copy() if copy else data
+    if all([key in adata.layers.keys() for key in {'spliced', 'unspliced'}]): set_initial_size(adata)
+
     if n_top_genes is not None and n_top_genes < adata.shape[1]:
-        normalize_per_cell(adata)
+        #normalize_per_cell(adata)
+        if flavor == 'svr':
+            mu = adata.X.mean(0).A1 if issparse(adata.X) else adata.X.mean(0)
+            sigma = np.sqrt(adata.X.multiply(adata.X).mean(0).A1 - mu**2) if issparse(adata.X) else adata.X.std(0)
+            log_mu = np.log2(mu)
+            log_cv = np.log2(sigma / mu)
 
-        filter_result = filter_genes_dispersion(adata.X, n_top_genes=n_top_genes, log=False)
-        if plot:
-            from scanpy.plotting.preprocessing import filter_genes_dispersion as plot_filter_genes_dispersion
-            plot_filter_genes_dispersion(filter_result, log=True)
-        adata._inplace_subset_var(filter_result.gene_subset)
+            from sklearn.svm import SVR
+            clf = SVR(gamma=150. / len(mu))
+            clf.fit(log_mu[:, None], log_cv)
+            score = log_cv - clf.predict(log_mu[:, None])
+            nth_score = np.sort(score)[::-1][n_top_genes]
+            adata._inplace_subset_var(score >= nth_score)
+        else:
+            from scanpy.api.pp import filter_genes_dispersion
+            filter_genes_dispersion(adata, n_top_genes=n_top_genes, flavor=flavor)
 
-        #filter_genes_dispersion(adata, n_top_genes=n_top_genes)
+    return adata if copy else None
 
-    normalize_per_cell(adata)
+
+def normalize_layers(data, layers={'spliced', 'unspliced'}, copy=False):
+    """Normalize by total counts to median
+    """
+    adata = data.copy() if copy else data
+    from scanpy.api.pp import normalize_per_cell
+
+    def get_size_and_bool(adata, layer):
+        if layer not in {'spliced', 'unspliced'}:
+            return None, True
+        else:
+            size = adata.obs['initial_size_' + layer].copy() if 'initial_size_' + layer in adata.obs.keys() else None
+            X = adata.layers[layer]
+        return size, np.allclose((X.data[:10] if issparse(X) else X[0]) % 1, 0, atol=1e-3)
+
+    for layer in layers:
+        size, not_yet_normalized = get_size_and_bool(adata, layer)
+        if not_yet_normalized:
+            adata.layers[layer] = normalize_per_cell(adata.layers[layer], None, size, copy=True)
+    return adata if copy else None
+
+
+def normalize_per_cell(data, log=True, copy=False):
+    adata = data.copy() if copy else data
+    from scanpy.api.pp import normalize_per_cell, log1p
+    size = adata.obs['initial_size_spliced'].copy() if 'initial_size_spliced' in adata.obs.keys() else None
+    normalize_per_cell(adata, None, size)
+    normalize_layers(adata)
     if log: log1p(adata)
+    return adata if copy else None
+
+
+def filter_and_normalize(data, min_counts=3, min_counts_u=3, min_cells=None, min_cells_u=None, n_top_genes=None,
+                         log=True, flavor='seurat', copy=False):
+    """Runs pp.filter_genes(), pp.filter_genes_dispersion() and pp.normalize_per_cell()
+    """
+    adata = data.copy() if copy else data
+    filter_genes(adata, min_counts=min_counts, min_counts_u=min_counts_u, min_cells=min_cells, min_cells_u=min_cells_u)
+    filter_genes_dispersion(adata, n_top_genes=n_top_genes, flavor=flavor)
+    normalize_per_cell(adata, log=log)
     return adata if copy else None
 
 

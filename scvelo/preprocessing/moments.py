@@ -1,26 +1,21 @@
+from ..logging import logg, settings
+from .utils import normalize_layers
 from scipy.sparse import csr_matrix
 import numpy as np
-from ..logging import logg, settings
 
 
-def normalize_layers(adata, layers={'spliced', 'unspliced'}, copy=False):
-    """Normalize by total counts to median
-    """
-    from scanpy.api.pp import normalize_per_cell, filter_cells
-    for layer in layers:
-        subset, counts = filter_cells(adata.layers[layer], min_counts=1)
-        adata.layers[layer] = normalize_per_cell(adata.layers[layer], None, counts, copy=True)
-    return adata if copy else None
-
-
-def get_connectivities(adata, mode='connectivities'):
+def get_connectivities(adata, mode='connectivities', recurse_neighbors=False):
     connectivities = adata.uns['neighbors'][mode] > 0
     connectivities.setdiag(1)
+    if recurse_neighbors:
+        connectivities += connectivities.dot(connectivities * .5)
+        connectivities.data = np.clip(connectivities.data, 0, 1)
     connectivities = connectivities.multiply(1. / connectivities.sum(1))
     return connectivities.tocsr().astype(np.float32)
 
 
-def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', renormalize=False, plot=False, copy=False):
+def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', use_rep=None, recurse_neighbors=False,
+            renormalize=False, plot=False, copy=False):
     """Computes first order moments for velocity estimation.
 
     Arguments
@@ -48,13 +43,13 @@ def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', renormalize=F
     """
     adata = data.copy() if copy else data
     if 'neighbors' not in adata.uns.keys() or n_neighbors > adata.uns['neighbors']['params']['n_neighbors']:
-        from scanpy.api.pp import neighbors, pca
+        from . import neighbors, pca
         if 'X_pca' not in adata.obsm.keys() or n_pcs > adata.obsm['X_pca'].shape[1]:
             pca(adata, n_comps=n_pcs, svd_solver='arpack')
             if plot:
                 from scanpy.plotting.tools import pca_variance_ratio
                 pca_variance_ratio(adata)
-        neighbors(adata, n_neighbors=n_neighbors, use_rep='X_pca')
+        neighbors(adata, n_neighbors=n_neighbors, use_rep=('X_pca' if use_rep is None else use_rep), n_pcs=n_pcs)
 
     if mode not in adata.uns['neighbors']:
         raise ValueError('mode can only be  \'connectivities\' or \'distances\'')
@@ -62,8 +57,7 @@ def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', renormalize=F
     logg.info('computing moments', r=True)
     normalize_layers(adata)
 
-    connectivities = get_connectivities(adata, mode)
-    #connectivities += connectivities.dot(connectivities*.5)
+    connectivities = get_connectivities(adata, mode, recurse_neighbors=recurse_neighbors)
 
     adata.layers['Ms'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['spliced'])).astype(np.float32).A
     adata.layers['Mu'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['unspliced'])).astype(np.float32).A
