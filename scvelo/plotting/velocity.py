@@ -1,7 +1,7 @@
 from ..preprocessing.moments import second_order_moments
-from ..tools import rank_velocity_genes
+from ..tools.rank_velocity_genes import rank_velocity_genes
 from .scatter import scatter
-from .utils import savefig
+from .utils import savefig, default_basis
 import numpy as np
 import pandas as pd
 from matplotlib.ticker import MaxNLocator
@@ -9,7 +9,7 @@ import matplotlib.pyplot as pl
 from scipy.sparse import issparse
 
 
-def velocity(adata, var_names=None, basis='umap', mode=None, fits='all', layers='all', use_raw=False, color=None, color_map='RdBu_r',
+def velocity(adata, var_names=None, basis=None, mode=None, fits='all', layers='all', use_raw=False, color=None, color_map='RdBu_r',
              perc=[2,98], size=.2, alpha=.5, fontsize=8, figsize=(3,2), dpi=120, show=True, save=None, ax=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
@@ -55,9 +55,11 @@ def velocity(adata, var_names=None, basis='umap', mode=None, fits='all', layers=
         A matplotlib axes object. Only works if plotting a single component.
 
     """
-    var_names = [var_names] if isinstance(var_names, str) else var_names if var_names is not None \
-        else rank_velocity_genes(adata, n_genes=4)
-    var_names = pd.unique([var for var in var_names if var in adata.var_names[adata.var.velocity_genes]])
+    basis = default_basis(adata) if basis is None else basis
+    var_names = [var_names] if isinstance(var_names, str) else var_names \
+        if isinstance(var_names, (list, tuple, np.ndarray, np.record)) else rank_velocity_genes(adata, basis=basis, n_genes=4)
+    valid_var_names = adata.var_names[adata.var['velocity_genes']] if 'velocity_genes' in adata.var.keys() else adata.var_names
+    var_names = pd.unique([var for var in var_names if var in valid_var_names])
 
     (skey, ukey) = ('spliced', 'unspliced') if use_raw else ('Ms', 'Mu')
     layers = ['velocity', skey, 'variance_velocity'] if layers == 'all' else layers
