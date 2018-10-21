@@ -1,4 +1,5 @@
 from scipy.spatial.distance import pdist, squareform
+from scipy.sparse import csr_matrix
 from .utils import normalize_sparse
 import numpy as np
 
@@ -31,7 +32,7 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
     if vkey+'_graph' not in adata.uns:
         raise ValueError('You need to run `tl.velocity_graph` first to compute cosine correlations.')
 
-    graph = adata.uns[vkey + '_graph'].copy()
+    graph = csr_matrix(adata.uns[vkey + '_graph']).copy()
 
     if self_transitions:
         confidence = graph.max(1).A.flatten()
@@ -40,13 +41,15 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
         graph.setdiag(self_prob)
 
     T = np.expm1(graph * scale)  # equivalent to np.exp(adata.uns[vkey + '_graph'].A * scale) - 1
-    T = T - np.expm1(-adata.uns[vkey + '_graph_neg'] * scale) if use_negative_cosines \
-        else T + (adata.uns[vkey + '_graph_neg'] < 0) * 1e-10
+    if vkey + '_graph_neg' in adata.uns.keys():
+        T = T - np.expm1(-adata.uns[vkey + '_graph_neg'] * scale) if use_negative_cosines \
+            else T + (adata.uns[vkey + '_graph_neg'] < 0) * 1e-10
 
     # weight direct neighbors with 1 and indirect (recurse) neighbors with 0.5
-    direct_neighbors = adata.uns['neighbors']['distances'] > 0
-    direct_neighbors.setdiag(1)
-    T = .5 * T + .5 * direct_neighbors.multiply(T)
+    if 'neighbors' in adata.uns.keys():
+        direct_neighbors = adata.uns['neighbors']['distances'] > 0
+        direct_neighbors.setdiag(1)
+        T = .5 * T + .5 * direct_neighbors.multiply(T)
 
     if backward: T = T.T
     T = normalize_sparse(T)
