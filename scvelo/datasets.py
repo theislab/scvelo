@@ -1,10 +1,19 @@
 """Builtin Datasets.
 """
-
 from .read_load import read, load
 from .preprocessing.utils import cleanup
 import numpy as np
-import pandas as pd
+
+
+def toy_data(n_obs):
+    """Random samples from Dentate Gyrus.
+    """
+    adata = dentategyrus()
+    indices = np.random.choice(adata.n_obs, n_obs)
+    adata = adata[indices]
+    adata.obs_names = np.array(range(adata.n_obs), dtype='str')
+    adata.var_names_make_unique()
+    return adata
 
 
 def dentategyrus():
@@ -35,16 +44,5 @@ def forebrain():
     filename = 'data/ForebrainGlut/hgForebrainGlut.loom'
     url = 'http://pklab.med.harvard.edu/velocyto/hgForebrainGlut/hgForebrainGlut.loom'
     adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
-    adata.var_names_make_unique()
-    return adata
-
-
-def toy_data(n_obs):
-    """Random samples from Dentate Gyrus.
-    """
-    adata = dentategyrus()
-    indices = np.random.choice(adata.n_obs, n_obs)
-    adata = adata[indices]
-    adata.obs_names = np.array(range(adata.n_obs), dtype='str')
     adata.var_names_make_unique()
     return adata

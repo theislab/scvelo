@@ -5,6 +5,7 @@ figs/
 figures/
 scripts/
 write/
+scanpy*/
 
 scvelo.egg-info/
 
