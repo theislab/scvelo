@@ -22,6 +22,34 @@ def run_all(data, basis=None, mode='deterministic', min_counts=3, n_pcs=30, n_ne
     return adata if copy else None
 
 
+def convert_to_adata(vlm, basis=None):
+    from collections import OrderedDict
+    from .. import AnnData
+    X = vlm.S_norm.T if hasattr(vlm, 'S_norm') else vlm.S_sz.T if hasattr(vlm, 'S_sz') else vlm.S.T  # .sparse().T.tocsr()
+
+    layers = OrderedDict()
+    layers['spliced'] = vlm.S_sz.T if hasattr(vlm, 'S_sz') else vlm.S.T
+    layers['unspliced'] = vlm.U_sz.T if hasattr(vlm, 'U_sz') else vlm.U.T
+
+    if hasattr(vlm, 'velocity'): layers['velocity'] = vlm.velocity.T
+    if hasattr(vlm, 'Sx_sz'): layers['Ms'] = vlm.Sx_sz.T
+    if hasattr(vlm, 'Ux_sz'): layers['Mu'] = vlm.Ux_sz.T
+
+    obs = dict(vlm.ca)
+    if 'CellID' in obs.keys(): obs['obs_names'] = obs.pop('CellID')
+
+    var = dict(vlm.ra)
+    if 'Gene' in var.keys(): var['var_names'] = var.pop('Gene')
+    if hasattr(vlm, 'q'): var['velocity_offset'] = vlm.q
+    if hasattr(vlm, 'gammas'): var['velocity_gamma'] = vlm.gammas
+    if hasattr(vlm, 'R2'): var['velocity_r2'] = vlm.R2
+
+    adata = AnnData(X, obs=obs, var=var, layers=layers)
+    if basis is not None and hasattr(vlm, 'ts'): adata.obsm['X_' + basis] = vlm.ts
+
+    return adata
+
+
 def convert_to_loom(adata, basis=None):
     from scipy.sparse import issparse
     import numpy as np
@@ -43,11 +71,15 @@ def convert_to_loom(adata, basis=None):
 
             self.ca = dict()
             self.ra = dict()
+
+            self.ca['CellID'] = np.array(adata.obs_names)
+            self.ra['Gene'] = np.array(adata.var_names)
+
             for key in adata.obs.keys():
                 self.ca[key] = np.array(adata.obs[key].values)
             for key in adata.var.keys():
                 self.ra[key] = np.array(adata.var[key].values)
-            if 'X_' + basis in adata.obsm.keys():
+            if isinstance(basis, str) and 'X_' + basis in adata.obsm.keys():
                 self.ts = adata.obsm['X_' + basis]
 
             if 'clusters' in self.ca:
@@ -61,12 +93,14 @@ def convert_to_loom(adata, basis=None):
                                         min_cells_express=0, min_cells_express_U=0)
             self.filter_genes(by_detection_levels=True)
 
-            self.normalize('both', size=True, log=False)
-            if n_top_genes is not None:
+            if n_top_genes is not None and n_top_genes < self.S.shape[0]:
                 self.score_cv_vs_mean(n_top_genes)
                 self.filter_genes(by_cv_vs_mean=True)
 
-            self.normalize_by_total()
+            self._normalize_S(relative_size=self.initial_cell_size, target_size=np.median(self.initial_cell_size))
+            self._normalize_U(relative_size=self.initial_Ucell_size, target_size=np.median(self.initial_Ucell_size))
+
+            #self.normalize_by_total()
             print("Number of genes to be used:", self.S.shape[0])
 
         def impute(self, n_pcs=30, n_neighbors=30):
@@ -75,8 +109,8 @@ def convert_to_loom(adata, basis=None):
             self.knn_imputation(k=n_neighbors, n_pca_dims=n_pcs)
             self.normalize_median()
 
-        def velocity(self, fit_offset=False):
-            self.fit_gammas(fit_offset=fit_offset)
+        def velocity_estimation(self, limit_gamma=False, fit_offset=False):
+            self.fit_gammas(limit_gamma=limit_gamma, fit_offset=fit_offset)
             self.filter_genes_good_fit()
 
             self.predict_U()
@@ -85,19 +119,19 @@ def convert_to_loom(adata, basis=None):
             self.extrapolate_cell_at_t()
             print("Number of genes to be used:", self.S.shape[0])
 
-        def velocity_graph(self, n_neighbors_graph=100):
+        def velocity_graph(self, n_neighbors_graph=100, transform='linear', expression_scaling=False):
             if not hasattr(self, 'ts'):
                 raise ValueError('Compute embedding first.')
             else:
                 # counterpart to scv.tl.velocity_graph()
-                self.estimate_transition_prob(hidim="Sx_sz", embed="ts", transform="linear",
+                self.estimate_transition_prob(hidim="Sx_sz", embed="ts", transform=transform,
                                               n_neighbors=n_neighbors_graph, knn_random=True, sampled_fraction=1)
 
                 # counterpart to scv.tl.velocity_embedding()
-                self.calculate_embedding_shift(sigma_corr=0.1, expression_scaling=True)
+                self.calculate_embedding_shift(sigma_corr=0.1, expression_scaling=expression_scaling)
 
         def run_all(self, min_counts=3, min_counts_u=3, n_pcs=30, n_neighbors=30, n_neighbors_graph=100,
-                    n_top_genes=None, fit_offset=False):
+                    n_top_genes=None, fit_offset=False, limit_gamma=False, transform='linear', expression_scaling=False,):
             from time import time
             start = time()
 
@@ -109,11 +143,11 @@ def convert_to_loom(adata, basis=None):
             print('Imputation: ' + str(round(time() - timestamp, 2)))
             timestamp = time()
 
-            self.velocity(fit_offset=fit_offset)
+            self.velocity(limit_gamma=limit_gamma, fit_offset=fit_offset)
             print('Velocity Estimation: ' + str(round(time() - timestamp, 2)))
             timestamp = time()
 
-            self.velocity_graph(n_neighbors_graph=n_neighbors_graph)
+            self.velocity_graph(n_neighbors_graph=n_neighbors_graph, transform=transform, expression_scaling=expression_scaling)
             print('Velocity Graph: ' + str(round(time() - timestamp, 2)))
 
             print('Total: ' + str(round(time() - start, 2)))
