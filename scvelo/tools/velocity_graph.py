@@ -20,7 +20,7 @@ def vals_to_csr(vals, rows, cols, shape):
 
 
 class VelocityGraph:
-    def __init__(self, adata, vkey='velocity', xkey='Ms', n_neighbors=None, n_recurse_neighbors=None,
+    def __init__(self, adata, vkey='velocity', xkey='Ms', basis=None, n_neighbors=None, n_recurse_neighbors=None,
                  n_top_genes=None, sqrt_transform=False):
         subset = rank_velocity_genes(adata, n_genes=n_top_genes, min_r2=.1, min_dispersion=0, min_counts=10) \
             if (n_top_genes is not None and n_top_genes < adata.var['velocity_genes'].sum()) \
@@ -45,9 +45,9 @@ class VelocityGraph:
         else:
             from scanpy.api import Neighbors
             neighs = Neighbors(adata)
-
-            keys = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()]
-            neighs.compute_neighbors(n_neighbors=n_neighbors, use_rep=keys[-1], n_pcs=10)
+            if basis is None: basis = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()][-1]
+            if n_neighbors is None: n_neighbors = int(adata.shape[0] / 50)
+            neighs.compute_neighbors(n_neighbors=n_neighbors, use_rep=basis, n_pcs=10)
             self.indices = get_indices(dist=neighs.distances)[0]
 
         self.graph = adata.uns[vkey + '_graph'] if vkey + '_graph' in adata.uns.keys() else []
@@ -76,8 +76,8 @@ class VelocityGraph:
         self.graph, self.graph_neg = vals_to_csr(vals, rows, cols, shape=(n_obs, n_obs))
 
 
-def velocity_graph(data, vkey='velocity', xkey='Ms', n_neighbors=None, n_recurse_neighbors=None, sqrt_transform=False,
-                   n_top_genes=None, copy=False):
+def velocity_graph(data, vkey='velocity', xkey='Ms', basis=None, n_neighbors=None, n_recurse_neighbors=None,
+                   n_top_genes=None, sqrt_transform=False, copy=False):
     """Computes a velocity graph based on cosine similarities.
 
     The cosine similarities are computed between velocities and potential cell state transitions.
@@ -108,8 +108,8 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', n_neighbors=None, n_recurse
 
     logg.info('computing velocity graph', r=True)
 
-    vgraph = VelocityGraph(adata, vkey=vkey, xkey=xkey, n_neighbors=n_neighbors, n_recurse_neighbors=n_recurse_neighbors,
-                           n_top_genes=n_top_genes, sqrt_transform=sqrt_transform)
+    vgraph = VelocityGraph(adata, vkey=vkey, xkey=xkey, basis=basis, n_neighbors=n_neighbors,
+                           n_recurse_neighbors=n_recurse_neighbors, n_top_genes=n_top_genes, sqrt_transform=sqrt_transform)
     vgraph.compute_cosines()
 
     adata.uns[vkey+'_graph'] = vgraph.graph
