@@ -1,5 +1,4 @@
 from ..logging import logg, settings
-from ..plotting.utils import clip
 from scipy.sparse import issparse
 from scanpy.preprocessing.simple import filter_genes_dispersion
 import numpy as np
@@ -21,7 +20,10 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
             n_nans = mask_nans.sum(0)
         n_counts -= n_nans
 
-    if perc is not None: data = clip(data, perc)
+    if perc is not None:
+        if isinstance(perc, int): perc = [perc, 100] if perc < 50 else [0, perc]
+        lb, ub = np.percentile(data, perc)
+        data = np.clip(data, lb, ub)
 
     mean = (X.sum(0) / n_counts).A1 if issparse(X) else X.sum(0) / n_counts
     mean_sq = (X.multiply(X).sum(0) / n_counts).A1 if issparse(X) else np.multiply(X, X).sum(0) / n_counts
@@ -81,23 +83,34 @@ def rank_velocity_genes(data, groupby=None, groups='all', n_genes=10, min_counts
     logg.info('ranking velocity genes', r=True)
     if method not in {'t-test', 't-test_overestim_var'}: raise ValueError('Method not available.')
 
-    adata = adata.copy() if copy else adata
+    if True:
+        n_counts = (adata.layers['unspliced'] > 0).sum(0)
+        n_counts = n_counts.A1 if issparse(adata.layers['unspliced']) else n_counts
+        min_counts = np.percentile(n_counts, 80) if min_counts is None else min_counts
+        filter_counts = n_counts > min_counts
 
-    n_counts = (adata.layers['unspliced'] > 0).sum(0)
-    n_counts = n_counts.A1 if issparse(adata.layers['unspliced']) else n_counts
-    min_counts = np.percentile(n_counts, 80) if min_counts is None else min_counts
-    filter_counts = n_counts > min_counts
+        r2 = adata.var.velocity_r2
+        min_r2 = np.percentile(r2[r2 > 0], 80) if min_r2 is None else min_r2
+        filter_r2 = r2 > min_r2
 
-    r2 = adata.var.velocity_r2
-    min_r2 = np.percentile(r2[r2 > 0], 80) if min_r2 is None else min_r2
-    filter_r2 = r2 > min_r2
+        dispersions = adata.var.dispersions_norm if 'dispersions_norm' in adata.var.keys() \
+            else filter_genes_dispersion(adata.X)['dispersions_norm']
+        min_dispersion = np.percentile(dispersions, 20) if min_dispersion is None else min_dispersion
+        filter_dispersions = dispersions > min_dispersion
 
-    dispersions = adata.var.dispersions_norm if 'dispersions_norm' in adata.var.keys() \
-        else filter_genes_dispersion(adata.X)['dispersions_norm']
-    min_dispersion = np.percentile(dispersions, 20) if min_dispersion is None else min_dispersion
-    filter_dispersions = dispersions > min_dispersion
+        idx_sub = filter_counts & filter_r2 & filter_dispersions
+        if 'velocity_genes' in adata.var.keys(): idx_sub = idx_sub & adata.var['velocity_genes']
 
-    idx_sub = filter_counts & filter_r2 & filter_dispersions & adata.var['velocity_genes']
+    else:
+        tmp_filter = adata.layers['velocity'] > np.percentile(adata.layers['velocity'], 95, axis=0)
+        std = np.empty(adata.n_vars, dtype=np.float32)
+        for i in range(adata.n_vars):
+            std[i] = adata.obsm['X_' + basis][tmp_filter[:, i]].std(0).mean()
+        idx_random = np.random.choice(adata.n_obs, size=int(adata.n_obs / 10), replace=False)
+        threshold = adata.obsm['X_' + basis][idx_random].std(0).mean() - std.std()  # p=0.1
+        if 'velocity_genes' in adata.var.keys(): std[~adata.var['velocity_genes']] = np.inf
+        idx_sub = std < threshold
+        n_counts = -std
 
     adata_sub = adata[:, idx_sub]
     if groupby is None:
