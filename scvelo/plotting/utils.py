@@ -138,7 +138,7 @@ def savefig(writekey, show=False, dpi=None, save=None):
 
 def hist(arrays, bins, alpha=.5, colors=None, labels=None, xlabel=None, ylabel=None, ax=None):
     ax = pl.figure(None, (8, 4), dpi=120) if ax is None else ax
-    arrays = arrays if isinstance(arrays, (list, tuple, np.ndarray, np.record)) else [arrays]
+    arrays = arrays if isinstance(arrays, (list, tuple)) else [arrays]
 
     palette = default_palette(None)[::3][:len(arrays)].by_key()['color']
     colors = palette if colors is None or len(colors) < len(arrays) else colors
