@@ -44,17 +44,10 @@ def cosine_correlation(dX, Vi):
     return result
 
 
-def normalize_sparse(X):
+def normalize(X):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        X = X.multiply(csr_matrix(1. / np.abs(X).sum(1)))
-    return X
-
-
-def normalize_dense(X):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        X = X / X.sum(1)
+        X = X.multiply(csr_matrix(1. / np.abs(X).sum(1))) if issparse(X) else X / X.sum(1)
     return X
 
 

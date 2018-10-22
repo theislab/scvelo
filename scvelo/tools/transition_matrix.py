@@ -1,6 +1,6 @@
 from scipy.spatial.distance import pdist, squareform
 from scipy.sparse import csr_matrix
-from .utils import normalize_sparse
+from .utils import normalize
 import numpy as np
 
 
@@ -52,7 +52,7 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
         T = .5 * T + .5 * direct_neighbors.multiply(T)
 
     if backward: T = T.T
-    T = normalize_sparse(T)
+    T = normalize(T)
 
     if 'X_' + str(basis) in adata.obsm.keys():
         dists_emb = (T > 0).multiply(squareform(pdist(adata.obsm['X_' + basis])))
@@ -66,6 +66,6 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
             diffusion_kernel.data = np.exp(-.5 * dists_emb.data ** 2 / (scale_diffusion/2) ** 2)
             T = (1-weight_diffusion) * T + weight_diffusion * diffusion_kernel
 
-        T = normalize_sparse(T)
+        T = normalize(T)
 
     return T
