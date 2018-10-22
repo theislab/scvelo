@@ -4,7 +4,7 @@ from .get_version import get_version
 __version__ = get_version(__file__)
 del get_version
 
-from .read_load import read, load, clean_obs_names, merge
+from .read_load import AnnData, read, read_loom, load, clean_obs_names, merge
 from .logging import settings
 from .tools.run import run_all
 from .tools.velocity import Velocity
@@ -15,3 +15,4 @@ from . import tools as tl
 from . import plotting as pl
 from . import datasets
 from . import logging
+from . import utils
