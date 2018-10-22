@@ -87,15 +87,20 @@ def convert_to_loom(adata, basis=None):
             elif 'louvain' in self.ca:
                 self.set_clusters(self.ca['louvain'])
 
-        def filter_and_normalize(self, min_counts=3, min_counts_u=3, n_top_genes=None):
+        def filter_and_normalize(self, min_counts=3, min_counts_u=3, min_cells=0, min_cells_u=0,
+                                 n_top_genes=None, max_expr_avg=20):
             # counterpart to scv.pp.filter_and_normalize()
-            self.score_detection_levels(min_expr_counts=min_counts, min_expr_counts_U=min_counts_u,
-                                        min_cells_express=0, min_cells_express_U=0)
+            self.score_detection_levels(min_expr_counts=min_counts, min_expr_counts_U=0,
+                                        min_cells_express=min_cells, min_cells_express_U=0)
             self.filter_genes(by_detection_levels=True)
 
             if n_top_genes is not None and n_top_genes < self.S.shape[0]:
-                self.score_cv_vs_mean(n_top_genes)
+                self.score_cv_vs_mean(n_top_genes, max_expr_avg=max_expr_avg)
                 self.filter_genes(by_cv_vs_mean=True)
+
+            self.score_detection_levels(min_expr_counts=0, min_cells_express=0,
+                                        min_expr_counts_U=min_counts_u, min_cells_express_U=min_cells_u)
+            self.filter_genes(by_detection_levels=True)
 
             self._normalize_S(relative_size=self.initial_cell_size, target_size=np.median(self.initial_cell_size))
             self._normalize_U(relative_size=self.initial_Ucell_size, target_size=np.median(self.initial_Ucell_size))
@@ -103,11 +108,12 @@ def convert_to_loom(adata, basis=None):
             #self.normalize_by_total()
             print("Number of genes to be used:", self.S.shape[0])
 
-        def impute(self, n_pcs=30, n_neighbors=30):
+        def impute(self, n_pcs=30, n_neighbors=30, balanced=False, renormalize=False):
             # counterpart to scv.pp.moments()
             self.perform_PCA(n_components=n_pcs)
-            self.knn_imputation(k=n_neighbors, n_pca_dims=n_pcs)
-            self.normalize_median()
+            k = n_neighbors
+            self.knn_imputation(n_pca_dims=n_pcs, k=k, balanced=balanced, b_sight=k * 8, b_maxl=k * 4)
+            if renormalize: self.normalize_median()
 
         def velocity_estimation(self, limit_gamma=False, fit_offset=False):
             self.fit_gammas(limit_gamma=limit_gamma, fit_offset=fit_offset)
@@ -119,16 +125,16 @@ def convert_to_loom(adata, basis=None):
             self.extrapolate_cell_at_t()
             print("Number of genes to be used:", self.S.shape[0])
 
-        def velocity_graph(self, n_neighbors_graph=100, transform='linear', expression_scaling=False):
+        def velocity_graph(self, n_neighbors=100, transform='linear', sampled_fraction=.5, expression_scaling=False, sigma_corr=.05):
             if not hasattr(self, 'ts'):
                 raise ValueError('Compute embedding first.')
             else:
                 # counterpart to scv.tl.velocity_graph()
                 self.estimate_transition_prob(hidim="Sx_sz", embed="ts", transform=transform,
-                                              n_neighbors=n_neighbors_graph, knn_random=True, sampled_fraction=1)
+                                              n_neighbors=n_neighbors, knn_random=True, sampled_fraction=sampled_fraction)
 
                 # counterpart to scv.tl.velocity_embedding()
-                self.calculate_embedding_shift(sigma_corr=0.1, expression_scaling=expression_scaling)
+                self.calculate_embedding_shift(sigma_corr=sigma_corr, expression_scaling=expression_scaling)
 
         def run_all(self, min_counts=3, min_counts_u=3, n_pcs=30, n_neighbors=30, n_neighbors_graph=100,
                     n_top_genes=None, fit_offset=False, limit_gamma=False, transform='linear', expression_scaling=False,):
@@ -147,7 +153,7 @@ def convert_to_loom(adata, basis=None):
             print('Velocity Estimation: ' + str(round(time() - timestamp, 2)))
             timestamp = time()
 
-            self.velocity_graph(n_neighbors_graph=n_neighbors_graph, transform=transform, expression_scaling=expression_scaling)
+            self.velocity_graph(n_neighbors=n_neighbors_graph, transform=transform, expression_scaling=expression_scaling)
             print('Velocity Graph: ' + str(round(time() - timestamp, 2)))
 
             print('Total: ' + str(round(time() - start, 2)))
