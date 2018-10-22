@@ -105,6 +105,8 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
         elif c in adata.var_names:  # color by var in specific layer
             c = adata[:, c].layers[layer] if layer in adata.layers.keys() else adata[:, c].X
             c = c.A.flatten() if issparse(c) else c
+        else:
+            raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
         if perc is not None: c = clip(c, perc=perc)
     elif len(np.array(c).flatten()) == adata.n_obs:  # continuous coloring
         c = np.array(c).flatten()
