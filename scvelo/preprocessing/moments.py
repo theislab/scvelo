@@ -1,5 +1,6 @@
 from ..logging import logg, settings
 from .utils import normalize_layers
+from scanpy.api.pp import pca, neighbors
 from scipy.sparse import csr_matrix
 import numpy as np
 
@@ -43,7 +44,6 @@ def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', use_rep=None,
     """
     adata = data.copy() if copy else data
     if 'neighbors' not in adata.uns.keys() or n_neighbors > adata.uns['neighbors']['params']['n_neighbors']:
-        from . import neighbors, pca
         if 'X_pca' not in adata.obsm.keys() or n_pcs > adata.obsm['X_pca'].shape[1]:
             pca(adata, n_comps=n_pcs, svd_solver='arpack')
             if plot:
