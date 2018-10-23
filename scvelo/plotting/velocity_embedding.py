@@ -39,7 +39,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, X
         `matplotlib.Axis` if `show==False`
     """
     basis = default_basis(adata) if basis is None else basis
-    colors = pd.unique(color) if isinstance(color, (list, tuple, np.ndarray, np.record)) else [color]
+    colors = pd.unique(color) if isinstance(color, (list, tuple, np.record)) else [color]
     layers = pd.unique(layer) if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
     vkeys = pd.unique(vkey) if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
     for key in vkeys:

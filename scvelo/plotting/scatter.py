@@ -31,7 +31,7 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
     -------
         If `show==False` a `matplotlib.Axis`
     """
-    colors = pd.unique(color) if isinstance(color, (list, tuple, np.ndarray, np.record)) else [color]
+    colors = pd.unique(color) if isinstance(color, (list, tuple, np.record)) else [color]
     layers = pd.unique(layer) if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
     bases  = pd.unique(basis) if isinstance(basis, (list, tuple, np.ndarray, np.record)) else [basis]
 

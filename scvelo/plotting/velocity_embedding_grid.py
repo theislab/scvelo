@@ -85,7 +85,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
         `matplotlib.Axis` if `show==False`
     """
     basis = default_basis(adata) if basis is None else basis
-    colors = pd.unique(color) if isinstance(color, (list, tuple, np.ndarray, np.record)) else [color]
+    colors = pd.unique(color) if isinstance(color, (list, tuple, np.record)) else [color]
     layers = pd.unique(layer) if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
     vkeys = pd.unique(vkey) if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
     for key in vkeys:
@@ -159,7 +159,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
 
         ax = scatter(adata, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
                      perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
-                     colorbar=colorbar, components=components, figsize=(7, 5), dpi=80, save=None, ax=ax,
+                     colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=ax,
                      use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
                      legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                      palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)
