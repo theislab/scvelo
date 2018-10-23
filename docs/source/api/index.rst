@@ -3,7 +3,7 @@
 API
 ===
 
-Import scveloas::
+Import scvelo as::
 
    import scvelo as scv
 
@@ -71,9 +71,8 @@ Utils
 
    utils.show_proportions
    utils.cleanup
-   utils.set_initial_size
-   utils.cosine_correlation
    utils.clean_obs_names
+   utils.set_initial_size
    utils.merge
    utils.convert_to_adata
    utils.convert_to_loom
