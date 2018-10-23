@@ -1,8 +1,8 @@
 from ..logging import logg, settings
 from ..preprocessing.moments import moments, second_order_moments
 from .solver import solve_cov, solve2_inv, solve2_mle
-from .utils import R_squared
-from scipy.sparse import issparse
+from .utils import R_squared, groups_to_bool
+from scipy.sparse import issparse, csr_matrix
 import numpy as np
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -22,15 +22,32 @@ class Velocity:
         self._gamma, self._r2 = np.zeros(n_vars, dtype=np.float32), np.zeros(n_vars, dtype=np.float32)
         self._beta, self._velocity_genes = np.ones(n_vars, dtype=np.float32), np.ones(n_vars, dtype=bool)
         self._subset = subset
+        self._weight = None
 
-    def compute_deterministic(self, fit_offset=False):
-        self._offset, self._gamma = solve_cov(self._Ms, self._Mu, fit_offset) if self._subset is None \
-            else solve_cov(self._Ms[self._subset], self._Mu[self._subset], fit_offset)
+    def compute_deterministic(self, fit_offset=False, perc=None):
+        Ms = self._Ms if self._subset is None else self._Ms[self._subset]
+        Mu = self._Mu if self._subset is None else self._Mu[self._subset]
+
+        if perc is not None:
+            M_norm = Ms / np.clip(Ms.max(0), 1e-3, None) + Mu / np.clip(Mu.max(0), 1e-3, None)
+            W = csr_matrix(M_norm >= np.percentile(M_norm, perc, axis=0))
+            Ms, Mu = W.multiply(Ms).tocsr(), W.multiply(Mu).tocsr()
+
+        self._offset, self._gamma = solve_cov(Ms, Mu, fit_offset)
         self._residual = self._Mu - self._gamma * self._Ms
         if fit_offset: self._residual -= self._offset
 
         self._r2 = R_squared(self._residual, total=self._Mu - self._Mu.mean(0))
         self._velocity_genes = (self._r2 > .01) & (self._gamma > .01)
+
+    def compute_deterministic_weighted(self, fit_offset=False, perc=98):
+        if self._residual is None: self.compute_deterministic(fit_offset)
+        Ms = self._Ms if self._subset is None else self._Ms[self._subset]
+        Mu = self._Mu if self._subset is None else self._Mu[self._subset]
+        W = csr_matrix(Ms >= np.percentile(Ms, perc, axis=0))
+        self._offset, self._gamma = solve_cov(W.multiply(Ms), W.multiply(Mu), fit_offset)
+        self._residual = self._Mu - self._gamma * self._Ms
+        if fit_offset: self._residual -= self._offset
 
     def compute_stochastic(self, fit_offset=False, fit_offset2=False, mode=None):
         if self._residual is None: self.compute_deterministic(fit_offset)
@@ -87,7 +104,7 @@ class Velocity:
 
 
 def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False,
-             groups=None, groupby=None, subset_for_fitting=None, use_raw=False, copy=False):
+             groups=None, groupby=None, subset_for_fitting=None, use_raw=False, perc=None, copy=False):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -105,6 +122,14 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
         Whether to fit with offset for second order moment dynamics.
     filter_genes: `bool` (default: `True`)
         Whether to remove genes that are not used for further velocity analysis.
+    groups: `str`, `list` (default: `None`)
+        Subset of groups, e.g. [‘g1’, ‘g2’, ‘g3’], to perform velocity analysis on.
+    groupby: `str` (default: `None`)
+        Key of observations grouping to consider.
+    subset_for_fitting: `str`, `list` (default: `None`)
+        Subset of groups, e.g. [‘g1’, ‘g2’, ‘g3’], to which velocity estimation shall be restricted.
+    perc: `int` (default: `None`)
+        Percentile to which velocity estimation shall be restricted.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
 
@@ -121,20 +146,13 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
     adata = data.copy() if copy else data
     if not use_raw and 'Ms' not in adata.layers.keys(): moments(adata)
 
-    groups = [groups] if isinstance(groups, str) else groups
-    if isinstance(groups, (list, tuple, np.ndarray, np.record)):
-        groupby = groupby if groupby in adata.obs.keys() else 'clusters' if 'clusters' in adata.obs.keys() \
-            else 'louvain' if 'louvain' in adata.obs.keys() else None
-        if groupby is not None:
-            groups = np.array([key in groups for key in adata.obs[groupby]])
-        else: raise ValueError('groupby attribute not valid.')
-
+    groups = groups_to_bool(adata, groups, groupby)
+    subset_for_fitting = groups_to_bool(adata, subset_for_fitting, groupby)
     _adata = adata if groups is None else adata[groups]
 
     logg.info('computing velocities', r=True)
-
     velo = Velocity(_adata, subset=subset_for_fitting, use_raw=use_raw)
-    velo.compute_deterministic(fit_offset)
+    velo.compute_deterministic(fit_offset, perc=perc)
 
     stochastic = any([mode is not None and mode in item for item in ['stochastic', 'bayes', 'alpha']])
     if stochastic:
