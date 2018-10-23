@@ -15,6 +15,9 @@ Preprocessing (pp)
    :toctree: .
 
    pp.show_proportions
+   pp.filter_genes
+   pp.filter_genes_dispersion
+   pp.normalize_per_cell
    pp.filter_and_normalize
    pp.moments
 
@@ -31,8 +34,10 @@ Tools (tl)
 
    tl.transition_matrix
    tl.terminal_states
-   tl.score_smoothness
-   tl.score_transition
+   tl.rank_velocity_genes
+
+   tl.velocity_confidence
+   tl.velocity_confidence_transition
 
 
 Plotting (pl)
@@ -56,3 +61,19 @@ Datasets
    datasets.toy_data
    datasets.dentategyrus
    datasets.forebrain
+
+
+Utils
+~~~~~
+
+.. autosummary::
+   :toctree: .
+
+   utils.show_proportions
+   utils.cleanup
+   utils.set_initial_size
+   utils.cosine_correlation
+   utils.clean_obs_names
+   utils.merge
+   utils.convert_to_adata
+   utils.convert_to_loom

@@ -10,3 +10,5 @@ from .tools.velocity_graph import vals_to_csr
 
 from .plotting.utils import is_categorical, clip, interpret_colorkey
 from .plotting.velocity_embedding_grid import compute_velocity_on_grid
+
+from .read_load import clean_obs_names, merge
