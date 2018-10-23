@@ -76,3 +76,14 @@ def get_iterative_indices(indices, index, n_recurse_neighbors):
         return indices[iterate_indices(indices, index, n_recurse_neighbors - 1)] \
             if n_recurse_neighbors > 1 else indices[index]
     return np.unique(iterate_indices(indices, index, n_recurse_neighbors))
+
+
+def groups_to_bool(adata, groups, groupby=None):
+    groups = [groups] if isinstance(groups, str) else groups
+    if isinstance(groups, (list, tuple, np.ndarray, np.record)):
+        groupby = groupby if groupby in adata.obs.keys() else 'clusters' if 'clusters' in adata.obs.keys() \
+            else 'louvain' if 'louvain' in adata.obs.keys() else None
+        if groupby is not None:
+            groups = np.array([key in groups for key in adata.obs[groupby]])
+        else: raise ValueError('groupby attribute not valid.')
+    return groups
