@@ -205,7 +205,7 @@ def modurl(qualname: str) -> str:
 def api_image(qualname: str) -> Optional[str]:
     # I’d like to make this a contextfilter, but the jinja context doesn’t contain the path,
     # so no chance to not hardcode “api/” here.
-    path = Path(__file__).parent / 'api' / f'{qualname}.png'
+    path = Path(__file__).parent / f'{qualname}.png'
     print(path, path.is_file())
     return f'.. image:: {path.name}\n   :width: 200\n   :align: right' if path.is_file() else ''
 

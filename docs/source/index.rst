@@ -41,5 +41,5 @@ Report issues and see the code on `GitHub <https://github.com/theislab/scvelo>`_
 
    installation
    usage_principles
-   api/index
+   api
    references

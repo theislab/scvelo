@@ -1,4 +1,4 @@
-.. automodule:: docs.source.api
+.. automodule:: scvelo
 
 API
 ===
@@ -76,3 +76,5 @@ Utils
    utils.merge
    utils.convert_to_adata
    utils.convert_to_loom
+
+
