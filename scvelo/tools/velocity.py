@@ -1,6 +1,7 @@
-from ..logging import logg, settings
+from .. import settings
+from .. import logging as logg
 from ..preprocessing.moments import moments, second_order_moments
-from .solver import solve_cov, solve2_inv, solve2_mle
+from .optimization import leastsq_NxN, leastsq_generalized, maximum_likelihood
 from .utils import R_squared, groups_to_bool
 from scipy.sparse import issparse, csr_matrix
 import numpy as np
@@ -33,21 +34,12 @@ class Velocity:
             W = csr_matrix(M_norm >= np.percentile(M_norm, perc, axis=0))
             Ms, Mu = W.multiply(Ms).tocsr(), W.multiply(Mu).tocsr()
 
-        self._offset, self._gamma = solve_cov(Ms, Mu, fit_offset)
+        self._offset, self._gamma = leastsq_NxN(Ms, Mu, fit_offset)
         self._residual = self._Mu - self._gamma * self._Ms
         if fit_offset: self._residual -= self._offset
 
         self._r2 = R_squared(self._residual, total=self._Mu - self._Mu.mean(0))
         self._velocity_genes = (self._r2 > .01) & (self._gamma > .01)
-
-    def compute_deterministic_weighted(self, fit_offset=False, perc=98):
-        if self._residual is None: self.compute_deterministic(fit_offset)
-        Ms = self._Ms if self._subset is None else self._Ms[self._subset]
-        Mu = self._Mu if self._subset is None else self._Mu[self._subset]
-        W = csr_matrix(Ms >= np.percentile(Ms, perc, axis=0))
-        self._offset, self._gamma = solve_cov(W.multiply(Ms), W.multiply(Mu), fit_offset)
-        self._residual = self._Mu - self._gamma * self._Ms
-        if fit_offset: self._residual -= self._offset
 
     def compute_stochastic(self, fit_offset=False, fit_offset2=False, mode=None):
         if self._residual is None: self.compute_deterministic(fit_offset)
@@ -64,7 +56,7 @@ class Velocity:
         var_ss = 2 * _Mss - _Ms
         cov_us = 2 * _Mus + _Mu
 
-        _offset2, _gamma2 = solve_cov(var_ss, cov_us, fit_offset2)
+        _offset2, _gamma2 = leastsq_NxN(var_ss, cov_us, fit_offset2)
 
         # initialize covariance matrix
         res_std = _residual.std(0)
@@ -72,8 +64,8 @@ class Velocity:
 
         # solve multiple regression
         self._offset[idx], self._offset2[idx], self._gamma[idx] = \
-            solve2_mle(_Ms, _Mu, _Mus, _Mss, fit_offset, fit_offset2) if mode == 'bayes' \
-                else solve2_inv(_Ms, _Mu, var_ss, cov_us, res_std, res2_std, fit_offset, fit_offset2)
+            maximum_likelihood(_Ms, _Mu, _Mus, _Mss, fit_offset, fit_offset2) if mode == 'bayes' \
+                else leastsq_generalized(_Ms, _Mu, var_ss, cov_us, res_std, res2_std, fit_offset, fit_offset2)
 
         self._residual = self._Mu - self._gamma * self._Ms
         if fit_offset: self._residual -= self._offset
@@ -89,7 +81,7 @@ class Velocity:
 
         # if mode == 'alpha':
         #     Muu = second_order_moments_u(adata)
-        #     offset2u, alpha = solve_cov(np.ones(Mu.shape) + 2 * Mu, 2 * Muu - Mu)
+        #     offset2u, alpha = leastsq_NxN(np.ones(Mu.shape) + 2 * Mu, 2 * Muu - Mu)
         #     pars.extend([offset2u, alpha])
         #     pars_str.extend(['_offset2u', '_alpha'])
 

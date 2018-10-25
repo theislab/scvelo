@@ -4,14 +4,13 @@ import numpy as np
 import warnings
 
 
-def solve_cov(x, y, fit_offset=False):
+def leastsq_NxN(x, y, fit_offset=False):
     """Solution to least squares: gamma = cov(X,Y) / var(X)
     """
     n_obs, n_var = x.shape
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-
         if fit_offset:
             cov_xy, cov_xx = prod_sum_obs(x, y) / n_obs, prod_sum_obs(x, x) / n_obs
             mean_x, mean_y = x.mean(0), y.mean(0)
@@ -25,7 +24,7 @@ def solve_cov(x, y, fit_offset=False):
     return offset, gamma
 
 
-def solve2_inv(x, y, x2, y2, res_std=None, res2_std=None, fit_offset=False, fit_offset2=False):
+def leastsq_generalized(x, y, x2, y2, res_std=None, res2_std=None, fit_offset=False, fit_offset2=False):
     """Solution to the 2-dim generalized least squares: gamma = inv(X'QX)X'QY
     """
     n_obs, n_var = x.shape
@@ -63,7 +62,7 @@ def solve2_inv(x, y, x2, y2, res_std=None, res2_std=None, fit_offset=False, fit_
     return offset, offset_ss, gamma
 
 
-def solve2_mle(Ms, Mu, Mus, Mss, fit_offset=False, fit_offset2=False):
+def maximum_likelihood(Ms, Mu, Mus, Mss, fit_offset=False, fit_offset2=False):
     """Maximizing the log likelihood using weights according to empirical bayes
     """
     n_obs, n_var = Ms.shape
