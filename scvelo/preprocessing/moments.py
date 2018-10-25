@@ -1,5 +1,7 @@
-from ..logging import logg, settings
+from .. import settings
+from .. import logging as logg
 from .utils import normalize_layers
+
 from scanpy.api.pp import pca, neighbors
 from scipy.sparse import csr_matrix
 import numpy as np
@@ -65,9 +67,8 @@ def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', use_rep=None,
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
-        'added to `.layers`\n'
-        '    \'Ms\', moments of spliced abundances\n'
-        '    \'Mu\', moments of unspliced abundances')
+        'added \n'
+        '    \'Ms\' and \'Mu\', moments of spliced/unspliced abundances (adata.layers)')
     return adata if copy else None
 
 

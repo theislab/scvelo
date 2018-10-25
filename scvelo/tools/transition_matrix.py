@@ -1,6 +1,7 @@
+from .utils import normalize
+
 from scipy.spatial.distance import pdist, squareform
 from scipy.sparse import csr_matrix
-from .utils import normalize
 import numpy as np
 
 

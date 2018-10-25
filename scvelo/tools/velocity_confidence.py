@@ -1,4 +1,4 @@
-from ..logging import logg
+from .. import logging as logg
 from .utils import prod_sum_var, norm, get_indices
 from ..preprocessing.moments import moments
 from .transition_matrix import transition_matrix

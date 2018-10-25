@@ -3,6 +3,7 @@ from .. import logging as logg
 from ..preprocessing.moments import moments, second_order_moments
 from .optimization import leastsq_NxN, leastsq_generalized, maximum_likelihood
 from .utils import R_squared, groups_to_bool
+
 from scipy.sparse import issparse, csr_matrix
 import numpy as np
 import warnings

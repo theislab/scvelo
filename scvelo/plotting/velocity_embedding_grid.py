@@ -1,10 +1,11 @@
 from ..tools.velocity_embedding import quiver_autoscale, velocity_embedding
-from .utils import default_basis, get_components, savefig
+from .utils import default_basis, default_size, get_components, savefig
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import norm as normal
+from matplotlib import rcParams
 import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
@@ -50,7 +51,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
                             color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
                             groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                             legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
-                            fontsize=None, figsize=(7,5), dpi=100, frameon=None, show=True, save=None, ax=None, **kwargs):
+                            fontsize=None, figsize=None, dpi=None, frameon=None, show=True, save=None, ax=None, **kwargs):
     """\
     Scatter plot of velocities for the grid points on the embedding
 
@@ -100,6 +101,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
                                                   smooth=smooth, n_neighbors=n_neighbors, min_mass=min_mass)
 
     if len(colors) > 1:
+        figsize = rcParams['figure.figsize'] if figsize is None else figsize
         for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0] * len(colors), figsize[1]), dpi=dpi))):
             velocity_embedding_grid(adata, basis=basis, vkey=vkey, layer=layer, density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
                                     perc=perc, color=colors[i], min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
@@ -115,6 +117,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
         else: return ax
 
     elif len(layers) > 1:
+        figsize = rcParams['figure.figsize'] if figsize is None else figsize
         for i, gs in enumerate(pl.GridSpec(1, len(layers), pl.figure(None, (figsize[0] * len(layers), figsize[1]), dpi=dpi))):
             velocity_embedding_grid(adata, basis=basis, vkey=vkey, layer=layers[i], density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
                                     perc=perc, color=color, min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
@@ -130,6 +133,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
         else: return ax
 
     elif len(vkeys) > 1:
+        figsize = rcParams['figure.figsize'] if figsize is None else figsize
         for i, gs in enumerate(pl.GridSpec(1, len(vkeys), pl.figure(None, (figsize[0] * len(vkeys), figsize[1]), dpi=dpi))):
             velocity_embedding_grid(adata, basis=basis, vkey=vkeys[i], layer=layer, density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
                                     perc=perc, color=color, min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
@@ -157,6 +161,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
             pl.plot(curve[:, 0], curve[:, 1], c="w", lw=6, zorder=2)
             pl.plot(curve[:, 0], curve[:, 1], c="k", lw=3, zorder=3)
 
+        size = default_size(adata) if size is None else size
         ax = scatter(adata, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
                      perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
                      colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=ax,

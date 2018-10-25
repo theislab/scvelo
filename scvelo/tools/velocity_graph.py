@@ -1,7 +1,9 @@
-from ..logging import logg, settings, ProgressReporter
+from .. import settings
+from .. import logging as logg
 from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
 from .rank_velocity_genes import rank_velocity_genes
+
 from scipy.sparse import coo_matrix, issparse
 import numpy as np
 
@@ -22,10 +24,11 @@ def vals_to_csr(vals, rows, cols, shape):
 class VelocityGraph:
     def __init__(self, adata, vkey='velocity', xkey='Ms', basis=None, n_neighbors=None, n_recurse_neighbors=None,
                  n_top_genes=None, sqrt_transform=False):
-        subset = rank_velocity_genes(adata, n_genes=n_top_genes, min_r2=.1, min_dispersion=0, min_counts=10) \
-            if (n_top_genes is not None and n_top_genes < adata.var['velocity_genes'].sum()) \
-            else adata.var['velocity_genes'] if 'velocity_genes' in adata.var.keys() \
-            else np.ones(adata.n_vars, dtype=bool)
+
+        subset = np.ones(adata.n_vars, dtype=bool)
+        if n_top_genes is not None and 'velocity_score' in adata.var.keys():
+            subset = adata.var['velocity_score'][::-1][:n_top_genes]
+        elif 'velocity_genes' in adata.var.keys(): subset = adata.var['velocity_genes']
 
         X = adata[:, subset].layers[xkey].A if issparse(adata.layers[xkey]) else adata[:, subset].layers[xkey]
         V = adata[:, subset].layers[vkey].A if issparse(adata.layers[vkey]) else adata[:, subset].layers[vkey]
@@ -55,7 +58,7 @@ class VelocityGraph:
 
     def compute_cosines(self):
         vals, rows, cols, n_obs = [], [], [], self.X.shape[0]
-        progress = ProgressReporter(n_obs)
+        progress = logg.ProgressReporter(n_obs)
         for i in range(n_obs):
             neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors)
             if self.V[i].max() != 0 or self.V[i].min() != 0:
@@ -105,6 +108,7 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', basis=None, n_neighbors=Non
     """
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys(): velocity(adata, vkey=vkey)
+    if n_top_genes is not None and 'velocity_score' not in adata.var.keys(): rank_velocity_genes(adata, n_genes=100)
 
     logg.info('computing velocity graph', r=True)
 

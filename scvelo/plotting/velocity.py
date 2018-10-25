@@ -1,16 +1,18 @@
 from ..preprocessing.moments import second_order_moments
 from ..tools.rank_velocity_genes import rank_velocity_genes
 from .scatter import scatter
-from .utils import savefig, default_basis
+from .utils import savefig, default_basis, default_size
+
 import numpy as np
 import pandas as pd
+from matplotlib import rcParams
 from matplotlib.ticker import MaxNLocator
 import matplotlib.pyplot as pl
 from scipy.sparse import issparse
 
 
 def velocity(adata, var_names=None, basis=None, mode=None, fits='all', layers='all', use_raw=False, color=None, color_map='RdBu_r',
-             perc=[2,98], size=.2, alpha=.5, fontsize=8, figsize=(3,2), dpi=120, show=True, save=None, ax=None, **kwargs):
+             perc=[2,98], size=1, alpha=.5, fontsize=None, figsize=None, dpi=None, show=True, save=None, ax=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
     The phase plot shows spliced against unspliced expressions with steady-state fit.
@@ -69,11 +71,13 @@ def velocity(adata, var_names=None, basis=None, mode=None, fits='all', layers='a
     fits = [fit for fit in fits if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
     stochastic_fits = [fit for fit in fits if 'variance_' + fit in adata.layers.keys()]
 
+    figsize = rcParams['figure.figsize'] if figsize is None else figsize
     n_row, n_col = len(var_names), (1 + len(layers) + (mode == 'stochastic')*2)
-
-    ax = pl.figure(figsize=(figsize[0]*n_col, figsize[1]*n_row), dpi=dpi) if ax is None else ax
+    ax = pl.figure(figsize=(figsize[0]*n_col/2, figsize[1]*n_row/2), dpi=dpi) if ax is None else ax
     gs = pl.GridSpec(n_row, n_col, wspace=0.3, hspace=0.5)
 
+    size = default_size(adata) / 4 if size is None else size  # since fontsize is halved in width and height
+    fontsize = rcParams['font.size'] if fontsize is None else fontsize
     for v, var in enumerate(var_names):
         _adata = adata[:, var]
         s, u = _adata.layers[skey], _adata.layers[ukey]

@@ -1,6 +1,8 @@
-from ..logging import logg, settings
+from .. import settings
+from .. import logging as logg
 from .utils import norm
 from .transition_matrix import transition_matrix
+
 from scipy.sparse import issparse
 import numpy as np
 import warnings

@@ -1,6 +1,7 @@
-from ..logging import logg
+from .. import logging as logg
+
 import numpy as np
-from scipy.sparse import issparse
+from scipy.sparse import issparse, csr_matrix
 from scanpy.api.pp import log1p
 
 
@@ -82,8 +83,8 @@ def get_initial_size(adata, layer, by_total_size):
         adata.obs['initial_size_' + layer].copy() if 'initial_size_' + layer in adata.obs.keys() else None
 
 
-def filter_genes(data, min_counts=3, min_cells=None, max_counts=None, max_cells=None,
-                 min_counts_u=3,  min_cells_u=None, max_counts_u=None, max_cells_u=None, copy=False):
+def filter_genes(data, min_counts=None, min_cells=None, max_counts=None, max_cells=None,
+                 min_counts_u=None,  min_cells_u=None, max_counts_u=None, max_cells_u=None, copy=False):
     """Filter genes based on number of cells or counts.
     Keep genes that have at least `min_counts` counts or are expressed in at
     least `min_cells` cells or have at most `max_counts` counts or are expressed
@@ -223,7 +224,15 @@ def filter_genes_dispersion(data, flavor='seurat', min_disp=None, max_disp=None,
     return adata if copy else None
 
 
-def normalize_layers(data, layers={'spliced', 'unspliced'}, by_total_size=None, copy=False):
+def counts_per_cell_quantile(X, max_proportion_per_cell=.05, counts_per_cell=None):
+    if counts_per_cell is None:
+        counts_per_cell = X.sum(1).A1 if issparse(X) else X.sum(1)
+    gene_subset = np.all(X <= counts_per_cell[:, None] * max_proportion_per_cell, axis=0)
+    if issparse(X): gene_subset = gene_subset.A1
+    return X[:, gene_subset].sum(1).A1 if issparse(X) else X[:, gene_subset].sum(1)
+
+
+def normalize_layers(data, layers={'spliced', 'unspliced'}, by_total_size=None, max_proportion_per_cell=None, copy=False):
     """Normalize by total counts to median.
     """
     adata = data.copy() if copy else data
@@ -235,13 +244,15 @@ def normalize_layers(data, layers={'spliced', 'unspliced'}, by_total_size=None, 
 
     for layer in layers:
         if not_normalized_yet(adata, layer):
-            size = get_initial_size(adata, layer, by_total_size)
-            adata.layers[layer] = normalize_per_cell(adata.layers[layer], None, size, copy=True)
+            counts_per_cell = get_initial_size(adata, layer, by_total_size)
+            if max_proportion_per_cell is not None and (0 < max_proportion_per_cell < 1):
+                counts_per_cell = counts_per_cell_quantile(adata.X, max_proportion_per_cell, counts_per_cell)
+            adata.layers[layer] = normalize_per_cell(adata.layers[layer], None, counts_per_cell, copy=True)
     return adata if copy else None
 
 
 def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None,
-                       key_n_counts=None, layers={'spliced', 'unspliced'}, copy=False):
+                       key_n_counts=None, max_proportion_per_cell=None, layers={'spliced', 'unspliced'}, copy=False):
     """Normalize each cell by total counts over all genes.
 
     Parameters
@@ -257,7 +268,9 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None,
     key_n_counts : `str`, optional (default: `'n_counts'`)
         Name of the field in `adata.obs` where the total counts per cell are
         stored.
-    layers: `str` or `list` (default: `{'spliced', 'unspliced'}`)
+    max_proportion_per_cell : `int` (default: `None`)
+        Exclude genes counts that account for more than a specific proportion of cell size, e.g. 0.05.
+    layers : `str` or `list` (default: `{'spliced', 'unspliced'}`)
         Keys for layers to be also considered for normalization.
     copy : `bool`, optional (default: `False`)
         If an :class:`~anndata.AnnData` is passed, determines whether a copy
@@ -269,12 +282,14 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None,
     """
     adata = data.copy() if copy else data
     from scanpy.api.pp import normalize_per_cell
+    if max_proportion_per_cell is not None and (0 < max_proportion_per_cell < 1):
+        counts_per_cell = counts_per_cell_quantile(adata.X, max_proportion_per_cell)
     normalize_per_cell(adata, counts_per_cell_after, counts_per_cell, key_n_counts)
-    normalize_layers(adata, layers)
+    normalize_layers(adata, layers, max_proportion_per_cell)
     return adata if copy else None
 
 
-def filter_and_normalize(data, min_counts=3, min_counts_u=3, min_cells=None, min_cells_u=None, n_top_genes=None,
+def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=None, min_cells_u=None, n_top_genes=None,
                          flavor='seurat', log=True, copy=False):
     """Filtering, normalization and log transform
 
@@ -296,9 +311,9 @@ def filter_and_normalize(data, min_counts=3, min_counts_u=3, min_cells=None, min
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
-    min_counts: `int` (default: 3)
+    min_counts: `int` (default: `None`)
         Minimum number of counts required for a gene to pass filtering (spliced).
-    min_counts_u: `int` (default: 3)
+    min_counts_u: `int` (default: `None`)
         Minimum number of counts required for a gene to pass filtering (unspliced).
     min_cells: `int` (default: `None`)
         Minimum number of cells expressed required for a gene to pass filtering (spliced).

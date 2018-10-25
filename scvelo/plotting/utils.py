@@ -1,4 +1,5 @@
 from .. import settings
+
 import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
@@ -69,6 +70,11 @@ def set_frame(ax, frameon):
     return ax
 
 
+def default_size(adata):
+    adjusted, classic = 1.2e5 / adata.n_obs, 20
+    return np.mean(adjusted, classic) if settings._rcParams_style == 'scanpy' else adjusted
+
+
 def default_color(adata):
     return 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else 'grey'
 
@@ -136,8 +142,8 @@ def savefig(writekey, show=False, dpi=None, save=None):
     savefig_or_show('velocity_' + writekey + '_' if writekey != '' else 'velocity_', dpi=dpi, save=save, show=show)
 
 
-def hist(arrays, bins, alpha=.5, colors=None, labels=None, xlabel=None, ylabel=None, ax=None):
-    ax = pl.figure(None, (8, 4), dpi=120) if ax is None else ax
+def hist(arrays, bins, alpha=.5, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None, dpi=None):
+    ax = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
     arrays = arrays if isinstance(arrays, (list, tuple)) else [arrays]
 
     palette = default_palette(None)[::3][:len(arrays)].by_key()['color']

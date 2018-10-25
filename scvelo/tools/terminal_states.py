@@ -1,7 +1,9 @@
-from ..logging import logg, settings
+from .. import settings
+from .. import logging as logg
 from ..preprocessing.moments import get_connectivities
 from .transition_matrix import transition_matrix
 from .utils import scale
+
 from scipy.sparse import linalg, csr_matrix
 import numpy as np
 
