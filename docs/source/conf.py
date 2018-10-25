@@ -17,7 +17,6 @@ if 'six' in sys.modules:
     del sys.modules['six']
 
 import matplotlib  # noqa
-# Don’t use tkinter agg when importing scvelo → … → matplotlib
 matplotlib.use('agg')
 
 HERE = Path(__file__).parent
@@ -42,20 +41,14 @@ extensions = [
 
 # Generate the API documentation when building
 autosummary_generate = True
-# both of the following two lines don't work
-# see falexwolf's issue for numpydoc
-# autodoc_member_order = 'bysource'
-# autodoc_default_flags = ['members']
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
+napoleon_use_rtype = False
+napoleon_custom_sections = [('Params', 'Parameters')]
 
 intersphinx_mapping = dict(
     python=('https://docs.python.org/3', None),
-    numpy=('https://docs.scipy.org/doc/numpy/', None),
-    scipy=('https://docs.scipy.org/doc/scipy/reference/', None),
-    pandas=('http://pandas.pydata.org/pandas-docs/stable/', None),
-    matplotlib=('https://matplotlib.org/', None),
     anndata=('https://anndata.readthedocs.io/en/latest/', None),
 )
 
@@ -78,9 +71,7 @@ todo_include_todos = False
 # -- Options for HTML output ----------------------------------------------
 
 html_theme = 'sphinx_rtd_theme'
-html_theme_options = dict(
-    navigation_depth=2,
-)
+html_theme_options = dict(navigation_depth=2)
 html_context = dict(
     display_github=True,      # Integrate GitHub
     github_user='theislab',   # Username
@@ -184,7 +175,7 @@ def get_linenos(obj):
 
 project_dir = Path(__file__).parent.parent  # project/docs/conf.py/../.. → project/
 github_url1 = 'https://github.com/{github_user}/{github_repo}/tree/{github_version}'.format_map(html_context)
-github_url2 = 'https://github.com/theislab/scvelo/tree/master'
+github_url2 = 'https://github.com/theislab/anndata/tree/master'
 
 
 def modurl(qualname: str) -> str:
@@ -203,16 +194,12 @@ def modurl(qualname: str) -> str:
 
 
 def api_image(qualname: str) -> Optional[str]:
-    # I’d like to make this a contextfilter, but the jinja context doesn’t contain the path,
-    # so no chance to not hardcode “api/” here.
     path = Path(__file__).parent / f'{qualname}.png'
     print(path, path.is_file())
     return f'.. image:: {path.name}\n   :width: 200\n   :align: right' if path.is_file() else ''
 
 
-# html_context doesn’t apply to autosummary templates ☹
-# and there’s no way to insert filters into those templates
-# so we have to modify the default filters
+# modify the default filters
 from jinja2.defaults import DEFAULT_FILTERS
 
 DEFAULT_FILTERS.update(modurl=modurl, api_image=api_image)
