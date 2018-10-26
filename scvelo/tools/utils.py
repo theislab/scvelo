@@ -87,3 +87,9 @@ def groups_to_bool(adata, groups, groupby=None):
             groups = np.array([key in groups for key in adata.obs[groupby]])
         else: raise ValueError('groupby attribute not valid.')
     return groups
+
+
+def most_common_in_list(lst):
+    lst = list(lst)
+    return max(set(lst), key=lst.count)
+
