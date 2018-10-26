@@ -56,7 +56,7 @@ def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', use_rep=None,
     if mode not in adata.uns['neighbors']:
         raise ValueError('mode can only be  \'connectivities\' or \'distances\'')
 
-    logg.info('computing moments', r=True)
+    logg.info('computing moments based on ' + str(mode), r=True)
     normalize_layers(adata)
 
     connectivities = get_connectivities(adata, mode, recurse_neighbors=recurse_neighbors)

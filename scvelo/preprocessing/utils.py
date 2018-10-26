@@ -83,6 +83,14 @@ def get_initial_size(adata, layer, by_total_size):
         adata.obs['initial_size_' + layer].copy() if 'initial_size_' + layer in adata.obs.keys() else None
 
 
+def filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
+    counts = X if (min_counts is not None or max_counts is not None) else X > 0
+    counts = counts.sum(0).A1 if issparse(counts) else counts.sum(0)
+    lb = min_counts if min_counts is not None else min_cells if min_cells is not None else -np.inf
+    ub = max_counts if max_counts is not None else max_cells if max_cells is not None else np.inf
+    return (lb <= counts) & (counts <= ub), counts
+
+
 def filter_genes(data, min_counts=None, min_cells=None, max_counts=None, max_cells=None,
                  min_counts_u=None,  min_cells_u=None, max_counts_u=None, max_cells_u=None, copy=False):
     """Filter genes based on number of cells or counts.
@@ -91,6 +99,7 @@ def filter_genes(data, min_counts=None, min_cells=None, max_counts=None, max_cel
     in at most `max_cells` cells.
     Only provide one of the optional parameters `min_counts`, `min_cells`,
     `max_counts`, `max_cells` per call.
+
     Parameters
     ----------
     data : :class:`~anndata.AnnData`, `np.ndarray`, `sp.spmatrix`
@@ -114,37 +123,55 @@ def filter_genes(data, min_counts=None, min_cells=None, max_counts=None, max_cel
         Maximum number of unspliced cells expressed required for a gene to pass filtering.
     copy : `bool`, optional (default: `False`)
         Determines whether a copy is returned.
+
     Returns
     -------
     Filters the object and adds `n_counts` to `adata.var`.
     """
     adata = data.copy() if copy else data
-    from scanpy.api.pp import filter_genes
 
     # set initial cell sizes before filtering
     set_initial_size(adata)
 
-    if min_counts is not None: filter_genes(adata, min_counts=min_counts)
-    if max_counts is not None: filter_genes(adata, max_counts=max_counts)
-    if min_cells is not None: filter_genes(adata, min_cells=min_cells)
-    if max_cells is not None: filter_genes(adata, max_cells=max_cells)
-
-    def bool_filter(adata, min_counts_u=None, min_cells_u=None, max_counts_u=None, max_cells_u=None, layer='unspliced'):
-        counts = adata.layers[layer] if (min_counts_u is not None and max_counts_u is None) else adata.layers[layer] > 0
+    def filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
+        counts = X if (min_counts is not None or max_counts is not None) else X > 0
         counts = counts.sum(0).A1 if issparse(counts) else counts.sum(0)
-        lb = min_counts_u if min_counts_u is not None else min_cells_u if min_cells_u is not None else -np.inf
-        ub = max_counts_u if max_counts_u is not None else max_cells_u if max_cells_u is not None else np.inf
-        return lb <= counts, counts <= ub
+        lb = min_counts if min_counts is not None else min_cells if min_cells is not None else -np.inf
+        ub = max_counts if max_counts is not None else max_cells if max_cells is not None else np.inf
+        return (lb <= counts) & (counts <= ub), counts
 
-    if 'unspliced' in adata.layers.keys():
+    gene_subset = np.ones(adata.n_vars, dtype=bool)
+    if min_counts is not None or max_counts is not None:
+        gene_subset, counts = filter(adata.X, min_counts=min_counts, max_counts=max_counts)
+        adata.var['n_counts'] = counts
+        adata._inplace_subset_var(gene_subset)
+
+    if min_cells is not None or max_cells is not None:
+        gene_subset, cells = filter(adata.X, min_cells=min_cells, max_cells=max_cells)
+        adata.var['n_cells'] = cells
+        adata._inplace_subset_var(gene_subset)
+
+    s = np.sum(~gene_subset)
+    if s > 0:
+        logg.info('filtered out {} genes that are detected'.format(s), end=' ')
+        if min_cells is not None or min_counts is not None:
+            logg.info('in less than',
+                      str(min_cells) + ' cells'
+                      if min_counts is None else str(min_counts) + ' counts', no_indent=True)
+        if max_cells_u is not None or max_counts_u is not None:
+            logg.info('in more than ',
+                      str(max_cells) + ' cells'
+                      if max_counts is None else str(max_counts) + ' counts', no_indent=True)
+
+    layer = 'unspliced'
+    if layer in adata.layers.keys():
         gene_subset = np.ones(adata.n_vars, dtype=bool)
         if min_counts_u is not None or max_counts is not None:
-            subset_min_counts, subset_max_counts = bool_filter(adata, min_counts_u=min_counts_u, max_counts_u=max_counts_u)
-            gene_subset = subset_min_counts & subset_max_counts
+            gene_subset, _ = filter(adata.layers[layer], min_counts=min_counts_u, max_counts=max_counts_u)
             adata._inplace_subset_var(gene_subset)
+
         if min_cells_u is not None or max_cells_u is not None:
-            subset_min_cells, subset_max_cells = bool_filter(adata, min_cells_u=min_cells_u, max_cells_u=max_cells_u)
-            gene_subset = subset_min_cells & subset_max_cells
+            gene_subset, _ = filter(adata.layers[layer], min_cells=min_cells_u, max_cells=max_cells_u)
             adata._inplace_subset_var(gene_subset)
 
         s = np.sum(~gene_subset)
@@ -152,12 +179,12 @@ def filter_genes(data, min_counts=None, min_cells=None, max_counts=None, max_cel
             logg.info('filtered out {} genes that are detected'.format(s), end=' ')
             if min_cells_u is not None or min_counts_u is not None:
                 logg.info('in less than',
-                          str(min_cells_u) + ' unspliced cells'
-                          if min_counts_u is None else str(min_counts_u) + ' unspliced counts', no_indent=True)
+                          str(min_cells_u) + ' cells (' + str(layer) + ')'
+                          if min_counts_u is None else str(min_counts_u) + ' counts(' + str(layer) + ')', no_indent=True)
             if max_cells_u is not None or max_counts_u is not None:
                 logg.info('in more than ',
-                          str(max_cells_u) + ' unspliced cells'
-                          if max_counts_u is None else str(max_counts_u) + ' unspliced counts', no_indent=True)
+                          str(max_cells_u) + ' cells(' + str(layer) + ')'
+                          if max_counts_u is None else str(max_counts_u) + ' counts(' + str(layer) + ')', no_indent=True)
 
     return adata if copy else None
 
@@ -169,6 +196,7 @@ def filter_genes_dispersion(data, flavor='seurat', min_disp=None, max_disp=None,
     deviation of the dispersions for genes falling into a given bin for mean
     expression of genes. This means that for each bin of mean expression, highly
     variable genes are selected.
+
     Parameters
     ----------
     data : :class:`~anndata.AnnData`, `np.ndarray`, `sp.sparse`
@@ -197,6 +225,7 @@ def filter_genes_dispersion(data, flavor='seurat', min_disp=None, max_disp=None,
     copy : `bool`, optional (default: `False`)
         If an :class:`~anndata.AnnData` is passed, determines whether a copy
         is returned.
+
     Returns
     -------
     If an AnnData `adata` is passed, returns or updates `adata` depending on \
