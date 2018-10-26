@@ -17,10 +17,7 @@ def is_categorical(adata, c):
 
 def default_basis(adata):
     keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
-    if len(keys) > 0:
-        return keys[-1]
-    else:
-        raise ValueError('No basis specified')
+    return keys[-1] if len(keys) > 0 else None
 
 
 def update_axes(ax, fontsize, is_embedding, frameon):
