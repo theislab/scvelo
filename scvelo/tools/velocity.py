@@ -97,7 +97,7 @@ class Velocity:
 
 
 def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False,
-             groups=None, groupby=None, subset_for_fitting=None, use_raw=False, perc=None, copy=False):
+             groups=None, groupby=None, groups_for_fit=None, use_raw=False, perc=None, copy=False):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -116,11 +116,11 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
     filter_genes: `bool` (default: `True`)
         Whether to remove genes that are not used for further velocity analysis.
     groups: `str`, `list` (default: `None`)
-        Subset of groups, e.g. [‘g1’, ‘g2’, ‘g3’], to perform velocity analysis on.
-    groupby: `str` (default: `None`)
+        Subset of groups, e.g. [‘g1’, ‘g2’, ‘g3’], to which velocity analysis shall be restricted.
+    groupby: `str`, `list` or `np.ndarray` (default: `None`)
         Key of observations grouping to consider.
-    subset_for_fitting: `str`, `list` (default: `None`)
-        Subset of groups, e.g. [‘g1’, ‘g2’, ‘g3’], to which velocity estimation shall be restricted.
+    groups_for_fit: `str`, `list` or `np.ndarray` (default: `None`)
+        Subset of groups, e.g. [‘g1’, ‘g2’, ‘g3’], to which steady-state fitting shall be restricted.
     perc: `int` (default: `None`)
         Percentile to which velocity estimation shall be restricted.
     copy: `bool` (default: `False`)
@@ -140,11 +140,11 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
     if not use_raw and 'Ms' not in adata.layers.keys(): moments(adata)
 
     groups = groups_to_bool(adata, groups, groupby)
-    subset_for_fitting = groups_to_bool(adata, subset_for_fitting, groupby)
+    groups_for_fit = groups_to_bool(adata, groups_for_fit, groupby)
     _adata = adata if groups is None else adata[groups]
 
     logg.info('computing velocities', r=True)
-    velo = Velocity(_adata, subset=subset_for_fitting, use_raw=use_raw)
+    velo = Velocity(_adata, subset=groups_for_fit, use_raw=use_raw)
     velo.compute_deterministic(fit_offset, perc=perc)
 
     stochastic = any([mode is not None and mode in item for item in ['stochastic', 'bayes', 'alpha']])
@@ -153,7 +153,7 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
         if filter_genes and len(set(velo._velocity_genes)) > 1:
             idx = velo._velocity_genes
             adata._inplace_subset_var(idx)
-            velo = Velocity(_adata, residual=velo._residual[:, idx], subset=subset_for_fitting)
+            velo = Velocity(_adata, residual=velo._residual[:, idx], subset=groups_for_fit)
         velo.compute_stochastic(fit_offset, fit_offset2, mode)
         if groups is None:
             adata.layers[vkey], adata.layers[vkey2] = velo.get_residuals()
