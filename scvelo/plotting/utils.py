@@ -69,7 +69,7 @@ def set_frame(ax, frameon):
 
 def default_size(adata):
     adjusted, classic = 1.2e5 / adata.n_obs, 20
-    return np.mean(adjusted, classic) if settings._rcParams_style == 'scanpy' else adjusted
+    return np.mean([adjusted, classic]) if settings._rcParams_style == 'scvelo' else adjusted
 
 
 def default_color(adata):
