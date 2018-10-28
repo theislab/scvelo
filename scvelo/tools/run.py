@@ -30,6 +30,7 @@ def convert_to_adata(vlm, basis=None):
     layers = OrderedDict()
     layers['spliced'] = vlm.S_sz.T if hasattr(vlm, 'S_sz') else vlm.S.T
     layers['unspliced'] = vlm.U_sz.T if hasattr(vlm, 'U_sz') else vlm.U.T
+    layers['ambiguous'] = vlm.A.T
 
     if hasattr(vlm, 'velocity'): layers['velocity'] = vlm.velocity.T
     if hasattr(vlm, 'Sx_sz'): layers['Ms'] = vlm.Sx_sz.T
