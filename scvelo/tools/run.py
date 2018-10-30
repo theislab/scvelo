@@ -30,7 +30,7 @@ def convert_to_adata(vlm, basis=None):
     layers = OrderedDict()
     layers['spliced'] = vlm.S_sz.T if hasattr(vlm, 'S_sz') else vlm.S.T
     layers['unspliced'] = vlm.U_sz.T if hasattr(vlm, 'U_sz') else vlm.U.T
-    if vlm.A.T.shape == layers['spliced'].shape
+    if vlm.A.T.shape == layers['spliced'].shape:
 	# this won't always work because many of velocyto's filtering functions don't act on the .A layer
     	layers['ambiguous'] = vlm.A.T
 
@@ -49,6 +49,10 @@ def convert_to_adata(vlm, basis=None):
 
     adata = AnnData(X, obs=obs, var=var, layers=layers)
     if basis is not None and hasattr(vlm, 'ts'): adata.obsm['X_' + basis] = vlm.ts
+    
+    # add the velocity graph
+    if hasattr(vlm, 'corrcoef'): adata.uns['velocity_graph'] = vlm.corrcoef
+    
 
     return adata
 
