@@ -26,7 +26,7 @@ def show_proportions(adata):
     print('Abundance of ' + str(layers_keys) + ': ' + str(mean_abundances))
 
 
-def cleanup(data, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
+def cleanup(data, clean='layers', keep=None, copy=False):
     """Deletes attributes not needed.
 
     Arguments
@@ -45,6 +45,9 @@ def cleanup(data, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
     Returns or updates `adata` with selection of attributes kept.
     """
     adata = data.copy() if copy else data
+
+    keep = list() if keep is None else list(keep)
+    keep.extend(['spliced', 'unspliced', 'Ms', 'Mu', 'clusters', 'neighbors'])
 
     if any(['obs' in clean, 'all' in clean]):
         for key in list(adata.obs.keys()):
@@ -65,22 +68,26 @@ def cleanup(data, clean='layers', keep={'spliced', 'unspliced'}, copy=False):
     return adata if copy else None
 
 
+def get_size(adata, layer):
+    X = adata.layers[layer]
+    return X.sum(1).A1.copy() if issparse(X) else X.sum(1).copy()
+
+
 def set_initial_size(adata, layers={'spliced', 'unspliced'}):
     if all([layer in adata.layers.keys() for layer in layers]):
         layers = [layer for layer in layers if 'initial_size_' + layer not in adata.obs.keys()]
         total_size = 0
         for layer in layers:
-            X = adata.layers[layer]
-            size = X.sum(1).A1.copy() if issparse(X) else X.sum(1).copy()
+            size = get_size(adata, layer)
             adata.obs['initial_size_' + layer] = size
             total_size += size
         if 'initial_size' not in adata.obs.keys(): adata.obs['initial_size'] = total_size
 
 
-def get_initial_size(adata, layer, by_total_size):
+def get_initial_size(adata, layer, by_total_size=None):
     if layer not in {'spliced', 'unspliced'}: return None
     else: return adata.obs['initial_size'].copy() if by_total_size and 'initial_size' in adata.obs.keys() else \
-        adata.obs['initial_size_' + layer].copy() if 'initial_size_' + layer in adata.obs.keys() else None
+        adata.obs['initial_size_' + layer].copy() if 'initial_size_' + layer in adata.obs.keys() else get_size(adata, layer)
 
 
 def filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
@@ -261,7 +268,8 @@ def counts_per_cell_quantile(X, max_proportion_per_cell=.05, counts_per_cell=Non
     return X[:, gene_subset].sum(1).A1 if issparse(X) else X[:, gene_subset].sum(1)
 
 
-def normalize_layers(data, layers={'spliced', 'unspliced'}, by_total_size=None, max_proportion_per_cell=None, copy=False):
+def normalize_layers(data, layers={'spliced', 'unspliced'}, counts_per_cell_after=None, max_proportion_per_cell=None,
+                     by_total_size=None, copy=False):
     """Normalize by total counts to median.
     """
     adata = data.copy() if copy else data
@@ -276,7 +284,8 @@ def normalize_layers(data, layers={'spliced', 'unspliced'}, by_total_size=None, 
             counts_per_cell = get_initial_size(adata, layer, by_total_size)
             if max_proportion_per_cell is not None and (0 < max_proportion_per_cell < 1):
                 counts_per_cell = counts_per_cell_quantile(adata.X, max_proportion_per_cell, counts_per_cell)
-            adata.layers[layer] = normalize_per_cell(adata.layers[layer], None, counts_per_cell, copy=True)
+            counts_per_cell += counts_per_cell == 0
+            adata.layers[layer] = normalize_per_cell(adata.layers[layer], counts_per_cell_after, counts_per_cell, copy=True)
     return adata if copy else None
 
 
@@ -314,7 +323,7 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None,
     if max_proportion_per_cell is not None and (0 < max_proportion_per_cell < 1):
         counts_per_cell = counts_per_cell_quantile(adata.X, max_proportion_per_cell)
     normalize_per_cell(adata, counts_per_cell_after, counts_per_cell, key_n_counts)
-    normalize_layers(adata, layers, max_proportion_per_cell)
+    normalize_layers(adata, layers, counts_per_cell_after, max_proportion_per_cell)
     return adata if copy else None
 
 
