@@ -8,16 +8,18 @@ import numpy as np
 import warnings
 
 
-def quiver_autoscale(X, Y, U, V):
+def quiver_autoscale(X_emb, V_emb):
     import matplotlib.pyplot as pl
-    Q = pl.quiver(X, Y, U, V, angles='xy', scale_units='xy', scale=None)
+    scale_factor = X_emb.max()  # just so that it handles very large values
+    Q = pl.quiver(X_emb[:, 0] / scale_factor, X_emb[:, 1] / scale_factor,
+                  V_emb[:, 0], V_emb[:, 1], angles='xy', scale_units='xy', scale=None)
     Q._init()
     pl.clf()
-    return Q.scale
+    return Q.scale / scale_factor
 
 
 def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
-                       retain_scale=False, copy=False):
+                       retain_scale=False, all_comps=True, copy=False):
     """Computes the single cell velocities in the embedding
 
     Arguments
@@ -54,8 +56,8 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
     if 'X_' + basis not in adata.obsm_keys():
         raise ValueError('You need compute the embedding first.')
 
-    X_emb = adata.obsm['X_' + basis][:, :2]
-    V_emb = np.zeros((adata.n_obs, 2))
+    X_emb = adata.obsm['X_' + basis] if all_comps else adata.obsm['X_' + basis][:, :2]
+    V_emb = np.zeros(X_emb.shape)
 
     TA = T.A if adata.n_obs < 8192 else None
     sparse = False if adata.n_obs < 8192 else True
@@ -76,7 +78,7 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
         cos_proj = (adata.layers[vkey] * delta).sum(1) / norm(delta)
         V_emb *= np.clip(cos_proj[:, None] * 10, 0, 1)
 
-    V_emb /= (3 * quiver_autoscale(X_emb[:, 0], X_emb[:, 1], V_emb[:, 0], V_emb[:, 1]))
+    V_emb /= (3 * quiver_autoscale(X_emb, V_emb))
 
     vkey += '_' + basis
     adata.obsm[vkey] = V_emb
