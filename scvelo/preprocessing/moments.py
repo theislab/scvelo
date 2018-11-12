@@ -45,6 +45,10 @@ def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', use_rep=None,
         dense matrix with first order moments of unspliced counts.
     """
     adata = data.copy() if copy else data
+
+    if 'spliced' not in adata.layers.keys() or 'unspliced' not in adata.layers.keys():
+        raise ValueError('Could not find spliced / unspliced counts.')
+
     if 'neighbors' not in adata.uns.keys() or n_neighbors > adata.uns['neighbors']['params']['n_neighbors']:
         if 'X_pca' not in adata.obsm.keys() or n_pcs > adata.obsm['X_pca'].shape[1]:
             pca(adata, n_comps=n_pcs, svd_solver='arpack')
