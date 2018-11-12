@@ -103,7 +103,7 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                 xlabel, ylabel, title = 'spliced', 'unspliced', basis
 
             elif is_embedding:
-                X_emb = adata.obsm['X_' + basis][:, get_components(components)]
+                X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
                 x, y = X_emb[:, 0], X_emb[:, 1]
             elif isinstance(x, str) and isinstance(y, str) and x in adata.var_names and y in adata.var_names:
                 x = adata[:, x].layers[layer] if layer in adata.layers.keys() else adata[:, x].X

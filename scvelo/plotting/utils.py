@@ -119,10 +119,12 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
     return c
 
 
-def get_components(components=None):
+def get_components(components=None, basis=None):
     if components is None: components = '1,2'
     if isinstance(components, str): components = components.split(',')
-    return np.array(components).astype(int) - 1
+    components = np.array(components).astype(int) - 1
+    if basis == 'diffmap': components += 1
+    return components
 
 
 def set_colorbar(ax, orientation='vertical'):

@@ -97,8 +97,10 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, X
 
         color, layer, vkey = colors[0], layers[0], vkeys[0]
         ix_choice = np.random.choice(adata.n_obs, size=int(density * adata.n_obs), replace=False)
-        X = adata.obsm['X_' + basis][:, get_components(components)][ix_choice] if X is None else X[:, :2][ix_choice]
-        V = adata.obsm[vkey + '_' + basis][ix_choice] if V is None else V[:, :2][ix_choice]
+
+        x, y = None if X is None else X[:, 0], None if X is None else X[:, 1]
+        X = adata.obsm['X_' + basis][:, get_components(components, basis)][ix_choice] if X is None else X[:, :2][ix_choice]
+        V = adata.obsm[vkey + '_' + basis][:, get_components(components, basis)][ix_choice] if V is None else V[:, :2][ix_choice]
 
         quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .0005,
                          "edgecolors": 'k', "headwidth": 9, "headlength": 10, "headaxislength": 6, "linewidth": .25}
@@ -111,7 +113,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, X
         else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=1, **quiver_kwargs)
 
         size = default_size(adata)/2 if size is None else size
-        ax = scatter(adata, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
+        ax = scatter(adata, x=x, y=y, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
                      perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
                      colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=ax,
                      use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,

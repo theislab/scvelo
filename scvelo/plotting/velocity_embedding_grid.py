@@ -40,7 +40,7 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
     if min_mass is None: min_mass = np.clip(np.percentile(p_mass, 99) / 100, 1e-2, 1)
     X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
 
-    V_grid /= 3 * quiver_autoscale(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1])
+    V_grid /= 3 * quiver_autoscale(X_grid, V_grid)
 
     return X_grid, V_grid
 
@@ -95,8 +95,8 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
     color, layer, vkey = colors[0], layers[0], vkeys[0]
 
     if X_grid is None or V_grid is None:
-        X_emb  = adata.obsm['X_' + basis][:, get_components(components)] if X is None else X[:, :2]
-        V_emb = adata.obsm[vkey + '_' + basis] if V is None else V[:, :2]
+        X_emb  = adata.obsm['X_' + basis][:, get_components(components, basis)] if X is None else X[:, :2]
+        V_emb = adata.obsm[vkey + '_' + basis][:, get_components(components, basis)] if V is None else V[:, :2]
         X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=density,
                                                   smooth=smooth, n_neighbors=n_neighbors, min_mass=min_mass)
 
