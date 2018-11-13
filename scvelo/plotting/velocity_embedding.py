@@ -102,8 +102,8 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, X
         X = adata.obsm['X_' + basis][:, get_components(components, basis)][ix_choice] if X is None else X[:, :2][ix_choice]
         V = adata.obsm[vkey + '_' + basis][:, get_components(components, basis)][ix_choice] if V is None else V[:, :2][ix_choice]
 
-        quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .00045,
-                         "edgecolors": 'k', "headwidth": 8, "headlength": 10, "headaxislength": 6, "linewidth": .1}
+        quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .0005,
+                         "edgecolors": 'k', "headlength": 12, "headwidth": 10, "headaxislength": 8, "linewidth": .1}
         quiver_kwargs.update(kwargs)
 
         c = interpret_colorkey(adata, color, layer, perc)
