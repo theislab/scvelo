@@ -46,8 +46,12 @@ def convert_to_adata(vlm, basis=None):
     if hasattr(vlm, 'R2'): var['velocity_r2'] = vlm.R2
 
     adata = AnnData(X, obs=obs, var=var, layers=layers)
-    if basis is not None and hasattr(vlm, 'ts'): adata.obsm['X_' + basis] = vlm.ts
+
     if hasattr(vlm, 'corrcoef'): adata.uns['velocity_graph'] = vlm.corrcoef
+
+    if basis is not None:
+        if hasattr(vlm, 'ts'): adata.obsm['X_' + basis] = vlm.ts
+        if hasattr(vlm, 'delta_embedding'): adata.obsm['velocity_' + basis] = vlm.delta_embedding
 
     return adata
 
@@ -82,7 +86,8 @@ def convert_to_loom(adata, basis=None):
             for key in adata.var.keys():
                 self.ra[key] = np.array(adata.var[key].values)
             if isinstance(basis, str) and 'X_' + basis in adata.obsm.keys():
-                self.ts = adata.obsm['X_' + basis]
+                if 'X_' + basis in adata.obsm.keys(): self.ts = adata.obsm['X_' + basis]
+                if 'velocity_' + basis in adata.obsm.keys(): self.delta_embedding = adata.obsm['velocity_' + basis]
 
             if 'clusters' in self.ca:
                 self.set_clusters(self.ca['clusters'])
@@ -132,7 +137,7 @@ def convert_to_loom(adata, basis=None):
                 raise ValueError('Compute embedding first.')
             else:
                 # counterpart to scv.tl.velocity_graph()
-                self.estimate_transition_prob(hidim="Sx_sz", embed="ts", transform=transform,
+                self.estimate_transition_prob(hidim="Sx_sz", embed="ts", transform=transform, calculate_randomized=False,
                                               n_neighbors=n_neighbors, knn_random=True, sampled_fraction=sampled_fraction)
 
                 # counterpart to scv.tl.velocity_embedding()
