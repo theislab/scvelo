@@ -27,8 +27,8 @@ def dentategyrus():
     adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
     cleanup(adata, clean='all', keep={'spliced', 'unspliced', 'ambiguous'})
 
-    url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/write/DG_clusters.npy'
-    url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/write/DG_umap.npy'
+    url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_clusters.npy'
+    url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_umap.npy'
 
     adata.obs['louvain'] = load('./data/DentateGyrus/DG_clusters.npy', url_louvain)
     adata.obsm['X_umap'] = load('./data/DentateGyrus/DG_umap.npy', url_umap)
