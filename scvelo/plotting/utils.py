@@ -78,7 +78,7 @@ def default_color(adata):
 
 def default_color_map(adata, c):
     return 'viridis_r' if isinstance(c, str) and c in adata.obs.keys() and not is_categorical(adata, c)\
-                          and adata.obs[c].min() == 0 and adata.obs[c].max() == 1 else 'RdBu_r'
+                          and adata.obs[c].min() == 0 and adata.obs[c].max() == 1 else None
 
 
 def clip(c, perc=None):
@@ -141,7 +141,7 @@ def savefig(writekey, show=False, dpi=None, save=None):
     savefig_or_show('velocity_' + writekey + '_' if writekey != '' else 'velocity_', dpi=dpi, save=save, show=show)
 
 
-def hist(arrays, bins, alpha=.5, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None, dpi=None):
+def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None, dpi=None):
     ax = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
     arrays = arrays if isinstance(arrays, (list, tuple)) else [arrays]
 
