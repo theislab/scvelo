@@ -102,15 +102,15 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, X
         X = adata.obsm['X_' + basis][:, get_components(components, basis)][ix_choice] if X is None else X[:, :2][ix_choice]
         V = adata.obsm[vkey + '_' + basis][:, get_components(components, basis)][ix_choice] if V is None else V[:, :2][ix_choice]
 
-        quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .0005,
-                         "edgecolors": 'k', "headwidth": 9, "headlength": 10, "headaxislength": 6, "linewidth": .25}
+        quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .00045,
+                         "edgecolors": 'k', "headwidth": 8, "headlength": 10, "headaxislength": 6, "linewidth": .1}
         quiver_kwargs.update(kwargs)
 
         c = interpret_colorkey(adata, color, layer, perc)
         c = c[ix_choice] if len(c) == adata.n_obs else c
 
-        if is_color_like(c[0]): pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=c, zorder=1, **quiver_kwargs)
-        else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=1, **quiver_kwargs)
+        if is_color_like(c[0]): pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=c, zorder=3, **quiver_kwargs)
+        else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=3, **quiver_kwargs)
 
         size = default_size(adata)/2 if size is None else size
         ax = scatter(adata, x=x, y=y, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,

@@ -85,8 +85,8 @@ def velocity(adata, var_names=None, basis=None, mode=None, fits='all', layers='a
 
         # spliced/unspliced phase portrait with steady-state estimate
         ax = pl.subplot(gs[v * n_col])
-        scatter(adata, basis=var, color=color, frameon=True, title=var, xlabel='spliced', ylabel='unspliced',
-                show=False, save=False, ax=ax, fontsize=fontsize, size=size, alpha=alpha, **kwargs)
+        scatter(adata, basis=var, color=color, frameon=True, title=var, size=size, alpha=alpha, fontsize=fontsize,
+                xlabel='spliced', ylabel='unspliced', show=False, ax=ax, save=False, **kwargs)
 
         xnew = np.linspace(0, s.max() * 1.02)
         for fit in fits:
@@ -119,8 +119,9 @@ def velocity(adata, var_names=None, basis=None, mode=None, fits='all', layers='a
             x = 2 * (ss - s**2) - s
             y = 2 * (us - u * s) + u + 2 * s * offset / beta
 
-            scatter(adata, x=x, y=y, color=color, title=var, fontsize=40/n_col, show=False, frameon=True, ax=ax, save=False,
-                    perc=perc, xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$', **kwargs)
+            scatter(adata, x=x, y=y, color=color, title=var, fontsize=40/n_col, size=size, perc=perc, show=False,
+                    xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$',
+                    frameon=True, ax=ax, save=False, **kwargs)
 
             xnew = np.linspace(x.min(), x.max() * 1.02)
             for fit in stochastic_fits:

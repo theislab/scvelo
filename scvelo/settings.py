@@ -135,7 +135,7 @@ def set_rcParams_scvelo(fontsize=8, color_map=None):
     rcParams['grid.color'] = '.8'
 
     # color map
-    rcParams['image.cmap'] = rcParams['image.cmap'] if color_map is None else color_map
+    rcParams['image.cmap'] = 'RdBu_r' if color_map is None else color_map
 
     # frame (mpl default: True)
     global _frameon

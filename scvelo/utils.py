@@ -1,4 +1,5 @@
 from .preprocessing.utils import show_proportions, cleanup, set_initial_size, get_initial_size
+from .preprocessing.moments import get_connectivities, second_order_moments
 
 from .tools.utils import prod_sum_obs, prod_sum_var, norm, vector_norm, R_squared, \
     cosine_correlation, normalize, scale, get_indices, get_iterative_indices, groups_to_bool

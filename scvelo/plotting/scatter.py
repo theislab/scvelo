@@ -113,6 +113,9 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
             if layer is not None and 'velocity' in layer and isinstance(color, str) and color in adata.var_names:
                 ub = np.percentile(np.abs(c), 98)
                 kwargs.update({"vmin": -ub, "vmax": ub})
+            if layer is not None and 'spliced' in layer and isinstance(color, str) and color in adata.var_names:
+                ub = np.percentile(c, 98)
+                kwargs.update({"vmax": ub})
 
             pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, zorder=0, **kwargs)
 

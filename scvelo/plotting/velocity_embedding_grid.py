@@ -154,12 +154,12 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
         quiver_kwargs = {"scale": scale, "angles": 'xy', "scale_units": 'xy', "width": .001, "color": 'black',
                    "edgecolors": 'k', "headwidth": 4.5, "headlength": 5, "headaxislength": 3, "linewidth": .2}
         quiver_kwargs.update(kwargs)
-        pl.quiver(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1], **quiver_kwargs, zorder=1)
+        pl.quiver(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1], **quiver_kwargs, zorder=3)
 
         if principal_curve:
             curve = adata.uns['principal_curve']['projections']
-            pl.plot(curve[:, 0], curve[:, 1], c="w", lw=6, zorder=2)
-            pl.plot(curve[:, 0], curve[:, 1], c="k", lw=3, zorder=3)
+            pl.plot(curve[:, 0], curve[:, 1], c="w", lw=6, zorder=4)
+            pl.plot(curve[:, 0], curve[:, 1], c="k", lw=3, zorder=5)
 
         size = default_size(adata) if size is None else size
         ax = scatter(adata, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
