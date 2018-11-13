@@ -23,7 +23,7 @@ def vals_to_csr(vals, rows, cols, shape):
 
 class VelocityGraph:
     def __init__(self, adata, vkey='velocity', xkey='Ms', basis=None, n_neighbors=None, n_recurse_neighbors=None,
-                 n_top_genes=None, sqrt_transform=False):
+                 random_neighbors_at_max=None, n_top_genes=None, sqrt_transform=False):
 
         subset = np.ones(adata.n_vars, dtype=bool)
         if n_top_genes is not None and 'velocity_score' in adata.var.keys():
@@ -43,15 +43,19 @@ class VelocityGraph:
         self.n_recurse_neighbors = 1 if n_neighbors is not None \
             else 2 if n_recurse_neighbors is None else n_recurse_neighbors
 
-        if n_neighbors is None and 'neighbors' in adata.uns.keys():
+        if n_neighbors is None:
+            if 'neighbors' not in adata.uns.keys():
+                from ..preprocessing.moments import neighbors
+                neighbors(adata)
             self.indices = get_indices(dist=adata.uns['neighbors']['distances'])[0]
         else:
-            from scanpy.api import Neighbors
+            from .. import Neighbors
             neighs = Neighbors(adata)
             if basis is None: basis = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()][-1]
-            if n_neighbors is None: n_neighbors = int(adata.shape[0] / 50)
             neighs.compute_neighbors(n_neighbors=n_neighbors, use_rep=basis, n_pcs=10)
             self.indices = get_indices(dist=neighs.distances)[0]
+
+        self.max_neighs = random_neighbors_at_max
 
         self.graph = adata.uns[vkey + '_graph'] if vkey + '_graph' in adata.uns.keys() else []
         self.graph_neg = adata.uns[vkey + '_graph_neg'] if vkey + '_graph_neg' in adata.uns.keys() else []
@@ -60,7 +64,7 @@ class VelocityGraph:
         vals, rows, cols, n_obs = [], [], [], self.X.shape[0]
         progress = logg.ProgressReporter(n_obs)
         for i in range(n_obs):
-            neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors)
+            neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors, self.max_neighs)
             if self.V[i].max() != 0 or self.V[i].min() != 0:
                 dX = self.X[neighs_idx] - self.X[i, None]  # 60% of runtime
                 if self.sqrt_transform: dX = np.sqrt(np.abs(dX)) * np.sign(dX)
@@ -80,7 +84,7 @@ class VelocityGraph:
 
 
 def velocity_graph(data, vkey='velocity', xkey='Ms', basis=None, n_neighbors=None, n_recurse_neighbors=None,
-                   n_top_genes=None, sqrt_transform=False, copy=False):
+                   random_neighbors_at_max=None, n_top_genes=None, sqrt_transform=False, copy=False):
     """Computes a velocity graph based on cosine similarities.
 
     The cosine similarities are computed between velocities and potential cell state transitions.
@@ -95,8 +99,11 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', basis=None, n_neighbors=Non
         Use fixed number of neighbors or do recursive neighbor search (if `None`).
     n_recurse_neighbors: `int` (default: 2)
         Number of recursions to be done for neighbors search.
+    random_neighbors_at_max: `int` or `None` (default: `None`)
+        If number of iterative neighbors for an individual cell is higher than this threshold,
+        a random selection of such are chosen as reference neighbors.
     sqrt_transform: `bool` (default: `False`)
-        Whether to variance-transform the cell states and velocities before computing cosine similarities.
+        Whether to variance-transform the cell states changes and velocities before computing cosine similarities.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to adata.
 
@@ -110,10 +117,11 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', basis=None, n_neighbors=Non
     if vkey not in adata.layers.keys(): velocity(adata, vkey=vkey)
     if n_top_genes is not None and 'velocity_score' not in adata.var.keys(): rank_velocity_genes(adata, n_genes=100)
 
-    logg.info('computing velocity graph', r=True)
-
     vgraph = VelocityGraph(adata, vkey=vkey, xkey=xkey, basis=basis, n_neighbors=n_neighbors,
-                           n_recurse_neighbors=n_recurse_neighbors, n_top_genes=n_top_genes, sqrt_transform=sqrt_transform)
+                           n_recurse_neighbors=n_recurse_neighbors, random_neighbors_at_max=random_neighbors_at_max,
+                           n_top_genes=n_top_genes, sqrt_transform=sqrt_transform)
+
+    logg.info('computing velocity graph', r=True)
     vgraph.compute_cosines()
 
     adata.uns[vkey+'_graph'] = vgraph.graph

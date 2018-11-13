@@ -71,11 +71,14 @@ def get_indices(dist):
     return indices, dist
 
 
-def get_iterative_indices(indices, index, n_recurse_neighbors):
+def get_iterative_indices(indices, index, n_recurse_neighbors, max_neighs=None):
     def iterate_indices(indices, index, n_recurse_neighbors):
         return indices[iterate_indices(indices, index, n_recurse_neighbors - 1)] \
             if n_recurse_neighbors > 1 else indices[index]
-    return np.unique(iterate_indices(indices, index, n_recurse_neighbors))
+    indices = np.unique(iterate_indices(indices, index, n_recurse_neighbors))
+    if max_neighs is not None and len(indices) > max_neighs:
+        indices = np.random.choice(indices, max_neighs, replace=False)
+    return indices
 
 
 def groups_to_bool(adata, groups, groupby=None):
