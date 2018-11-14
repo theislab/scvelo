@@ -3,7 +3,9 @@ from .. import logging as logg
 from ..preprocessing.moments import moments, second_order_moments
 from .optimization import leastsq_NxN, leastsq_generalized, maximum_likelihood
 from .utils import R_squared, groups_to_bool
+from scvelo.preprocessing import neighbors
 
+import sys
 from scipy.sparse import issparse, csr_matrix
 import numpy as np
 import warnings
@@ -139,45 +141,112 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
     adata = data.copy() if copy else data
     if not use_raw and 'Ms' not in adata.layers.keys(): moments(adata)
 
-    groups = groups_to_bool(adata, groups, groupby)
-    groups_for_fit = groups_to_bool(adata, groups_for_fit, groupby)
-    _adata = adata if groups is None else adata[groups]
+    # subset_for_fitting = groups_to_bool(adata, subset_for_fitting, groupby)
+    # _adata = adata if groups is None else adata[groups]
+    # velo = Velocity(_adata, subset=subset_for_fitting, use_raw=use_raw)
+    # velo.compute_deterministic(fit_offset, perc=perc)
 
     logg.info('computing velocities', r=True)
-    velo = Velocity(_adata, subset=groups_for_fit, use_raw=use_raw)
-    velo.compute_deterministic(fit_offset, perc=perc)
 
+    #####
+    # Perform Velocity Estimation on each group separately, ignore subset_to_fit
     stochastic = any([mode is not None and mode in item for item in ['stochastic', 'bayes', 'alpha']])
-    if stochastic:
-        vkey2 = 'variance_' + vkey
-        if filter_genes and len(set(velo._velocity_genes)) > 1:
-            idx = velo._velocity_genes
-            adata._inplace_subset_var(idx)
-            velo = Velocity(_adata, residual=velo._residual[:, idx], subset=groups_for_fit)
-        velo.compute_stochastic(fit_offset, fit_offset2, mode)
-        if groups is None:
+    n_obs, n_vars = adata.shape
+    # pars_save = np.zeros(shape=(6, n_vars))
+    velocity_genes = np.empty(n_obs, dtype=np.bool)
+
+    if groupby is not None:
+        if groups is None:  # `None` means `all` here
+            groups = np.unique(np.array(adata.obs[groupby]))  # all groups
+        groups = (np.array(groups)).flatten()
+
+        # Allocate entry space in adata.uns for the parameters
+        if 'pars' not in adata.uns.keys():
+            adata.uns['pars'] = dict()
+        if groupby not in adata.uns['pars'].keys():
+            adata.uns['pars'][groupby] = dict()
+
+        for group in groups:
+            # Identify groups and perform velocity estimation
+            group_positions = [cell == group for cell in adata.obs[groupby]]
+            _adata = adata[group_positions]
+            velo = Velocity(_adata, subset=None, use_raw=use_raw)
+            velo.compute_deterministic(fit_offset, perc=perc)
+            vel_of_group, _ = velo.get_residuals()
+
+            # Concat velocities and write to label
+            if vkey not in adata.layers.keys(): adata.layers[vkey] = np.zeros(adata.shape, dtype=np.float32)
+            group_positions = groups_to_bool(adata, group, groupby)
+            adata.layers[vkey][group_positions] = vel_of_group
+
+            # TODO velocity genes irrelevant if we have groups? Why is the output always of full size?
+            # velocity_genes[group_positions] = velo._velocity_genes # NOT WORKING with groups
+            velocity_genes = velo._velocity_genes
+
+            if stochastic:
+                vkey2 = 'variance_' + vkey
+
+                # supress neighbor() print output.
+                save_stdout = sys.stdout
+                sys.stdout = open('trash', 'w')
+                neighbors(velo._adata)  # this is not properly inherited, thus we must do it again
+                sys.stdout = save_stdout
+
+                # TODO instead of running neighbors again, try to inherit from full adata properly
+
+                # TODO the following if ?
+                if filter_genes and len(set(velocity_genes)) > 1:
+                    idx = velocity_genes
+                    print('idxshape:', idx.shape)
+                    adata._inplace_subset_var(idx)
+                    velo = Velocity(_adata, residual=velo._residual[:, idx])
+                velo.compute_stochastic(fit_offset, fit_offset2, mode)
+
+                # Save Results
+                if vkey not in adata.layers.keys(): adata.layers[vkey] = np.zeros(adata.shape, dtype=np.float32)
+                if vkey2 not in adata.layers.keys(): adata.layers[vkey2] = np.zeros(adata.shape, dtype=np.float32)
+                adata.layers[vkey][group_positions], adata.layers[vkey2][group_positions] = velo.get_residuals()
+            else:
+                if vkey not in adata.layers.keys(): adata.layers[vkey] = np.zeros(adata.shape, dtype=np.float32)
+                adata.layers[vkey][group_positions], _ = velo.get_residuals()
+
+            # Save Parameters used for estimation TODO Where should that go? Into .uns?
+            if group not in adata.uns['pars'][groupby].keys():
+                adata.uns['pars'][groupby][group] = dict()
+            pars = velo.get_pars()
+            for i, key in enumerate(velo.get_pars_names()):
+                if len(set(pars[i])) > 1:
+                    adata.uns['pars'][groupby][group][vkey + key] = pars[i]
+
+    else:  # No Grouping
+        _adata = adata
+
+        logg.info('computing velocities', r=True)
+        velo = Velocity(_adata, use_raw=use_raw)  # TODO subset=groups_for_fit? Redundant if we have grouping?
+        velo.compute_deterministic(fit_offset, perc=perc)
+
+        stochastic = any([mode is not None and mode in item for item in ['stochastic', 'bayes', 'alpha']])
+        if stochastic:
+            vkey2 = 'variance_' + vkey
+            if filter_genes and len(set(velo._velocity_genes)) > 1:
+                idx = velo._velocity_genes
+                adata._inplace_subset_var(idx)
+                velo = Velocity(_adata, residual=velo._residual[:, idx])  # TODO subset=groups_for_fit?
+            velo.compute_stochastic(fit_offset, fit_offset2, mode)
             adata.layers[vkey], adata.layers[vkey2] = velo.get_residuals()
         else:
-            if vkey not in adata.layers.keys(): adata.layers[vkey] = np.zeros(adata.shape, dtype=np.float32)
-            if vkey2 not in adata.layers.keys(): adata.layers[vkey2] = np.zeros(adata.shape, dtype=np.float32)
-            adata.layers[vkey][groups], adata.layers[vkey2][groups] = velo.get_residuals()
-    else:
-        if groups is None:
             adata.layers[vkey], _ = velo.get_residuals()
-        else:
-            if vkey not in adata.layers.keys(): adata.layers[vkey] = np.zeros(adata.shape, dtype=np.float32)
-            adata.layers[vkey][groups], _ = velo.get_residuals()
 
-    pars = velo.get_pars()
-    for i, key in enumerate(velo.get_pars_names()):
-        if len(set(pars[i])) > 1: adata.var[vkey + key] = pars[i]
+        pars = velo.get_pars()
+        for i, key in enumerate(velo.get_pars_names()):
+            if len(set(pars[i])) > 1: adata.var[vkey + key] = pars[i]
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
         'added \n'
         '    \'' + vkey + '\', velocity vectors for each individual cell (adata.layers)')
 
-    if filter_genes and len(set(velo._velocity_genes)) > 1:  # re-initialize after filtering
-        adata._inplace_subset_var(velo._velocity_genes)
+    if filter_genes and len(set(velocity_genes)) > 1:  # re-initialize after filtering
+        adata._inplace_subset_var(velocity_genes)
 
     return adata if copy else None
