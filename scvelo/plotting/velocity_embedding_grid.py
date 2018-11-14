@@ -249,7 +249,6 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
         V_emb = adata.obsm[vkey + '_' + basis][:, get_components(components, basis)] if V is None else V[:, :2]
         X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=1, smooth=smooth,
                                                   n_neighbors=n_neighbors, min_mass=-np.inf, autoscale=False)
-
     if len(colors) > 1:
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
         for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0] * len(colors), figsize[1]), dpi=dpi))):
