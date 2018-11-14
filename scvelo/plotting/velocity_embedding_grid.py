@@ -227,12 +227,8 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
     if X_grid is None or V_grid is None:
         X_emb  = adata.obsm['X_' + basis][:, get_components(components)] if X is None else X[:, :2]
         V_emb = adata.obsm[vkey + '_' + basis] if V is None else V[:, :2]
-        ### COMPUTE X_grid V_grid
+        # Compute X_grid V_grid
 
-        density = 1
-        smooth = 0.5
-        n_neighbors = None
-        min_mass = None
         # prepare grid
         n_obs, n_dim = X_emb.shape
 
@@ -258,6 +254,8 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
         p_mass = weight.sum(1)
 
         V_grid = (V_emb[neighs] * weight[:, :, None]).sum(1) / np.maximum(1, p_mass)[:, None]
+        # No clipping for VeloStream
+        """
         if min_mass is None: min_mass = np.clip(np.percentile(p_mass, 99) / 100, 1e-2, 1)
         X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
         if X_grid.size == 0 or V_grid.size == 0:  # potentially happens for example for draw_graph_fa embedding
@@ -266,22 +264,8 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
                 V_grid = (V_emb[neighs] * weight[:, :, None]).sum(1) / np.maximum(1, p_mass)[:, None]
                 min_mass = np.clip(np.percentile(p_mass, 99) / 100, 1e-20, 1)  # greater clip interval
                 X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
+        """
 
-    #######################################
-    X_grid = np.vstack([i.flat for i in meshes_tuple]).T
-
-    # estimate grid velocities
-    if n_neighbors is None: n_neighbors = int(n_obs / 50)
-    nn = NearestNeighbors(n_neighbors=n_neighbors, n_jobs=-1)
-    nn.fit(X_emb)
-    dists, neighs = nn.kneighbors(X_grid)
-
-    scale = np.mean([(g[1] - g[0]) for g in grs]) * smooth
-    weight = normal.pdf(x=dists, scale=scale)
-    p_mass = weight.sum(1)
-
-    V_grid = (V_emb[neighs] * weight[:, :, None]).sum(1) / np.maximum(1, p_mass)[:, None]
-    #########################################
     y, x, v, u = X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1]
 
     # resample onto a 50x50 grid
@@ -358,18 +342,12 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
     else:
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
-        lw2 = np.sqrt(ui ** 2 + vi ** 2)
-        ui[lw2.reshape(h, h) < 0.00001] = np.nan  # mask
+        lw = np.sqrt(ui ** 2 + vi ** 2)  # Line width is velocity norm
+        ui[lw.reshape(h, h) < 1e-5] = np.nan  # mask
 
         stream_kwargs = {"color": color, "cmap": color_map}
         stream_kwargs.update(kwargs)
-        pl.streamplot(yi, xi, vi, ui, linewidth=lw2 * 10, density=2, **stream_kwargs, zorder=1)
-        '''
-        quiver_kwargs = {"scale": scale, "angles": 'xy', "scale_units": 'xy', "width": .001, "color": 'black',
-                   "edgecolors": 'k', "headwidth": 4.5, "headlength": 5, "headaxislength": 3, "linewidth": .2}
-        quiver_kwargs.update(kwargs)
-        #pl.quiver(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1], **quiver_kwargs, zorder=1)
-        '''
+        pl.streamplot(yi, xi, vi, ui, linewidth=lw * 10, density=density, **stream_kwargs, zorder=1)
 
         if principal_curve:
             curve = adata.uns['principal_curve']['projections']
