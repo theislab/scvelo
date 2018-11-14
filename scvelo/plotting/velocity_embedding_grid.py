@@ -175,6 +175,26 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
         else: return ax
 
 
+def compute_grid_for_stream(X_grid, V_grid):
+    x, y, u, v = X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1]
+
+    pts = np.vstack((y, x)).T
+    vals = np.vstack((v, u)).T
+
+    n_gridpoints = 50
+    x = np.linspace(x.min(), x.max(), n_gridpoints)
+    y = np.linspace(y.min(), y.max(), n_gridpoints)
+
+    # an (nx * ny, 2) array of x,y coordinates to interpolate at
+    ipts = np.vstack(a.ravel() for a in np.meshgrid(x, y)[::-1]).T
+
+    # an (nx * ny, 2) array of interpolated u, v values
+    v, u = griddata(pts, vals, ipts, method='cubic').T
+    u.shape = v.shape = (n_gridpoints, n_gridpoints)
+
+    return x, y, u, v
+
+
 @doc_params(scatter=doc_scatter)
 def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, scale=1, smooth=.5, min_mass=None,
                               n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, principal_curve=False, color=None, use_raw=None, layer=None,
@@ -227,33 +247,8 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
     if X_grid is None or V_grid is None:
         X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)] if X is None else X[:, :2]
         V_emb = adata.obsm[vkey + '_' + basis][:, get_components(components, basis)] if V is None else V[:, :2]
-        X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=density,
-                                                  smooth=smooth, n_neighbors=n_neighbors, min_mass=0, autoscale=False)
-
-    y, x, v, u = X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1]
-
-    # resample onto a 50x50 grid
-    h = 50
-    nx, ny = h, h
-
-    # (N, 2) arrays of input x,y coords and u,v values
-    pts = np.vstack((x, y)).T
-    vals = np.vstack((u, v)).T
-
-    # the new x and y coordinates for the grid, which will correspond to the
-    # columns and rows of u and v respectively
-    xi = np.linspace(x.min(), x.max(), nx)
-    yi = np.linspace(y.min(), y.max(), ny)
-
-    # an (nx * ny, 2) array of x,y coordinates to interpolate at
-    ipts = np.vstack(a.ravel() for a in np.meshgrid(yi, xi)[::-1]).T
-
-    # an (nx * ny, 2) array of interpolated u, v values
-    ivals = griddata(pts, vals, ipts, method='cubic')
-
-    # reshape interpolated u,v values into (ny, nx) arrays
-    ui, vi = ivals.T
-    ui.shape = vi.shape = (ny, nx)
+        X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=1, smooth=smooth,
+                                                  n_neighbors=n_neighbors, min_mass=-np.inf, autoscale=False)
 
     if len(colors) > 1:
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
@@ -306,12 +301,13 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
     else:
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
-        lw = np.sqrt(ui ** 2 + vi ** 2)  # Line width is velocity norm
-        ui[lw.reshape(h, h) < 1e-5] = np.nan  # mask
+        x, y, u, v = compute_grid_for_stream(X_grid, V_grid)
+        lw = np.sqrt(u ** 2 + v ** 2)
+        u[lw.reshape(u.shape) < 1e-5] = np.nan
 
         stream_kwargs = {"color": color, "cmap": color_map}
         stream_kwargs.update(kwargs)
-        pl.streamplot(yi, xi, vi, ui, linewidth=lw * 10, density=density, **stream_kwargs, zorder=1)
+        pl.streamplot(x, y, u, v, linewidth=lw * 10, density=2 * density, **stream_kwargs, zorder=1)
 
         if principal_curve:
             curve = adata.uns['principal_curve']['projections']
