@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 
-def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=None, min_mass=None):
+def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=None, min_mass=None, autoscale=True):
     # prepare grid
     n_obs, n_dim = X_emb.shape
 
@@ -41,7 +41,7 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
     if min_mass is None: min_mass = np.clip(np.percentile(p_mass, 99) / 100, 1e-2, 1)
     X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
 
-    V_grid /= 3 * quiver_autoscale(X_grid, V_grid)
+    if autoscale: V_grid /= 3 * quiver_autoscale(X_grid, V_grid)
 
     return X_grid, V_grid
 
@@ -225,46 +225,10 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
     color, layer, vkey = colors[0], layers[0], vkeys[0]
 
     if X_grid is None or V_grid is None:
-        X_emb  = adata.obsm['X_' + basis][:, get_components(components)] if X is None else X[:, :2]
-        V_emb = adata.obsm[vkey + '_' + basis] if V is None else V[:, :2]
-        # Compute X_grid V_grid
-
-        # prepare grid
-        n_obs, n_dim = X_emb.shape
-
-        grs = []
-        for dim_i in range(n_dim):
-            m, M = np.min(X_emb[:, dim_i]), np.max(X_emb[:, dim_i])
-            m = m - .01 * np.abs(M - m)
-            M = M + .01 * np.abs(M - m)
-            gr = np.linspace(m, M, 50 * density)
-            grs.append(gr)
-
-        meshes_tuple = np.meshgrid(*grs)
-        X_grid = np.vstack([i.flat for i in meshes_tuple]).T
-
-        # estimate grid velocities
-        if n_neighbors is None: n_neighbors = int(n_obs / 50)
-        nn = NearestNeighbors(n_neighbors=n_neighbors, n_jobs=-1)
-        nn.fit(X_emb)
-        dists, neighs = nn.kneighbors(X_grid)
-
-        scale = np.mean([(g[1] - g[0]) for g in grs]) * smooth
-        weight = normal.pdf(x=dists, scale=scale)
-        p_mass = weight.sum(1)
-
-        V_grid = (V_emb[neighs] * weight[:, :, None]).sum(1) / np.maximum(1, p_mass)[:, None]
-        # No clipping for VeloStream
-        """
-        if min_mass is None: min_mass = np.clip(np.percentile(p_mass, 99) / 100, 1e-2, 1)
-        X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
-        if X_grid.size == 0 or V_grid.size == 0:  # potentially happens for example for draw_graph_fa embedding
-            if X_grid.size == 0 or V_grid.size == 0:
-                X_grid = np.vstack([i.flat for i in meshes_tuple]).T
-                V_grid = (V_emb[neighs] * weight[:, :, None]).sum(1) / np.maximum(1, p_mass)[:, None]
-                min_mass = np.clip(np.percentile(p_mass, 99) / 100, 1e-20, 1)  # greater clip interval
-                X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
-        """
+        X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)] if X is None else X[:, :2]
+        V_emb = adata.obsm[vkey + '_' + basis][:, get_components(components, basis)] if V is None else V[:, :2]
+        X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=density,
+                                                  smooth=smooth, n_neighbors=n_neighbors, min_mass=0, autoscale=False)
 
     y, x, v, u = X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1]
 
