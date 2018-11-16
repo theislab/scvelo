@@ -1,19 +1,29 @@
-from .utils import prod_sum_obs
+from .utils import prod_sum_obs, mean, make_dense
 from scipy.optimize import minimize
+from scipy.sparse import csr_matrix
 import numpy as np
 import warnings
 
 
-def leastsq_NxN(x, y, fit_offset=False):
+def weight_input(x, y, perc=None):
+    if perc is not None:
+        xy_norm = x / np.clip(x.max(0), 1e-3, None) + y / np.clip(y.max(0), 1e-3, None)
+        W = csr_matrix(xy_norm >= np.percentile(xy_norm, perc, axis=0))
+        x, y = W.multiply(x).tocsr(), W.multiply(y).tocsr()
+    return x, y
+
+
+def leastsq_NxN(x, y, fit_offset=False, perc=None):
     """Solution to least squares: gamma = cov(X,Y) / var(X)
     """
+    x, y = weight_input(x, y, perc)
     n_obs, n_var = x.shape
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if fit_offset:
             cov_xy, cov_xx = prod_sum_obs(x, y) / n_obs, prod_sum_obs(x, x) / n_obs
-            mean_x, mean_y = x.mean(0), y.mean(0)
+            mean_x, mean_y = mean(x), mean(y)
             numerator_offset = cov_xx * mean_y - cov_xy * mean_x
             numerator_gamma = cov_xy - mean_x * mean_y
             offset, gamma = (numerator_offset, numerator_gamma) / (cov_xx - mean_x * mean_x)
@@ -24,9 +34,10 @@ def leastsq_NxN(x, y, fit_offset=False):
     return offset, gamma
 
 
-def leastsq_generalized(x, y, x2, y2, res_std=None, res2_std=None, fit_offset=False, fit_offset2=False):
+def leastsq_generalized(x, y, x2, y2, res_std=None, res2_std=None, fit_offset=False, fit_offset2=False, perc=None):
     """Solution to the 2-dim generalized least squares: gamma = inv(X'QX)X'QY
     """
+    x, y = weight_input(x, y, perc)
     n_obs, n_var = x.shape
     offset, offset_ss = np.zeros(n_var, dtype="float32"), np.zeros(n_var, dtype="float32")
     gamma = np.ones(n_var, dtype="float32")
@@ -36,7 +47,7 @@ def leastsq_generalized(x, y, x2, y2, res_std=None, res2_std=None, fit_offset=Fa
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        x, y = np.vstack((x/res_std, x2/res2_std)), np.vstack((y/res_std, y2/res2_std))
+        x, y = np.vstack((make_dense(x)/res_std, x2/res2_std)), np.vstack((make_dense(y)/res_std, y2/res2_std))
 
     if fit_offset and fit_offset2:
         for i in range(n_var):

@@ -3,6 +3,14 @@ import numpy as np
 import warnings
 
 
+def mean(x, axis=0):
+    return x.mean(axis).A1 if issparse(x) else x.mean(axis)
+
+
+def make_dense(X):
+    return X.A if issparse(X) and X.ndim==2 else X.A1 if issparse(X) else X
+
+
 def prod_sum_obs(A, B):
     """dot product and sum over axis 0 (obs) equivalent to np.sum(A * B, 0)
     """
