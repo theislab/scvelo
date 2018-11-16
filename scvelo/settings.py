@@ -135,7 +135,7 @@ def set_rcParams_scvelo(fontsize=8, color_map=None):
     rcParams['grid.color'] = '.8'
 
     # color map
-    rcParams['image.cmap'] = 'RdBu_r' if color_map is None else color_map
+    rcParams['image.cmap'] = rcParams['image.cmap'] if color_map is None else color_map
 
     # frame (mpl default: True)
     global _frameon
@@ -145,28 +145,31 @@ def set_rcParams_scvelo(fontsize=8, color_map=None):
 def set_figure_params(style='scvelo', figsize=None, dpi=None, dpi_save=None, frameon=None, vector_friendly=True,
                       color_map=None, format='pdf', transparent=False, ipython_format='png2x'):
     """Set resolution/size, styling and format of figures.
-    Parameters
+
+    Arguments
     ----------
-    style : `str`, optional (default: `None`)
+    figsize: `[float, float]` (default: `None`)
+        Width and height for default figure size.
+    style : `str` (default: `None`)
         Init default values for ``matplotlib.rcParams`` suited for `scvelo` or `scanpy`.
         Use `None` for the default matplotlib values.
-    dpi : `int`, optional (default: `None`)
+    dpi : `int` (default: `None`)
         Resolution of rendered figures - this influences the size of figures in notebooks.
-    dpi_save : `int`, optional (default: `None`)
+    dpi_save : `int` (default: `None`)
         Resolution of saved figures. This should typically be higher to achieve
         publication quality.
-    frameon : `bool`, optional (default: `None`)
+    frameon : `bool` (default: `None`)
         Add frames and axes labels to scatter plots.
-    vector_friendly : `bool`, optional (default: `True`)
+    vector_friendly : `bool` (default: `True`)
         Plot scatter plots using `png` backend even when exporting as `pdf` or `svg`.
-    color_map : `str`, optional (default: `None`)
+    color_map : `str` (default: `None`)
         Convenience method for setting the default color map.
-    format : {'png', 'pdf', 'svg', etc.}, optional (default: 'pdf')
+    format : {'png', 'pdf', 'svg', etc.} (default: 'pdf')
         This sets the default format for saving figures: `file_format_figs`.
-    transparent : `bool`, optional (default: `True`)
+    transparent : `bool` (default: `True`)
         Save figures with transparent back ground. Sets
         `rcParams['savefig.transparent']`.
-    ipython_format : list of `str`, optional (default: 'png2x')
+    ipython_format : list of `str` (default: 'png2x')
         Only concerns the notebook/IPython environment; see
         `IPython.core.display.set_matplotlib_formats` for more details.
     """

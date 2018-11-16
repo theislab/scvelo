@@ -44,8 +44,16 @@ additional layers (``adata.layers``).
 
 For instance, the data matrices relevant for velocity analysis can be retrieved via
 ``adata.layers['spliced']`` and ``adata.layers['unspliced']``.
+If your adata comes with separate annotations you can add them using, e.g., ``pd.read_csv``::
 
-he typical workflow consists of subsequent calls of preprocessing (``scv.pp.*``), analysis tools (``scv.tl.*``) and plotting (``scv.pl.*``).
+    import pandas as pd
+    anno = pd.read_csv(filename_sample_annotation)
+    adata.uns['spliced'] = anno['spliced']
+    adata.obs['unspliced'] = anno['unspliced']                # numerical annotation of type float
+    # alternatively, you could also set the whole dataframe
+    # adata.uns = anno
+
+The typical workflow consists of subsequent calls of preprocessing (``scv.pp.*``), analysis tools (``scv.tl.*``) and plotting (``scv.pl.*``).
 
 Basic preprocessing
 ^^^^^^^^^^^^^^^^^^^
@@ -58,7 +66,7 @@ These steps are run with the following lines::
     scv.pp.filter_genes_dispersion(adata, **params)
 
 
-I recommend using scanpy_ (which perfectly harmonizes with scVelo) to explore further preprocessing steps (such correcting for batch effects).
+I recommend using scanpy_ (which perfectly harmonizes with scVelo) to explore further preprocessing steps (such as correcting for batch effects).
 
 For processing of spliced and unspliced counts it suffices to compute their moments (which automatically normalizes the counts)::
 

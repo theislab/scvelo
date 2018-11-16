@@ -7,6 +7,17 @@ import numpy as np
 
 def toy_data(n_obs):
     """Random samples from Dentate Gyrus.
+
+    Randomly samples a new dataset of size n_obs from the Dentate Gyrus dataset.
+
+    Arguments
+    ---------
+    n_obs: `int`
+        Size of the sampled dataset
+
+    Returns
+    -------
+    Returns `adata` object
     """
     adata = dentategyrus()
     indices = np.random.choice(adata.n_obs, n_obs)
@@ -18,17 +29,27 @@ def toy_data(n_obs):
 
 def dentategyrus():
     """Dentate Gyrus dataset from Hochgerner et al. (2018).
+
     Dentate gyrus is part of the hippocampus involved in learning, episodic memory formation and spatial coding.
     It is measured using 10X Genomics Chromium and described in Hochgerner et al. (2018).
     The data consists of 25,919 genes across 3,396 cells and provides several interesting characteristics.
+
+    Arguments
+    ---------
+
+
+    Returns
+    -------
+    Returns `adata` object
+
     """
     filename = 'data/DentateGyrus/10X43_1.loom'
     url = 'http://pklab.med.harvard.edu/velocyto/DG1/10X43_1.loom'
     adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
     cleanup(adata, clean='all', keep={'spliced', 'unspliced', 'ambiguous'})
 
-    url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_clusters.npy'
-    url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_umap.npy'
+    url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/write/DG_clusters.npy'
+    url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/write/DG_umap.npy'
 
     adata.obs['louvain'] = load('./data/DentateGyrus/DG_clusters.npy', url_louvain)
     adata.obsm['X_umap'] = load('./data/DentateGyrus/DG_umap.npy', url_umap)
@@ -40,6 +61,15 @@ def dentategyrus():
 def forebrain():
     """Developing human forebrain.
     Forebrain tissue of a week 10 embryo, focusing on the glutamatergic neuronal lineage.
+
+    Arguments
+    ---------
+
+
+    Returns
+    -------
+    Returns `adata` object
+
     """
     filename = 'data/ForebrainGlut/hgForebrainGlut.loom'
     url = 'http://pklab.med.harvard.edu/velocyto/hgForebrainGlut/hgForebrainGlut.loom'

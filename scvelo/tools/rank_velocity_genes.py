@@ -55,32 +55,30 @@ def velocity_clusters(data, vkey='velocity', copy=False):
 
     logg.info('computing velocity clusters', r=True)
 
+    if 'velocity_genes' in adata.var.keys():
+        _adata = adata[:, adata.var['velocity_genes']]
+
+    if 'unspliced' in adata.layers.keys():
+        n_counts = (adata.layers['unspliced'] > 0).sum(0)
+        n_counts = n_counts.A1 if issparse(adata.layers['unspliced']) else n_counts
+        min_counts = min(50, np.percentile(n_counts, 50)) if min_counts is None else min_counts
+        tmp_filter &= (n_counts > min_counts)
+
+    if 'r2' in adata.var.keys():
+        r2 = adata.var.velocity_r2
+        min_r2 = .1 if min_r2 is None else min_r2  # np.percentile(r2[r2 > 0], 50)
+        tmp_filter &= (r2 > min_r2)
+
+    if 'dispersions_norm' in adata.var.keys():
+        dispersions = adata.var.dispersions_norm
+        min_dispersion = 0 if min_dispersion is None else min_dispersion  # np.percentile(dispersions, 20)
+        tmp_filter &= (dispersions > min_dispersion)
+
+
     from .. import AnnData
     vdata = AnnData(adata.layers[vkey])
     vdata.obs = adata.obs.copy()
     vdata.var = adata.var.copy()
-
-    tmp_filter = np.ones(vdata.n_vars, dtype=bool)
-    if 'velocity_genes' in vdata.var.keys():
-        tmp_filter &= vdata.var['velocity_genes']
-
-    if 'unspliced' in vdata.layers.keys():
-        n_counts = (vdata.layers['unspliced'] > 0).sum(0)
-        n_counts = n_counts.A1 if issparse(vdata.layers['unspliced']) else n_counts
-        min_counts = min(50, np.percentile(n_counts, 50))
-        tmp_filter &= (n_counts > min_counts)
-
-    if 'r2' in vdata.var.keys():
-        r2 = vdata.var.velocity_r2
-        min_r2 = np.percentile(r2[r2 > 0], 50)
-        tmp_filter &= (r2 > min_r2)
-
-    if 'dispersions_norm' in vdata.var.keys():
-        dispersions = vdata.var.dispersions_norm
-        min_dispersion = np.percentile(dispersions, 20)
-        tmp_filter &= (dispersions > min_dispersion)
-
-    vdata._inplace_subset_var(tmp_filter)
 
     from ..preprocessing import pca, neighbors
     from . import louvain
@@ -102,9 +100,11 @@ def velocity_clusters(data, vkey='velocity', copy=False):
     return vdata.obs['louvain']
 
 
-def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, min_counts=None, min_r2=None, min_dispersion=None, copy=False):
+def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, min_counts=None, min_r2=None,
+                        min_dispersion=None, copy=False):
     """Rank genes for characterizing groups according to unspliced/spliced correlation and differential expression.
-    Parameters
+
+    Arguments
     ----------
     data : :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -112,18 +112,25 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, min_cou
         Key of velocities computed in `tl.velocity`
     n_genes : `int`, optional (default: 100)
         The number of genes that appear in the returned tables.
-    method : {'t-test', 't-test_overestim_var'} (default: 't-test_overestim_var')
-        If 't-test' uses t-test, if 't-test_overestim_var' overestimates variance of each group.
+    groupby: `str`, `list` or `np.ndarray` (default: `None`)
+        Key of observations grouping to consider.
+    min_counts: `float` (default: None)
+        Minimum count of genes for consideration.
+    min_r2: `float` (default: None)
+        Minimum r2 value of genes for consideration.
+    min_dispersion: `float` (default: None)
+        Minimum dispersion norm value of genes for consideration.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to data.
 
     Returns
     -------
-    Updates `adata` with the following fields.
-    names : structured `np.ndarray` (`.uns['rank_genes_groups']`)
+    Returns or updates `data` with the attributes
+    rank_velocity_genes : `.uns`
         Structured array to be indexed by group id storing the gene
-        names. Ordered according to scores.
-    scores : structured `np.ndarray` (`.uns['rank_genes_groups']`)
-        Structured array to be indexed by group id storing the score for each
-        gene for each group. Ordered according to scores.
+        names and rounded scores. Ordered according to scores.
+    velocity_score : `.var`
+        Storing the exact score for each gene for each group. Ordered according to scores.
 
     """
     adata = data.copy() if copy else data
