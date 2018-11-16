@@ -67,6 +67,7 @@ def velocity_clusters(data, vkey='velocity', copy=False):
         n_counts = (vdata.layers['unspliced'] > 0).sum(0)
         n_counts = n_counts.A1 if issparse(vdata.layers['unspliced']) else n_counts
         min_counts = min(50, np.percentile(n_counts, 50))
+        tmp_filter &= (n_counts > min_counts)
 
     if 'r2' in vdata.var.keys():
         r2 = vdata.var.velocity_r2
@@ -76,6 +77,7 @@ def velocity_clusters(data, vkey='velocity', copy=False):
     if 'dispersions_norm' in vdata.var.keys():
         dispersions = vdata.var.dispersions_norm
         min_dispersion = np.percentile(dispersions, 20)
+        tmp_filter &= (dispersions > min_dispersion)
 
     vdata._inplace_subset_var(tmp_filter)
 
