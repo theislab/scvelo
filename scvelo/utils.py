@@ -13,3 +13,5 @@ from .plotting.utils import is_categorical, clip, interpret_colorkey
 from .plotting.velocity_embedding_grid import compute_velocity_on_grid
 
 from .read_load import clean_obs_names, merge
+
+from scanpy.utils import merge_groups
