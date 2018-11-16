@@ -55,30 +55,29 @@ def velocity_clusters(data, vkey='velocity', copy=False):
 
     logg.info('computing velocity clusters', r=True)
 
-    if 'velocity_genes' in adata.var.keys():
-        _adata = adata[:, adata.var['velocity_genes']]
-
-    if 'unspliced' in adata.layers.keys():
-        n_counts = (adata.layers['unspliced'] > 0).sum(0)
-        n_counts = n_counts.A1 if issparse(adata.layers['unspliced']) else n_counts
-        min_counts = min(50, np.percentile(n_counts, 50)) if min_counts is None else min_counts
-        tmp_filter &= (n_counts > min_counts)
-
-    if 'r2' in adata.var.keys():
-        r2 = adata.var.velocity_r2
-        min_r2 = .1 if min_r2 is None else min_r2  # np.percentile(r2[r2 > 0], 50)
-        tmp_filter &= (r2 > min_r2)
-
-    if 'dispersions_norm' in adata.var.keys():
-        dispersions = adata.var.dispersions_norm
-        min_dispersion = 0 if min_dispersion is None else min_dispersion  # np.percentile(dispersions, 20)
-        tmp_filter &= (dispersions > min_dispersion)
-
-
     from .. import AnnData
     vdata = AnnData(adata.layers[vkey])
     vdata.obs = adata.obs.copy()
     vdata.var = adata.var.copy()
+    tmp_filter = np.ones(vdata.n_vars, dtype=bool)
+    if 'velocity_genes' in vdata.var.keys():
+        tmp_filter &= vdata.var['velocity_genes']
+
+    if 'unspliced' in vdata.layers.keys():
+        n_counts = (vdata.layers['unspliced'] > 0).sum(0)
+        n_counts = n_counts.A1 if issparse(vdata.layers['unspliced']) else n_counts
+        min_counts = min(50, np.percentile(n_counts, 50))
+
+    if 'r2' in vdata.var.keys():
+        r2 = vdata.var.velocity_r2
+        min_r2 = np.percentile(r2[r2 > 0], 50)
+        tmp_filter &= (r2 > min_r2)
+
+    if 'dispersions_norm' in vdata.var.keys():
+        dispersions = vdata.var.dispersions_norm
+        min_dispersion = np.percentile(dispersions, 20)
+
+    vdata._inplace_subset_var(tmp_filter)
 
     from ..preprocessing import pca, neighbors
     from . import louvain
