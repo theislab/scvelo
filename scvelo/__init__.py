@@ -4,7 +4,7 @@ from .get_version import get_version
 __version__ = get_version(__file__)
 del get_version
 
-from .read_load import AnnData, read, read_loom, load
+from .read_load import AnnData, read, read_loom, load, read_csv
 from .preprocessing.moments import Neighbors
 from .tools.run import run_all
 from .tools.velocity import Velocity

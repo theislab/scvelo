@@ -27,17 +27,34 @@ def load(filename, backup_url=None, **kwargs):
                            .format(filename, numpy_ext|pandas_ext))
 
 
-def clean_obs_names(adata, base='[AGTCBDHKMNRSVWY]', ID_length=12, copy=False):
-    """clean in obs_names and append the rest to obs.sample as follows:
+read_csv = load
 
-        obs_name "SomePrefix_AGTGATCCATG_SomeSuffix" is changed into
-        obs_name "AGTGATCCATG" and obs.sample "SomePrefix_SomeSuffix"
 
-        according to https://www.neb.com/tools-and-resources/usage-guidelines/the-genetic-code
+def clean_obs_names(data, base='[AGTCBDHKMNRSVWY]', ID_length=12, copy=False):
+    """Cleans up the obs_names and identifies sample names.
+    For example an obs_name 'samlple1_AGTCdate' is changed to 'AGTC' of the sample 'sample1_date'.
+    The sample name is then saved in obs['sample_batch'].
+    The genetic codes are identified according to according to https://www.neb.com/tools-and-resources/usage-guidelines/the-genetic-code.
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    base: `str` (default: `[AGTCBDHKMNRSVWY]`)
+        Genetic code letters to be identified.
+    ID_length: `int` (default: 12)
+        Length of the Genetic Codes in the samples.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to adata.
+
+    Returns
+    -------
+    Returns or updates `adata` with the attributes
+    obs_names: list
+        updated names of the observations
+    sample_batch: `.obs`
+        names of the identified sample batches
     """
-    # change cell ID "SomePrefix_AGTGATCCATG_SomeSuffix" into:
-    # cell ID "AGTGATCCATG" of sample "SomePrefix_SomeSuffix"
-    # GENETIC CODE: according to https://www.neb.com/tools-and-resources/usage-guidelines/the-genetic-code
     def get_base_list(name, base):
         base_list = base
         while re.search(base_list + base, name) is not None:
@@ -45,6 +62,8 @@ def clean_obs_names(adata, base='[AGTCBDHKMNRSVWY]', ID_length=12, copy=False):
         if len(base_list) == 0:
             raise ValueError('Encountered an invalid ID in obs_names: ', name)
         return base_list
+
+    adata = data.copy() if copy else data
 
     names = adata.obs_names
     base_list = get_base_list(names[0], base)
@@ -79,7 +98,20 @@ def clean_obs_names(adata, base='[AGTCBDHKMNRSVWY]', ID_length=12, copy=False):
     return adata if copy else None
 
 
-def merge(adata, ldata):
+def merge(adata, ldata, copy=True):
+    """Merges two annotated data matrices.
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    ldata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+
+    Returns
+    -------
+    Returns a :class:`~anndata.AnnData` object
+    """
     common_obs = adata.obs_names.intersection(ldata.obs_names)
 
     if len(common_obs) == 0:
@@ -111,7 +143,5 @@ def merge(adata, ldata):
         else:
             raise ValueError('Variable names are not identical.')
 
-    return _adata
-
-
-
+    if not copy: adata = _adata
+    return _adata if copy else None
