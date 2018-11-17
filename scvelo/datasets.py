@@ -48,7 +48,7 @@ def dentategyrus():
     url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_clusters.npy'
     url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_umap.npy'
 
-    adata.obs['louvain'] = load('./data/DentateGyrus/DG_clusters.npy', url_louvain)
+    adata.obs['clusters'] = load('./data/DentateGyrus/DG_clusters.npy', url_louvain)
     adata.obsm['X_umap'] = load('./data/DentateGyrus/DG_umap.npy', url_umap)
     adata._sanitize()
 
