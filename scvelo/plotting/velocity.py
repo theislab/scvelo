@@ -11,8 +11,9 @@ import matplotlib.pyplot as pl
 from scipy.sparse import issparse
 
 
-def velocity(adata, var_names=None, basis=None, mode=None, fits='all', layers='all', use_raw=False, color=None, color_map='RdBu_r',
-             perc=[2,98], size=1, alpha=.5, fontsize=None, figsize=None, dpi=None, show=True, save=None, ax=None, **kwargs):
+def velocity(adata, var_names=None, basis=None, mode=None, fits='all', layers='all', use_raw=False, color=None,
+             color_map='RdBu_r', perc=[2,98], size=1, alpha=.5, fontsize=None, figsize=None, dpi=None, show=True,
+             save=None, ax=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
     The phase plot shows spliced against unspliced expressions with steady-state fit.
@@ -105,8 +106,8 @@ def velocity(adata, var_names=None, basis=None, mode=None, fits='all', layers='a
         for l, layer in enumerate(layers):
             ax = pl.subplot(gs[v*n_col + l + 1])
             title = 'expression' if layer == skey else layer
-            scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map, title=title,
-                    perc=perc, fontsize=fontsize, size=size, alpha=alpha, show=False, ax=ax, save=False, **kwargs)
+            scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map, title=title, perc=perc,
+                    fontsize=fontsize, size=size, alpha=alpha, frameon=False, show=False, ax=ax, save=False, **kwargs)
 
         if mode == 'stochastic':
             ss, us = second_order_moments(_adata)
