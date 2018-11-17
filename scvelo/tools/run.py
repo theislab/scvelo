@@ -132,16 +132,20 @@ def convert_to_loom(adata, basis=None):
             self.extrapolate_cell_at_t()
             print("Number of genes to be used:", self.S.shape[0])
 
-        def velocity_graph(self, n_neighbors=100, transform='linear', sampled_fraction=.5, expression_scaling=False, sigma_corr=.05):
+        def velocity_graph(self, n_neighbors=100, transform='linear', sampled_fraction=.5, expression_scaling=False,
+                           sigma_corr=.05, calculate_randomized=False):
             if not hasattr(self, 'ts'):
                 raise ValueError('Compute embedding first.')
             else:
                 # counterpart to scv.tl.velocity_graph()
-                self.estimate_transition_prob(hidim="Sx_sz", embed="ts", transform=transform, calculate_randomized=False,
-                                              n_neighbors=n_neighbors, knn_random=True, sampled_fraction=sampled_fraction)
+                self.estimate_transition_prob(hidim="Sx_sz", embed="ts", transform=transform, n_neighbors=n_neighbors,
+                                              knn_random=True, sampled_fraction=sampled_fraction, calculate_randomized=calculate_randomized)
 
                 # counterpart to scv.tl.velocity_embedding()
                 self.calculate_embedding_shift(sigma_corr=sigma_corr, expression_scaling=expression_scaling)
+
+        def velocity_embedding(self, smooth=0.5, steps=(50, 50), n_neighbors=100):
+            self.calculate_grid_arrows(smooth=smooth, steps=steps, n_neighbors=n_neighbors)
 
         def run_all(self, min_counts=3, min_counts_u=3, n_pcs=30, n_neighbors=30, n_neighbors_graph=100,
                     n_top_genes=None, fit_offset=False, limit_gamma=False, transform='linear', expression_scaling=False,):
@@ -156,7 +160,7 @@ def convert_to_loom(adata, basis=None):
             print('Imputation: ' + str(round(time() - timestamp, 2)))
             timestamp = time()
 
-            self.velocity(limit_gamma=limit_gamma, fit_offset=fit_offset)
+            self.velocity_estimation(limit_gamma=limit_gamma, fit_offset=fit_offset)
             print('Velocity Estimation: ' + str(round(time() - timestamp, 2)))
             timestamp = time()
 
