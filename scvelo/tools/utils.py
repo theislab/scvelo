@@ -104,3 +104,16 @@ def most_common_in_list(lst):
     lst = list(lst)
     return max(set(lst), key=lst.count)
 
+
+def randomized_velocity(adata, vkey='velocity', add_key='velocity_random'):
+    V_rnd = adata.layers[vkey].copy()
+    for i in range(V_rnd.shape[1]):
+        np.random.shuffle(V_rnd[:, i])
+        V_rnd[:, i] = V_rnd[:, i] * np.random.choice(np.array([+1, -1]), size=V_rnd.shape[0])
+    adata.layers[add_key] = V_rnd
+
+    from .velocity_graph import velocity_graph
+    from .velocity_embedding import velocity_embedding
+
+    velocity_graph(adata, vkey=add_key)
+    velocity_embedding(adata, vkey=add_key, autoscale=False)
