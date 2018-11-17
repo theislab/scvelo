@@ -51,12 +51,9 @@ Basic preprocessing
 ^^^^^^^^^^^^^^^^^^^
 
 You are probably familiar with preprocessing. The very basic steps include gene selection by detection and variability, and normalization of each cell by total counts.
-These steps are run with the following lines::
+Simply run::
 
-    scv.pp.filter_genes(adata, **params)
-    scv.pp.normalize_per_cell(adata, **params)
-    scv.pp.filter_genes_dispersion(adata, **params)
-
+    scv.pp.filter_and_normalize(adata, **params)
 
 I recommend using scanpy_ (which perfectly harmonizes with scVelo) to explore further preprocessing steps (such as correcting for batch effects).
 
@@ -75,7 +72,6 @@ Estimating the velocities for each individual cell is done in a single line::
 
     scv.tl.velocity(adata, mode='stochastic', **params)
 
-
 The velocities are vectors in gene expression space obtained by using a closed-form solution that
 solves a stochastic model of transcriptional dynamics. The stochastic model incorporates intrinsic expression variability.
 The solution to the deterministic model is obtained by setting mode to 'deterministic'.
@@ -87,12 +83,9 @@ Given these velocities we are interested in cell transitions that are likely. Th
 
    scv.tl.velocity_graph(adata, **params)
 
-
-
 Using the graph you can then project the velocities into any embedding (such as UMAP, e.g. obtained with scanpy_)::
 
    scv.tl.velocity_embedding(adata, basis='umap', **params)
-
 
 Visualization
 ^^^^^^^^^^^^^
@@ -103,7 +96,6 @@ The velocities for all individual cells can be visualized using::
 For big datasets it might be useful to visualize the velocities on a grid::
 
    scv.pl.velocity_embedding_grid(adata, basis='umap', **params)
-
 
 
 .. _Miniconda: http://conda.pydata.org/miniconda.html
