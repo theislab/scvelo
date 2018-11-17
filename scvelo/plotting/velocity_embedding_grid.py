@@ -197,7 +197,7 @@ def compute_grid_for_stream(X_grid, V_grid):
 
 @doc_params(scatter=doc_scatter)
 def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, scale=1, smooth=.5, min_mass=None,
-                              n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, principal_curve=False, color=None, use_raw=None, layer=None,
+                              n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, linewidth=1, color=None, use_raw=None, layer=None,
                               color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
                               groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                               legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
@@ -254,7 +254,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
         for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0] * len(colors), figsize[1]), dpi=dpi))):
             velocity_embedding_stream(adata, basis=basis, vkey=vkey, layer=layer, density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
                                     perc=perc, color=colors[i], min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
-                                    principal_curve=principal_curve, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
+                                    use_raw=use_raw, sort_order=sort_order, alpha=alpha, linewidth=linewidth,
                                     groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                                     legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                                     color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
@@ -270,7 +270,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
         for i, gs in enumerate(pl.GridSpec(1, len(layers), pl.figure(None, (figsize[0] * len(layers), figsize[1]), dpi=dpi))):
             velocity_embedding_stream(adata, basis=basis, vkey=vkey, layer=layers[i], density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
                                     perc=perc, color=color, min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
-                                    principal_curve=principal_curve, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
+                                    use_raw=use_raw, sort_order=sort_order, alpha=alpha, linewidth=linewidth,
                                     groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                                     legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                                     color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
@@ -286,7 +286,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
         for i, gs in enumerate(pl.GridSpec(1, len(vkeys), pl.figure(None, (figsize[0] * len(vkeys), figsize[1]), dpi=dpi))):
             velocity_embedding_stream(adata, basis=basis, vkey=vkeys[i], layer=layer, density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
                                     perc=perc, color=color, min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
-                                    principal_curve=principal_curve, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
+                                    use_raw=use_raw, sort_order=sort_order, alpha=alpha, linewidth=linewidth,
                                     groups=groups, components=components, projection=projection, legend_loc=legend_loc,
                                     legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
                                     color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
@@ -304,14 +304,9 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
         lw = np.sqrt(u ** 2 + v ** 2)
         u[lw.reshape(u.shape) < 1e-5] = np.nan
 
-        stream_kwargs = {"color": color, "cmap": color_map}
+        stream_kwargs = {"linewidth": 8 * lw * linewidth, "density": 2 * density}
         stream_kwargs.update(kwargs)
-        pl.streamplot(x, y, u, v, linewidth=lw * 10, density=2 * density, **stream_kwargs, zorder=1)
-
-        if principal_curve:
-            curve = adata.uns['principal_curve']['projections']
-            pl.plot(curve[:, 0], curve[:, 1], c="w", lw=6, zorder=2)
-            pl.plot(curve[:, 0], curve[:, 1], c="k", lw=3, zorder=3)
+        pl.streamplot(x, y, u, v, color='grey', zorder=3, **stream_kwargs)
 
         size = default_size(adata) if size is None else size
         ax = scatter(adata, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
