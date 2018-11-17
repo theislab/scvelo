@@ -6,6 +6,19 @@ import numpy as np
 
 
 def toy_data(n_obs):
+    """
+    Randomly samples a new dataset of size n_obs from the Dentate Gyrus dataset.
+
+    Arguments
+    ---------
+    n_obs: `int`
+        Size of the sampled dataset
+
+    Returns
+    -------
+    Returns `adata` object
+    """
+
     """Random samples from Dentate Gyrus.
     """
     adata = dentategyrus()
@@ -18,9 +31,14 @@ def toy_data(n_obs):
 
 def dentategyrus():
     """Dentate Gyrus dataset from Hochgerner et al. (2018).
+
     Dentate gyrus is part of the hippocampus involved in learning, episodic memory formation and spatial coding.
     It is measured using 10X Genomics Chromium and described in Hochgerner et al. (2018).
     The data consists of 25,919 genes across 3,396 cells and provides several interesting characteristics.
+
+    Returns
+    -------
+    Returns `adata` object
     """
     filename = 'data/DentateGyrus/10X43_1.loom'
     url = 'http://pklab.med.harvard.edu/velocyto/DG1/10X43_1.loom'
@@ -40,6 +58,10 @@ def dentategyrus():
 def forebrain():
     """Developing human forebrain.
     Forebrain tissue of a week 10 embryo, focusing on the glutamatergic neuronal lineage.
+
+    Returns
+    -------
+    Returns `adata` object
     """
     filename = 'data/ForebrainGlut/hgForebrainGlut.loom'
     url = 'http://pklab.med.harvard.edu/velocyto/hgForebrainGlut/hgForebrainGlut.loom'

@@ -8,6 +8,25 @@ import numpy as np
 
 
 def velocity_confidence(data, vkey='velocity', copy=False):
+    """Computes the confidences according to the velocity for each cell.
+
+    Arguments
+    ---------
+    data: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    vkey: `str` (default: `'velocity'`)
+        Name of velocity estimates to be used.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to adata.
+
+    Returns
+    -------
+    Returns or updates `adata` with the attributes
+    velocity_length: `.obs`
+        Length of the velocity vectors for each individual cell
+    velocity_confidence: `.obs`
+        Confidence for each cell
+    """
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
         raise ValueError(
@@ -35,6 +54,25 @@ def velocity_confidence(data, vkey='velocity', copy=False):
 
 
 def velocity_confidence_transition(data, vkey='velocity', scale=10, copy=False):
+    """Computes the confidences of transition according to the velocity for each cell.
+
+    Arguments
+    ---------
+    data: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    vkey: `str` (default: `'velocity'`)
+        Name of velocity estimates to be used.
+    scale: `float` (default: 10)
+        Scale parameter of gaussian kernel.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to adata.
+
+    Returns
+    -------
+    Returns or updates `adata` with the attributes
+    velocity_confidence_transition: `.obs`
+        Confidence of transition for each cell
+    """
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
         raise ValueError(

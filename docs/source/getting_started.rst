@@ -58,7 +58,7 @@ These steps are run with the following lines::
     scv.pp.filter_genes_dispersion(adata, **params)
 
 
-I recommend using scanpy_ (which perfectly harmonizes with scVelo) to explore further preprocessing steps (such correcting for batch effects).
+I recommend using scanpy_ (which perfectly harmonizes with scVelo) to explore further preprocessing steps (such as correcting for batch effects).
 
 For processing of spliced and unspliced counts it suffices to compute their moments (which automatically normalizes the counts)::
 

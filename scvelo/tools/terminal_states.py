@@ -30,6 +30,33 @@ def eigs(T, k=10, eps=1e-3, perc=None):
 def terminal_states(data, vkey='velocity', self_transitions=False, basis=None, weight_diffusion=0, scale_diffusion=1,
                     eps=1e-3, copy=False):
     """Computes terminal states (root and end points) via eigenvalue decomposition.
+
+    Arguments
+    ---------
+    data: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    vkey: `str` (default: `'velocity'`)
+        Name of velocity estimates to be used.
+    self_transitions: `bool` (default: `False`)
+        Allow transitions from one node to itself.
+    basis: `str` (default: `None`)
+        Basis to use.
+    weight_diffusion: `float` (default: 0)
+        Relative weight to be given to diffusion kernel (Brownian motion)
+    scale_diffusion: `float` (default: 1)
+        Scale of diffusion kernel.
+    eps: `float` (default: 1e-3)
+        Tolerance for eigenvalue selection.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to data.
+
+    Returns
+    -------
+    Returns or updates `data` with the attributes
+    root: `.obs`
+        sparse matrix with transition probabilities.
+    end: `.obs`
+        sparse matrix with transition probabilities.
     """
     adata = data.copy() if copy else data
     connectivities = get_connectivities(adata, 'distances')
