@@ -47,7 +47,7 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale=1, smooth=.5, min_mass=None,
+def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale=1, smooth=.5, min_mass=None, autoscale=True,
                             n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, principal_curve=False, color=None, use_raw=None, layer=None,
                             color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
                             groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
@@ -98,7 +98,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
     if X_grid is None or V_grid is None:
         X_emb  = adata.obsm['X_' + basis][:, get_components(components, basis)] if X is None else X[:, :2]
         V_emb = adata.obsm[vkey + '_' + basis][:, get_components(components, basis)] if V is None else V[:, :2]
-        X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=density,
+        X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=density, autoscale=autoscale,
                                                   smooth=smooth, n_neighbors=n_neighbors, min_mass=min_mass)
 
     if len(colors) > 1:
@@ -108,7 +108,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
                                     perc=perc, color=colors[i], min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
                                     principal_curve=principal_curve, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
                                     groups=groups, components=components, projection=projection, legend_loc=legend_loc,
-                                    legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
+                                    legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, autoscale=autoscale,
                                     color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
                                     left_margin=left_margin, size=size, title=title, show=False, figsize=figsize,
                                     dpi=dpi, save=None, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel,
@@ -124,7 +124,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
                                     perc=perc, color=color, min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
                                     principal_curve=principal_curve, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
                                     groups=groups, components=components, projection=projection, legend_loc=legend_loc,
-                                    legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
+                                    legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, autoscale=autoscale,
                                     color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
                                     left_margin=left_margin, size=size, title=title, show=False, figsize=figsize,
                                     dpi=dpi, save=None, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel,
@@ -136,11 +136,11 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
     elif len(vkeys) > 1:
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
         for i, gs in enumerate(pl.GridSpec(1, len(vkeys), pl.figure(None, (figsize[0] * len(vkeys), figsize[1]), dpi=dpi))):
-            velocity_embedding_grid(adata, basis=basis, vkey=vkeys[i], layer=layer, density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
+            velocity_embedding_grid(adata, basis=basis, vkey=vkeys[i], layer=layer, density=density, scale=scale,
                                     perc=perc, color=color, min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
                                     principal_curve=principal_curve, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
                                     groups=groups, components=components, projection=projection, legend_loc=legend_loc,
-                                    legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
+                                    legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, autoscale=autoscale,
                                     color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
                                     left_margin=left_margin, size=size, title=title, show=False, figsize=figsize,
                                     dpi=dpi, save=None, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel,

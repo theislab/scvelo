@@ -19,7 +19,7 @@ def quiver_autoscale(X_emb, V_emb):
 
 
 def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
-                       retain_scale=False, all_comps=True, copy=False):
+                       autoscale=True, retain_scale=False, all_comps=True, copy=False):
     """Computes the single cell velocities in the embedding
 
     Arguments
@@ -78,7 +78,7 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
         cos_proj = (adata.layers[vkey] * delta).sum(1) / norm(delta)
         V_emb *= np.clip(cos_proj[:, None] * 10, 0, 1)
 
-    V_emb /= (3 * quiver_autoscale(X_emb, V_emb))
+    if autoscale: V_emb /= (3 * quiver_autoscale(X_emb, V_emb))
 
     vkey += '_' + basis
     adata.obsm[vkey] = V_emb
