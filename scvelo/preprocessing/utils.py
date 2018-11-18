@@ -1,7 +1,7 @@
 from .. import logging as logg
 
 import numpy as np
-from scipy.sparse import issparse
+from scipy.sparse import issparse, csr_matrix
 from scanpy.api.pp import log1p
 
 
@@ -66,6 +66,29 @@ def cleanup(data, clean='layers', keep=None, copy=False):
             if key not in keep: del adata.layers[key]
 
     return adata if copy else None
+
+
+def X_is_logarithmized(adata):
+    idx = np.random.choice(adata.n_obs, 300)
+    X, S = adata.X[idx], adata.layers['spliced'][idx].copy()
+    if issparse(S) or issparse(X):
+        S, S_log = csr_matrix(S), csr_matrix(X)
+        S.data = 1 / np.log1p(S.data)
+        W = S_log.multiply(S)
+        W.data /= np.mean(W.data)
+        val = max(np.max(W.data), np.max(1 / W.data))
+    else:
+        S = 1 / np.log1p(S)
+        S[np.isinf(S)] = 0
+
+        W = X * S
+        W /= np.mean(W[W > 0])
+        W_inv = 1 / W
+        W_inv[np.isinf(W_inv)] = 0
+
+        val = max(np.max(W), np.max(W_inv))
+
+    return val < 3  # approx. 3 * standard deviation
 
 
 def get_size(adata, layer):

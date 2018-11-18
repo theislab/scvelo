@@ -1,6 +1,6 @@
 from .. import settings
 from .. import logging as logg
-from .utils import normalize_layers
+from .utils import normalize_layers, X_is_logarithmized
 
 from scanpy.api import Neighbors
 from scanpy.api.pp import pca
@@ -121,6 +121,9 @@ def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', use_rep=None,
 
     if 'spliced' not in adata.layers.keys() or 'unspliced' not in adata.layers.keys():
         raise ValueError('Could not find spliced / unspliced counts.')
+
+    if not X_is_logarithmized(adata):
+        logg.info('Consider to logarithmize adata.X with `scv.pp.log1p` for better results.')
 
     if 'neighbors' not in adata.uns.keys() or n_neighbors > adata.uns['neighbors']['params']['n_neighbors']:
         if 'X_pca' not in adata.obsm.keys() or n_pcs > adata.obsm['X_pca'].shape[1]:
