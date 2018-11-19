@@ -19,7 +19,7 @@ def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):
     adata._sanitize()
     if len(map_groups) != len(adata.obs[key].cat.categories):
         map_coarse = {}
-        for c in adata.obs['days'].cat.categories:
+        for c in adata.obs[key].cat.categories:
             for group in map_groups:
                 if any(cluster == c for cluster in map_groups[group]): map_coarse[c] = group
             if c not in map_coarse: map_coarse[c] = c
