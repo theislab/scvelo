@@ -93,7 +93,11 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, X
         else: return ax
 
     else:
-        ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
+        if projection == '3d':
+            from mpl_toolkits.mplot3d import Axes3D
+            ax = pl.figure(None, figsize, dpi=dpi).gca(projection=projection) if ax is None else ax
+        else:
+            ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
         color, layer, vkey = colors[0], layers[0], vkeys[0]
         ix_choice = np.random.choice(adata.n_obs, size=int(density * adata.n_obs), replace=False)

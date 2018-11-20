@@ -298,7 +298,11 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
         else: return ax
 
     else:
-        ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
+        if projection == '3d':
+            from mpl_toolkits.mplot3d import Axes3D
+            ax = pl.figure(None, figsize, dpi=dpi).gca(projection=projection) if ax is None else ax
+        else:
+            ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
         x, y, u, v = compute_grid_for_stream(X_grid, V_grid)
         lw = np.sqrt(u ** 2 + v ** 2)

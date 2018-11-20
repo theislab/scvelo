@@ -78,7 +78,11 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
         else: return ax
 
     else:
-        ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
+        if projection == '3d':
+            from mpl_toolkits.mplot3d import Axes3D
+            ax = pl.figure(None, figsize, dpi=dpi).gca(projection=projection) if ax is None else ax
+        else:
+            ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
         color, layer = colors[0], layers[0]
         color = default_color(adata) if color is None else color
         color_map = default_color_map(adata, color) if color_map is None else color_map
