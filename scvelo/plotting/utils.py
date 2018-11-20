@@ -149,7 +149,7 @@ def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, yla
     colors = palette if colors is None or len(colors) < len(arrays) else colors
 
     for i, array in enumerate(arrays):
-        pl.hist(array, bins=bins, alpha=alpha, color=colors[i], label=labels[i] if labels is not None else None)
+        pl.hist(array[np.isfinite(array)], bins=bins, alpha=alpha, color=colors[i], label=labels[i] if labels is not None else None)
     pl.legend()
     pl.xlabel(xlabel if xlabel is not None else '')
     pl.ylabel(ylabel if xlabel is not None else '')
