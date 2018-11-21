@@ -5,14 +5,13 @@ from .docs import doc_scatter, doc_params
 
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import norm as normal
-from scipy.interpolate import griddata
 from matplotlib import rcParams
 import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
 
 
-def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=None, min_mass=None, autoscale=True):
+def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=None, min_mass=None, autoscale=True, adjust_for_stream=False):
     # prepare grid
     n_obs, n_dim = X_emb.shape
 
@@ -38,10 +37,19 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
     p_mass = weight.sum(1)
 
     V_grid = (V_emb[neighs] * weight[:, :, None]).sum(1) / np.maximum(1, p_mass)[:, None]
-    if min_mass is None: min_mass = np.clip(np.percentile(p_mass, 99) / 100, 1e-2, 1)
-    X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
 
-    if autoscale: V_grid /= 3 * quiver_autoscale(X_grid, V_grid)
+    if adjust_for_stream:
+        X_grid = np.stack([np.unique(X_grid[:, 0]), np.unique(X_grid[:, 1])])
+        ns = int(np.sqrt(len(V_grid[:, 0])))
+        V_grid = V_grid.T.reshape(2, ns, ns)
+
+        mass = np.sqrt((V_grid ** 2).sum(0))
+        V_grid[0][mass.reshape(V_grid[0].shape) < 1e-5] = np.nan
+    else:
+        if min_mass is None: min_mass = np.clip(np.percentile(p_mass, 99) / 100, 1e-2, 1)
+        X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
+
+        if autoscale: V_grid /= 3 * quiver_autoscale(X_grid, V_grid)
 
     return X_grid, V_grid
 
@@ -101,53 +109,28 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
         X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=density, autoscale=autoscale,
                                                   smooth=smooth, n_neighbors=n_neighbors, min_mass=min_mass)
 
-    if len(colors) > 1:
-        figsize = rcParams['figure.figsize'] if figsize is None else figsize
-        for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0] * len(colors), figsize[1]), dpi=dpi))):
-            velocity_embedding_grid(adata, basis=basis, vkey=vkey, layer=layer, density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
-                                    perc=perc, color=colors[i], min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
-                                    principal_curve=principal_curve, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
-                                    groups=groups, components=components, projection=projection, legend_loc=legend_loc,
-                                    legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, autoscale=autoscale,
-                                    color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
-                                    left_margin=left_margin, size=size, title=title, show=False, figsize=figsize,
-                                    dpi=dpi, save=None, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel,
-                                    colorbar=colorbar, fontsize=fontsize, **kwargs)
-        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
+    scatter_kwargs = {"basis": basis, "perc": perc, "use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
+                      "components": components, "projection": projection, "legend_loc": legend_loc, "groups": groups,
+                      "legend_fontsize": legend_fontsize, "legend_fontweight": legend_fontweight, "palette": palette,
+                      "color_map": color_map, "frameon": frameon, "title": title, "xlabel": xlabel, "ylabel": ylabel,
+                      "right_margin": right_margin, "left_margin": left_margin, "colorbar": colorbar, "dpi": dpi,
+                      "fontsize": fontsize, "show": False, "save": None}
 
-    elif len(layers) > 1:
+    multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else vkeys if len(vkeys) > 1 else None
+    if multikey is not None:
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
-        for i, gs in enumerate(pl.GridSpec(1, len(layers), pl.figure(None, (figsize[0] * len(layers), figsize[1]), dpi=dpi))):
-            velocity_embedding_grid(adata, basis=basis, vkey=vkey, layer=layers[i], density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
-                                    perc=perc, color=color, min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
-                                    principal_curve=principal_curve, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
-                                    groups=groups, components=components, projection=projection, legend_loc=legend_loc,
-                                    legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, autoscale=autoscale,
-                                    color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
-                                    left_margin=left_margin, size=size, title=title, show=False, figsize=figsize,
-                                    dpi=dpi, save=None, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel,
-                                    colorbar=colorbar, fontsize=fontsize, **kwargs)
+        for i, gs in enumerate(pl.GridSpec(1, len(multikey), pl.figure(None, (figsize[0] * len(multikey), figsize[1]), dpi=dpi))):
+            velocity_embedding_grid(adata, X_grid=X_grid, V_grid=V_grid, density=density, scale=scale, size=size,
+                                    min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
+                                    principal_curve=principal_curve, autoscale=autoscale, ax=pl.subplot(gs),
+                                    color=colors[i] if len(colors) > 1 else color,
+                                    layer=layers[i] if len(layers) > 1 else layer,
+                                    vkey=vkeys[i] if len(vkeys) > 1 else vkey, **scatter_kwargs, **kwargs)
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
-
-    elif len(vkeys) > 1:
-        figsize = rcParams['figure.figsize'] if figsize is None else figsize
-        for i, gs in enumerate(pl.GridSpec(1, len(vkeys), pl.figure(None, (figsize[0] * len(vkeys), figsize[1]), dpi=dpi))):
-            velocity_embedding_grid(adata, basis=basis, vkey=vkeys[i], layer=layer, density=density, scale=scale,
-                                    perc=perc, color=color, min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
-                                    principal_curve=principal_curve, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
-                                    groups=groups, components=components, projection=projection, legend_loc=legend_loc,
-                                    legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, autoscale=autoscale,
-                                    color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
-                                    left_margin=left_margin, size=size, title=title, show=False, figsize=figsize,
-                                    dpi=dpi, save=None, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel,
-                                    colorbar=colorbar, fontsize=fontsize, **kwargs)
-        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
+        if show:
+            pl.show()
+        else:
+            return ax
 
     else:
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
@@ -163,41 +146,18 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
             pl.plot(curve[:, 0], curve[:, 1], c="k", lw=3, zorder=5)
 
         size = default_size(adata) if size is None else size
-        ax = scatter(adata, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
-                     perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
-                     colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=ax,
-                     use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
-                     legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
-                     palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)
+        ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, **scatter_kwargs, **kwargs)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
-
-
-def compute_grid_for_stream(X_grid, V_grid):
-    x, y, u, v = X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1]
-
-    pts = np.vstack((y, x)).T
-    vals = np.vstack((v, u)).T
-
-    n_gridpoints = 50
-    x = np.linspace(x.min(), x.max(), n_gridpoints)
-    y = np.linspace(y.min(), y.max(), n_gridpoints)
-
-    # an (nx * ny, 2) array of x,y coordinates to interpolate at
-    ipts = np.vstack(a.ravel() for a in np.meshgrid(x, y)[::-1]).T
-
-    # an (nx * ny, 2) array of interpolated u, v values
-    v, u = griddata(pts, vals, ipts, method='cubic').T
-    u.shape = v.shape = (n_gridpoints, n_gridpoints)
-
-    return x, y, u, v
+        if show:
+            pl.show()
+        else:
+            return ax
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, scale=1, smooth=.5, min_mass=None,
-                              n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, linewidth=1, color=None, use_raw=None, layer=None,
+def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, scale=1, smooth=.5, linewidth=1,
+                              n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, color=None, use_raw=None, layer=None,
                               color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
                               groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
                               legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
@@ -248,54 +208,31 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
         X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)] if X is None else X[:, :2]
         V_emb = adata.obsm[vkey + '_' + basis][:, get_components(components, basis)] if V is None else V[:, :2]
         X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=1, smooth=smooth,
-                                                  n_neighbors=n_neighbors, min_mass=-np.inf, autoscale=False)
-    if len(colors) > 1:
-        figsize = rcParams['figure.figsize'] if figsize is None else figsize
-        for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0] * len(colors), figsize[1]), dpi=dpi))):
-            velocity_embedding_stream(adata, basis=basis, vkey=vkey, layer=layer, density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
-                                    perc=perc, color=colors[i], min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
-                                    use_raw=use_raw, sort_order=sort_order, alpha=alpha, linewidth=linewidth,
-                                    groups=groups, components=components, projection=projection, legend_loc=legend_loc,
-                                    legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
-                                    color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
-                                    left_margin=left_margin, size=size, title=title, show=False, figsize=figsize,
-                                    dpi=dpi, save=None, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel,
-                                    colorbar=colorbar, fontsize=fontsize, **kwargs)
-        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
+                                                  n_neighbors=n_neighbors, autoscale=False, adjust_for_stream=True)
+        lengths = np.sqrt((V_grid ** 2).sum(0))
+        linewidth *= 2 * lengths / lengths[~np.isnan(lengths)].max()
 
-    elif len(layers) > 1:
-        figsize = rcParams['figure.figsize'] if figsize is None else figsize
-        for i, gs in enumerate(pl.GridSpec(1, len(layers), pl.figure(None, (figsize[0] * len(layers), figsize[1]), dpi=dpi))):
-            velocity_embedding_stream(adata, basis=basis, vkey=vkey, layer=layers[i], density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
-                                    perc=perc, color=color, min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
-                                    use_raw=use_raw, sort_order=sort_order, alpha=alpha, linewidth=linewidth,
-                                    groups=groups, components=components, projection=projection, legend_loc=legend_loc,
-                                    legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
-                                    color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
-                                    left_margin=left_margin, size=size, title=title, show=False, figsize=figsize,
-                                    dpi=dpi, save=None, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel,
-                                    colorbar=colorbar, fontsize=fontsize, **kwargs)
-        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
+    scatter_kwargs = {"basis": basis, "perc": perc, "use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
+                      "components": components, "projection": projection, "legend_loc": legend_loc, "groups": groups,
+                      "legend_fontsize": legend_fontsize, "legend_fontweight": legend_fontweight, "palette": palette,
+                      "color_map": color_map, "frameon": frameon, "title": title, "xlabel": xlabel, "ylabel": ylabel,
+                      "right_margin": right_margin, "left_margin": left_margin, "colorbar": colorbar, "dpi": dpi,
+                      "fontsize": fontsize, "show": False, "save": None}
 
-    elif len(vkeys) > 1:
+    multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else vkeys if len(vkeys) > 1 else None
+    if multikey is not None:
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
-        for i, gs in enumerate(pl.GridSpec(1, len(vkeys), pl.figure(None, (figsize[0] * len(vkeys), figsize[1]), dpi=dpi))):
-            velocity_embedding_stream(adata, basis=basis, vkey=vkeys[i], layer=layer, density=density, scale=scale, X_grid=X_grid, V_grid=V_grid,
-                                    perc=perc, color=color, min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
-                                    use_raw=use_raw, sort_order=sort_order, alpha=alpha, linewidth=linewidth,
-                                    groups=groups, components=components, projection=projection, legend_loc=legend_loc,
-                                    legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
-                                    color_map=color_map, palette=palette, frameon=frameon, right_margin=right_margin,
-                                    left_margin=left_margin, size=size, title=title, show=False, figsize=figsize,
-                                    dpi=dpi, save=None, ax=pl.subplot(gs), xlabel=xlabel, ylabel=ylabel,
-                                    colorbar=colorbar, fontsize=fontsize, **kwargs)
+        for i, gs in enumerate(pl.GridSpec(1, len(multikey), pl.figure(None, (figsize[0] * len(multikey), figsize[1]), dpi=dpi))):
+            velocity_embedding_stream(adata, X_grid=X_grid, V_grid=V_grid, density=density, scale=scale, size=size,
+                                      smooth=smooth, n_neighbors=n_neighbors, linewidth=linewidth, ax=pl.subplot(gs),
+                                      color=colors[i] if len(colors) > 1 else color,
+                                      layer=layers[i] if len(layers) > 1 else layer,
+                                      vkey=vkeys[i] if len(vkeys) > 1 else vkey, **scatter_kwargs, **kwargs)
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
+        if show:
+            pl.show()
+        else:
+            return ax
 
     else:
         if projection == '3d':
@@ -304,21 +241,12 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
         else:
             ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
-        x, y, u, v = compute_grid_for_stream(X_grid, V_grid)
-        lw = np.sqrt(u ** 2 + v ** 2)
-        u[lw.reshape(u.shape) < 1e-5] = np.nan
-
-        stream_kwargs = {"linewidth": 8 * lw * linewidth, "density": 2 * density}
+        stream_kwargs = {"linewidth": linewidth, "density": 2 * density}
         stream_kwargs.update(kwargs)
-        pl.streamplot(x, y, u, v, color='grey', zorder=3, **stream_kwargs)
+        pl.streamplot(X_grid[0], X_grid[1], V_grid[0], V_grid[1], color='grey', zorder=3, **stream_kwargs)
 
         size = default_size(adata) if size is None else size
-        ax = scatter(adata, basis=basis, layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
-                     perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
-                     colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=ax,
-                     use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
-                     legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
-                     palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)
+        ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, **scatter_kwargs, **kwargs)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if show: pl.show()
