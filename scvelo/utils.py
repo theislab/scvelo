@@ -1,8 +1,8 @@
 from .preprocessing.utils import show_proportions, cleanup, set_initial_size, get_initial_size
-from .preprocessing.moments import get_connectivities, second_order_moments
+from .preprocessing.moments import get_connectivities, second_order_moments, second_order_moments_u
 
-from .tools.utils import prod_sum_obs, prod_sum_var, norm, vector_norm, R_squared, \
-    cosine_correlation, normalize, scale, get_indices, get_iterative_indices, groups_to_bool, randomized_velocity
+from .tools.utils import prod_sum_obs, prod_sum_var, norm, vector_norm, R_squared, cosine_correlation, normalize, \
+    scale, get_indices, get_iterative_indices, groups_to_bool, randomized_velocity, extract_int_from_str
 from .tools.rank_velocity_genes import get_mean_var
 from .tools.run import convert_to_adata, convert_to_loom
 from .tools.optimization import leastsq_NxN, leastsq_generalized, maximum_likelihood
