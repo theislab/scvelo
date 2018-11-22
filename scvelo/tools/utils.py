@@ -1,4 +1,5 @@
 from scipy.sparse import csr_matrix, issparse
+import pandas as pd
 import numpy as np
 import warnings
 
@@ -79,7 +80,7 @@ def get_indices(dist):
     return indices, dist
 
 
-def get_iterative_indices(indices, index, n_recurse_neighbors, max_neighs=None):
+def get_iterative_indices(indices, index, n_recurse_neighbors=2, max_neighs=None):
     def iterate_indices(indices, index, n_recurse_neighbors):
         return indices[iterate_indices(indices, index, n_recurse_neighbors - 1)] \
             if n_recurse_neighbors > 1 else indices[index]
@@ -117,3 +118,17 @@ def randomized_velocity(adata, vkey='velocity', add_key='velocity_random'):
 
     velocity_graph(adata, vkey=add_key)
     velocity_embedding(adata, vkey=add_key, autoscale=False)
+
+
+def extract_int_from_str(array):
+    def str_to_int(item):
+        num = "".join(filter(str.isdigit, item))
+        num = int(num) if len(num) > 0 else -1
+        return num
+    if isinstance(array, str): nums = str_to_int(array)
+    elif len(array) > 1 and isinstance(array[0], str):
+        nums = []
+        for item in array: nums.append(str_to_int(item))
+    else: nums = array
+    nums = pd.Categorical(nums) if array.dtype == 'category' else np.array(nums)
+    return nums
