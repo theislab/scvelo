@@ -82,17 +82,15 @@ def velocity_clusters(data, vkey='velocity', copy=False):
 
     vdata._inplace_subset_var(tmp_filter)
 
-    from ..preprocessing import pca, neighbors
-    from . import louvain
-    verbosity = settings.verbosity
-    settings.verbosity = 0
-    pca(vdata, n_comps=20)
-    neighbors(vdata, n_pcs=20)
-    louvain(vdata)
+    import scanpy.api as sc
+    verbosity_tmp = sc.settings.verbosity
+    sc.settings.verbosity = 0
+    sc.pp.pca(vdata, n_comps=20, svd_solver='arpack')
+    sc.pp.neighbors(vdata, n_pcs=20)
+    sc.tl.louvain(vdata)
+    sc.settings.verbosity = verbosity_tmp
 
     adata.obs[vkey + '_clusters'] = vdata.obs['louvain']
-
-    settings.verbosity = verbosity
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
