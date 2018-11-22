@@ -12,7 +12,7 @@ from scipy.sparse import issparse
 
 
 def velocity(adata, var_names=None, basis=None, mode=None, fits='all', layers='all', use_raw=False, color=None,
-             color_map='RdBu_r', perc=[2,98], size=1, alpha=.5, fontsize=None, figsize=None, dpi=None, show=True,
+             color_map='RdBu_r', perc=[2,98], size=None, alpha=.5, fontsize=None, figsize=None, dpi=None, show=True,
              save=None, ax=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
@@ -77,7 +77,7 @@ def velocity(adata, var_names=None, basis=None, mode=None, fits='all', layers='a
     ax = pl.figure(figsize=(figsize[0]*n_col/2, figsize[1]*n_row/2), dpi=dpi) if ax is None else ax
     gs = pl.GridSpec(n_row, n_col, wspace=0.3, hspace=0.5)
 
-    size = default_size(adata) / 4 if size is None else size  # since fontsize is halved in width and height
+    size = default_size(adata) / 2 if size is None else size  # since fontsize is halved in width and height
     fontsize = rcParams['font.size'] if fontsize is None else fontsize
     for v, var in enumerate(var_names):
         _adata = adata[:, var]

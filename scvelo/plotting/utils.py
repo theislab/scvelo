@@ -135,6 +135,16 @@ def set_colorbar(ax, orientation='vertical'):
     cb.update_ticks()
 
 
+def default_arrow(size):
+    if isinstance(size, (list, tuple)) and len(size) == 3:
+        head_l, head_w, ax_l = size
+    elif type(size) == int or type(size) == float:
+        head_l, head_w, ax_l = 12 * size, 10 * size, 8 * size
+    else:
+        head_l, head_w, ax_l = 12, 10, 8
+    return head_l, head_w, ax_l
+
+
 def savefig(writekey, show=False, dpi=None, save=None):
     """Save current figure to file.
     """

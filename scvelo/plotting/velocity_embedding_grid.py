@@ -1,5 +1,5 @@
 from ..tools.velocity_embedding import quiver_autoscale, velocity_embedding
-from .utils import default_basis, default_size, get_components, savefig
+from .utils import default_basis, default_size, get_components, savefig, default_arrow
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -11,9 +11,11 @@ import numpy as np
 import pandas as pd
 
 
-def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=None, min_mass=None, autoscale=True, adjust_for_stream=False):
+def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbors=None, min_mass=None, autoscale=True, adjust_for_stream=False):
     # prepare grid
     n_obs, n_dim = X_emb.shape
+    density = 1 if density is None else density
+    smooth = .5 if smooth is None else smooth
 
     grs = []
     for dim_i in range(n_dim):
@@ -55,12 +57,14 @@ def compute_velocity_on_grid(X_emb, V_emb, density=1, smooth=0.5, n_neighbors=No
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale=1, smooth=.5, min_mass=None, autoscale=True,
-                            n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, principal_curve=False, color=None, use_raw=None, layer=None,
-                            color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
-                            groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
-                            legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
-                            fontsize=None, figsize=None, dpi=None, frameon=None, show=True, save=None, ax=None, **kwargs):
+def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, smooth=None, min_mass=None, arrow_size=None,
+                            arrow_length=None, scale=None, autoscale=True, n_neighbors=None, X=None, V=None,
+                            X_grid=None, V_grid=None, principal_curve=False, color=None, use_raw=None, layer=None,
+                            color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None,
+                            sort_order=True, groups=None, components=None, projection='2d', legend_loc='none',
+                            legend_fontsize=None, legend_fontweight=None, right_margin=None, left_margin=None,
+                            xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, dpi=None, frameon=None,
+                            show=True, save=None, ax=None, **kwargs):
     """\
     Scatter plot of velocities for the grid points on the embedding
 
@@ -76,6 +80,10 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
         Key for annotations of observations/cells or variables/genes.
     density: `float` (default: 1)
         Amount of velocities to show - 0 none to 1 all
+    arrow_size: `float` or 3-tuple for headlength, headwidth and headaxislength (default: 1)
+        Size of arrows.
+    arrow_length: `float` (default: 1)
+        Length of arrows.
     scale: `float` (default: 1)
         Length of velocities in the embedding.
     min_mass: `float` (default: 0.5)
@@ -120,12 +128,15 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
     if multikey is not None:
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
         for i, gs in enumerate(pl.GridSpec(1, len(multikey), pl.figure(None, (figsize[0] * len(multikey), figsize[1]), dpi=dpi))):
-            velocity_embedding_grid(adata, X_grid=X_grid, V_grid=V_grid, density=density, scale=scale, size=size,
-                                    min_mass=min_mass, smooth=smooth, n_neighbors=n_neighbors,
-                                    principal_curve=principal_curve, autoscale=autoscale, ax=pl.subplot(gs),
+            velocity_embedding_grid(adata, density=density, scale=scale, size=size, min_mass=min_mass, smooth=smooth,
+                                    n_neighbors=n_neighbors, principal_curve=principal_curve, ax=pl.subplot(gs),
+                                    arrow_size=arrow_size, arrow_length=arrow_length,
                                     color=colors[i] if len(colors) > 1 else color,
                                     layer=layers[i] if len(layers) > 1 else layer,
-                                    vkey=vkeys[i] if len(vkeys) > 1 else vkey, **scatter_kwargs, **kwargs)
+                                    vkey=vkeys[i] if len(vkeys) > 1 else vkey,
+                                    X_grid=None if len(vkeys) > 1 else X_grid,
+                                    V_grid=None if len(vkeys) > 1 else V_grid,
+                                    autoscale=False if len(vkeys) > 1 else autoscale, **scatter_kwargs, **kwargs)
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if show:
             pl.show()
@@ -135,8 +146,10 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
     else:
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
+        hl, hw, hal = default_arrow(arrow_size)
+        scale = 1 / arrow_length if arrow_length is not None else scale if scale is not None else 1
         quiver_kwargs = {"scale": scale, "angles": 'xy', "scale_units": 'xy', "width": .001, "color": 'black',
-                   "edgecolors": 'k', "headwidth": 4.5, "headlength": 5, "headaxislength": 3, "linewidth": .2}
+                   "edgecolors": 'k', "headlength": hl/2, "headwidth": hw/2, "headaxislength": hal/2, "linewidth": .2}
         quiver_kwargs.update(kwargs)
         pl.quiver(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1], **quiver_kwargs, zorder=3)
 
@@ -145,8 +158,8 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
             pl.plot(curve[:, 0], curve[:, 1], c="w", lw=6, zorder=4)
             pl.plot(curve[:, 0], curve[:, 1], c="k", lw=3, zorder=5)
 
-        size = default_size(adata) if size is None else size
-        ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, **scatter_kwargs, **kwargs)
+        size = 4 * default_size(adata) if size is None else size
+        ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, **scatter_kwargs)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if show:
@@ -156,7 +169,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=1, scale
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, scale=1, smooth=.5, linewidth=1,
+def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, smooth=None, linewidth=None,
                               n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, color=None, use_raw=None, layer=None,
                               color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
                               groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
@@ -177,12 +190,10 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
         Key for annotations of observations/cells or variables/genes.
     density: `float` (default: 1)
         Amount of velocities to show - 0 none to 1 all
-    scale: `float` (default: 1)
-        Length of velocities in the embedding.
-    min_mass: `float` (default: 0.5)
-        Minimum threshold for mass to be shown.
     smooth: `float` (default: 0.5)
         Multiplication factor for scale in Gaussian kernel around grid point.
+    linewidth: `float` (default: 1)
+        Line width for streamplot.
     n_neighbors: `int` (default: None)
         Number of neighbors to consider around grid point.
     X: `np.ndarray` (default: None)
@@ -210,6 +221,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
         X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=1, smooth=smooth,
                                                   n_neighbors=n_neighbors, autoscale=False, adjust_for_stream=True)
         lengths = np.sqrt((V_grid ** 2).sum(0))
+        linewidth = 1 if linewidth is None else linewidth
         linewidth *= 2 * lengths / lengths[~np.isnan(lengths)].max()
 
     scatter_kwargs = {"basis": basis, "perc": perc, "use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
@@ -223,11 +235,13 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
     if multikey is not None:
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
         for i, gs in enumerate(pl.GridSpec(1, len(multikey), pl.figure(None, (figsize[0] * len(multikey), figsize[1]), dpi=dpi))):
-            velocity_embedding_stream(adata, X_grid=X_grid, V_grid=V_grid, density=density, scale=scale, size=size,
-                                      smooth=smooth, n_neighbors=n_neighbors, linewidth=linewidth, ax=pl.subplot(gs),
+            velocity_embedding_stream(adata, density=density, size=size, smooth=smooth,
+                                      n_neighbors=n_neighbors, linewidth=linewidth, ax=pl.subplot(gs),
                                       color=colors[i] if len(colors) > 1 else color,
                                       layer=layers[i] if len(layers) > 1 else layer,
-                                      vkey=vkeys[i] if len(vkeys) > 1 else vkey, **scatter_kwargs, **kwargs)
+                                      vkey=vkeys[i] if len(vkeys) > 1 else vkey,
+                                      X_grid=None if len(vkeys) > 1 else X_grid,
+                                      V_grid=None if len(vkeys) > 1 else V_grid, **scatter_kwargs, **kwargs)
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if show:
             pl.show()
@@ -241,12 +255,13 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=1, sca
         else:
             ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
+        density = 1 if density is None else density
         stream_kwargs = {"linewidth": linewidth, "density": 2 * density}
         stream_kwargs.update(kwargs)
         pl.streamplot(X_grid[0], X_grid[1], V_grid[0], V_grid[1], color='grey', zorder=3, **stream_kwargs)
 
-        size = default_size(adata) if size is None else size
-        ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, **scatter_kwargs, **kwargs)
+        size = 4 * default_size(adata) if size is None else size
+        ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, **scatter_kwargs)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if show: pl.show()

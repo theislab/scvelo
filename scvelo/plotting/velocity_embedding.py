@@ -1,6 +1,6 @@
 from ..tools.velocity_embedding import velocity_embedding as compute_velocity_embedding
 from ..tools.utils import groups_to_bool
-from .utils import interpret_colorkey, default_basis, default_size, get_components, savefig, default_color
+from .utils import interpret_colorkey, default_basis, default_size, get_components, savefig, default_color, default_arrow
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -12,11 +12,12 @@ import pandas as pd
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, X=None, V=None, color=None, use_raw=None,
-                       layer=None, color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None,
-                       sort_order=True, groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
-                       legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
-                       fontsize=None, figsize=None, dpi=None, frameon=None, show=True, save=None, ax=None, **kwargs):
+def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_size=None, arrow_length=None, scale=None,
+                       X=None, V=None, color=None, use_raw=None, layer=None, color_map=None, colorbar=False,
+                       palette=None, size=None, alpha=.2, perc=None, sort_order=True, groups=None, components=None,
+                       projection='2d', legend_loc='none', legend_fontsize=None, legend_fontweight=None,
+                       right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None,
+                       figsize=None, dpi=None, frameon=None, show=True, save=None, ax=None, **kwargs):
     """\
     Scatter plot of velocities on the embedding
 
@@ -32,6 +33,10 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, X
         Key for annotations of observations/cells or variables/genes.
     density: `float` (default: 1)
         Amount of velocities to show - 0 none to 1 all
+    arrow_size: `float` or 3-tuple for headlength, headwidth and headaxislength (default: 1)
+        Size of arrows.
+    arrow_length: `float` (default: 1)
+        Length of arrows.
     scale: `float` (default: 1)
         Length of velocities in the embedding.
     {scatter}
@@ -59,7 +64,8 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, X
     if multikey is not None:
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
         for i, gs in enumerate(pl.GridSpec(1, len(multikey), pl.figure(None, (figsize[0]*len(multikey), figsize[1]), dpi=dpi))):
-            velocity_embedding(adata, X=X, V=V, density=density, scale=scale, size=size, ax=pl.subplot(gs),
+            velocity_embedding(adata, density=density, scale=scale, size=size, ax=pl.subplot(gs),
+                               arrow_size=arrow_size, arrow_length=arrow_length,
                                color=colors[i] if len(colors) > 1 else color,
                                layer=layers[i] if len(layers) > 1 else layer,
                                vkey=vkeys[i] if len(vkeys) > 1 else vkey, **scatter_kwargs, **kwargs)
@@ -80,14 +86,17 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=1, scale=1, X
         color = default_color(adata) if color is None else color
         _adata = adata[groups_to_bool(adata, groups, groupby=color)] if groups is not None and color in adata.obs.keys() else adata
 
+        density = 1 if density is None or density > 1 else density
         ix_choice = np.random.choice(_adata.n_obs, size=int(density * _adata.n_obs), replace=False)
 
         x, y = None if X is None else X[:, 0], None if X is None else X[:, 1]
         X = _adata.obsm['X_' + basis][:, get_components(components, basis)][ix_choice] if X is None else X[:, :2][ix_choice]
         V = _adata.obsm[vkey + '_' + basis][:, get_components(components, basis)][ix_choice] if V is None else V[:, :2][ix_choice]
 
+        hl, hw, hal = default_arrow(arrow_size)
+        scale = 1 / arrow_length if arrow_length is not None else scale if scale is not None else 1
         quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .0005,
-                         "edgecolors": 'k', "headlength": 12, "headwidth": 10, "headaxislength": 8, "linewidth": .1}
+                         "edgecolors": 'k', "headlength": hl, "headwidth": hw, "headaxislength": hal, "linewidth": .1}
         quiver_kwargs.update(kwargs)
 
         c = interpret_colorkey(_adata, color, layer, perc)

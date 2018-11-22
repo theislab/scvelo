@@ -13,7 +13,7 @@ from scipy.sparse import issparse
 
 @doc_params(scatter=doc_scatter)
 def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None, colorbar=False,
-            palette=None, size=5, alpha=1, perc=None, sort_order=True, groups=None, components=None, projection='2d',
+            palette=None, size=None, alpha=None, perc=None, sort_order=True, groups=None, components=None, projection='2d',
             legend_loc='none', legend_fontsize=None, legend_fontweight=None, right_margin=None, left_margin=None,
             xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, dpi=None, frameon=None, show=True,
             save=None, ax=None, **kwargs):
@@ -38,44 +38,26 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
     layers = pd.unique(layer) if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
     bases  = pd.unique(basis) if isinstance(basis, (list, tuple, np.ndarray, np.record)) else [basis]
 
-    if len(colors) > 1:
-        figsize = rcParams['figure.figsize'] if figsize is None else figsize
-        for i, gs in enumerate(pl.GridSpec(1, len(colors), pl.figure(None, (figsize[0]*len(colors), figsize[1]), dpi=dpi))):
-            scatter(adata, x=x, y=y, basis=basis, layer=layer, color=colors[i], xlabel=xlabel, ylabel=ylabel, color_map=color_map,
-                    perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
-                    colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=pl.subplot(gs),
-                    use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
-                    legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
-                    palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)
-        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
+    scatter_kwargs = {"use_raw": use_raw, "sort_order": sort_order, "alpha": alpha, "components": components,
+                      "projection": projection, "legend_loc": legend_loc, "groups": groups, "palette": palette,
+                      "legend_fontsize": legend_fontsize, "legend_fontweight": legend_fontweight, "title": title,
+                      "right_margin": right_margin, "left_margin": left_margin, "show": False, "save": None}
 
-    elif len(layers) > 1:
+    multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else bases if len(bases) > 1 else None
+    if multikey is not None:
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
-        for i, gs in enumerate(pl.GridSpec(1, len(layers), pl.figure(None, (figsize[0] * len(layers), figsize[1]), dpi=dpi))):
-            scatter(adata, x=x, y=y, basis=basis, layer=layers[i], color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
-                    perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
-                    colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=pl.subplot(gs),
-                    use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
-                    legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
-                    palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)
+        for i, gs in enumerate(
+                pl.GridSpec(1, len(multikey), pl.figure(None, (figsize[0] * len(multikey), figsize[1]), dpi=dpi))):
+            scatter(adata, x=x, y=y, size=size, xlabel=xlabel, ylabel=ylabel, color_map=color_map, colorbar=colorbar,
+                    perc=perc, frameon=frameon, ax=pl.subplot(gs),
+                    color=colors[i] if len(colors) > 1 else color,
+                    layer=layers[i] if len(layers) > 1 else layer,
+                    basis=bases[i] if len(bases) > 1 else basis, **scatter_kwargs, **kwargs)
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
-
-    elif len(bases) > 1:
-        figsize = rcParams['figure.figsize'] if figsize is None else figsize
-        for i, gs in enumerate(pl.GridSpec(1, len(bases), pl.figure(None, (figsize[0] * len(bases), figsize[1]), dpi=dpi))):
-            scatter(adata, x=x, y=y, basis=bases[i], layer=layer, color=color, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
-                    perc=perc, size=size, alpha=alpha, fontsize=fontsize, frameon=frameon, title=title, show=False,
-                    colorbar=colorbar, components=components, figsize=figsize, dpi=dpi, save=None, ax=pl.subplot(gs),
-                    use_raw=use_raw, sort_order=sort_order, groups=groups, projection=projection,
-                    legend_loc=legend_loc, legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight,
-                    palette=palette, right_margin=right_margin, left_margin=left_margin, **kwargs)
-        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
+        if show:
+            pl.show()
+        else:
+            return ax
 
     else:
         if projection == '3d':
@@ -93,11 +75,8 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
         size = default_size(adata) if size is None else size
 
         if is_categorical(adata, color) and is_embedding:
-            ax = scpl.scatter(adata, basis=basis, color=color, use_raw=use_raw, sort_order=sort_order, alpha=alpha,
-                              groups=groups, components=components, projection=projection, legend_loc=legend_loc,
-                              legend_fontsize=legend_fontsize, legend_fontweight=legend_fontweight, color_map=color_map,
-                              palette=palette, right_margin=right_margin, left_margin=left_margin, size=size,
-                              title=title, frameon=frameon, show=False, save=None, ax=ax, **kwargs)
+            ax = scpl.scatter(adata, basis=basis, color=color, color_map=color_map, size=size, frameon=frameon, ax=ax,
+                              **scatter_kwargs, **kwargs)
 
         else:
             if basis in adata.var_names:
@@ -122,7 +101,7 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                 ub = np.percentile(c, 98)
                 kwargs.update({"vmax": ub})
 
-            pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, zorder=0, **kwargs)
+            pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, edgecolors='none', marker='.', zorder=0, **kwargs)
 
             set_label(xlabel, ylabel, fontsize, basis)
             set_title(title, layer, color, fontsize)
