@@ -77,7 +77,7 @@ from scanpy.plotting.rcmod import set_rcParams_scanpy
 from scanpy.plotting.utils import default_palette
 
 
-def set_rcParams_scvelo(fontsize=8, color_map=None):
+def set_rcParams_scvelo(fontsize=8, color_map=None, frameon=None):
     """Set matplotlib.rcParams to scvelo defaults."""
 
     # dpi options (mpl default: 100, 100)
@@ -138,8 +138,9 @@ def set_rcParams_scvelo(fontsize=8, color_map=None):
     rcParams['image.cmap'] = 'RdBu_r' if color_map is None else color_map
 
     # frame (mpl default: True)
+    frameon = False if frameon is None else frameon
     global _frameon
-    _frameon = False
+    _frameon = frameon
 
 
 def set_figure_params(style='scvelo', figsize=None, dpi=None, dpi_save=None, frameon=None, vector_friendly=True,
@@ -188,13 +189,16 @@ def set_figure_params(style='scvelo', figsize=None, dpi=None, dpi_save=None, fra
     if transparent is not None:
         rcParams['savefig.transparent'] = transparent
     if style is 'scvelo':
-        set_rcParams_scvelo(color_map=color_map)
+        set_rcParams_scvelo(color_map=color_map, frameon=frameon)
     elif style is 'scanpy':
         # dpi is not specified by scanpy directly in the defaults
         if dpi is None:
             rcParams['figure.dpi'] = 80
         if dpi_save is None:
             rcParams['savefig.dpi'] = 150
+        frameon = True if frameon is None else frameon
+        global _frameon
+        _frameon = frameon
         set_rcParams_scanpy(color_map=color_map)
     # Overwrite style options if given
     if figsize is not None:
@@ -203,9 +207,6 @@ def set_figure_params(style='scvelo', figsize=None, dpi=None, dpi_save=None, fra
         rcParams['figure.dpi'] = dpi
     if dpi_save is not None:
         rcParams['savefig.dpi'] = dpi_save
-    if frameon is not None:
-        global _frameon
-        _frameon = frameon
 
 
 def set_rcParams_defaults():
