@@ -19,7 +19,7 @@ def quiver_autoscale(X_emb, V_emb):
 
 
 def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
-                       autoscale=True, all_comps=True, retain_scale=False, pca_transform=False, copy=False):
+                       autoscale=True, all_comps=True, pca_transform=False, retain_scale=False, copy=False):
     """Computes the single cell velocities in the embedding
 
     Arguments
@@ -32,6 +32,17 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
         Name of velocity estimates to be used.
     scale: `int` (default: 10)
         Scale parameter of gaussian kernel for transition matrix.
+    self_transitions: `bool` (default: `True`)
+        Whether to allow self transitions, based on the confidences of transitioning to neighboring cell.
+    use_negative_cosines: `bool` (default: `True`)
+        Whether to use not only positive, but also negative cosines and use those transitions to the opposite way.
+    autoscale: `bool` (default: `True`)
+        Whether to scale the embedded velocities by a scalar multiplier,
+        which simply ensures that the arrows in the embedding are properly scaled.
+    all_comps: `bool` (default: `True`)
+        Whether to compute the velocities on all embedding components or just the first two.
+    pca_transform: `bool` (default: `False`)
+        Wether to directly project the velocities into PCA space, skipping velocity graph.
     retain_scale: `bool` (default: `False`)
         Whether to retain scale from high dimensional space in embedding.
 

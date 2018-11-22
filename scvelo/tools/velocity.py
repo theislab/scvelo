@@ -125,8 +125,10 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
         Key of observations grouping to consider.
     groups_for_fit: `str`, `list` or `np.ndarray` (default: `None`)
         Subset of groups, e.g. [‘g1’, ‘g2’, ‘g3’], to which steady-state fitting shall be restricted.
-    perc: `int` (default: `None`)
-        Percentile to which velocity estimation shall be restricted.
+    use_raw: `bool` (default: `False)
+        Whether to use raw data for estimation.
+    perc: `float` (default: `None`)
+        Percentile, e.g. 98, upon which velocity estimation is performed (for robustness).
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
 
