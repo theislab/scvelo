@@ -132,3 +132,64 @@ def extract_int_from_str(array):
     else: nums = array
     nums = pd.Categorical(nums) if array.dtype == 'category' else np.array(nums)
     return nums
+
+
+def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):
+    adata._sanitize()
+    if len(map_groups) != len(adata.obs[key].cat.categories):
+        map_coarse = {}
+        for c in adata.obs[key].cat.categories:
+            for group in map_groups:
+                if any(cluster == c for cluster in map_groups[group]): map_coarse[c] = group
+            if c not in map_coarse: map_coarse[c] = c
+        map_groups = map_coarse
+
+    if key_added is None:
+        key_added = key + '_coarse'
+
+    from pandas.api.types import CategoricalDtype
+    adata.obs[key_added] = adata.obs[key].map(map_groups).astype(CategoricalDtype())
+    old_categories = adata.obs[key].cat.categories
+    new_categories = adata.obs[key_added].cat.categories
+
+    # map_colors is passed
+    if map_colors is not None:
+        old_colors = None
+        if key + '_colors' in adata.uns:
+            old_colors = adata.uns[key + '_colors']
+        new_colors = []
+        for group in adata.obs[key_added].cat.categories:
+            if group in map_colors:
+                new_colors.append(map_colors[group])
+            elif group in old_categories and old_colors is not None:
+                new_colors.append(old_colors[old_categories.get_loc(group)])
+            else:
+                raise ValueError('You didn\'t specify a color for {}.'.format(group))
+        adata.uns[key_added + '_colors'] = new_colors
+
+    # map_colors is not passed
+    elif key + '_colors' in adata.uns:
+        old_colors = adata.uns[key + '_colors']
+        inverse_map_groups = {g: [] for g in new_categories}
+        for old_group in old_categories:
+            inverse_map_groups[map_groups[old_group]].append(old_group)
+        new_colors = []
+        for group in new_categories:
+            # take the largest of the old groups
+            old_group = adata.obs[key][adata.obs[key].isin(
+                inverse_map_groups[group])].value_counts().index[0]
+            new_colors.append(old_colors[old_categories.get_loc(old_group)])
+        adata.uns[key_added + '_colors'] = new_colors
+
+
+def cutoff_small_velocities(adata, vkey='velocity', key_added='velocity_cut', frac_of_max=.5, use_raw=False):
+    x = adata.layers['spliced'] if use_raw else adata.layers['Ms']
+    y = adata.layers['unspliced'] if use_raw else adata.layers['Mu']
+
+    x_max = x.max(0).A[0] if issparse(x) else x.max(0)
+    y_max = y.max(0).A[0] if issparse(y) else y.max(0)
+
+    xy_norm = x / np.clip(x_max, 1e-3, None) + y / np.clip(y_max, 1e-3, None)
+    W = xy_norm >= np.percentile(xy_norm, 98, axis=0) * frac_of_max
+
+    adata.layers[key_added] = csr_matrix(W).multiply(adata.layers[vkey]).tocsr()

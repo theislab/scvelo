@@ -50,7 +50,7 @@ def select_groups(adata, groups='all', key='louvain'):
     return groups, groups_masks
 
 
-def velocity_clusters(data, vkey='velocity', copy=False):
+def velocity_clusters(data, vkey='velocity', match_with='clusters', resolution=None, copy=False):
     adata = data.copy() if copy else data
 
     logg.info('computing velocity clusters', r=True)
@@ -87,20 +87,32 @@ def velocity_clusters(data, vkey='velocity', copy=False):
     sc.settings.verbosity = 0
     sc.pp.pca(vdata, n_comps=20, svd_solver='arpack')
     sc.pp.neighbors(vdata, n_pcs=20)
-    sc.tl.louvain(vdata)
+    sc.tl.louvain(vdata, resolution=resolution)
     sc.settings.verbosity = verbosity_tmp
 
-    adata.obs[vkey + '_clusters'] = vdata.obs['louvain']
+    if isinstance(match_with, str) and match_with in adata.obs.keys():
+        from .utils import most_common_in_list
+        vc = vdata.obs['louvain']
+        for i, cat in enumerate(vc.cat.categories):
+            cells_in_cat = np.where(vc == cat)[0]
+            new_cat = most_common_in_list(adata.obs[match_with][cells_in_cat])
+            vc = vc.cat.rename_categories({cat: new_cat + ' ' + cat})
+        vdata.obs['louvain'] = vc
+
+    adata.obs[vkey + '_clusters'] = vdata.obs['louvain'].copy()
+
+    del vdata
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
         'added \n'
         '    \'' + vkey + '_clusters\', clusters based on modularity on velocity field (adata.obs)')
 
-    return vdata.obs['louvain']
+    return adata if copy else None
 
 
-def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, min_counts=None, min_r2=None, min_dispersion=None, copy=False):
+def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_with=None, resolution=None,
+                        min_counts=None, min_r2=None, min_dispersion=None, copy=False):
     """Rank genes for characterizing groups according to unspliced/spliced correlation and differential expression.
 
     Arguments
@@ -134,7 +146,7 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, min_cou
     adata = data.copy() if copy else data
 
     if groupby is None:
-        velocity_clusters(adata, vkey=vkey)
+        velocity_clusters(adata, vkey=vkey, match_with=match_with, resolution=resolution)
         groupby = 'velocity_clusters'
 
     logg.info('ranking velocity genes', r=True)
