@@ -9,15 +9,13 @@ If you don't have working Python 3.6 yet, consider installing Miniconda_.
 
 Once you are set, install scVelo from PyPI_ with::
 
-  pip install scvelo
+    pip install scvelo
 
 If you want to work with the latest version on GitHub_, install scVelo from source::
 
     git clone https://github.com/theislab/scvelo.git
     cd scvelo
     pip install .
-
-
 
 Basic Usage
 -----------
@@ -26,13 +24,16 @@ Import scVelo as::
 
     import scvelo as scv
 
+For beautiful visualization you can change the matplotlib settings to our defaults with::
+
+    scv.settings.set_figure_params('scvelo')
 
 Read your data into an object
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Read your data file (loom, h5ad, xlsx, csv, tab, txt ...) to an :class:`~anndata.AnnData` object::
 
-   adata = scv.read(filename, cache=True)
+    adata = scv.read(filename, cache=True)
 
 which stores the data matrix (``adata.X``) with dimension :math:`n_{\mathrm{obs}} \times n_{\mathrm{vars}}`,
 annotation of observations (``adata.obs``) and variables (``adata.var``), unstructured annotation (``adata.uns``) and
@@ -59,7 +60,7 @@ I recommend using scanpy_ (which perfectly harmonizes with scVelo) to explore fu
 
 For processing of spliced and unspliced counts it suffices to compute their moments (which automatically normalizes the counts)::
 
-   scv.pp.moments(adata, **params)
+    scv.pp.moments(adata, **params)
 
 That's all, no extensive preparation is needed.
 
@@ -81,22 +82,21 @@ The velocities are stored in ``adata.layers`` just like the count matrices.
 Given these velocities we are interested in cell transitions that are likely. These are computed using cosine correlation
 (i.e. find potential transitions that correlate with the velocity vector) and are stored in a matrix that we call velocity graph::
 
-   scv.tl.velocity_graph(adata, **params)
+    scv.tl.velocity_graph(adata, **params)
 
 Using the graph you can then project the velocities into any embedding (such as UMAP, e.g. obtained with scanpy_)::
 
-   scv.tl.velocity_embedding(adata, basis='umap', **params)
+    scv.tl.velocity_embedding(adata, basis='umap', **params)
 
 Visualization
 ^^^^^^^^^^^^^
 The velocities for all individual cells can be visualized using::
 
-   scv.pl.velocity_embedding(adata, basis='umap', **params)
+    scv.pl.velocity_embedding(adata, basis='umap', **params)
 
 For big datasets it might be useful to visualize the velocities on a grid::
 
-   scv.pl.velocity_embedding_grid(adata, basis='umap', **params)
-
+    scv.pl.velocity_embedding_grid(adata, basis='umap', **params)
 
 .. _Miniconda: http://conda.pydata.org/miniconda.html
 .. _PyPI: https://pypi.org/project/scvelo
