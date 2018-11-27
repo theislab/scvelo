@@ -11,9 +11,9 @@ import matplotlib.pyplot as pl
 from scipy.sparse import issparse
 
 
-def velocity(adata, var_names=None, basis=None, mode=None, fits='all', layers='all', use_raw=False, color=None,
-             color_map='RdBu_r', perc=[2,98], size=None, alpha=.5, fontsize=None, figsize=None, dpi=None, show=True,
-             save=None, ax=None, **kwargs):
+def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=None, fits='all', layers='all',
+             color=None, color_map='RdBu_r', perc=[2,98], use_raw=False, size=None, alpha=.5, fontsize=None,
+             figsize=None, dpi=None, show=True, save=None, ax=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
     The phase plot shows spliced against unspliced expressions with steady-state fit.
@@ -59,10 +59,23 @@ def velocity(adata, var_names=None, basis=None, mode=None, fits='all', layers='a
 
     """
     basis = default_basis(adata) if basis is None else basis
-    var_names = [var_names] if isinstance(var_names, str) else var_names \
-        if isinstance(var_names, (list, tuple, np.ndarray, np.record)) else rank_velocity_genes(adata, basis=basis, n_genes=4)
-    valid_var_names = adata.var_names[adata.var['velocity_genes']] if 'velocity_genes' in adata.var.keys() else adata.var_names
-    var_names = pd.unique([var for var in var_names if var in valid_var_names])
+
+    if isinstance(groupby, str) and groupby in adata.obs.keys():
+        if 'rank_velocity_genes' not in adata.uns.keys() or not \
+                all(np.isin(adata.uns['rank_velocity_genes']['groups'], adata.obs[groupby].cat.categories)):
+            rank_velocity_genes(adata, vkey='velocity', n_genes=10, groupby=groupby)
+        if groups is None:
+            var_names = adata.uns['rank_velocity_genes']['names'][:, 0]
+        else:
+            groups = [groups] if isinstance(groups, str) else groups
+            idx = np.array([any([g in group for g in groups]) for group in adata.uns['rank_velocity_genes']['groups']])
+            #idx = np.isin(adata.uns['rank_velocity_genes']['groups'], groups)
+            var_names = np.hstack(adata.uns['rank_velocity_genes']['names'][idx, :int(10 / idx.sum())])
+    elif var_names is not None:
+        var_names = [var_names] if isinstance(var_names, str) else [var for var in var_names if var in adata.var_names]
+    else:
+        raise ValueError('No var_names or groups specified.')
+    var_names = pd.unique(var_names)
 
     (skey, ukey) = ('spliced', 'unspliced') if use_raw else ('Ms', 'Mu')
     layers = ['velocity', skey, 'variance_velocity'] if layers == 'all' else layers

@@ -1,6 +1,7 @@
 from ..tools.velocity_embedding import velocity_embedding as compute_velocity_embedding
 from ..tools.utils import groups_to_bool
-from .utils import interpret_colorkey, default_basis, default_size, get_components, savefig, default_color, default_arrow
+from .utils import interpret_colorkey, default_basis, default_size, get_components, savefig, default_color, \
+    default_arrow, make_unique_list
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -8,7 +9,6 @@ from matplotlib import rcParams
 from matplotlib.colors import is_color_like
 import matplotlib.pyplot as pl
 import numpy as np
-import pandas as pd
 
 
 @doc_params(scatter=doc_scatter)
@@ -46,9 +46,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
         `matplotlib.Axis` if `show==False`
     """
     basis = default_basis(adata) if basis is None else basis
-    colors = pd.unique(color) if isinstance(color, (list, tuple, np.record)) else [color]
-    layers = pd.unique(layer) if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
-    vkeys = pd.unique(vkey) if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
+    colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
     for key in vkeys:
         if key + '_' + basis not in adata.obsm_keys() and V is None:
             compute_velocity_embedding(adata, basis=basis, vkey=key)
@@ -84,14 +82,15 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
 
         color, layer, vkey = colors[0], layers[0], vkeys[0]
         color = default_color(adata) if color is None else color
+        size = default_size(adata) / 2 if size is None else size
         _adata = adata[groups_to_bool(adata, groups, groupby=color)] if groups is not None and color in adata.obs.keys() else adata
 
         density = 1 if density is None or density > 1 else density
         ix_choice = np.random.choice(_adata.n_obs, size=int(density * _adata.n_obs), replace=False)
 
         x, y = None if X is None else X[:, 0], None if X is None else X[:, 1]
-        X = _adata.obsm['X_' + basis][:, get_components(components, basis)][ix_choice] if X is None else X[:, :2][ix_choice]
-        V = _adata.obsm[vkey + '_' + basis][:, get_components(components, basis)][ix_choice] if V is None else V[:, :2][ix_choice]
+        X = _adata.obsm['X_' + basis][:, get_components(components, basis, projection)][ix_choice] if X is None else X[:, :2][ix_choice]
+        V = _adata.obsm[vkey + '_' + basis][:, get_components(components, basis, projection)][ix_choice] if V is None else V[:, :2][ix_choice]
 
         hl, hw, hal = default_arrow(arrow_size)
         scale = 1 / arrow_length if arrow_length is not None else scale if scale is not None else 1
@@ -102,11 +101,17 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
         c = interpret_colorkey(_adata, color, layer, perc)
         c = c[ix_choice] if len(c) == _adata.n_obs else c
 
-        if is_color_like(c[0]): pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=c, zorder=3, **quiver_kwargs)
-        else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=3, **quiver_kwargs)
+        if projection == '3d' and X.shape[1] > 2 and V.shape[1] > 2:
+            V, size = V / scale, size / 10
+            x0, x1, x2, v0, v1, v2 = X[:, 0], X[:, 1], X[:, 2], V[:, 0], V[:, 1], V[:, 2]
+            quiver3d_kwargs = {"zorder": 3, "linewidth": .5, "arrow_length_ratio": .3}
+            if is_color_like(c[0]): pl.quiver(x0, x1, x2, v0, v1, v2, color=c, **quiver3d_kwargs)
+            else: pl.quiver(x0, x1, x2, v0, v1, v2, c, **quiver3d_kwargs)
+        else:
+            if is_color_like(c[0]): pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=c, zorder=3, **quiver_kwargs)
+            else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=3, **quiver_kwargs)
 
-        size = default_size(adata) / 2 if size is None else size,
-        ax = scatter(adata, x=x, y=y, layer=layer, color=color, size=size, ax=ax, **scatter_kwargs)
+        ax = scatter(adata, x=x, y=y, layer=layer, color=color, size=size, ax=ax, zorder=0, **scatter_kwargs)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if show: pl.show()

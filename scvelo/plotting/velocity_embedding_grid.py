@@ -1,5 +1,5 @@
 from ..tools.velocity_embedding import quiver_autoscale, velocity_embedding
-from .utils import default_basis, default_size, get_components, savefig, default_arrow
+from .utils import default_basis, default_size, get_components, savefig, default_arrow, make_unique_list
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -8,7 +8,6 @@ from scipy.stats import norm as normal
 from matplotlib import rcParams
 import matplotlib.pyplot as pl
 import numpy as np
-import pandas as pd
 
 
 def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbors=None, min_mass=None, autoscale=True, adjust_for_stream=False):
@@ -103,9 +102,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
         `matplotlib.Axis` if `show==False`
     """
     basis = default_basis(adata) if basis is None else basis
-    colors = pd.unique(color) if isinstance(color, (list, tuple, np.record)) else [color]
-    layers = pd.unique(layer) if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
-    vkeys = pd.unique(vkey) if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
+    colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
     for key in vkeys:
         if key + '_' + basis not in adata.obsm_keys() and V is None:
             velocity_embedding(adata, basis=basis, vkey=key)
@@ -159,7 +156,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
             pl.plot(curve[:, 0], curve[:, 1], c="k", lw=3, zorder=5)
 
         size = 4 * default_size(adata) if size is None else size
-        ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, **scatter_kwargs)
+        ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, zorder=0, **scatter_kwargs)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if show:
@@ -207,9 +204,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         `matplotlib.Axis` if `show==False`
     """
     basis = default_basis(adata) if basis is None else basis
-    colors = pd.unique(color) if isinstance(color, (list, tuple, np.record)) else [color]
-    layers = pd.unique(layer) if isinstance(layer, (list, tuple, np.ndarray, np.record)) else [layer]
-    vkeys = pd.unique(vkey) if isinstance(vkey, (list, tuple, np.ndarray, np.record)) else [vkey]
+    colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
     for key in vkeys:
         if key + '_' + basis not in adata.obsm_keys() and V is None:
             velocity_embedding(adata, basis=basis, vkey=key)
@@ -261,7 +256,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         pl.streamplot(X_grid[0], X_grid[1], V_grid[0], V_grid[1], color='grey', zorder=3, **stream_kwargs)
 
         size = 4 * default_size(adata) if size is None else size
-        ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, **scatter_kwargs)
+        ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, zorder=0, **scatter_kwargs)
 
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if show: pl.show()

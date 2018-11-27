@@ -8,6 +8,7 @@ from scanpy.plotting.utils import savefig_or_show, default_palette, adjust_palet
 from matplotlib.colors import is_color_like
 from pandas.api.types import is_categorical as cat
 from scipy.sparse import issparse
+import pandas as pd
 
 
 def is_categorical(adata, c):
@@ -18,6 +19,12 @@ def is_categorical(adata, c):
 def default_basis(adata):
     keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
     return keys[-1] if len(keys) > 0 else None
+
+
+def make_unique_list(key, allow_array=False):
+    is_list = isinstance(key, (list, tuple, np.record)) if allow_array else isinstance(key, (list, tuple, np.ndarray, np.record))
+    is_list_of_str = is_list and all(isinstance(item, str) for item in key)
+    return pd.unique(key) if is_list_of_str else key if is_list and len(key) < 20 else [key]
 
 
 def update_axes(ax, fontsize, is_embedding, frameon):
@@ -119,8 +126,8 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
     return c
 
 
-def get_components(components=None, basis=None):
-    if components is None: components = '1,2'
+def get_components(components=None, basis=None, projection=None):
+    if components is None: components = '1,2,3' if projection == '3d' else '1,2'
     if isinstance(components, str): components = components.split(',')
     components = np.array(components).astype(int) - 1
     if basis == 'diffmap': components += 1
