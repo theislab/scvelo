@@ -3,6 +3,10 @@
 scvelo – stochastic single cell RNA velocity
 ============================================
 
+.. image:: https://ibb.co/qDsLsPC
+   :width: 90px
+   :align: left
+
 **scvelo** is a scalable toolkit for estimating and analyzing stochastic RNA velocities in single cells.
 
 RNA velocity is the time derivative of mRNA abundance obtained by distinguishing unspliced (precursor) from spliced
