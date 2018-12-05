@@ -3,6 +3,7 @@
 from .read_load import read, load
 from .preprocessing.utils import cleanup
 import numpy as np
+import pandas as pd
 
 
 def toy_data(n_obs):
@@ -50,7 +51,8 @@ def dentategyrus():
 
     adata.obs['clusters'] = load('./data/DentateGyrus/DG_clusters.npy', url_louvain)
     adata.obsm['X_umap'] = load('./data/DentateGyrus/DG_umap.npy', url_umap)
-    adata._sanitize()
+
+    adata.obs['clusters'] = pd.Categorical(adata.obs['clusters'])
 
     return adata
 

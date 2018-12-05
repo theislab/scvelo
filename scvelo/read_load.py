@@ -1,3 +1,5 @@
+from .preprocessing.utils import set_initial_size
+
 import os, re
 import numpy as np
 import pandas as pd
@@ -91,8 +93,7 @@ def clean_obs_names(data, base='[AGTCBDHKMNRSVWY]', ID_length=12, copy=False):
         #idx_names = np.random.choice(len(names), size=20, replace=False)
         #for i in range(len(names[0])):
         #    if np.all([re.search(names[0][:i], names[ix]) for ix in idx_names]) is not None: obs_key = names[0][:i]
-        adata.obs['sample_batch'] = prefixes
-        adata._sanitize()
+        adata.obs['sample_batch'] = pd.Categorical(prefixes) if len(np.unique(prefixes)) < adata.n_obs else prefixes
 
     adata.obs_names_make_unique()
     return adata if copy else None
@@ -113,6 +114,9 @@ def merge(adata, ldata, copy=True):
     Returns a :class:`~anndata.AnnData` object
     """
     common_obs = adata.obs_names.intersection(ldata.obs_names)
+
+    if 'spliced' in ldata.layers.keys() and 'initial_size_spliced' not in ldata.obs.keys(): set_initial_size(ldata)
+    elif 'spliced' in adata.layers.keys() and 'initial_size_spliced' not in adata.obs.keys(): set_initial_size(adata)
 
     if len(common_obs) == 0:
         clean_obs_names(adata)

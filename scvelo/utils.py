@@ -1,5 +1,6 @@
 from .preprocessing.utils import show_proportions, cleanup, set_initial_size, get_initial_size
-from .preprocessing.moments import get_connectivities, second_order_moments, second_order_moments_u
+from .preprocessing.neighbors import get_connectivities
+from .preprocessing.moments import second_order_moments, second_order_moments_u
 
 from .tools.utils import *
 from .tools.rank_velocity_genes import get_mean_var
