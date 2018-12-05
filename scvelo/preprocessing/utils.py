@@ -163,58 +163,33 @@ def filter_genes(data, min_counts=None, min_cells=None, max_counts=None, max_cel
     # set initial cell sizes before filtering
     set_initial_size(adata)
 
-    def filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
-        counts = X if (min_counts is not None or max_counts is not None) else X > 0
-        counts = counts.sum(0).A1 if issparse(counts) else counts.sum(0)
-        lb = min_counts if min_counts is not None else min_cells if min_cells is not None else -np.inf
-        ub = max_counts if max_counts is not None else max_cells if max_cells is not None else np.inf
-        return (lb <= counts) & (counts <= ub), counts
+    layers = [layer for layer in ['spliced', 'unspliced'] if layer in adata.layers.keys()]
+    for layer in layers:
+        X = adata.layers[layer]
+        if layer == 'spliced':
+            _min_counts, _min_cells, _max_counts, _max_cells = min_counts, min_cells, max_counts, max_cells
+        else:
+            _min_counts, _min_cells, _max_counts, _max_cells = min_counts_u, min_cells_u, max_counts_u, max_cells_u
 
-    gene_subset = np.ones(adata.n_vars, dtype=bool)
-    if min_counts is not None or max_counts is not None:
-        gene_subset, counts = filter(adata.X, min_counts=min_counts, max_counts=max_counts)
-        adata.var['n_counts'] = counts
-        adata._inplace_subset_var(gene_subset)
+        if layer in adata.layers.keys():
+            gene_subset = np.ones(adata.n_vars, dtype=bool)
+            if _min_counts is not None or _max_counts is not None:
+                gene_subset, _ = filter(X, min_counts=_min_counts, max_counts=_max_counts)
+                adata._inplace_subset_var(gene_subset)
 
-    if min_cells is not None or max_cells is not None:
-        gene_subset, cells = filter(adata.X, min_cells=min_cells, max_cells=max_cells)
-        adata.var['n_cells'] = cells
-        adata._inplace_subset_var(gene_subset)
+            if _min_cells is not None or _max_cells is not None:
+                gene_subset, _ = filter(X, min_cells=_min_cells, max_cells=_max_cells)
+                adata._inplace_subset_var(gene_subset)
 
-    s = np.sum(~gene_subset)
-    if s > 0:
-        logg.info('filtered out {} genes that are detected'.format(s), end=' ')
-        if min_cells is not None or min_counts is not None:
-            logg.info('in less than',
-                      str(min_cells) + ' cells'
-                      if min_counts is None else str(min_counts) + ' counts', no_indent=True)
-        if max_cells_u is not None or max_counts_u is not None:
-            logg.info('in more than ',
-                      str(max_cells) + ' cells'
-                      if max_counts is None else str(max_counts) + ' counts', no_indent=True)
-
-    layer = 'unspliced'
-    if layer in adata.layers.keys():
-        gene_subset = np.ones(adata.n_vars, dtype=bool)
-        if min_counts_u is not None or max_counts is not None:
-            gene_subset, _ = filter(adata.layers[layer], min_counts=min_counts_u, max_counts=max_counts_u)
-            adata._inplace_subset_var(gene_subset)
-
-        if min_cells_u is not None or max_cells_u is not None:
-            gene_subset, _ = filter(adata.layers[layer], min_cells=min_cells_u, max_cells=max_cells_u)
-            adata._inplace_subset_var(gene_subset)
-
-        s = np.sum(~gene_subset)
-        if s > 0:
-            logg.info('filtered out {} genes that are detected'.format(s), end=' ')
-            if min_cells_u is not None or min_counts_u is not None:
-                logg.info('in less than',
-                          str(min_cells_u) + ' cells (' + str(layer) + ')'
-                          if min_counts_u is None else str(min_counts_u) + ' counts(' + str(layer) + ')', no_indent=True)
-            if max_cells_u is not None or max_counts_u is not None:
-                logg.info('in more than ',
-                          str(max_cells_u) + ' cells(' + str(layer) + ')'
-                          if max_counts_u is None else str(max_counts_u) + ' counts(' + str(layer) + ')', no_indent=True)
+            s = np.sum(~gene_subset)
+            if s > 0:
+                logg.info('Filtered out {} genes that are detected'.format(s), end=' ')
+                if _min_cells is not None or _min_counts is not None:
+                    logg.info('in less than', str(_min_cells) + ' cells (' + str(layer) + ').' if _min_counts is None
+                              else str(_min_counts) + ' counts (' + str(layer) + ').', no_indent=True)
+                if max_cells is not None or max_counts is not None:
+                    logg.info('in more than ', str(_max_cells) + ' cells(' + str(layer) + ').' if _max_counts is None
+                              else str(_max_counts) + ' counts (' + str(layer) + ').', no_indent=True)
 
     return adata if copy else None
 
@@ -293,19 +268,19 @@ def counts_per_cell_quantile(X, max_proportion_per_cell=.05, counts_per_cell=Non
     return X[:, gene_subset].sum(1).A1 if issparse(X) else X[:, gene_subset].sum(1)
 
 
-def normalize_layers(data, layers={'spliced', 'unspliced'}, counts_per_cell_after=None, max_proportion_per_cell=None,
-                     by_total_size=None, copy=False):
+def not_yet_normalized(X):
+    return np.allclose((X.data[:10] if issparse(X) else X[0]) % 1, 0, atol=1e-3)
+
+
+def normalize_layers(data, layers=['spliced', 'unspliced'], counts_per_cell_after=None, max_proportion_per_cell=None,
+                     by_total_size=None, enforce=False, copy=False):
     """Normalize by total counts to median.
     """
     adata = data.copy() if copy else data
     from scanpy.api.pp import normalize_per_cell
 
-    def not_normalized_yet(adata, layer):
-        X = adata.layers[layer]
-        return np.allclose((X.data[:10] if issparse(X) else X[0]) % 1, 0, atol=1e-3)
-
     for layer in layers:
-        if not_normalized_yet(adata, layer):
+        if not_yet_normalized(adata.layers[layer]) or enforce:
             counts_per_cell = get_initial_size(adata, layer, by_total_size)
             if max_proportion_per_cell is not None and (0 < max_proportion_per_cell < 1):
                 counts_per_cell = counts_per_cell_quantile(adata.X, max_proportion_per_cell, counts_per_cell)
@@ -314,8 +289,8 @@ def normalize_layers(data, layers={'spliced', 'unspliced'}, counts_per_cell_afte
     return adata if copy else None
 
 
-def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None,
-                       key_n_counts=None, max_proportion_per_cell=None, layers={'spliced', 'unspliced'}, copy=False):
+def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, key_n_counts=None,
+                       max_proportion_per_cell=None, layers=['spliced', 'unspliced'], enforce=False, copy=False):
     """Normalize each cell by total counts over all genes.
 
     Parameters
@@ -345,10 +320,24 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None,
     """
     adata = data.copy() if copy else data
     from scanpy.api.pp import normalize_per_cell
+
     if max_proportion_per_cell is not None and (0 < max_proportion_per_cell < 1):
         counts_per_cell = counts_per_cell_quantile(adata.X, max_proportion_per_cell)
-    normalize_per_cell(adata, counts_per_cell_after, counts_per_cell, key_n_counts)
-    normalize_layers(adata, layers, counts_per_cell_after, max_proportion_per_cell)
+
+    if not_yet_normalized(adata.X) or enforce:
+        normalize_per_cell(adata, counts_per_cell_after, counts_per_cell, key_n_counts)
+        add_msg_str = 'X and '
+    else:
+        add_msg_str = ''
+
+    layers = [layers] if isinstance(layers, str) else [layer for layer in layers if layer in adata.layers.keys()]
+    if all([not_yet_normalized(adata.layers[layer]) for layer in layers]) or enforce:
+        normalize_layers(adata, layers, counts_per_cell_after, max_proportion_per_cell)
+        logg.info('Normalized ' + add_msg_str + 'spliced/unspliced count data.')
+    else:
+        logg.info('Looks like it\'s already normalized.'
+                  'If you want to (re-)normalize your data, use `scv.pp.normalize_per_cell(adata, enforce=True)`.')
+
     return adata if copy else None
 
 
@@ -396,10 +385,22 @@ def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=Non
     Returns or updates `adata` depending on `copy`.
     """
     adata = data.copy() if copy else data
+
+    if 'spliced' in adata.layers.keys() and 'unspliced' in adata.layers.keys():
+        X_not_yet_processed = np.all(adata.X.data[:100] == adata.layers['spliced'].data[:100])
+    else:
+        raise ValueError('Could not find spliced / unspliced counts.')
+
     filter_genes(adata, min_counts=min_counts, min_counts_u=min_counts_u, min_cells=min_cells, min_cells_u=min_cells_u)
     normalize_per_cell(adata)
     if n_top_genes is not None: filter_genes_dispersion(adata, n_top_genes=n_top_genes, flavor=flavor)
-    if log: log1p(adata)
+
+    if log and X_not_yet_processed:
+        log1p(adata)
+        logg.info('Logarithmized X.')
+    elif log: logg.info('Did not modify X as it looks preprocessed already.')
+    elif X_not_yet_processed: logg.info('Consider logarithmizing adata.X with `scv.pp.log1p` for better results.')
+
     return adata if copy else None
 
 
