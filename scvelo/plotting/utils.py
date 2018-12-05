@@ -6,13 +6,25 @@ from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scanpy.plotting.utils import savefig_or_show, default_palette, adjust_palette
 from matplotlib.colors import is_color_like
-from pandas.api.types import is_categorical as cat
 from scipy.sparse import issparse
-import pandas as pd
+
+
+def strings_to_categoricals(adata):
+    """Transform string annotations to categoricals.
+    """
+    from pandas.api.types import is_string_dtype
+    from pandas import Categorical
+    for df in [adata.obs, adata.var]:
+        string_cols = [key for key in df.columns if is_string_dtype(df[key])]
+        for key in string_cols:
+            c = df[key]
+            c = Categorical(c)
+            if len(c.categories) < len(c): df[key] = c
 
 
 def is_categorical(adata, c):
-    adata._sanitize()  # Indentify array of categorical type and transform where applicable
+    from pandas.api.types import is_categorical as cat
+    strings_to_categoricals(adata)
     return isinstance(c, str) and (c in adata.obs.keys() and cat(adata.obs[c]) or is_color_like(c))
 
 
@@ -22,9 +34,10 @@ def default_basis(adata):
 
 
 def make_unique_list(key, allow_array=False):
+    from pandas import unique
     is_list = isinstance(key, (list, tuple, np.record)) if allow_array else isinstance(key, (list, tuple, np.ndarray, np.record))
     is_list_of_str = is_list and all(isinstance(item, str) for item in key)
-    return pd.unique(key) if is_list_of_str else key if is_list and len(key) < 20 else [key]
+    return unique(key) if is_list_of_str else key if is_list and len(key) < 20 else [key]
 
 
 def update_axes(ax, fontsize, is_embedding, frameon):
@@ -50,7 +63,7 @@ def set_label(xlabel, ylabel, fontsize=None, basis=None):
         pl.xlabel(xlabel, fontsize=fontsize)
         pl.ylabel(ylabel, fontsize=fontsize)
     elif basis is not None:
-        component_name = ('DC' if basis == 'diffmap' else 'tSNE' if basis == 'tsne' else 'UMAP' if basis == 'umap'
+        component_name = ('DC' if 'diffmap' in basis else 'tSNE' if basis == 'tsne' else 'UMAP' if basis == 'umap'
         else 'PC' if basis == 'pca' else basis.replace('draw_graph_', '').upper() if 'draw_graph' in basis else basis)
         pl.xlabel(component_name + '1')
         pl.ylabel(component_name + '2')
@@ -58,11 +71,14 @@ def set_label(xlabel, ylabel, fontsize=None, basis=None):
 
 def set_title(title, layer=None, color=None, fontsize=None):
     if isinstance(title, str):
+        title = title.replace('_', ' ')
         pl.title(title, fontsize=fontsize)
     elif isinstance(layer, str) and isinstance(color, str):
-        pl.title(color + ' ' + layer, fontsize=fontsize)
+        title = (color + ' ' + layer).replace('_', ' ')
+        pl.title(title, fontsize=fontsize)
     elif isinstance(color, str):
-        pl.title(color, fontsize=fontsize)
+        title = color.replace('_', ' ')
+        pl.title(title, fontsize=fontsize)
 
 
 def set_frame(ax, frameon):
@@ -130,7 +146,7 @@ def get_components(components=None, basis=None, projection=None):
     if components is None: components = '1,2,3' if projection == '3d' else '1,2'
     if isinstance(components, str): components = components.split(',')
     components = np.array(components).astype(int) - 1
-    if basis == 'diffmap': components += 1
+    if 'diffmap' in basis or 'vmap' in basis: components += 1
     return components
 
 

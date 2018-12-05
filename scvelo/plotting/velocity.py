@@ -13,7 +13,7 @@ from scipy.sparse import issparse
 
 def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=None, fits='all', layers='all',
              color=None, color_map='RdBu_r', perc=[2,98], use_raw=False, size=None, alpha=.5, fontsize=None,
-             figsize=None, dpi=None, show=True, save=None, ax=None, **kwargs):
+             figsize=None, dpi=None, show=True, save=None, ax=None, ncols=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
     The phase plot shows spliced against unspliced expressions with steady-state fit.
@@ -85,10 +85,14 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
     fits = [fit for fit in fits if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
     stochastic_fits = [fit for fit in fits if 'variance_' + fit in adata.layers.keys()]
 
+    nplts = (1 + len(layers) + (mode == 'stochastic') * 2)
+    ncols = 1 if ncols is None else ncols
+    nrows = int(np.ceil(len(var_names) / ncols))
+    ncols = int(ncols * nplts)
     figsize = rcParams['figure.figsize'] if figsize is None else figsize
-    n_row, n_col = len(var_names), (1 + len(layers) + (mode == 'stochastic')*2)
-    ax = pl.figure(figsize=(figsize[0]*n_col/2, figsize[1]*n_row/2), dpi=dpi) if ax is None else ax
-    gs = pl.GridSpec(n_row, n_col, wspace=0.3, hspace=0.5)
+    #n_row, n_col = len(var_names), (1 + len(layers) + (mode == 'stochastic')*2)
+    ax = pl.figure(figsize=(figsize[0] * ncols / 2, figsize[1] * nrows / 2), dpi=dpi) if ax is None else ax
+    gs = pl.GridSpec(nrows, ncols, wspace=0.3, hspace=0.5)
 
     size = default_size(adata) / 2 if size is None else size  # since fontsize is halved in width and height
     fontsize = rcParams['font.size'] if fontsize is None else fontsize
@@ -98,7 +102,7 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
         if issparse(s): s, u = s.A, u.A
 
         # spliced/unspliced phase portrait with steady-state estimate
-        ax = pl.subplot(gs[v * n_col])
+        ax = pl.subplot(gs[v * nplts])
         scatter(adata, basis=var, color=color, frameon=True, title=var, size=size, alpha=alpha, fontsize=fontsize,
                 xlabel='spliced', ylabel='unspliced', show=False, ax=ax, save=False, **kwargs)
 
@@ -117,7 +121,7 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
 
         # velocity and expression plots
         for l, layer in enumerate(layers):
-            ax = pl.subplot(gs[v*n_col + l + 1])
+            ax = pl.subplot(gs[v * nplts + l + 1])
             title = 'expression' if layer == skey else layer
             scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map, title=title, perc=perc,
                     fontsize=fontsize, size=size, alpha=alpha, frameon=False, show=False, ax=ax, save=False, **kwargs)
@@ -127,13 +131,13 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
             ss, us = ss.flatten(), us.flatten()
             fit = stochastic_fits[0]
 
-            ax = pl.subplot(gs[v*n_col + len(layers) + 1])
+            ax = pl.subplot(gs[v * nplts + len(layers) + 1])
             offset = _adata.var[fit + '_offset'] if fit + '_offset' in adata.var.keys() else 0
             beta = _adata.var[fit + '_beta'] if fit + '_beta' in adata.var.keys() else 1
             x = 2 * (ss - s**2) - s
             y = 2 * (us - u * s) + u + 2 * s * offset / beta
 
-            scatter(adata, x=x, y=y, color=color, title=var, fontsize=40/n_col, size=size, perc=perc, show=False,
+            scatter(adata, x=x, y=y, color=color, title=var, fontsize=40/ncols, size=size, perc=perc, show=False,
                     xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$',
                     frameon=True, ax=ax, save=False, **kwargs)
 
@@ -144,7 +148,7 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
                 offset2 = _adata.var[fit + '_offset2'].values if fit + '_offset2' in adata.var.keys() else 0
 
                 pl.plot(xnew, gamma / beta * xnew + offset2 / beta, c='k', linestyle='--')
-            if v == len(var_names) - 1: pl.legend(fits, loc='lower right', prop={'size': 34/n_col})
+            if v == len(var_names) - 1: pl.legend(fits, loc='lower right', prop={'size': 34/ncols})
 
     if isinstance(save, str): savefig('', dpi=dpi, save=save, show=show)
 

@@ -63,7 +63,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
                             sort_order=True, groups=None, components=None, projection='2d', legend_loc='none',
                             legend_fontsize=None, legend_fontweight=None, right_margin=None, left_margin=None,
                             xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, dpi=None, frameon=None,
-                            show=True, save=None, ax=None, **kwargs):
+                            show=True, save=None, ax=None, ncols=None, **kwargs):
     """\
     Scatter plot of velocities for the grid points on the embedding
 
@@ -123,17 +123,21 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
 
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else vkeys if len(vkeys) > 1 else None
     if multikey is not None:
+        ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
+        nrows = int(np.ceil(len(multikey) / ncols))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
-        for i, gs in enumerate(pl.GridSpec(1, len(multikey), pl.figure(None, (figsize[0] * len(multikey), figsize[1]), dpi=dpi))):
-            velocity_embedding_grid(adata, density=density, scale=scale, size=size, min_mass=min_mass, smooth=smooth,
-                                    n_neighbors=n_neighbors, principal_curve=principal_curve, ax=pl.subplot(gs),
-                                    arrow_size=arrow_size, arrow_length=arrow_length,
-                                    color=colors[i] if len(colors) > 1 else color,
-                                    layer=layers[i] if len(layers) > 1 else layer,
-                                    vkey=vkeys[i] if len(vkeys) > 1 else vkey,
-                                    X_grid=None if len(vkeys) > 1 else X_grid,
-                                    V_grid=None if len(vkeys) > 1 else V_grid,
-                                    autoscale=False if len(vkeys) > 1 else autoscale, **scatter_kwargs, **kwargs)
+        for i, gs in enumerate(
+                pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):
+            if i < len(multikey):
+                velocity_embedding_grid(adata, density=density, scale=scale, size=size, min_mass=min_mass, smooth=smooth,
+                                        n_neighbors=n_neighbors, principal_curve=principal_curve, ax=pl.subplot(gs),
+                                        arrow_size=arrow_size, arrow_length=arrow_length,
+                                        color=colors[i] if len(colors) > 1 else color,
+                                        layer=layers[i] if len(layers) > 1 else layer,
+                                        vkey=vkeys[i] if len(vkeys) > 1 else vkey,
+                                        X_grid=None if len(vkeys) > 1 else X_grid,
+                                        V_grid=None if len(vkeys) > 1 else V_grid,
+                                        autoscale=False if len(vkeys) > 1 else autoscale, **scatter_kwargs, **kwargs)
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if show:
             pl.show()
@@ -167,11 +171,12 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
 
 @doc_params(scatter=doc_scatter)
 def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, smooth=None, linewidth=None,
-                              n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, color=None, use_raw=None, layer=None,
-                              color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None, sort_order=True,
-                              groups=None, components=None, projection='2d', legend_loc='none', legend_fontsize=None,
-                              legend_fontweight=None, right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None,
-                              fontsize=None, figsize=None, dpi=None, frameon=None, show=True, save=None, ax=None, **kwargs):
+                              n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, color=None, use_raw=None,
+                              layer=None, color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None,
+                              sort_order=True, groups=None, components=None, projection='2d', legend_loc='none',
+                              legend_fontsize=None, legend_fontweight=None, right_margin=None, left_margin=None,
+                              xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, dpi=None, frameon=None,
+                              show=True, save=None, ax=None, ncols=None, **kwargs):
     """\
     Stream plot of velocities computed from the grid points on the embedding
 
@@ -228,15 +233,19 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
 
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else vkeys if len(vkeys) > 1 else None
     if multikey is not None:
+        ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
+        nrows = int(np.ceil(len(multikey) / ncols))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
-        for i, gs in enumerate(pl.GridSpec(1, len(multikey), pl.figure(None, (figsize[0] * len(multikey), figsize[1]), dpi=dpi))):
-            velocity_embedding_stream(adata, density=density, size=size, smooth=smooth,
-                                      n_neighbors=n_neighbors, linewidth=linewidth, ax=pl.subplot(gs),
-                                      color=colors[i] if len(colors) > 1 else color,
-                                      layer=layers[i] if len(layers) > 1 else layer,
-                                      vkey=vkeys[i] if len(vkeys) > 1 else vkey,
-                                      X_grid=None if len(vkeys) > 1 else X_grid,
-                                      V_grid=None if len(vkeys) > 1 else V_grid, **scatter_kwargs, **kwargs)
+        for i, gs in enumerate(
+                pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):
+            if i < len(multikey):
+                velocity_embedding_stream(adata, density=density, size=size, smooth=smooth, n_neighbors=n_neighbors,
+                                          linewidth=linewidth, ax=pl.subplot(gs),
+                                          color=colors[i] if len(colors) > 1 else color,
+                                          layer=layers[i] if len(layers) > 1 else layer,
+                                          vkey=vkeys[i] if len(vkeys) > 1 else vkey,
+                                          X_grid=None if len(vkeys) > 1 else X_grid,
+                                          V_grid=None if len(vkeys) > 1 else V_grid, **scatter_kwargs, **kwargs)
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if show:
             pl.show()

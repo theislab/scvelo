@@ -68,6 +68,8 @@ dpi: `int` (default: 80)
     Figure dpi.
 frameon: `bool` (default: `True`)
     Draw a frame around the scatter plot.
+ncols : `int` (default: `None`)
+    Number of panels per row.
 show: `bool`, optional (default: `None`)
     Show the plot, do not return axis.
 save: `bool` or `str`, optional (default: `None`)

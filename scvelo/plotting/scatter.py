@@ -11,11 +11,11 @@ from scipy.sparse import issparse
 
 
 @doc_params(scatter=doc_scatter)
-def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None, colorbar=False,
-            palette=None, size=None, alpha=None, perc=None, sort_order=True, groups=None, components=None, projection='2d',
-            legend_loc='none', legend_fontsize=None, legend_fontweight=None, right_margin=None, left_margin=None,
-            xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, dpi=None, frameon=None, show=True,
-            save=None, ax=None, zorder=None, **kwargs):
+def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
+            colorbar=False, palette=None, size=None, alpha=None, perc=None, sort_order=True, groups=None,
+            components=None, projection='2d', legend_loc='none', legend_fontsize=None, legend_fontweight=None,
+            right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
+            dpi=None, frameon=None, show=True, save=None, ax=None, zorder=None, ncols=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -41,14 +41,17 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
     colors, layers, bases = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(basis)
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else bases if len(bases) > 1 else None
     if multikey is not None:
+        ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
+        nrows = int(np.ceil(len(multikey) / ncols))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
         for i, gs in enumerate(
-                pl.GridSpec(1, len(multikey), pl.figure(None, (figsize[0] * len(multikey), figsize[1]), dpi=dpi))):
-            scatter(adata, x=x, y=y, size=size, xlabel=xlabel, ylabel=ylabel, color_map=color_map, colorbar=colorbar,
-                    perc=perc, frameon=frameon, ax=pl.subplot(gs), zorder=zorder,
-                    color=colors[i] if len(colors) > 1 else color,
-                    layer=layers[i] if len(layers) > 1 else layer,
-                    basis=bases[i] if len(bases) > 1 else basis, **scatter_kwargs, **kwargs)
+                pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):
+            if i < len(multikey):
+                scatter(adata, x=x, y=y, size=size, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
+                        colorbar=colorbar, perc=perc, frameon=frameon, ax=pl.subplot(gs), zorder=zorder,
+                        color=colors[i] if len(colors) > 1 else color,
+                        layer=layers[i] if len(layers) > 1 else layer,
+                        basis=bases[i] if len(bases) > 1 else basis, **scatter_kwargs, **kwargs)
         if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if show:
             pl.show()
