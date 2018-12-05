@@ -2,7 +2,7 @@ from .. import settings
 from .. import logging as logg
 from ..preprocessing.moments import moments, second_order_moments
 from .optimization import leastsq_NxN, leastsq_generalized, maximum_likelihood
-from .utils import R_squared, groups_to_bool, make_dense
+from .utils import R_squared, groups_to_bool, make_dense, strings_to_categoricals
 
 import numpy as np
 import warnings
@@ -147,7 +147,7 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
 
     logg.info('computing velocities', r=True)
 
-    adata._sanitize()
+    strings_to_categoricals(adata)
     categories = adata.obs[groupby].cat.categories \
         if groupby is not None and groups is None and groups_for_fit is None else [None]
 

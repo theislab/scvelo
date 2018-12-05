@@ -61,23 +61,29 @@ def normalize(X):
 
 
 def scale(X, min=0, max=1):
-    X = X - X.min() + min
-    X = X / X.max() * max
+    idx = np.isfinite(X)
+    if any(idx):
+        X = X - X[idx].min() + min
+        xmax = X[idx].max()
+        X = X / xmax * max if xmax != 0 else X * max
     return X
 
 
-def get_indices(dist):
-    n_neighbors = (dist > 0).sum(1).min()
-    rows_idx = np.where((dist > 0).sum(1) > n_neighbors)[0]
+def get_indices(dist, n_neighbors=None):
+    D = dist.copy()
+    n_counts = (D > 0).sum(1).A1 if issparse(D) else (D > 0).sum(1)
+    n_neighbors = n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
+    rows = np.where(n_counts > n_neighbors)[0]
+    cumsum_neighs = np.insert(n_counts.cumsum(), 0, 0)
+    dat = D.data
 
-    for row_idx in rows_idx:
-        col_idx = dist[row_idx].indices[n_neighbors:]
-        dist[row_idx, col_idx] = 0
-
-    dist.eliminate_zeros()
-
-    indices = dist.indices.reshape((-1, n_neighbors))
-    return indices, dist
+    for row in rows:
+        n0, n1 = cumsum_neighs[row], cumsum_neighs[row + 1]
+        rm_idx = n0 + dat[n0:n1].argsort()[n_neighbors:]
+        dat[rm_idx] = 0
+    D.eliminate_zeros()
+    indices = D.indices.reshape((-1, n_neighbors))
+    return indices, D
 
 
 def get_iterative_indices(indices, index, n_recurse_neighbors=2, max_neighs=None):
@@ -134,8 +140,21 @@ def extract_int_from_str(array):
     return nums
 
 
+def strings_to_categoricals(adata):
+    """Transform string annotations to categoricals.
+    """
+    from pandas.api.types import is_string_dtype
+    from pandas import Categorical
+    for df in [adata.obs, adata.var]:
+        string_cols = [key for key in df.columns if is_string_dtype(df[key])]
+        for key in string_cols:
+            c = df[key]
+            c = Categorical(c)
+            if len(c.categories) < len(c): df[key] = c
+
+
 def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):
-    adata._sanitize()
+    strings_to_categoricals(adata)
     if len(map_groups) != len(adata.obs[key].cat.categories):
         map_coarse = {}
         for c in adata.obs[key].cat.categories:
@@ -193,3 +212,10 @@ def cutoff_small_velocities(adata, vkey='velocity', key_added='velocity_cut', fr
     W = xy_norm >= np.percentile(xy_norm, 98, axis=0) * frac_of_max
 
     adata.layers[key_added] = csr_matrix(W).multiply(adata.layers[vkey]).tocsr()
+
+    from .velocity_graph import velocity_graph
+    from .velocity_embedding import velocity_embedding
+
+    velocity_graph(adata, vkey=key_added, approx=True)
+    velocity_embedding(adata, vkey=key_added)
+
