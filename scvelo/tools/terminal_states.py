@@ -9,7 +9,30 @@ from scipy.sparse import linalg, csr_matrix, issparse
 import numpy as np
 
 
-def cell_fate(data, groupby='clusters', distinct_clusters=None, self_transitions=True, n_neighbors=None, copy=False):
+def cell_fate(data, groupby='clusters', disconnected_groups=None, n_neighbors=None, copy=False):
+    """Computes individual cell endpoints
+
+    Arguments
+    ---------
+    data: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    groupby: `str` (default: `'clusters'`)
+        Key to which to assign the fates.
+    disconnected_groups: list of `str` (default: `None`)
+        Which groups to treat as disconnected for fate assignment.
+    n_neighbors: `int` (default: `None`)
+        Number of neighbors to restrict transitions to.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to `adata`.
+
+    Returns
+    -------
+    Returns or updates `adata` with the attributes
+    cell_fate: `.obs`
+        most likely cell fate for each individual cell
+    cell_fate_confidence: `.obs`
+        confidence of transitioning to the assigned fate
+    """
     adata = data.copy() if copy else data
     logg.info('computing terminal states', r=True)
 
@@ -20,13 +43,13 @@ def cell_fate(data, groupby='clusters', distinct_clusters=None, self_transitions
     _adata.uns['velocity_graph'] = vgraph.graph
     _adata.uns['velocity_graph_neg'] = vgraph.graph_neg
 
-    T = transition_matrix(_adata, self_transitions=self_transitions)
+    T = transition_matrix(_adata)
     I = np.eye(_adata.n_obs)
     fate = np.linalg.inv(I - T)
     if issparse(T): fate = fate.A
     cell_fates = np.array(_adata.obs[groupby][fate.argmax(1)])
-    if distinct_clusters is not None:
-        idx = _adata.obs[groupby].isin(distinct_clusters)
+    if disconnected_groups is not None:
+        idx = _adata.obs[groupby].isin(disconnected_groups)
         cell_fates[idx] = _adata.obs[groupby][idx]
     adata.obs['cell_fate'] = cell_fates
     adata.obs['cell_fate_confidence'] = fate.max(1) / fate.sum(1)
@@ -35,8 +58,8 @@ def cell_fate(data, groupby='clusters', distinct_clusters=None, self_transitions
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
         'added\n'
-        '    \'cell_fate\', most likely cell fate for aech individual cell (adata.obs)\n'
-        '    \'cell_fate_confidence\', confidence of cell transitioning to its most likely fate (adata.obs)')
+        '    \'cell_fate\', most likely cell fate (adata.obs)\n'
+        '    \'cell_fate_confidence\', confidence of transitioning to the assigned fate (adata.obs)')
     return adata if copy else None
 
 
@@ -96,7 +119,7 @@ def write_to_obs(adata, key, vals, cell_subset=None):
 
 def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_transitions=False, basis=None,
                     weight_diffusion=0, scale_diffusion=1, eps=1e-3, copy=False):
-    """Computes terminal states (root and end points) via eigenvalue decomposition.
+    """Computes terminal states (root and end points).
 
     Arguments
     ---------

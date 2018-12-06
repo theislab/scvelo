@@ -9,7 +9,7 @@ import numpy as np
 def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_transitions=True, scale=10, perc=None,
                       use_negative_cosines=False, weight_diffusion=0, scale_diffusion=1, weight_indirect_neighbors=.5,
                       n_neighbors=None, vgraph=None):
-    """Computes transition probabilities by applying Gaussian kernel to cosine similarities x scale
+    """Computes transition probabilities from velocity graph
 
     Arguments
     ---------

@@ -47,7 +47,6 @@ Tools (tl)
    tl.rank_velocity_genes
 
    tl.velocity_confidence
-   tl.velocity_confidence_transition
 
 
 Plotting (pl)
@@ -58,10 +57,10 @@ Plotting (pl)
 
    pl.scatter
    pl.velocity
+   pl.velocity_graph
    pl.velocity_embedding
    pl.velocity_embedding_grid
    pl.velocity_embedding_stream
-   pl.velocity_graph
 
 Datasets
 ~~~~~~~~

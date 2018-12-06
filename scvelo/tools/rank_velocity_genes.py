@@ -113,7 +113,7 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', resolution=N
 
 def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_with=None, resolution=None,
                         min_counts=None, min_r2=None, min_dispersion=None, copy=False):
-    """Rank genes for characterizing groups according to unspliced/spliced correlation and differential expression.
+    """Rank genes for velocity characterizing groups.
 
     Arguments
     ----------

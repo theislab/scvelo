@@ -19,7 +19,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
                        right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None,
                        figsize=None, dpi=None, frameon=None, show=True, save=None, ax=None, ncols=None, **kwargs):
     """\
-    Scatter plot of velocities on the embedding
+    Scatter plot of velocities on the embedding.
 
     Arguments
     ---------

@@ -65,7 +65,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
                             xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, dpi=None, frameon=None,
                             show=True, save=None, ax=None, ncols=None, **kwargs):
     """\
-    Scatter plot of velocities for the grid points on the embedding
+    Scatter plot of velocities on a grid.
 
     Arguments
     ---------
@@ -178,7 +178,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
                               xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, dpi=None, frameon=None,
                               show=True, save=None, ax=None, ncols=None, **kwargs):
     """\
-    Stream plot of velocities computed from the grid points on the embedding
+    Stream plot of velocities on the embedding.
 
     Arguments
     ---------

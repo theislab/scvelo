@@ -8,7 +8,7 @@ import numpy as np
 
 
 def velocity_confidence(data, vkey='velocity', copy=False):
-    """Computes the confidences according to the velocity for each cell.
+    """Computes confidences of velocities.
 
     Arguments
     ---------
@@ -50,11 +50,14 @@ def velocity_confidence(data, vkey='velocity', copy=False):
 
     logg.hint('added \'' + vkey + '_confidence\' (adata.obs)')
 
+    if vkey + '_confidence_transition' not in adata.obs.keys():
+        velocity_confidence_transition(adata, vkey)
+
     return adata if copy else None
 
 
 def velocity_confidence_transition(data, vkey='velocity', scale=10, copy=False):
-    """Computes the confidences of transition according to the velocity for each cell.
+    """Computes confidences of velocity transitions.
 
     Arguments
     ---------

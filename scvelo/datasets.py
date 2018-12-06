@@ -8,7 +8,7 @@ import pandas as pd
 
 def toy_data(n_obs):
     """
-    Randomly samples a new dataset of size n_obs from the Dentate Gyrus dataset.
+    Randomly samples from the Dentate Gyrus dataset.
 
     Arguments
     ---------

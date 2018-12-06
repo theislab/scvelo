@@ -18,7 +18,7 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n
                    right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None,
                    figsize=None, dpi=None, frameon=None, show=True, save=None, ax=None):
     """\
-    Scatter plot of velocities on the embedding
+    Plot of the velocity graph.
 
     Arguments
     ---------
