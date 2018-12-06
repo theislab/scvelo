@@ -1,3 +1,4 @@
+from ..preprocessing.neighbors import get_connectivities
 from .utils import normalize
 
 from scipy.spatial.distance import pdist, squareform
@@ -5,8 +6,9 @@ from scipy.sparse import csr_matrix
 import numpy as np
 
 
-def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_transitions=True, scale=10,
-                      use_negative_cosines=False, weight_diffusion=0, scale_diffusion=1):
+def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_transitions=True, scale=10, perc=None,
+                      use_negative_cosines=False, weight_diffusion=0, scale_diffusion=1, weight_indirect_neighbors=.5,
+                      n_neighbors=None, vgraph=None):
     """Computes transition probabilities by applying Gaussian kernel to cosine similarities x scale
 
     Arguments
@@ -33,7 +35,7 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
     if vkey+'_graph' not in adata.uns:
         raise ValueError('You need to run `tl.velocity_graph` first to compute cosine correlations.')
 
-    graph = csr_matrix(adata.uns[vkey + '_graph']).copy()
+    graph = csr_matrix(adata.uns[vkey + '_graph']).copy() if vgraph is None else vgraph.copy()
 
     if self_transitions:
         confidence = graph.max(1).A.flatten()
@@ -50,10 +52,19 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
     if 'neighbors' in adata.uns.keys():
         direct_neighbors = adata.uns['neighbors']['distances'] > 0
         direct_neighbors.setdiag(1)
-        T = .5 * T + .5 * direct_neighbors.multiply(T)
+        w = weight_indirect_neighbors
+        T = w * T + (1-w) * direct_neighbors.multiply(T)
 
     if backward: T = T.T
     T = normalize(T)
+
+    if n_neighbors is not None:
+        T.multiply(get_connectivities(adata, mode='distances', n_neighbors=n_neighbors, recurse_neighbors=True))
+
+    if perc is not None:
+        threshold = np.percentile(T.data, perc)
+        T.data[T.data < threshold] = 0
+        T.eliminate_zeros()
 
     if 'X_' + str(basis) in adata.obsm.keys():
         dists_emb = (T > 0).multiply(squareform(pdist(adata.obsm['X_' + basis])))

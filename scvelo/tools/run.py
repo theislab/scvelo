@@ -2,12 +2,13 @@ from ..preprocessing import filter_and_normalize, moments
 from . import velocity, velocity_graph, velocity_embedding
 
 
-def run_all(data, basis=None, mode='deterministic', min_counts=3, n_pcs=30, n_neighbors=30, copy=False):
+def run_all(data, basis=None, mode=None, min_counts=30, min_counts_u=20, n_top_genes=3000, n_pcs=30, n_neighbors=30,
+            copy=False):
     from time import time
     start = time()
 
     adata = data.copy() if copy else data
-    filter_and_normalize(adata, min_counts=min_counts)
+    filter_and_normalize(adata, min_counts=min_counts, min_counts_u=min_counts_u, n_top_genes=n_top_genes)
     print("Number of genes to be used:", adata.X.shape[1])
     moments(adata, n_neighbors=n_neighbors, n_pcs=n_pcs)
 
