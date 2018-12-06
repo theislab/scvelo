@@ -24,7 +24,6 @@ Preprocessing (pp)
 .. autosummary::
    :toctree: .
 
-   pp.show_proportions
    pp.filter_genes
    pp.filter_genes_dispersion
    pp.normalize_per_cell
@@ -43,6 +42,7 @@ Tools (tl)
    tl.velocity_embedding
 
    tl.transition_matrix
+   tl.cell_fate
    tl.terminal_states
    tl.rank_velocity_genes
 
@@ -60,7 +60,8 @@ Plotting (pl)
    pl.velocity
    pl.velocity_embedding
    pl.velocity_embedding_grid
-
+   pl.velocity_embedding_stream
+   pl.velocity_graph
 
 Datasets
 ~~~~~~~~
