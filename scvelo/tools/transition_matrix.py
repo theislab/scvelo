@@ -59,7 +59,7 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
     T = normalize(T)
 
     if n_neighbors is not None:
-        T.multiply(get_connectivities(adata, mode='distances', n_neighbors=n_neighbors, recurse_neighbors=True))
+        T = T.multiply(get_connectivities(adata, mode='distances', n_neighbors=n_neighbors, recurse_neighbors=True))
 
     if perc is not None:
         threshold = np.percentile(T.data, perc)

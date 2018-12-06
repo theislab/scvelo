@@ -34,7 +34,7 @@ def cell_fate(data, groupby='clusters', disconnected_groups=None, n_neighbors=No
         confidence of transitioning to the assigned fate
     """
     adata = data.copy() if copy else data
-    logg.info('computing terminal states', r=True)
+    logg.info('computing cell fates', r=True)
 
     n_neighbors = 10 if n_neighbors is None else n_neighbors
     _adata = adata.copy()

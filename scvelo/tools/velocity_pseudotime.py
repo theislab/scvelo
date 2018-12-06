@@ -117,7 +117,7 @@ def velocity_pseudotime(adata, groupby=None, groups=None, root=None, end=None, n
     for cat in categories:
         groups = cat if cat is not None else groups
         cell_subset = groups_to_bool(adata, groups=groups, groupby=groupby)
-        data = adata[cell_subset].copy()
+        data = adata.copy() if cell_subset is None else adata[cell_subset].copy()
         vpt = VPT(data, n_dcs=n_dcs, min_group_size=min_group_size,
                   n_branchings=n_branchings, allow_kendall_tau_shift=allow_kendall_tau_shift)
 
