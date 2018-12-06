@@ -61,16 +61,15 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
     basis = default_basis(adata) if basis is None else basis
 
     if isinstance(groupby, str) and groupby in adata.obs.keys():
-        if 'rank_velocity_genes' not in adata.uns.keys() or not \
-                all(np.isin(adata.uns['rank_velocity_genes']['groups'], adata.obs[groupby].cat.categories)):
+        if 'rank_velocity_genes' not in adata.uns.keys() or adata.uns['rank_velocity_genes']['params']['groupby'] != groupby:
             rank_velocity_genes(adata, vkey='velocity', n_genes=10, groupby=groupby)
+        names = np.array(adata.uns['rank_velocity_genes']['names'].tolist())
         if groups is None:
-            var_names = adata.uns['rank_velocity_genes']['names'][:, 0]
+            var_names = names[:, 0]
         else:
             groups = [groups] if isinstance(groups, str) else groups
-            idx = np.array([any([g in group for g in groups]) for group in adata.uns['rank_velocity_genes']['groups']])
-            #idx = np.isin(adata.uns['rank_velocity_genes']['groups'], groups)
-            var_names = np.hstack(adata.uns['rank_velocity_genes']['names'][idx, :int(10 / idx.sum())])
+            idx = np.array([any([g in group for g in groups]) for group in adata.obs[groupby].cat.categories])
+            var_names = np.hstack(names[idx, :int(10 / idx.sum())])
     elif var_names is not None:
         var_names = [var_names] if isinstance(var_names, str) else [var for var in var_names if var in adata.var_names]
     else:

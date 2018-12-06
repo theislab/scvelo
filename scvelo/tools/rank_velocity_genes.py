@@ -1,5 +1,6 @@
 from .. import settings
 from .. import logging as logg
+from .utils import strings_to_categoricals
 
 from scipy.sparse import issparse
 import numpy as np
@@ -38,6 +39,7 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
 def select_groups(adata, groups='all', key='louvain'):
     """Get subset of groups in adata.obs[key].
     """
+    strings_to_categoricals(adata)
     if isinstance(groups, list) and isinstance(groups[0], int): groups = [str(n) for n in groups]
     categories = adata.obs[key].cat.categories
     groups_masks = np.array([categories[i] == adata.obs[key].values for i, name in enumerate(categories)])
@@ -145,7 +147,7 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
     """
     adata = data.copy() if copy else data
 
-    if groupby is None:
+    if groupby is None or groupby == 'velocity_clusters':
         velocity_clusters(adata, vkey=vkey, match_with=match_with, resolution=resolution)
         groupby = 'velocity_clusters'
 
