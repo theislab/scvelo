@@ -9,7 +9,7 @@ import numpy as np
 
 def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', use_rep=None, recurse_neighbors=False,
             renormalize=False, copy=False):
-    """Computes first order moments for velocity estimation.
+    """Computes moments for velocity estimation.
 
     Arguments
     ---------

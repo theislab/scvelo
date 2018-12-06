@@ -112,7 +112,7 @@ class VelocityGraph:
 
 def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, n_recurse_neighbors=None,
                    random_neighbors_at_max=None, n_top_genes=None, sqrt_transform=False, approx=False, copy=False):
-    """Computes a velocity graph based on cosine similarities.
+    """Computes velocity graph based on cosine similarities.
 
     The cosine similarities are computed between velocities and potential cell state transitions.
 
