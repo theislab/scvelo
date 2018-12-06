@@ -1,11 +1,10 @@
 from .. import settings
 from .. import logging as logg
 from ..preprocessing.neighbors import pca, neighbors
-from .utils import cosine_correlation, get_indices, get_iterative_indices, extract_int_from_str
+from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
-from .rank_velocity_genes import rank_velocity_genes
 
-from scipy.sparse import coo_matrix, issparse
+from scipy.sparse import coo_matrix, csr_matrix, issparse
 import numpy as np
 
 
@@ -29,12 +28,9 @@ def vals_to_csr(vals, rows, cols, shape, split_negative=False):
 
 class VelocityGraph:
     def __init__(self, adata, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, n_recurse_neighbors=None,
-                 random_neighbors_at_max=None, n_top_genes=None, sqrt_transform=False, approx=False, report=False):
-
+                 random_neighbors_at_max=None, sqrt_transform=False, approx=False, report=False):
         subset = np.ones(adata.n_vars, dtype=bool)
-        if n_top_genes is not None and 'velocity_score' in adata.var.keys():
-            subset = adata.var['velocity_score'][::-1][:n_top_genes]
-        elif 'velocity_genes' in adata.var.keys(): subset = adata.var['velocity_genes']
+        if 'velocity_genes' in adata.var.keys(): subset = adata.var['velocity_genes']
 
         X = adata[:, subset].layers[xkey].A if issparse(adata.layers[xkey]) else adata[:, subset].layers[xkey]
         V = adata[:, subset].layers[vkey].A if issparse(adata.layers[vkey]) else adata[:, subset].layers[vkey]
@@ -42,6 +38,7 @@ class VelocityGraph:
             X_pca, PCs, _, _ = pca(X,  n_comps=50, svd_solver='arpack', return_info=True)
             self.X = np.array(X_pca, dtype=np.float32)
             self.V = (V - V.mean(0)).dot(PCs.T)
+            self.V[V.sum(1) == 0] = 0
         else:
             self.X = np.array(X.copy(), dtype=np.float32)
             self.V = np.array(V.copy(), dtype=np.float32)
@@ -111,7 +108,7 @@ class VelocityGraph:
 
 
 def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, n_recurse_neighbors=None,
-                   random_neighbors_at_max=None, n_top_genes=None, sqrt_transform=False, approx=False, copy=False):
+                   random_neighbors_at_max=None, sqrt_transform=False, approx=False, copy=False):
     """Computes velocity graph based on cosine similarities.
 
     The cosine similarities are computed between velocities and potential cell state transitions.
@@ -142,11 +139,10 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
     """
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys(): velocity(adata, vkey=vkey)
-    if n_top_genes is not None and 'velocity_score' not in adata.var.keys(): rank_velocity_genes(adata, n_genes=100)
 
     vgraph = VelocityGraph(adata, vkey=vkey, xkey=xkey, tkey=tkey, basis=basis, n_neighbors=n_neighbors, approx=approx,
                            n_recurse_neighbors=n_recurse_neighbors, random_neighbors_at_max=random_neighbors_at_max,
-                           n_top_genes=n_top_genes, sqrt_transform=sqrt_transform, report=True)
+                           sqrt_transform=sqrt_transform, report=True)
 
     logg.info('computing velocity graph', r=True)
     vgraph.compute_cosines()
