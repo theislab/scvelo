@@ -1,6 +1,5 @@
 from .. import settings
 from ..tools.transition_matrix import transition_matrix
-from ..preprocessing.neighbors import get_connectivities
 from .utils import savefig, default_basis
 from .scatter import scatter
 from .docs import doc_scatter, doc_params

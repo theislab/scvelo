@@ -57,9 +57,9 @@ def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbor
 
 @doc_params(scatter=doc_scatter)
 def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, smooth=None, min_mass=None, arrow_size=None,
-                            arrow_length=None, scale=None, autoscale=True, n_neighbors=None, X=None, V=None,
-                            X_grid=None, V_grid=None, principal_curve=False, color=None, use_raw=None, layer=None,
-                            color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None,
+                            arrow_length=None, arrow_color=None, scale=None, autoscale=True, n_neighbors=None,
+                            X=None, V=None, X_grid=None, V_grid=None, principal_curve=False, color=None, use_raw=None,
+                            layer=None, color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None,
                             sort_order=True, groups=None, components=None, projection='2d', legend_loc='none',
                             legend_fontsize=None, legend_fontweight=None, right_margin=None, left_margin=None,
                             xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, dpi=None, frameon=None,
@@ -149,8 +149,9 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
 
         hl, hw, hal = default_arrow(arrow_size)
         scale = 1 / arrow_length if arrow_length is not None else scale if scale is not None else 1
-        quiver_kwargs = {"scale": scale, "angles": 'xy', "scale_units": 'xy', "width": .001, "color": 'black',
-                   "edgecolors": 'k', "headlength": hl/2, "headwidth": hw/2, "headaxislength": hal/2, "linewidth": .2}
+        quiver_kwargs = {"scale": scale, "angles": 'xy', "scale_units": 'xy', "width": .001,
+                         "color": 'grey' if arrow_color is None else arrow_color, "edgecolors": 'k',
+                         "headlength": hl/2, "headwidth": hw/2, "headaxislength": hal/2, "linewidth": .2}
         quiver_kwargs.update(kwargs)
         pl.quiver(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1], **quiver_kwargs, zorder=3)
 
@@ -172,7 +173,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
 @doc_params(scatter=doc_scatter)
 def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, smooth=None, linewidth=None,
                               n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, color=None, use_raw=None,
-                              layer=None, color_map=None, colorbar=False, palette=None, size=None, alpha=.2, perc=None,
+                              layer=None, color_map=None, colorbar=False, palette=None, size=None, alpha=.1, perc=None,
                               sort_order=True, groups=None, components=None, projection='2d', legend_loc='none',
                               legend_fontsize=None, legend_fontweight=None, right_margin=None, left_margin=None,
                               xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, dpi=None, frameon=None,
