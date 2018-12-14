@@ -1,0 +1,14 @@
+# Read the Docs config
+
+# python version
+python:
+  version: 3.6
+  pip_install: True
+
+# build a PDF
+formats:
+  - none
+
+# use a conda environment file
+conda:
+  file: readthedocs-environment.yml

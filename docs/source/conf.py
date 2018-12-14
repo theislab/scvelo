@@ -36,7 +36,10 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx'
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.githubpages',
+    'IPython.sphinxext.ipython_console_highlighting',
+    'nbsphinx',
 ]
 
 # Generate the API documentation when building
@@ -53,7 +56,7 @@ intersphinx_mapping = dict(
 )
 
 templates_path = ['_templates']
-source_suffix = '.rst'
+source_suffix = ['.rst', '.ipynb']
 master_doc = 'index'
 
 # General information about the project.
@@ -77,7 +80,7 @@ html_context = dict(
     github_user='theislab',   # Username
     github_repo='scvelo',     # Repo name
     github_version='master',  # Version
-    conf_py_path='/docs/',    # Path in the checkout to the docs root
+    conf_py_path='/docs/source/',    # Path in the checkout to the docs root
 )
 html_static_path = ['_static']
 
@@ -173,7 +176,7 @@ def get_linenos(obj):
         return start, start + len(lines) - 1
 
 
-project_dir = Path(__file__).parent.parent  # project/docs/conf.py/../.. → project/
+project_dir = Path(__file__).parent.parent.parent  # project/docs/source/conf.py/../../.. → project/
 github_url1 = 'https://github.com/{github_user}/{github_repo}/tree/{github_version}'.format_map(html_context)
 github_url2 = 'https://github.com/theislab/anndata/tree/master'
 
