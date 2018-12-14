@@ -3,7 +3,7 @@ import inspect
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union, Mapping
 
 from sphinx.application import Sphinx
 from sphinx.ext import autosummary
@@ -37,10 +37,11 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
+    'sphinx_autodoc_typehints',
     'sphinx.ext.githubpages',
-    'IPython.sphinxext.ipython_console_highlighting',
     'nbsphinx',
 ]
+
 
 # Generate the API documentation when building
 autosummary_generate = True
@@ -145,7 +146,6 @@ autosummary.process_generate_options = process_generate_options
 
 # -- GitHub URLs for class and method pages ------------------------------------------
 
-
 def get_obj_module(qualname):
     """Get a module/class/attribute and its original module by qualname"""
     modname = qualname
@@ -208,11 +208,38 @@ from jinja2.defaults import DEFAULT_FILTERS
 DEFAULT_FILTERS.update(modurl=modurl, api_image=api_image)
 
 
+# -- Override some classnames in autodoc --------------------------------------------
+
+import sphinx_autodoc_typehints
+
+qualname_overrides = {'anndata.base.AnnData': 'anndata.AnnData'}
+
+fa_orig = sphinx_autodoc_typehints.format_annotation
+def format_annotation(annotation):
+    if getattr(annotation, '__origin__', None) is Union or hasattr(annotation, '__union_params__'):
+        params = getattr(annotation, '__union_params__', None) or getattr(annotation, '__args__', None)
+        return ', '.join(map(format_annotation, params))
+    if getattr(annotation, '__origin__', None) is Mapping:
+        return ':class:`~typing.Mapping`'
+    if inspect.isclass(annotation):
+        full_name = '{}.{}'.format(annotation.__module__, annotation.__qualname__)
+        override = qualname_overrides.get(full_name)
+        if override is not None:
+            return f':py:class:`~{qualname_overrides[full_name]}`'
+    return fa_orig(annotation)
+sphinx_autodoc_typehints.format_annotation = format_annotation
+
+
+# -- Change default role --------------------------------------------
+
+from docutils.parsers.rst import roles
+
+roles.DEFAULT_INTERPRETED_ROLE = 'literal'
+
+
 # -- Prettier Param docs --------------------------------------------
 
-
 from typing import Dict, List, Tuple
-
 from docutils import nodes
 from sphinx import addnodes
 from sphinx.domains.python import PyTypedField, PyObject
@@ -239,8 +266,10 @@ class PrettyTypedField(PyTypedField):
             if fieldtype is not None:
                 head += nodes.Text(' : ')
                 if len(fieldtype) == 1 and isinstance(fieldtype[0], nodes.Text):
-                    typename = ''.join(n.astext() for n in fieldtype)
-                    head += makerefs(self.typerolename, typename, addnodes.literal_emphasis)
+                    text_node, = fieldtype  # type: nodes.Text
+                    head += makerefs(self.typerolename, text_node.astext(), addnodes.literal_emphasis)
+                    #typename = ''.join(n.astext() for n in fieldtype)
+                    #head += makerefs(self.typerolename, typename, addnodes.literal_emphasis)
                 else:
                     head += fieldtype
 
