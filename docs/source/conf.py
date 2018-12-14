@@ -37,9 +37,9 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
-    'sphinx_autodoc_typehints',
     'sphinx.ext.githubpages',
     'nbsphinx',
+#   'sphinx_autodoc_typehints',
 ]
 
 
