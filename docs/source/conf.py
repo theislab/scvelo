@@ -210,31 +210,24 @@ DEFAULT_FILTERS.update(modurl=modurl, api_image=api_image)
 
 # -- Override some classnames in autodoc --------------------------------------------
 
-import sphinx_autodoc_typehints
-
-qualname_overrides = {'anndata.base.AnnData': 'anndata.AnnData'}
-
-fa_orig = sphinx_autodoc_typehints.format_annotation
-def format_annotation(annotation):
-    if getattr(annotation, '__origin__', None) is Union or hasattr(annotation, '__union_params__'):
-        params = getattr(annotation, '__union_params__', None) or getattr(annotation, '__args__', None)
-        return ', '.join(map(format_annotation, params))
-    if getattr(annotation, '__origin__', None) is Mapping:
-        return ':class:`~typing.Mapping`'
-    if inspect.isclass(annotation):
-        full_name = '{}.{}'.format(annotation.__module__, annotation.__qualname__)
-        override = qualname_overrides.get(full_name)
-        if override is not None:
-            return f':py:class:`~{qualname_overrides[full_name]}`'
-    return fa_orig(annotation)
-sphinx_autodoc_typehints.format_annotation = format_annotation
-
-
-# -- Change default role --------------------------------------------
-
-from docutils.parsers.rst import roles
-
-roles.DEFAULT_INTERPRETED_ROLE = 'literal'
+# import sphinx_autodoc_typehints
+#
+# qualname_overrides = {'anndata.base.AnnData': 'anndata.AnnData'}
+#
+# fa_orig = sphinx_autodoc_typehints.format_annotation
+# def format_annotation(annotation):
+#     if getattr(annotation, '__origin__', None) is Union or hasattr(annotation, '__union_params__'):
+#         params = getattr(annotation, '__union_params__', None) or getattr(annotation, '__args__', None)
+#         return ', '.join(map(format_annotation, params))
+#     if getattr(annotation, '__origin__', None) is Mapping:
+#         return ':class:`~typing.Mapping`'
+#     if inspect.isclass(annotation):
+#         full_name = '{}.{}'.format(annotation.__module__, annotation.__qualname__)
+#         override = qualname_overrides.get(full_name)
+#         if override is not None:
+#             return f':py:class:`~{qualname_overrides[full_name]}`'
+#     return fa_orig(annotation)
+# sphinx_autodoc_typehints.format_annotation = format_annotation
 
 
 # -- Prettier Param docs --------------------------------------------
