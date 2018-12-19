@@ -37,12 +37,13 @@ I highly recommend going through some exemplary notebooks_.
 
 Report issues and see the code on `GitHub <https://github.com/theislab/scvelo>`__.
 
-.. include:: release_notes.rst
 
 .. toctree::
    :maxdepth: 1
    :hidden:
 
    getting_started
+   Example <https://scvelo-notebooks.readthedocs.io/en/latest/DentateGyrus.html>
    api
+   release_notes
    references

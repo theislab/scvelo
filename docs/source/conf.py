@@ -61,7 +61,7 @@ source_suffix = ['.rst', '.ipynb']
 master_doc = 'index'
 
 # General information about the project.
-project = 'scvelo'
+project = 'scVelo'
 author = 'Volker Bergen'
 copyright = f'{datetime.now():%Y}, {author}'
 
@@ -94,16 +94,10 @@ def setup(app):
 
 htmlhelp_basename = 'scvelodoc'
 
-latex_documents = [
-    (master_doc, 'scvelo.tex', 'scvelo documentation', 'Volker Bergen', 'manual'),
-]
-man_pages = [
-    (master_doc, 'scvelo', 'scvelo documentation', [author], 1)
-]
-texinfo_documents = [
-    (master_doc, 'scvelo', 'scvelo documentation', author,
-     'scvelo', 'One line description of project.', 'Miscellaneous'),
-]
+latex_documents = [(master_doc, 'scvelo.tex', 'scvelo documentation', 'Volker Bergen', 'manual')]
+man_pages = [(master_doc, 'scvelo', 'scvelo documentation', [author], 1)]
+texinfo_documents = [(master_doc, 'scvelo', 'scvelo documentation', author,
+                      'scvelo', 'Stochastic RNA Velocity in Single Cells.', 'Miscellaneous')]
 
 
 # -- generate_options override ------------------------------------------
