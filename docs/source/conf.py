@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 needs_sphinx = '1.7'
 
-'''
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
@@ -39,25 +38,9 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.githubpages',
-#    'nbsphinx',
-#   'sphinx_autodoc_typehints',
-]
-'''
-
-extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
-    'sphinx.ext.coverage',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.autosummary',
-    # 'plot_generator',
-    # 'plot_directive',
-    'sphinx.ext.napoleon',
     'sphinx_autodoc_typehints',
-    'sphinx.ext.intersphinx',
-    # 'ipython_directive',
-    # 'ipython_console_highlighting',
 ]
+
 
 # Generate the API documentation when building
 autosummary_generate = True
@@ -70,14 +53,14 @@ napoleon_custom_sections = [('Params', 'Parameters')]
 intersphinx_mapping = dict(
     python=('https://docs.python.org/3', None),
     anndata=('https://anndata.readthedocs.io/en/latest/', None),
-)  # Todo Add more? like scipy and louvain, see scanpy
+)
 
 templates_path = ['_templates']
 source_suffix = ['.rst', '.ipynb']
 master_doc = 'index'
 
 # General information about the project.
-project = 'scvelo'
+project = 'scVelo'
 author = 'Volker Bergen'
 copyright = f'{datetime.now():%Y}, {author}'
 
@@ -97,7 +80,7 @@ html_context = dict(
     github_user='theislab',   # Username
     github_repo='scvelo',     # Repo name
     github_version='master',  # Version
-    conf_py_path='/docs/source/',    # Path in the checkout to the docs root  # TODO
+    conf_py_path='/docs/source/',
 )
 html_static_path = ['_static']
 
@@ -110,16 +93,10 @@ def setup(app):
 
 htmlhelp_basename = 'scvelodoc'
 
-latex_documents = [
-    (master_doc, 'scvelo.tex', 'scvelo documentation', 'Volker Bergen', 'manual'),
-]
-man_pages = [
-    (master_doc, 'scvelo', 'scvelo documentation', [author], 1)
-]
-texinfo_documents = [
-    (master_doc, 'scvelo', 'scvelo documentation', author,
-     'scvelo', 'One line description of project.', 'Miscellaneous'),
-]
+latex_documents = [(master_doc, 'scvelo.tex', 'scvelo documentation', 'Volker Bergen', 'manual')]
+man_pages = [(master_doc, 'scvelo', 'scvelo documentation', [author], 1)]
+texinfo_documents = [(master_doc, 'scvelo', 'scvelo documentation', author,
+                      'scvelo', 'Stochastic RNA Velocity in Single Cells.', 'Miscellaneous')]
 
 
 # -- generate_options override ------------------------------------------
@@ -194,7 +171,7 @@ def get_linenos(obj):
 
 project_dir = Path(__file__).parent.parent.parent  # project/docs/source/conf.py/../../.. → project/
 github_url1 = 'https://github.com/{github_user}/{github_repo}/tree/{github_version}'.format_map(html_context)
-github_url2 = 'https://github.com/theislab/scvelo/tree/master'
+github_url2 = 'https://github.com/theislab/anndata/tree/master'
 
 from pathlib import PurePosixPath
 
