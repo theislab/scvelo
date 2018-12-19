@@ -38,8 +38,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.githubpages',
-#    'nbsphinx',
-#   'sphinx_autodoc_typehints',
+    'sphinx_autodoc_typehints',
 ]
 
 
@@ -81,7 +80,7 @@ html_context = dict(
     github_user='theislab',   # Username
     github_repo='scvelo',     # Repo name
     github_version='master',  # Version
-    conf_py_path='/docs/source/',    # Path in the checkout to the docs root
+    conf_py_path='/docs/source/',
 )
 html_static_path = ['_static']
 
@@ -174,20 +173,22 @@ project_dir = Path(__file__).parent.parent.parent  # project/docs/source/conf.py
 github_url1 = 'https://github.com/{github_user}/{github_repo}/tree/{github_version}'.format_map(html_context)
 github_url2 = 'https://github.com/theislab/anndata/tree/master'
 
+from pathlib import PurePosixPath
 
-def modurl(qualname: str) -> str:
+
+def modurl(qualname):
     """Get the full GitHub URL for some object’s qualname."""
     obj, module = get_obj_module(qualname)
     github_url = github_url1
     try:
-        path = Path(module.__file__).relative_to(project_dir)
+        path = PurePosixPath(Path(module.__file__).resolve().relative_to(project_dir))
     except ValueError:
         # trying to document something from another package
         github_url = github_url2
         path = '/'.join(module.__file__.split('/')[-2:])
     start, end = get_linenos(obj)
-    fragment = f'#L{start}-L{end}' if start and end else ''
-    return f'{github_url}/{path}{fragment}'
+    fragment = '#L{}-L{}'.format(start, end) if start and end else ''
+    return '{}/{}{}'.format(github_url, path, fragment)
 
 
 def api_image(qualname: str) -> Optional[str]:
@@ -201,27 +202,27 @@ from jinja2.defaults import DEFAULT_FILTERS
 
 DEFAULT_FILTERS.update(modurl=modurl, api_image=api_image)
 
-
 # -- Override some classnames in autodoc --------------------------------------------
 
-# import sphinx_autodoc_typehints
-#
-# qualname_overrides = {'anndata.base.AnnData': 'anndata.AnnData'}
-#
-# fa_orig = sphinx_autodoc_typehints.format_annotation
-# def format_annotation(annotation):
-#     if getattr(annotation, '__origin__', None) is Union or hasattr(annotation, '__union_params__'):
-#         params = getattr(annotation, '__union_params__', None) or getattr(annotation, '__args__', None)
-#         return ', '.join(map(format_annotation, params))
-#     if getattr(annotation, '__origin__', None) is Mapping:
-#         return ':class:`~typing.Mapping`'
-#     if inspect.isclass(annotation):
-#         full_name = '{}.{}'.format(annotation.__module__, annotation.__qualname__)
-#         override = qualname_overrides.get(full_name)
-#         if override is not None:
-#             return f':py:class:`~{qualname_overrides[full_name]}`'
-#     return fa_orig(annotation)
-# sphinx_autodoc_typehints.format_annotation = format_annotation
+import sphinx_autodoc_typehints
+
+qualname_overrides = {'anndata.base.AnnData': 'anndata.AnnData',
+                      'scvelo.pl.scatter': 'scvelo.plotting.scatter'}
+
+fa_orig = sphinx_autodoc_typehints.format_annotation
+def format_annotation(annotation):
+    if getattr(annotation, '__origin__', None) is Union or hasattr(annotation, '__union_params__'):
+        params = getattr(annotation, '__union_params__', None) or getattr(annotation, '__args__', None)
+        return ', '.join(map(format_annotation, params))
+    if getattr(annotation, '__origin__', None) is Mapping:
+        return ':class:`~typing.Mapping`'
+    if inspect.isclass(annotation):
+        full_name = '{}.{}'.format(annotation.__module__, annotation.__qualname__)
+        override = qualname_overrides.get(full_name)
+        if override is not None:
+            return f':py:class:`~{qualname_overrides[full_name]}`'
+    return fa_orig(annotation)
+sphinx_autodoc_typehints.format_annotation = format_annotation
 
 
 # -- Prettier Param docs --------------------------------------------
