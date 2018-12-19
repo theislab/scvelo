@@ -269,7 +269,7 @@ def counts_per_cell_quantile(X, max_proportion_per_cell=.05, counts_per_cell=Non
 
 
 def not_yet_normalized(X):
-    return np.allclose((X.data[:10] if issparse(X) else X[0]) % 1, 0, atol=1e-3)
+    return np.allclose((X.data[:10] if issparse(X) else X[:, 0]) % 1, 0, atol=1e-3)
 
 
 def normalize_layers(data, layers=['spliced', 'unspliced'], counts_per_cell_after=None, max_proportion_per_cell=None,
