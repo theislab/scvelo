@@ -1,3 +1,4 @@
 # Just until rtd.org understands pyproject.toml
 scanpy
 setuptools
+sphinx_autodoc_typehints
