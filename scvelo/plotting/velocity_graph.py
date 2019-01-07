@@ -12,7 +12,7 @@ import matplotlib.pyplot as pl
 @doc_params(scatter=doc_scatter)
 def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n_neighbors=10,
                    alpha=.8, perc=90, edge_width=.2, edge_color='grey', color=None, use_raw=None, layer=None,
-                   color_map=None, colorbar=False, palette=None, size=None,  sort_order=True, groups=None,
+                   color_map=None, colorbar=True, palette=None, size=None,  sort_order=True, groups=None,
                    components=None, projection='2d', legend_loc='on data', legend_fontsize=None, legend_fontweight=None,
                    right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None,
                    figsize=None, dpi=None, frameon=None, show=True, save=None, ax=None):

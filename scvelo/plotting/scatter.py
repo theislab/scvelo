@@ -12,7 +12,7 @@ from scipy.sparse import issparse
 
 @doc_params(scatter=doc_scatter)
 def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
-            colorbar=False, palette=None, size=None, alpha=None, perc=None, sort_order=True, groups=None,
+            colorbar=True, palette=None, size=None, alpha=None, perc=None, sort_order=True, groups=None,
             components=None, projection='2d', legend_loc='none', legend_fontsize=None, legend_fontweight=None,
             right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
             dpi=None, frameon=None, show=True, save=None, ax=None, zorder=None, ncols=None, **kwargs):

@@ -12,8 +12,8 @@ from scipy.sparse import issparse
 
 
 def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=None, fits='all', layers='all',
-             color=None, color_map='RdBu_r', perc=[2,98], use_raw=False, size=None, alpha=.5, fontsize=None,
-             figsize=None, dpi=None, show=True, save=None, ax=None, ncols=None, **kwargs):
+             color=None, color_map='RdBu_r', colorbar=False, perc=[2,98], use_raw=False, size=None, alpha=.5,
+             fontsize=None, figsize=None, dpi=None, show=True, save=None, ax=None, ncols=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
     The phase plot shows spliced against unspliced expressions with steady-state fit.
@@ -102,8 +102,8 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
 
         # spliced/unspliced phase portrait with steady-state estimate
         ax = pl.subplot(gs[v * nplts])
-        scatter(adata, basis=var, color=color, frameon=True, title=var, size=size, alpha=alpha, fontsize=fontsize,
-                xlabel='spliced', ylabel='unspliced', show=False, ax=ax, save=False, **kwargs)
+        scatter(adata, basis=var, color=color, colorbar=colorbar, frameon=True, title=var, size=size, alpha=alpha,
+                fontsize=fontsize, xlabel='spliced', ylabel='unspliced', show=False, ax=ax, save=False, **kwargs)
 
         xnew = np.linspace(0, s.max() * 1.02)
         for fit in fits:
@@ -122,7 +122,7 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
         for l, layer in enumerate(layers):
             ax = pl.subplot(gs[v * nplts + l + 1])
             title = 'expression' if layer == skey else layer
-            scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map, title=title, perc=perc,
+            scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map, colorbar=colorbar, title=title, perc=perc,
                     fontsize=fontsize, size=size, alpha=alpha, frameon=False, show=False, ax=ax, save=False, **kwargs)
 
         if mode == 'stochastic':
@@ -136,9 +136,9 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
             x = 2 * (ss - s**2) - s
             y = 2 * (us - u * s) + u + 2 * s * offset / beta
 
-            scatter(adata, x=x, y=y, color=color, title=var, fontsize=40/ncols, size=size, perc=perc, show=False,
+            scatter(adata, x=x, y=y, color=color, colorbar=colorbar, title=var, fontsize=40/ncols, size=size, perc=perc,
                     xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$',
-                    frameon=True, ax=ax, save=False, **kwargs)
+                    frameon=True, ax=ax, save=False, show=False, **kwargs)
 
             xnew = np.linspace(x.min(), x.max() * 1.02)
             for fit in stochastic_fits:

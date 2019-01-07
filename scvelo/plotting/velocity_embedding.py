@@ -13,7 +13,7 @@ import numpy as np
 
 @doc_params(scatter=doc_scatter)
 def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_size=None, arrow_length=None, scale=None,
-                       X=None, V=None, color=None, use_raw=None, layer=None, color_map=None, colorbar=False,
+                       X=None, V=None, color=None, use_raw=None, layer=None, color_map=None, colorbar=True,
                        palette=None, size=None, alpha=.2, perc=None, sort_order=True, groups=None, components=None,
                        projection='2d', legend_loc='none', legend_fontsize=None, legend_fontweight=None,
                        right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None,
