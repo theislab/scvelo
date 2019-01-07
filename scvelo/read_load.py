@@ -105,9 +105,9 @@ def merge(adata, ldata, copy=True):
     Arguments
     ---------
     adata: :class:`~anndata.AnnData`
-        Annotated data matrix.
+        Annotated data matrix (reference data set).
     ldata: :class:`~anndata.AnnData`
-        Annotated data matrix.
+        Annotated data matrix (to be merged into adata).
 
     Returns
     -------
@@ -123,11 +123,12 @@ def merge(adata, ldata, copy=True):
         clean_obs_names(ldata)
         common_obs = adata.obs_names.intersection(ldata.obs_names)
 
-    _adata = adata.copy() if adata.shape[1] >= ldata.shape[1] else ldata.copy()
-    _ldata = ldata.copy() if adata.shape[1] >= ldata.shape[1] else adata.copy()
-
-    _adata = _adata[common_obs]
-    _ldata = _ldata[common_obs]
+    if copy:
+        _adata = adata[common_obs].copy() if adata.shape[1] >= ldata.shape[1] else ldata[common_obs].copy()
+        _ldata = ldata[common_obs].copy() if adata.shape[1] >= ldata.shape[1] else adata[common_obs].copy()
+    else:
+        adata._inplace_subset_obs(common_obs)
+        _adata, _ldata = adata, ldata[common_obs]
 
     for attr in _ldata.obs.keys():
         _adata.obs[attr] = _ldata.obs[attr]
@@ -147,5 +148,4 @@ def merge(adata, ldata, copy=True):
         else:
             raise ValueError('Variable names are not identical.')
 
-    if not copy: adata = _adata
     return _adata if copy else None
