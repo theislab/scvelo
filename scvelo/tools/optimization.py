@@ -8,7 +8,12 @@ import warnings
 def weight_input(x, y, perc=None):
     if perc is not None:
         xy_norm = x / np.clip(x.max(0), 1e-3, None) + y / np.clip(y.max(0), 1e-3, None)
-        W = csr_matrix(xy_norm >= np.percentile(xy_norm, perc, axis=0))
+
+        if isinstance(perc, int):
+            W = csr_matrix(xy_norm >= np.percentile(xy_norm, perc, axis=0))
+        else:
+            lb, ub = np.percentile(xy_norm, perc, axis=0)
+            W = csr_matrix((xy_norm <= lb)|(xy_norm >= ub))
         x, y = W.multiply(x).tocsr(), W.multiply(y).tocsr()
     return x, y
 
@@ -16,6 +21,7 @@ def weight_input(x, y, perc=None):
 def leastsq_NxN(x, y, fit_offset=False, perc=None):
     """Solution to least squares: gamma = cov(X,Y) / var(X)
     """
+    if not fit_offset and isinstance(perc, (list, tuple)): perc = perc[1]
     x, y = weight_input(x, y, perc)
     n_obs, n_var = x.shape
 
@@ -37,6 +43,7 @@ def leastsq_NxN(x, y, fit_offset=False, perc=None):
 def leastsq_generalized(x, y, x2, y2, res_std=None, res2_std=None, fit_offset=False, fit_offset2=False, perc=None):
     """Solution to the 2-dim generalized least squares: gamma = inv(X'QX)X'QY
     """
+    if not fit_offset and isinstance(perc, (list, tuple)): perc = perc[1]
     x, y = weight_input(x, y, perc)
     n_obs, n_var = x.shape
     offset, offset_ss = np.zeros(n_var, dtype="float32"), np.zeros(n_var, dtype="float32")

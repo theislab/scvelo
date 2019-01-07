@@ -101,7 +101,7 @@ def write_pars(adata, vkey, pars, pars_names, add_key=None):
 
 
 def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False,
-             groups=None, groupby=None, groups_for_fit=None, use_raw=False, perc=None, copy=False):
+             groups=None, groupby=None, groups_for_fit=None, use_raw=False, perc=[5, 95], copy=False):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -128,7 +128,7 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
     use_raw: `bool` (default: `False`)
         Whether to use raw data for estimation.
     perc: `float` (default: `None`)
-        Percentile, e.g. 98, upon which velocity estimation is performed (for robustness).
+        Percentile, e.g. 98, upon for extreme quantile fit (to better capture steady states for velocity estimation).
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
 
