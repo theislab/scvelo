@@ -3,7 +3,7 @@
 scvelo – stochastic single cell RNA velocity
 ============================================
 
-.. image:: https://i.ibb.co/XWsfsvD/Image-Pasted-at-2018-11-28-18-24.png
+.. image:: https://drive.google.com/uc?export=view&id=1rcgHou-YFTJCKDR-Vd37zQ_AvLiaHLut
    :width: 90px
    :align: left
 
