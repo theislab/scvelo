@@ -106,9 +106,10 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
         c = c[ix_choice] if len(c) == _adata.n_obs else c
 
         if projection == '3d' and X.shape[1] > 2 and V.shape[1] > 2:
-            V, size = V / scale, size / 10
+            V, size = V / scale / 5, size / 10
             x0, x1, x2, v0, v1, v2 = X[:, 0], X[:, 1], X[:, 2], V[:, 0], V[:, 1], V[:, 2]
             quiver3d_kwargs = {"zorder": 3, "linewidth": .5, "arrow_length_ratio": .3}
+            c = list(c) + [element for element in list(c) for _ in range(2)]
             if is_color_like(c[0]): pl.quiver(x0, x1, x2, v0, v1, v2, color=c, **quiver3d_kwargs)
             else: pl.quiver(x0, x1, x2, v0, v1, v2, c, **quiver3d_kwargs)
         else:
