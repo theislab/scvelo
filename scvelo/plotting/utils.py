@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from scanpy.plotting.utils import savefig_or_show, default_palette, adjust_palette
+from scanpy.plotting._utils import savefig_or_show, default_palette, adjust_palette
 from matplotlib.colors import is_color_like
 from scipy.sparse import issparse
 

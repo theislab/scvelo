@@ -73,8 +73,8 @@ _rcParams_style = None
 # --------------------------------------------------------------------------------
 
 from matplotlib import rcParams
-from scanpy.plotting.rcmod import set_rcParams_scanpy
-from scanpy.plotting.utils import default_palette
+from scanpy.plotting._rcmod import set_rcParams_scanpy
+from scanpy.plotting._utils import default_palette
 
 
 def set_rcParams_scvelo(fontsize=8, color_map=None, frameon=None):

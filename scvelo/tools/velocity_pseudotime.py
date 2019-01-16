@@ -1,5 +1,5 @@
 import numpy as np
-from scanpy.tools.dpt import DPT
+from scanpy.tools._dpt import DPT
 from scipy.sparse import issparse, spdiags, linalg
 
 from .utils import groups_to_bool, scale, strings_to_categoricals
