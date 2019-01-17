@@ -1,14 +1,14 @@
 from .. import settings
 from .. import logging as logg
-from .utils import normalize_layers
+from .utils import not_yet_normalized, normalize_per_cell
 from .neighbors import neighbors, get_connectivities, neighbors_to_be_recomputed
 
 from scipy.sparse import csr_matrix
 import numpy as np
 
 
-def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', use_rep=None, recurse_neighbors=False,
-            renormalize=False, copy=False):
+def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', method='umap', metric='euclidean', use_rep=None,
+            recurse_neighbors=False, renormalize=False, copy=False):
     """Computes moments for velocity estimation.
 
     Arguments
@@ -38,19 +38,21 @@ def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', use_rep=None,
 
     if 'spliced' not in adata.layers.keys() or 'unspliced' not in adata.layers.keys():
         raise ValueError('Could not find spliced / unspliced counts.')
+    if any([not_yet_normalized(adata.layers[layer]) for layer in {'spliced', 'unspliced'}]):
+        normalize_per_cell(adata)
     if 'neighbors' not in adata.uns.keys() or neighbors_to_be_recomputed(adata, n_neighbors=n_neighbors):
-        neighbors(adata, n_neighbors=n_neighbors, use_rep=('X_pca' if use_rep is None else use_rep), n_pcs=n_pcs)
+        if use_rep is None: use_rep = 'X_pca'
+        neighbors(adata, n_neighbors=n_neighbors, use_rep=use_rep, n_pcs=n_pcs, method=method, metric=metric)
     if mode not in adata.uns['neighbors']:
         raise ValueError('mode can only be \'connectivities\' or \'distances\'')
 
     logg.info('computing moments based on ' + str(mode), r=True)
-    normalize_layers(adata)
 
     connectivities = get_connectivities(adata, mode, n_neighbors=n_neighbors, recurse_neighbors=recurse_neighbors)
 
     adata.layers['Ms'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['spliced'])).astype(np.float32).A
     adata.layers['Mu'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['unspliced'])).astype(np.float32).A
-    if renormalize: normalize_layers(adata, layers={'Ms', 'Mu'}, enforce=True)
+    if renormalize: normalize_per_cell(adata, layers={'Ms', 'Mu'}, enforce=True)
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
