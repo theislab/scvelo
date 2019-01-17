@@ -41,7 +41,7 @@ def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_st
         `n_neighbors` nearest neighbor.
     random_state
         A numpy random seed.
-    method : {{'umap', 'gauss', `None`}}  (default: `'umap'`)
+    method : {{'umap', 'gauss', `sklearn`, `None`}}  (default: `'umap'`)
         Use 'umap' [McInnes18]_ or 'gauss' (Gauss kernel following [Coifman05]_
         with adaptive width [Haghverdi16]_) for computing connectivities.
     metric
@@ -68,14 +68,24 @@ def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_st
             and ('X_pca' not in adata.obsm.keys() or n_pcs > adata.obsm['X_pca'].shape[1]):
         pca(adata, n_comps=n_pcs, svd_solver='arpack')
 
-    neighbors = Neighbors(adata)
-    neighbors.compute_neighbors(n_neighbors=n_neighbors, knn=knn, n_pcs=n_pcs, use_rep=use_rep, method=method,
-                                metric=metric, metric_kwds=metric_kwds, random_state=random_state, write_knn_indices=True)
     adata.uns['neighbors'] = {}
     adata.uns['neighbors']['params'] = {'n_neighbors': n_neighbors, 'method': method}
-    adata.uns['neighbors']['distances'] = neighbors.distances
-    adata.uns['neighbors']['connectivities'] = neighbors.connectivities
-    adata.uns['neighbors']['indices'] = neighbors.knn_indices
+
+    if method is 'sklearn':
+        from sklearn.neighbors import NearestNeighbors
+        neighbors = NearestNeighbors(n_neighbors=n_neighbors)
+        neighbors.fit(adata.obsm['X_pca'] if use_rep is None else adata.obsm[use_rep])
+        adata.uns['neighbors']['distances'] = neighbors.kneighbors_graph(mode='distance')
+        adata.uns['neighbors']['connectivities'] = neighbors.kneighbors_graph(mode='connectivity')
+
+    else:
+        neighbors = Neighbors(adata)
+        neighbors.compute_neighbors(n_neighbors=n_neighbors, knn=knn, n_pcs=n_pcs, use_rep=use_rep, method=method,
+                                    metric=metric, metric_kwds=metric_kwds, random_state=random_state, write_knn_indices=True)
+        adata.uns['neighbors']['distances'] = neighbors.distances
+        adata.uns['neighbors']['connectivities'] = neighbors.connectivities
+        adata.uns['neighbors']['indices'] = neighbors.knn_indices
+
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
         'added to `.uns[\'neighbors\']`\n'
