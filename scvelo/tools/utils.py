@@ -12,6 +12,12 @@ def make_dense(X):
     return X.A if issparse(X) and X.ndim==2 else X.A1 if issparse(X) else X
 
 
+def sum_obs(A):
+    """summation over axis 0 (obs) equivalent to np.sum(A, 0)
+    """
+    return A.sum(0).A1 if issparse(A) else np.einsum('ij -> j', A)
+
+
 def prod_sum_obs(A, B):
     """dot product and sum over axis 0 (obs) equivalent to np.sum(A * B, 0)
     """

@@ -1,50 +1,91 @@
-from .utils import prod_sum_obs, mean, make_dense
+from .utils import sum_obs, prod_sum_obs, make_dense
 from scipy.optimize import minimize
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, issparse
 import numpy as np
 import warnings
 
 
-def weight_input(x, y, perc=None):
-    if perc is not None:
-        xy_norm = x / np.clip(x.max(0), 1e-3, None) + y / np.clip(y.max(0), 1e-3, None)
-
-        if isinstance(perc, int):
-            W = csr_matrix(xy_norm >= np.percentile(xy_norm, perc, axis=0))
-        else:
-            lb, ub = np.percentile(xy_norm, perc, axis=0)
-            W = csr_matrix((xy_norm <= lb)|(xy_norm >= ub))
-        x, y = W.multiply(x).tocsr(), W.multiply(y).tocsr()
-    return x, y
+def get_weight(x, y, perc):
+    if issparse(x): x = x.A
+    if issparse(y): y = y.A
+    xy_norm = x / np.clip(x.max(0), 1e-3, None) + y / np.clip(y.max(0), 1e-3, None)
+    if isinstance(perc, int):
+        weights = xy_norm >= np.percentile(xy_norm, perc, axis=0)
+    else:
+        lb, ub = np.percentile(xy_norm, perc, axis=0)
+        weights = (xy_norm <= lb) | (xy_norm >= ub)
+    return weights
 
 
 def leastsq_NxN(x, y, fit_offset=False, perc=None):
     """Solution to least squares: gamma = cov(X,Y) / var(X)
     """
-    if not fit_offset and isinstance(perc, (list, tuple)): perc = perc[1]
-    x, y = weight_input(x, y, perc)
-    n_obs, n_var = x.shape
+    if perc is not None:
+        if not fit_offset and isinstance(perc, (list, tuple)): perc = perc[1]
+        weights = csr_matrix(get_weight(x, y, perc)).astype(bool)
+        x, y = weights.multiply(x).tocsr(), weights.multiply(y).tocsr()
+    else:
+        weights = None
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
+        xx_ = prod_sum_obs(x, x)
+        xy_ = prod_sum_obs(x, y)
+
         if fit_offset:
-            cov_xy, cov_xx = prod_sum_obs(x, y) / n_obs, prod_sum_obs(x, x) / n_obs
-            mean_x, mean_y = mean(x), mean(y)
-            numerator_offset = cov_xx * mean_y - cov_xy * mean_x
-            numerator_gamma = cov_xy - mean_x * mean_y
-            offset, gamma = (numerator_offset, numerator_gamma) / (cov_xx - mean_x * mean_x)
+            n_obs = x.shape[0] if weights is None else sum_obs(weights)
+            x_ = sum_obs(x) / n_obs
+            y_ = sum_obs(y) / n_obs
+            gamma = (xy_ / n_obs - x_ * y_) / (xx_ / n_obs - x_ ** 2)
+            offset = y_ - gamma * x_
+
+            # fix negative offsets:
+            idx = offset < 0
+            gamma[idx] = xy_[idx] / xx_[idx]
+            offset = np.clip(offset, 0, None)
         else:
-            offset, gamma = np.zeros(n_var), prod_sum_obs(x, y) / prod_sum_obs(x, x)
-    offset[np.isnan(offset)] = 0
-    gamma[np.isnan(gamma)] = 0
+            gamma = xy_ / xx_
+            offset = np.zeros(x.shape[1])
+    offset[np.isnan(offset)], gamma[np.isnan(gamma)] = 0, 0
+    return offset, gamma
+
+
+def optimize_NxN(x, y, fit_offset=False, perc=None):
+    """Just to compare with closed-form solution
+    """
+    if perc is not None:
+        if not fit_offset and isinstance(perc, (list, tuple)): perc = perc[1]
+        weights = get_weight(x, y, perc).astype(bool)
+        if issparse(weights): weights = weights.A
+    else:
+        weights = None
+
+    x, y = x.astype(np.float64), y.astype(np.float64)
+
+    n_vars = x.shape[1]
+    offset, gamma = np.zeros(n_vars), np.zeros(n_vars)
+
+    for i in range(n_vars):
+        xi = x[:, i] if weights is None else x[:, i][weights[:, i]]
+        yi = y[:, i] if weights is None else y[:, i][weights[:, i]]
+
+        if fit_offset:
+            offset[i], gamma[i] = minimize(lambda m: np.sum((-yi + xi * m[1] + m[0])**2), method="L-BFGS-B",
+                                           x0=(0, 0.1), bounds=[(0, None), (None, None)]).x
+        else:
+            gamma[i] = minimize(lambda m: np.sum((-yi + xi * m) ** 2), x0=0.1, method="L-BFGS-B").x
+    offset[np.isnan(offset)], gamma[np.isnan(gamma)] = 0, 0
     return offset, gamma
 
 
 def leastsq_generalized(x, y, x2, y2, res_std=None, res2_std=None, fit_offset=False, fit_offset2=False, perc=None):
     """Solution to the 2-dim generalized least squares: gamma = inv(X'QX)X'QY
     """
-    if not fit_offset and isinstance(perc, (list, tuple)): perc = perc[1]
-    x, y = weight_input(x, y, perc)
+    if perc is not None:
+        if not fit_offset and isinstance(perc, (list, tuple)): perc = perc[1]
+        weights = csr_matrix(get_weight(x, y, perc)).astype(bool)
+        x, y = weights.multiply(x).tocsr(), weights.multiply(y).tocsr()
+
     n_obs, n_var = x.shape
     offset, offset_ss = np.zeros(n_var, dtype="float32"), np.zeros(n_var, dtype="float32")
     gamma = np.ones(n_var, dtype="float32")
