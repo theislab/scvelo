@@ -30,10 +30,10 @@ class VelocityGraph:
     def __init__(self, adata, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, n_recurse_neighbors=None,
                  random_neighbors_at_max=None, sqrt_transform=False, approx=False, report=False):
         subset = np.ones(adata.n_vars, dtype=bool)
-        if 'velocity_genes' in adata.var.keys(): subset = adata.var['velocity_genes']
+        if 'velocity_genes' in adata.var.keys(): subset = adata.var['velocity_genes'].tolist()
 
-        X = adata[:, subset].layers[xkey].A if issparse(adata.layers[xkey]) else adata[:, subset].layers[xkey]
-        V = adata[:, subset].layers[vkey].A if issparse(adata.layers[vkey]) else adata[:, subset].layers[vkey]
+        X = adata.layers[xkey].A[:, subset] if issparse(adata.layers[xkey]) else adata.layers[xkey][:, subset]
+        V = adata.layers[vkey].A[:, subset] if issparse(adata.layers[vkey]) else adata.layers[vkey][:, subset]
         if approx and X.shape[1] > 100:
             X_pca, PCs, _, _ = pca(X,  n_comps=50, svd_solver='arpack', return_info=True)
             self.X = np.array(X_pca, dtype=np.float32)
@@ -102,7 +102,7 @@ class VelocityGraph:
         if self.report: progress.finish()
 
         vals = np.hstack(vals)
-        vals[np.isnan(vals)] = 1e-10  # actually zero; just to store these entries in sparse matrix.
+        vals[np.isnan(vals)] = 0
 
         self.graph, self.graph_neg = vals_to_csr(vals, rows, cols, shape=(n_obs, n_obs), split_negative=True)
 
