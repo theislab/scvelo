@@ -1,12 +1,16 @@
 from .. import settings
+from .. import logging as logg
+from . import palettes
 
+import os
 import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from scanpy.plotting.utils import savefig_or_show, default_palette, adjust_palette
 from matplotlib.colors import is_color_like
+from matplotlib import rcParams
 from scipy.sparse import issparse
+from cycler import Cycler, cycler
 
 
 def strings_to_categoricals(adata):
@@ -168,10 +172,71 @@ def default_arrow(size):
     return head_l, head_w, ax_l
 
 
-def savefig(writekey, show=False, dpi=None, save=None):
-    """Save current figure to file.
-    """
-    savefig_or_show('velocity_' + writekey + '_' if writekey != '' else 'velocity_', dpi=dpi, save=save, show=show)
+def savefig_or_show(writekey, show=None, dpi=None, ext=None, save=None):
+    if isinstance(save, str):
+        # check whether `save` contains a figure extension
+        if ext is None:
+            for try_ext in ['.svg', '.pdf', '.png']:
+                if save.endswith(try_ext):
+                    ext = try_ext[1:]
+                    save = save.replace(try_ext, '')
+                    break
+        # append it
+        writekey = 'velocity_' + (writekey + '_' if len(writekey) > 0 else '') + save
+        save = True
+    save = settings.autosave if save is None else save
+    show = settings.autoshow if show is None else show
+
+    if save:
+        if dpi is None:
+            # we need this as in notebooks, the internal figures are also influenced by 'savefig.dpi' this...
+            if not isinstance(rcParams['savefig.dpi'], str) and rcParams['savefig.dpi'] < 150:
+                if settings._low_resolution_warning:
+                    logg.warn(
+                        'You are using a low resolution (dpi<150) for saving figures.\n'
+                        'Consider running `set_figure_params(dpi_save=...)`, which will '
+                        'adjust `matplotlib.rcParams[\'savefig.dpi\']`')
+                    settings._low_resolution_warning = False
+            else:
+                dpi = rcParams['savefig.dpi']
+        if not os.path.exists(settings.figdir): os.makedirs(settings.figdir)
+        if settings.figdir[-1] != '/': settings.figdir += '/'
+        if ext is None: ext = settings.file_format_figs
+        filename = settings.figdir + writekey + settings.plot_suffix + '.' + ext
+        # output the following msg at warning level; it's really important for the user
+        logg.msg('saving figure to file', filename, v=1)
+        pl.savefig(filename, dpi=dpi, bbox_inches='tight')
+
+    if show: pl.show()
+    if save: pl.close()  # clear figure
+
+
+def default_palette(palette=None):
+    if palette is None: return rcParams['axes.prop_cycle']
+    elif not isinstance(palette, Cycler): return cycler(color=palette)
+    else: return palette
+
+
+def adjust_palette(palette, length):
+    islist = False
+    if isinstance(palette, list):
+        islist = True
+    if ((islist and len(palette) < length)
+       or (not isinstance(palette, list) and len(palette.by_key()['color']) < length)):
+        if length <= 28:
+            palette = palettes.default_26
+        elif length <= len(palettes.default_64):  # 103 colors
+            palette = palettes.default_64
+        else:
+            palette = ['grey' for i in range(length)]
+            logg.info('more than 103 colors would be required, initializing as \'grey\'')
+        return palette if islist else cycler(color=palette)
+    elif islist:
+        return palette
+    elif not isinstance(palette, Cycler):
+        return cycler(color=palette)
+    else:
+        return palette
 
 
 def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None, dpi=None):

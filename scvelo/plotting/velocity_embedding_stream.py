@@ -1,5 +1,5 @@
 from ..tools.velocity_embedding import velocity_embedding
-from .utils import default_basis, default_size, get_components, savefig, make_unique_list
+from .utils import default_basis, default_size, get_components, savefig_or_show, make_unique_list
 from .velocity_embedding_grid import compute_velocity_on_grid
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
@@ -86,11 +86,8 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
                                           vkey=vkeys[i] if len(vkeys) > 1 else vkey,
                                           X_grid=None if len(vkeys) > 1 else X_grid,
                                           V_grid=None if len(vkeys) > 1 else V_grid, **scatter_kwargs, **kwargs)
-        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show:
-            pl.show()
-        else:
-            return ax
+        savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        if not show: return ax
 
     else:
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
@@ -103,6 +100,5 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         size = 4 * default_size(adata) if size is None else size
         ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, zorder=0, **scatter_kwargs)
 
-        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
+        savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        if not show: return ax

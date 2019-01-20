@@ -72,9 +72,13 @@ _rcParams_style = None
 # Functions
 # --------------------------------------------------------------------------------
 
-from matplotlib import rcParams
-from scanpy.plotting.rcmod import set_rcParams_scanpy
-from scanpy.plotting.utils import default_palette
+from matplotlib import rcParams, cm, colors
+from cycler import cycler
+# default matplotlib 2.0 palette slightly modified.
+vega_10 = list(map(colors.to_hex, cm.tab10.colors))
+vega_20 = list(map(colors.to_hex, cm.tab20.colors))
+vega_20 = [*vega_20[0:14:2], *vega_20[16::2], *vega_20[1:15:2], *vega_20[17::2], '#ad494a', '#8c6d31']
+vega_20[2], vega_20[4], vega_20[7] = '#279e68', '#aa40fc', '#b5bd61'  # green, purple, khaki
 
 
 def set_rcParams_scvelo(fontsize=8, color_map=None, frameon=None):
@@ -102,7 +106,7 @@ def set_rcParams_scvelo(fontsize=8, color_map=None, frameon=None):
          'Bitstream Vera Sans', 'sans-serif']
 
     fontsize = fontsize
-    labelsize = 0.9 * fontsize
+    labelsize = 0.92 * fontsize
 
     # fonsizes (mpl default: 10, medium, large, medium)
     rcParams['font.size'] = fontsize
@@ -117,7 +121,7 @@ def set_rcParams_scvelo(fontsize=8, color_map=None, frameon=None):
     rcParams['legend.handletextpad'] = 0.4
 
     # color cycle
-    rcParams['axes.prop_cycle'] = default_palette()
+    rcParams['axes.prop_cycle'] = cycler(color=vega_10)
 
     # axes
     rcParams['axes.linewidth'] = 0.8
@@ -139,6 +143,70 @@ def set_rcParams_scvelo(fontsize=8, color_map=None, frameon=None):
 
     # frame (mpl default: True)
     frameon = False if frameon is None else frameon
+    global _frameon
+    _frameon = frameon
+
+
+def set_rcParams_scanpy(fontsize=14, color_map=None, frameon=None):
+    """Set matplotlib.rcParams to Scanpy defaults."""
+
+    # dpi options
+    rcParams['figure.dpi'] = 100
+    rcParams['savefig.dpi'] = 150
+
+    # figure
+    rcParams['figure.figsize'] = (4, 4)
+    rcParams['figure.subplot.left'] = 0.18
+    rcParams['figure.subplot.right'] = 0.96
+    rcParams['figure.subplot.bottom'] = 0.15
+    rcParams['figure.subplot.top'] = 0.91
+
+    rcParams['lines.linewidth'] = 1.5  # the line width of the frame
+    rcParams['lines.markersize'] = 6
+    rcParams['lines.markeredgewidth'] = 1
+
+    # font
+    rcParams['font.sans-serif'] = [
+        'Arial', 'Helvetica', 'DejaVu Sans',
+        'Bitstream Vera Sans', 'sans-serif']
+
+    fontsize = fontsize
+    labelsize = 0.92 * fontsize
+
+    rcParams['font.size'] = fontsize
+    rcParams['legend.fontsize'] = labelsize
+    rcParams['axes.titlesize'] = fontsize
+    rcParams['axes.labelsize'] = fontsize
+
+    # legend
+    rcParams['legend.numpoints'] = 1
+    rcParams['legend.scatterpoints'] = 1
+    rcParams['legend.handlelength'] = 0.5
+    rcParams['legend.handletextpad'] = 0.4
+
+    # color cycle
+    rcParams['axes.prop_cycle'] = cycler(color=vega_20)
+
+    # lines
+    rcParams['axes.linewidth'] = 0.8
+    rcParams['axes.edgecolor'] = 'black'
+    rcParams['axes.facecolor'] = 'white'
+
+    # ticks
+    rcParams['xtick.color'] = 'k'
+    rcParams['ytick.color'] = 'k'
+    rcParams['xtick.labelsize'] = fontsize
+    rcParams['ytick.labelsize'] = fontsize
+
+    # axes grid
+    rcParams['axes.grid'] = True
+    rcParams['grid.color'] = '.8'
+
+    # color map
+    rcParams['image.cmap'] = rcParams['image.cmap'] if color_map is None else color_map
+
+    # frame
+    frameon = True if frameon is None else frameon
     global _frameon
     _frameon = frameon
 
@@ -191,15 +259,7 @@ def set_figure_params(style='scvelo', figsize=None, dpi=None, dpi_save=None, fra
     if style is 'scvelo':
         set_rcParams_scvelo(color_map=color_map, frameon=frameon)
     elif style is 'scanpy':
-        # dpi is not specified by scanpy directly in the defaults
-        if dpi is None:
-            rcParams['figure.dpi'] = 80
-        if dpi_save is None:
-            rcParams['savefig.dpi'] = 150
-        frameon = True if frameon is None else frameon
-        global _frameon
-        _frameon = frameon
-        set_rcParams_scanpy(color_map=color_map)
+        set_rcParams_scanpy(color_map=color_map, frameon=frameon)
     # Overwrite style options if given
     if figsize is not None:
         rcParams['figure.figsize'] = figsize

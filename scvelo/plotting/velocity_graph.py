@@ -1,6 +1,6 @@
 from .. import settings
 from ..tools.transition_matrix import transition_matrix
-from .utils import savefig, default_basis
+from .utils import savefig_or_show, default_basis
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -59,7 +59,5 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n
         edges.set_zorder(-2)
         edges.set_rasterized(settings._vector_friendly)
 
-    if isinstance(save, str):
-        savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-    if show: pl.show()
-    else: return ax
+    savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+    if not show: return ax

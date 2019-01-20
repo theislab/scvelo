@@ -1,9 +1,8 @@
 from .. import settings
 from .utils import is_categorical, update_axes, set_label, set_title, default_basis, default_color, default_color_map, \
-    default_size, interpret_colorkey, get_components, set_colorbar, savefig, make_unique_list
+    default_size, interpret_colorkey, get_components, set_colorbar, savefig_or_show, make_unique_list
 from .docs import doc_scatter, doc_params
 
-import scanpy.api.pl as scpl
 from matplotlib import rcParams
 import matplotlib.pyplot as pl
 import numpy as np
@@ -52,11 +51,8 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                         color=colors[i] if len(colors) > 1 else color,
                         layer=layers[i] if len(layers) > 1 else layer,
                         basis=bases[i] if len(bases) > 1 else basis, **scatter_kwargs, **kwargs)
-        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show:
-            pl.show()
-        else:
-            return ax
+        savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        if not show: return ax
 
     else:
         color, layer, basis = colors[0], layers[0], bases[0]
@@ -75,8 +71,9 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
             ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
         if is_categorical(adata, color) and is_embedding:
-            ax = scpl.scatter(adata, basis=basis, color=color, color_map=color_map, size=size, frameon=frameon, ax=ax,
-                              **scatter_kwargs, **kwargs)
+            from scanpy.api.pl import scatter as scatter_
+            ax = scatter_(adata, basis=basis, color=color, color_map=color_map, size=size, frameon=frameon, ax=ax,
+                          **scatter_kwargs, **kwargs)
 
         else:
             if basis in adata.var_names:
@@ -129,6 +126,5 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
 
             if colorbar and not is_categorical(adata, color): set_colorbar(ax)
 
-        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
+        savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        if not show: return ax

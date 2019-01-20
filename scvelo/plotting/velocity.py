@@ -1,7 +1,7 @@
 from ..preprocessing.moments import second_order_moments
 from ..tools.rank_velocity_genes import rank_velocity_genes
 from .scatter import scatter
-from .utils import savefig, default_basis, default_size
+from .utils import savefig_or_show, default_basis, default_size
 
 import numpy as np
 import pandas as pd
@@ -149,7 +149,5 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
                 pl.plot(xnew, gamma / beta * xnew + offset2 / beta, c='k', linestyle='--')
             if v == len(var_names) - 1: pl.legend(fits, loc='lower right', prop={'size': 34/ncols})
 
-    if isinstance(save, str): savefig('', dpi=dpi, save=save, show=show)
-
-    if show: pl.show()
-    else: return ax
+    savefig_or_show('', dpi=dpi, save=save, show=show)
+    if not show: return ax

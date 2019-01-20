@@ -4,7 +4,7 @@ from matplotlib import rcParams
 from matplotlib.colors import ColorConverter
 from pandas import unique
 from scipy.sparse import issparse
-from .utils import is_categorical, interpret_colorkey, default_basis, default_size, get_components, savefig, \
+from .utils import is_categorical, interpret_colorkey, default_basis, default_size, get_components, savefig_or_show, \
     default_color, make_unique_list, set_colorbar, default_color_map, set_label, set_title
 
 
@@ -358,8 +358,5 @@ def heatmap(adata, var_names, groups=None, groupby=None, annotations=None, use_r
     # set_title(title, None, None, fontsize)
     # ax = update_axes(ax, fontsize)
 
-    if isinstance(save, str): savefig('heatmap', dpi=dpi, save=save, show=show)
-    if show:
-        pl.show()
-    else:
-        return ax
+    savefig_or_show('heatmap', dpi=dpi, save=save, show=show)
+    if not show: return ax

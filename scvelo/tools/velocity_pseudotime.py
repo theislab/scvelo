@@ -1,9 +1,13 @@
 import numpy as np
-from scanpy.tools.dpt import DPT
 from scipy.sparse import issparse, spdiags, linalg
 
 from .utils import groups_to_bool, scale, strings_to_categoricals
 from ..preprocessing.moments import get_connectivities
+
+try: from scanpy.tools.dpt import DPT
+except ImportError:
+    try: from scanpy.tools._dpt import DPT
+    except ImportError: pass
 
 
 def principal_curve(data, basis='pca', n_comps=4, clusters_list=None, copy=False):

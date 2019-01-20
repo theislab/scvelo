@@ -1,6 +1,6 @@
 from ..tools.velocity_embedding import velocity_embedding as compute_velocity_embedding
 from ..tools.utils import groups_to_bool
-from .utils import interpret_colorkey, default_basis, default_size, get_components, savefig, default_color, \
+from .utils import interpret_colorkey, default_basis, default_size, get_components, savefig_or_show, default_color, \
     default_arrow, make_unique_list
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
@@ -71,11 +71,8 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
                                    color=colors[i] if len(colors) > 1 else color,
                                    layer=layers[i] if len(layers) > 1 else layer,
                                    vkey=vkeys[i] if len(vkeys) > 1 else vkey, **scatter_kwargs, **kwargs)
-        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show:
-            pl.show()
-        else:
-            return ax
+        savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        if not show: return ax
 
     else:
         if projection == '3d':
@@ -118,6 +115,5 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
 
         ax = scatter(adata, x=x, y=y, layer=layer, color=color, size=size, ax=ax, zorder=0, **scatter_kwargs)
 
-        if isinstance(save, str): savefig('' if basis is None else basis, dpi=dpi, save=save, show=show)
-        if show: pl.show()
-        else: return ax
+        savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        if not show: return ax
