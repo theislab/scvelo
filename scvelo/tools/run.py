@@ -34,8 +34,8 @@ def convert_to_adata(vlm, basis=None):
     if hasattr(vlm, 'A') and (vlm.A.T.shape == layers['spliced'].shape): layers['ambiguous'] = vlm.A.T
 
     if hasattr(vlm, 'velocity'): layers['velocity'] = vlm.velocity.T
-    if hasattr(vlm, 'Sx_sz'): layers['Ms'] = vlm.Sx_sz.T
-    if hasattr(vlm, 'Ux_sz'): layers['Mu'] = vlm.Ux_sz.T
+    if hasattr(vlm, 'Sx'): layers['Ms'] = vlm.Sx.T
+    if hasattr(vlm, 'Ux'): layers['Mu'] = vlm.Ux.T
 
     obs = dict(vlm.ca)
     if 'CellID' in obs.keys(): obs['obs_names'] = obs.pop('CellID')
@@ -113,19 +113,21 @@ def convert_to_loom(adata, basis=None):
             self._normalize_S(relative_size=self.initial_cell_size, target_size=np.median(self.initial_cell_size))
             self._normalize_U(relative_size=self.initial_Ucell_size, target_size=np.median(self.initial_Ucell_size))
 
-            #self.normalize_by_total()
+            self.S_norm = np.log1p(self.S_sz)
+
             print("Number of genes to be used:", self.S.shape[0])
 
         def impute(self, n_pcs=30, n_neighbors=30, balanced=False, renormalize=False):
             # counterpart to scv.pp.moments()
-            self.perform_PCA(n_components=n_pcs)
+            if not hasattr(self, 'pcs'):
+                self.perform_PCA(n_components=n_pcs)
             k = n_neighbors
             self.knn_imputation(n_pca_dims=n_pcs, k=k, balanced=balanced, b_sight=k * 8, b_maxl=k * 4)
             if renormalize: self.normalize_median()
 
-        def velocity_estimation(self, limit_gamma=False, fit_offset=False):
-            self.fit_gammas(limit_gamma=limit_gamma, fit_offset=fit_offset)
-            self.filter_genes_good_fit()
+        def velocity_estimation(self, fit_offset=False, perc=[5, 95], filter_genes=False):
+            self.fit_gammas(limit_gamma=False, fit_offset=fit_offset, weighted=(perc is not None), maxmin_perc=perc)
+            if filter_genes: self.filter_genes_good_fit()
 
             self.predict_U()
             self.calculate_velocity()
