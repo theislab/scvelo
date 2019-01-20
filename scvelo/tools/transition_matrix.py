@@ -43,10 +43,14 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
         self_prob = np.clip(ub - confidence, 0, 1)
         graph.setdiag(self_prob)
 
-    T = np.expm1(graph * scale)  # equivalent to np.exp(adata.uns[vkey + '_graph'].A * scale) - 1
+    T = np.expm1(graph * scale)  # equivalent to np.exp(graph.A * scale) - 1
     if vkey + '_graph_neg' in adata.uns.keys():
-        T = T - np.expm1(-adata.uns[vkey + '_graph_neg'] * scale) if use_negative_cosines \
-            else T + (adata.uns[vkey + '_graph_neg'] < 0) * 1e-10
+        graph_neg = adata.uns[vkey + '_graph_neg']
+        if use_negative_cosines:
+            T -= np.expm1(-graph_neg * scale)
+        else:
+            T += np.expm1(graph_neg * scale)
+            T.data += 1
 
     # weight direct neighbors with 1 and indirect (recurse) neighbors with 0.5
     if 'neighbors' in adata.uns.keys():
