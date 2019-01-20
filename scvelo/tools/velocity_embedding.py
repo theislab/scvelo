@@ -19,7 +19,7 @@ def quiver_autoscale(X_emb, V_emb):
 
 
 def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
-                       autoscale=True, all_comps=True, pca_transform=False, retain_scale=False, copy=False):
+                       autoscale=True, all_comps=True, pca_transform=False, retain_scale=False, T=None, copy=False):
     """Computes the single cell velocities in the embedding
 
     Arguments
@@ -45,6 +45,8 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
         Wether to directly project the velocities into PCA space, skipping velocity graph.
     retain_scale: `bool` (default: `False`)
         Whether to retain scale from high dimensional space in embedding.
+    T: `csr_matrix` (default: `None`)
+        Allows the user to directly pass a transition matrix.
 
     Returns
     -------
@@ -74,12 +76,13 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
         X_emb = adata.obsm['X_' + basis] if all_comps else adata.obsm['X_' + basis][:, :2]
         V_emb = np.zeros(X_emb.shape)
 
-        T = transition_matrix(adata, vkey=vkey, scale=scale, self_transitions=self_transitions, use_negative_cosines=use_negative_cosines)
+        T = transition_matrix(adata, vkey=vkey, scale=scale, self_transitions=self_transitions,
+                              use_negative_cosines=use_negative_cosines) if T is None else T
         T.setdiag(0)
         T.eliminate_zeros()
 
-        TA = T.A if adata.n_obs < 8192 else None
-        sparse = False if adata.n_obs < 8192 else True
+        densify = adata.n_obs < 1e4
+        TA = T.A if densify else None
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -88,7 +91,7 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
                 dX = X_emb[indices] - X_emb[i, None]  # shape (n_neighbors, 2)
                 if not retain_scale: dX /= norm(dX)[:, None]
                 dX[np.isnan(dX)] = 0  # zero diff in a steady-state
-                probs = T[i].data if sparse else TA[i, indices]
+                probs = TA[i, indices] if densify else T[i].data
                 V_emb[i] = probs.dot(dX) - probs.mean() * dX.sum(0)  # probs.sum() / len(indices)
 
         if retain_scale:
