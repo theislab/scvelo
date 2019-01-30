@@ -113,10 +113,11 @@ def merge(adata, ldata, copy=True):
     -------
     Returns a :class:`~anndata.AnnData` object
     """
-    common_obs = adata.obs_names.intersection(ldata.obs_names)
-
     if 'spliced' in ldata.layers.keys() and 'initial_size_spliced' not in ldata.obs.keys(): set_initial_size(ldata)
     elif 'spliced' in adata.layers.keys() and 'initial_size_spliced' not in adata.obs.keys(): set_initial_size(adata)
+
+    common_obs = adata.obs_names.intersection(ldata.obs_names)
+    common_vars = adata.var_names.intersection(ldata.var_names)
 
     if len(common_obs) == 0:
         clean_obs_names(adata)
@@ -130,6 +131,11 @@ def merge(adata, ldata, copy=True):
         adata._inplace_subset_obs(common_obs)
         _adata, _ldata = adata, ldata[common_obs]
 
+    same_vars = (len(_adata.var_names) == len(_ldata.var_names) and np.all(_adata.var_names == _ldata.var_names))
+    if len(common_vars) > 0 and not same_vars:
+        _adata._inplace_subset_var(common_vars)
+        _ldata._inplace_subset_var(common_vars)
+
     for attr in _ldata.obs.keys():
         _adata.obs[attr] = _ldata.obs[attr]
     for attr in _ldata.obsm.keys():
@@ -140,7 +146,8 @@ def merge(adata, ldata, copy=True):
         _adata.layers[attr] = _ldata.layers[attr]
 
     if _adata.shape[1] == _ldata.shape[1]:
-        if np.all(adata.var_names == ldata.var_names):
+        same_vars = (len(_adata.var_names) == len(_ldata.var_names) and np.all(_adata.var_names == _ldata.var_names))
+        if same_vars:
             for attr in _ldata.var.keys():
                 _adata.var[attr] = _ldata.var[attr]
             for attr in _ldata.varm.keys():
