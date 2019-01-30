@@ -1,5 +1,6 @@
 from ..tools.velocity_embedding import velocity_embedding
-from .utils import default_basis, default_size, get_components, savefig_or_show, make_unique_list
+from ..tools.utils import groups_to_bool
+from .utils import default_basis, default_size, default_color, get_components, savefig_or_show, make_unique_list
 from .velocity_embedding_grid import compute_velocity_on_grid
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
@@ -54,10 +55,13 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         if key + '_' + basis not in adata.obsm_keys() and V is None:
             velocity_embedding(adata, basis=basis, vkey=key)
     color, layer, vkey = colors[0], layers[0], vkeys[0]
+    color = default_color(adata) if color is None else color
 
     if X_grid is None or V_grid is None:
-        X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)] if X is None else X[:, :2]
-        V_emb = adata.obsm[vkey + '_' + basis][:, get_components(components, basis)] if V is None else V[:, :2]
+        _adata = adata[groups_to_bool(adata, groups, groupby=color)] \
+            if groups is not None and color in adata.obs.keys() else adata
+        X_emb = _adata.obsm['X_' + basis][:, get_components(components, basis)] if X is None else X[:, :2]
+        V_emb = _adata.obsm[vkey + '_' + basis][:, get_components(components, basis)] if V is None else V[:, :2]
         X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=1, smooth=smooth,
                                                   n_neighbors=n_neighbors, autoscale=False, adjust_for_stream=True)
         lengths = np.sqrt((V_grid ** 2).sum(0))
