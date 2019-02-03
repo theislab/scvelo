@@ -124,6 +124,12 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                     pl.plot(xnew, gamma / beta * xnew + offset / beta, c='k', linestyle=linestyle)
                 pl.legend(fits, loc='lower right')
 
+                from .simulation import show_full_dynamics
+                if 'true_alpha' in adata.var.keys():
+                    show_full_dynamics(adata, basis)
+                if 'fit_alpha' in adata.var.keys():
+                    show_full_dynamics(adata, basis, 'fit')
+
             if colorbar and not is_categorical(adata, color): set_colorbar(ax)
 
         savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
