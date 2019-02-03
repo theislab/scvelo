@@ -241,13 +241,31 @@ def adjust_palette(palette, length):
 
 def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None, dpi=None):
     ax = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
-    arrays = arrays if isinstance(arrays, (list, tuple)) else [arrays]
+    arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
 
     palette = default_palette(None)[::3][:len(arrays)].by_key()['color']
     colors = palette if colors is None or len(colors) < len(arrays) else colors
 
     for i, array in enumerate(arrays):
         pl.hist(array[np.isfinite(array)], bins=bins, alpha=alpha, color=colors[i], label=labels[i] if labels is not None else None)
+    pl.legend()
+    pl.xlabel(xlabel if xlabel is not None else '')
+    pl.ylabel(ylabel if xlabel is not None else '')
+    pl.show()
+
+
+def plot(arrays, normalize=False, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None, dpi=None):
+    ax = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
+    arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
+
+    palette = default_palette(None)[::3][:len(arrays)].by_key()['color']
+    colors = palette if colors is None or len(colors) < len(arrays) else colors
+
+    for i, array in enumerate(arrays):
+        X = array[np.isfinite(array)]
+        X = X / np.max(X) if normalize else X
+        pl.plot(X, color=colors[i], label=labels[i] if labels is not None else None)
+
     pl.legend()
     pl.xlabel(xlabel if xlabel is not None else '')
     pl.ylabel(ylabel if xlabel is not None else '')
