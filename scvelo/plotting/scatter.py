@@ -1,6 +1,6 @@
 from .. import settings
 from .utils import is_categorical, update_axes, set_label, set_title, default_basis, default_color, default_color_map, \
-    default_size, interpret_colorkey, get_components, set_colorbar, savefig_or_show, make_unique_list
+    default_size, interpret_colorkey, get_components, set_colorbar, savefig_or_show, make_unique_list, show_linear_fit
 from .docs import doc_scatter, doc_params
 
 from matplotlib import rcParams
@@ -34,12 +34,13 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
     """
     scatter_kwargs = {"use_raw": use_raw, "sort_order": sort_order, "alpha": alpha, "components": components,
                       "projection": projection, "legend_loc": legend_loc, "groups": groups, "palette": palette,
-                      "legend_fontsize": legend_fontsize, "legend_fontweight": legend_fontweight, "title": title,
+                      "legend_fontsize": legend_fontsize, "legend_fontweight": legend_fontweight,
                       "right_margin": right_margin, "left_margin": left_margin, "show": False, "save": None}
 
     colors, layers, bases = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(basis)
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else bases if len(bases) > 1 else None
     if multikey is not None:
+        if isinstance(title, (list, tuple)): title *= int(np.ceil(len(multikey) / len(title)))
         ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
         nrows = int(np.ceil(len(multikey) / ncols))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
@@ -50,7 +51,8 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                         colorbar=colorbar, perc=perc, frameon=frameon, ax=pl.subplot(gs), zorder=zorder,
                         color=colors[i] if len(colors) > 1 else color,
                         layer=layers[i] if len(layers) > 1 else layer,
-                        basis=bases[i] if len(bases) > 1 else basis, **scatter_kwargs, **kwargs)
+                        basis=bases[i] if len(bases) > 1 else basis,
+                        title=title[i] if isinstance(title, (list, tuple)) else title, **scatter_kwargs, **kwargs)
         savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if not show: return ax
 
@@ -73,14 +75,15 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
         if is_categorical(adata, color) and is_embedding:
             from scanpy.api.pl import scatter as scatter_
             ax = scatter_(adata, basis=basis, color=color, color_map=color_map, size=size, frameon=frameon, ax=ax,
-                          **scatter_kwargs, **kwargs)
+                          title=title, **scatter_kwargs, **kwargs)
 
         else:
             if basis in adata.var_names:
                 x = adata[:, basis].layers['spliced'] if use_raw else adata[:, basis].layers['Ms']
                 y = adata[:, basis].layers['unspliced'] if use_raw else adata[:, basis].layers['Mu']
                 x, y = x.A if issparse(x) else x, y.A if issparse(y) else y
-                xlabel, ylabel, title = 'spliced', 'unspliced', basis
+                xlabel, ylabel = 'spliced', 'unspliced'
+                title = basis if title is None else title
 
             elif is_embedding:
                 X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
@@ -113,16 +116,7 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
             ax = update_axes(ax, fontsize, is_embedding, frameon)
 
             if basis in adata.var_names:
-                xnew = np.linspace(0, x.max() * 1.02)
-                vkeys = adata.layers.keys() if vkey is None else make_unique_list(vkey)
-                fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
-                for fit in fits:
-                    linestyle = '--' if 'variance_' + fit in adata.layers.keys() else '-'
-                    gamma = adata[:, basis].var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
-                    beta = adata[:, basis].var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
-                    offset = adata[:, basis].var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
-                    pl.plot(xnew, gamma / beta * xnew + offset / beta, c='k', linestyle=linestyle)
-                pl.legend(fits, loc='lower right')
+                show_linear_fit(adata, basis, vkey, x)
 
                 from .simulation import show_full_dynamics
                 if 'true_alpha' in adata.var.keys():

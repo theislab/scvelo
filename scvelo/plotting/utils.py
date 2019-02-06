@@ -239,6 +239,19 @@ def adjust_palette(palette, length):
         return palette
 
 
+def show_linear_fit(adata, basis, vkey, x):
+    xnew = np.linspace(0, x.max() * 1.02)
+    vkeys = adata.layers.keys() if vkey is None else make_unique_list(vkey)
+    fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
+    for fit in fits:
+        linestyle = '--' if 'variance_' + fit in adata.layers.keys() else '-'
+        gamma = adata[:, basis].var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
+        beta = adata[:, basis].var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
+        offset = adata[:, basis].var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
+        pl.plot(xnew, gamma / beta * xnew + offset / beta, c='k', linestyle=linestyle)
+    pl.legend(fits, loc='lower right')
+
+
 def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None, dpi=None):
     ax = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
     arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]

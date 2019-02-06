@@ -13,27 +13,28 @@ def compute_dynamics(adata, basis, key='true'):
     t_ = adata.var[key + '_t_'][idx]
 
     t = adata.obs[key + '_t'].values if key is 'true' else adata.layers[key + '_t'][:, idx]
-    tau, alpha, u0, s0_vec = vectorize(np.sort(t), t_, alpha, beta, gamma)
+    tau, alpha, u0, s0 = vectorize(np.sort(t), t_, alpha, beta, gamma)
 
     ut = unspliced(tau, u0, alpha, beta)
-    st = spliced(tau, s0_vec, u0, alpha, beta, gamma)
+    st = spliced(tau, s0, u0, alpha, beta, gamma)
 
     return alpha, ut, st
 
 
 def show_full_dynamics(adata, basis, key='true'):
-    color = 'grey' if key is 'true' else 'black'
+    color = 'grey' if key is 'true' else 'purple'
+    linewidth = .5 if key is 'true' else 1
 
     _, ut, st = compute_dynamics(adata, basis, key)
-    pl.plot(st, ut, color=color, linewidth=.5)
+    pl.plot(st, ut, color=color, linewidth=linewidth)
 
     idx = np.where(adata.var_names == basis)[0][0]
     beta, gamma = adata.var[key + '_beta'][idx], adata.var[key + '_gamma'][idx]
     xnew = np.linspace(0, st.max())
-    pl.plot(xnew, gamma / beta * xnew, color=color, linestyle='--', linewidth=.5)
+    pl.plot(xnew, gamma / beta * xnew, color=color, linestyle='--', linewidth=linewidth)
 
 
-def simulation(adata, var_names='all'):
+def simulation(adata, var_names='all', ):
     from ..tools.utils import make_dense
 
     idx_sorted = np.argsort(adata.obs.true_t)

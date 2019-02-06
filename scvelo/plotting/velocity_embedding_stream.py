@@ -71,12 +71,13 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
     scatter_kwargs = {"basis": basis, "perc": perc, "use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
                       "components": components, "legend_loc": legend_loc, "groups": groups,
                       "legend_fontsize": legend_fontsize, "legend_fontweight": legend_fontweight, "palette": palette,
-                      "color_map": color_map, "frameon": frameon, "title": title, "xlabel": xlabel, "ylabel": ylabel,
+                      "color_map": color_map, "frameon": frameon, "xlabel": xlabel, "ylabel": ylabel,
                       "right_margin": right_margin, "left_margin": left_margin, "colorbar": colorbar, "dpi": dpi,
                       "fontsize": fontsize, "show": False, "save": None}
 
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else vkeys if len(vkeys) > 1 else None
     if multikey is not None:
+        if isinstance(title, (list, tuple)): title *= int(np.ceil(len(multikey) / len(title)))
         ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
         nrows = int(np.ceil(len(multikey) / ncols))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
@@ -88,6 +89,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
                                           color=colors[i] if len(colors) > 1 else color,
                                           layer=layers[i] if len(layers) > 1 else layer,
                                           vkey=vkeys[i] if len(vkeys) > 1 else vkey,
+                                          title=title[i] if isinstance(title, (list, tuple)) else title,
                                           X_grid=None if len(vkeys) > 1 else X_grid,
                                           V_grid=None if len(vkeys) > 1 else V_grid, **scatter_kwargs, **kwargs)
         savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
@@ -102,7 +104,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         pl.streamplot(X_grid[0], X_grid[1], V_grid[0], V_grid[1], color='grey', zorder=3, **stream_kwargs)
 
         size = 4 * default_size(adata) if size is None else size
-        ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, zorder=0, **scatter_kwargs)
+        ax = scatter(adata, layer=layer, color=color, size=size, title=title, ax=ax, zorder=0, **scatter_kwargs)
 
         savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if not show: return ax
