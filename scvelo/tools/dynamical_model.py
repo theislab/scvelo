@@ -9,7 +9,7 @@ from scipy.sparse import issparse
 
 
 class DynamicsRecovery:
-    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False):
+    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, reinitialize=True):
         # extract actual data
         if u is None or s is None:
             _layers = adata[:, gene].layers
@@ -25,13 +25,21 @@ class DynamicsRecovery:
 
         self.alpha, self.beta, self.gamma, self.alpha_, self.t_,  = None, None, None, None, None
         self.t, self.tau, self.o = 0, 0, 0
+        if 'true_t' in adata.obs.keys():  # ToDo: remove this later
+            self.o = np.array(adata.obs.true_t < adata[:, gene].var.true_t_[0], dtype=int)
 
         self.weights, self.u_b, self.s_b = None, None, None
         self.loss, self.dalpha, self.dbeta, self.dgamma = [], [], [], []
         self.m_dalpha, self.m_dbeta, self.m_dgamma = [0], [0], [0]
         self.v_dalpha, self.v_dbeta, self.v_dgamma = [0], [0], [0]
 
-        self.initialize()
+        self.m_dpars = np.zeros((3, 1))
+        self.v_dpars = np.zeros((3, 1))
+
+        if reinitialize or 'fit_alpha' not in adata.var.keys():
+            self.initialize()
+        else:
+            self.load_pars(adata, gene)
 
     def initialize(self, perc=95):
         u, s = self.u, self.s
@@ -44,12 +52,31 @@ class DynamicsRecovery:
         gamma = xy_ / xx_
 
         alpha_, beta = 0, 1
-        alpha = u[u >= np.percentile(u, 90)].mean() * beta
+        alpha = u[u >= np.percentile(u, 95)].mean() * beta
 
         self.alpha, self.beta, self.gamma, self.alpha_ = alpha, beta, gamma, alpha_
-        self.u0, self.u0_ = 0, alpha / beta
-        self.s0, self.s0_ = 0, alpha / gamma
+        self.u0, self.u0_ = 0, alpha / beta * .8
+        self.s0, self.s0_ = 0, alpha / gamma * .8
+
         self.update_state_dependent()
+
+    def load_pars(self, adata, gene):
+        idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
+        self.alpha = adata.var['fit_alpha'][idx]
+        self.beta = adata.var['fit_beta'][idx]
+        self.gamma = adata.var['fit_gamma'][idx]
+        self.t_ = adata.var['fit_t_'][idx]
+        self.t = adata.layers['fit_t'][:, idx]
+
+        self.u0, self.s0, self.alpha_ = 0, 0, 0
+        self.u0_ = unspliced(self.t_, self.u0, self.alpha, self.beta)
+        self.s0_ = spliced(self.t_, self.u0, self.s0, self.alpha, self.beta, self.gamma)
+        self.update_state_dependent()
+
+    def fit(self, n_iter=100, r=1e-3, inits=None, state_gd=True, b1=0.9, b2=0.999, eps=1e-8, method='adam'):
+        for j in range(n_iter):
+            self.update_vars(r=r, inits=inits, state_gd=state_gd, b1=b1, b2=b2, eps=eps, method=method)
+            self.update_state_dependent()
 
     def update_state_dependent(self):
         def log(x):  # to avoid invalid values for log.
@@ -60,7 +87,10 @@ class DynamicsRecovery:
         u0, s0, u0_, s0_ = self.u0, self.s0, self.u0_, self.s0_
 
         # assign states (on if above gamma fit, else off)
-        o = np.array(beta * u - gamma * s >= 0, dtype=int)
+        if True:  # ToDo: remove later
+            o = self.o
+        else:
+            o = np.array(u * s0_ - s * u0_ >= 0, dtype=int)
 
         # vectorize state-dependent vars
         alpha = alpha * o + alpha_ * (1 - o)
@@ -73,6 +103,24 @@ class DynamicsRecovery:
         t_ = np.max(tau * o)
         t = tau * o + (t_ + tau) * (1 - o)
 
+        # find optimal t_
+        #u_inf = alpha / beta
+        #t_ = np.min(np.max(t * o), - 1 / beta * log((u_inf - u0_) / u_inf))
+
+        #u0_ = unspliced(t_, 0, alpha, beta)
+        #print(t_.round(2), u0_.round(2))
+
+        # remove jumps in time assignment
+        idx_ordered = np.argsort(t)
+        t_ord = t[idx_ordered]
+        dt_ord = t_ord - np.insert(t_ord[:-1], 0, 0)
+        dt_ord = np.clip(dt_ord, None, 2 * np.percentile(dt_ord, 95))
+        t[idx_ordered] = np.cumsum(dt_ord)
+
+        # find optimal t_
+        t_ = np.max(t * o)
+        tau = t * o + (t - t_) * (1 - o)
+
         # estimated data via ODE
         ut = unspliced(tau, u0, alpha, beta)
         st = spliced(tau, s0, u0, alpha, beta, gamma)
@@ -80,7 +128,8 @@ class DynamicsRecovery:
         self.ut, self.st = ut, st
         self.t, self.tau, self.o, self.t_ = t.round(2), tau.round(2), o, t_
 
-    def update_vars(self, r=1e-6, inits='ss', state_gd=True, add_noise_scale=0, b1=0.9, b2=0.999, eps=1e-8, n_regions=5):
+    def update_vars(self, r=1e-6, inits=None, state_gd=True, b1=0.9, b2=0.999, eps=1e-8, n_regions=5, method='adam'):
+        inits = 'cont' if inits is None else inits
         state_gd = False if 'learn' in inits else state_gd
         if self.weights is None:
             self.uniform_weighting(n_regions=n_regions, perc=95)
@@ -90,46 +139,28 @@ class DynamicsRecovery:
         self.dbeta = np.append(self.dbeta, dbeta)
         self.dgamma = np.append(self.dgamma, dgamma)
 
-        noise_alpha = np.random.normal(scale=add_noise_scale) if add_noise_scale > 0 else 0
-        noise_other = np.random.normal(scale=add_noise_scale * .1) if add_noise_scale > 0 else 0
+        if method is 'adam':
+            # update 1st and 2nd order gradient moments
+            dpars = np.array([dalpha, dbeta, dgamma])
+            m_dpars = b1 * self.m_dpars[:, -1] + (1 - b1) * dpars
+            v_dpars = b2 * self.v_dpars[:, -1] + (1 - b2) * dpars**2
 
-        # Get first and second gradient moment estimations from previous step:
-        m_dalpha, m_dbeta, m_dgamma = self.m_dalpha[-1], self.m_dbeta[-1], self.m_dgamma[-1]
-        v_dalpha, v_dbeta, v_dgamma = self.v_dalpha[-1], self.v_dbeta[-1], self.v_dgamma[-1]
+            self.m_dpars = np.c_[self.m_dpars, m_dpars]
+            self.v_dpars = np.c_[self.v_dpars, v_dpars]
 
-        t = len(self.v_dgamma)
+            # correct for bias
+            t = len(self.m_dpars[0])
+            m_dpars /= (1 - b1 ** t)
+            v_dpars /= (1 - b2 ** t)
 
-        # update 1st gradient moments (and then bias corrected)
-        m_dar = (b1 * m_dalpha + (1 - b1) * dalpha)
-        m_dbr = (b1 * m_dbeta + (1 - b1) * dbeta)
-        m_dgr = (b1 * m_dgamma + (1 - b1) * dgamma)
-
-        m_da = m_dar / (1 - b1 ** t)
-        m_db = m_dbr / (1 - b1 ** t)
-        m_dg = m_dgr / (1 - b1 ** t)
-
-        # update 2nd gradient moments (and then bias corrected)
-        v_dar = (b2 * v_dalpha + (1 - b2) * dalpha ** 2)
-        v_dbr = (b2 * v_dbeta + (1 - b2) * dbeta ** 2)
-        v_dgr = (b2 * v_dgamma + (1 - b2) * dgamma ** 2)
-
-        v_da = v_dar / (1 - b2 ** t)
-        v_db = v_dbr / (1 - b2 ** t)
-        v_dg = v_dgr / (1 - b2 ** t)
-
-        # Adam Update of Parameters
-        self.alpha -= r * m_da / (np.sqrt(v_da) + eps) + noise_alpha
-        self.beta -= r * m_db / (np.sqrt(v_db) + eps) + noise_other
-        self.gamma -= r * m_dg / (np.sqrt(v_dg) + eps) + noise_other
-
-        # Save first gradient moments
-        self.m_dalpha = np.append(self.m_dalpha, m_dar)
-        self.m_dbeta = np.append(self.m_dbeta, m_dar)
-        self.m_dgamma = np.append(self.m_dgamma, m_dar)
-        # Save second gradient moments
-        self.v_dalpha = np.append(self.v_dalpha, v_dar)
-        self.v_dbeta = np.append(self.v_dbeta, v_dar)
-        self.v_dgamma = np.append(self.v_dgamma, v_dar)
+            # Adam parameter update
+            self.alpha -= r * m_dpars[0] / (np.sqrt(v_dpars[0]) + eps)
+            self.beta -= r * m_dpars[1] / (np.sqrt(v_dpars[1]) + eps)
+            self.gamma -= r * m_dpars[2] / (np.sqrt(v_dpars[2]) + eps)
+        else:
+            self.alpha -= r * dalpha
+            self.beta -= r * dbeta
+            self.gamma -= r * dgamma
 
         if inits is 'ss':
             self.u0_ = np.array(self.alpha / self.beta)
@@ -146,6 +177,14 @@ class DynamicsRecovery:
             self.s0 -= ds0 * r
             self.u0_ -= du0_ * r
             self.s0_ -= ds0_ * r
+        elif inits is 'lm':
+            off = self.o == 0
+            expu = np.exp(-self.beta * self.tau[off])
+            exps = np.exp(-self.gamma * self.tau[off])
+            self.u0_ = (expu * self.u[off]).sum() / (expu ** 2).sum()
+
+            s = self.s[off] + self.beta * self.u0_ / (self.gamma - self.beta) * (exps - expu)
+            self.s0_ = (exps * s).sum() / (exps ** 2).sum()
 
     def get_derivatives(self, state_gd=True):
         alpha, beta, gamma, alpha_ = self.alpha, self.beta, self.gamma, self.alpha_
@@ -182,7 +221,8 @@ class DynamicsRecovery:
             else:
                 region = union(np.where(u > u_b[i]), np.where(s > s_b[i]))  # lower_cut for last region
             regions[i] = region
-            weights[region] = n_regions / len(region)
+            if len(region) > 0:
+                weights[region] = n_regions / len(region)
         # set weights accordingly such that each region has an equal overall contribution.
         self.weights = weights * len(u) / np.sum(weights)
         self.u_b, self.s_b = u_b, s_b
@@ -218,7 +258,7 @@ def read_pars(adata, pars_names=['alpha', 'beta', 'gamma', 't_'], key='fit'):
     pars = []
     for name in pars_names:
         pkey = key + '_' + name
-        par = adata.var[pkey] if pkey in adata.var.keys() else np.zeros(adata.n_vars) * np.nan
+        par = adata.var[pkey].values if pkey in adata.var.keys() else np.zeros(adata.n_vars) * np.nan
         pars.append(par)
     return pars
 
@@ -228,7 +268,8 @@ def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_'], add_key
         adata.var[add_key + '_' + name] = pars[i]
 
 
-def recover_dynamics(data, var_names='all', n_iter=100, learning_rate=1e-3, use_raw=False, add_key='fit', copy=False):
+def recover_dynamics(data, var_names='all', n_iter=100, learning_rate=1e-3, inits=None, state_gd=True, add_key='fit',
+                     reinitialize=True, use_raw=False, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -244,7 +285,8 @@ def recover_dynamics(data, var_names='all', n_iter=100, learning_rate=1e-3, use_
     logg.info('recovering dynamics', r=True)
 
     idx = np.ones(adata.n_vars, dtype=bool) if var_names is 'all' else adata.var_names.isin(var_names)
-    if 'velocity_genes' in adata.var.keys(): idx = idx & adata.var.velocity_genes.values
+    if 'velocity_genes' in var_names and 'velocity_genes' in adata.var.keys():
+        idx = idx & np.array(adata.var.velocity_genes.values)
     idx = np.where(idx)[0]
     var_names = adata.var_names[idx]
 
@@ -253,11 +295,9 @@ def recover_dynamics(data, var_names='all', n_iter=100, learning_rate=1e-3, use_
     L = np.zeros(shape=(n_iter, adata.n_vars)) * np.nan
 
     for i, gene in enumerate(var_names):
-        drec = DynamicsRecovery(adata, gene, use_raw=use_raw)
+        drec = DynamicsRecovery(adata, gene, use_raw=use_raw, reinitialize=reinitialize)
+        drec.fit(n_iter, learning_rate, inits=inits, state_gd=state_gd, **kwargs)
 
-        for j in range(n_iter):
-            drec.update_vars(r=learning_rate)
-            drec.update_state_dependent()
         i = idx[i]
         alpha[i], beta[i], gamma[i], t_[i] = drec.alpha, drec.beta, drec.gamma, drec.t_
         T[:, i] = drec.t
