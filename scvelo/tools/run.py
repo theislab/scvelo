@@ -69,12 +69,32 @@ def convert_to_loom(adata, basis=None):
             self.S = self.S.A if issparse(self.S) else self.S
             self.U = self.U.A if issparse(self.U) else self.U
 
+            if 'initial_size_spliced' in adata.obs.keys():
+                self.initial_cell_size = adata.obs['initial_size_spliced']
+                self.initial_Ucell_size = adata.obs['initial_size_unspliced']
+            else:
+                self.initial_cell_size = self.S.sum(0)
+                self.initial_Ucell_size = self.U.sum(0)
+
+            from ..preprocessing.utils import not_yet_normalized
+            if not not_yet_normalized(adata.layers['spliced']):
+                self.S_sz = self.S
+                self.U_sz = self.U
+                self.S_norm = np.log1p(self.S_sz)
+
+            if 'Ms' in adata.layers.keys():
+                self.Sx_sz = self.Sx = adata.layers['Ms'].T
+                self.Ux_sz = self.Ux = adata.layers['Mu'].T
+
+            if 'X_pca' in adata.obsm.keys():
+                self.pcs = adata.obsm['X_pca']
+
+            if 'velocity' in adata.layers.keys():
+                self.velocity = adata.layers['velocity']
+
             if 'ambiguous' in adata.layers.keys():
                 self.A = adata.layers['ambiguous'].T
                 if issparse(self.A): self.A = self.A.A
-
-            self.initial_cell_size = self.S.sum(0)
-            self.initial_Ucell_size = self.U.sum(0)
 
             self.ca = dict()
             self.ra = dict()
@@ -86,6 +106,8 @@ def convert_to_loom(adata, basis=None):
                 self.ca[key] = np.array(adata.obs[key].values)
             for key in adata.var.keys():
                 self.ra[key] = np.array(adata.var[key].values)
+
+            basis = 'umap' if basis is None else basis
             if isinstance(basis, str) and 'X_' + basis in adata.obsm.keys():
                 if 'X_' + basis in adata.obsm.keys(): self.ts = adata.obsm['X_' + basis]
                 if 'velocity_' + basis in adata.obsm.keys(): self.delta_embedding = adata.obsm['velocity_' + basis]
@@ -98,17 +120,13 @@ def convert_to_loom(adata, basis=None):
         def filter_and_normalize(self, min_counts=3, min_counts_u=3, min_cells=0, min_cells_u=0,
                                  n_top_genes=None, max_expr_avg=20):
             # counterpart to scv.pp.filter_and_normalize()
-            self.score_detection_levels(min_expr_counts=min_counts, min_expr_counts_U=0,
-                                        min_cells_express=min_cells, min_cells_express_U=0)
+            self.score_detection_levels(min_expr_counts=min_counts, min_expr_counts_U=min_counts_u,
+                                        min_cells_express=min_cells, min_cells_express_U=min_cells_u)
             self.filter_genes(by_detection_levels=True)
 
             if n_top_genes is not None and n_top_genes < self.S.shape[0]:
                 self.score_cv_vs_mean(n_top_genes, max_expr_avg=max_expr_avg)
                 self.filter_genes(by_cv_vs_mean=True)
-
-            self.score_detection_levels(min_expr_counts=0, min_cells_express=0,
-                                        min_expr_counts_U=min_counts_u, min_cells_express_U=min_cells_u)
-            self.filter_genes(by_detection_levels=True)
 
             self._normalize_S(relative_size=self.initial_cell_size, target_size=np.median(self.initial_cell_size))
             self._normalize_U(relative_size=self.initial_Ucell_size, target_size=np.median(self.initial_Ucell_size))
@@ -118,7 +136,7 @@ def convert_to_loom(adata, basis=None):
             print("Number of genes to be used:", self.S.shape[0])
 
         def impute(self, n_pcs=30, n_neighbors=30, balanced=False, renormalize=False):
-            # counterpart to scv.pp.moments()
+            # counterpart to scv.pp.moments(adata, method='sklearn', mode='distances')
             if not hasattr(self, 'pcs'):
                 self.perform_PCA(n_components=n_pcs)
             k = n_neighbors
