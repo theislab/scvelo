@@ -7,7 +7,7 @@ import numpy as np
 
 
 def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_transitions=True, scale=10, perc=None,
-                      use_negative_cosines=False, weight_diffusion=0, scale_diffusion=1, weight_indirect_neighbors=.5,
+                      use_negative_cosines=False, weight_diffusion=0, scale_diffusion=1, weight_indirect_neighbors=None,
                       n_neighbors=None, vgraph=None):
     """Computes transition probabilities from velocity graph
 
@@ -52,8 +52,8 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
             T += np.expm1(graph_neg * scale)
             T.data += 1
 
-    # weight direct neighbors with 1 and indirect (recurse) neighbors with 0.5
-    if 'neighbors' in adata.uns.keys():
+    # weight direct and indirect (recursed) neighbors
+    if 'neighbors' in adata.uns.keys() and weight_indirect_neighbors is not None and weight_indirect_neighbors < 1:
         direct_neighbors = adata.uns['neighbors']['distances'] > 0
         direct_neighbors.setdiag(1)
         w = weight_indirect_neighbors
