@@ -18,14 +18,15 @@ def compute_dynamics(adata, basis, key='true'):
     ut = unspliced(tau, u0, alpha, beta)
     st = spliced(tau, s0, u0, alpha, beta, gamma)
 
-    return alpha, ut, st
+    vt = spliced(tau + np.max(tau)/100, s0, u0, alpha, beta, gamma) - st
+    return alpha, ut, st, vt
 
 
 def show_full_dynamics(adata, basis, key='true'):
     color = 'grey' if key is 'true' else 'purple'
     linewidth = .5 if key is 'true' else 1
 
-    _, ut, st = compute_dynamics(adata, basis, key)
+    _, ut, st, _ = compute_dynamics(adata, basis, key)
     pl.plot(st, ut, color=color, linewidth=linewidth)
 
     idx = np.where(adata.var_names == basis)[0][0]
@@ -48,7 +49,7 @@ def simulation(adata, var_names='all', ):
     for i, gs in enumerate(pl.GridSpec(1, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1]), dpi=100))):
         idx = np.where(data.var_names == var_names[i])[0][0]
 
-        alpha, ut, st = compute_dynamics(adata, idx)
+        alpha, ut, st, _ = compute_dynamics(adata, idx)
 
         u = make_dense(data.layers['unspliced'][:, idx])
         s = make_dense(data.layers['spliced'][:, idx])
