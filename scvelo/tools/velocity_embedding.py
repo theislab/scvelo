@@ -67,7 +67,7 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
     logg.info('computing velocity embedding', r=True)
 
     if 'pca' in basis and pca_transform:
-        V = adata.layers['velocity']
+        V = adata.layers[vkey]
         PCs = adata.varm['PCs'] if all_comps else adata.varm['PCs'][:, :2]
         X_emb = adata.obsm['X_' + basis]
         V_emb = (V - V.mean(0)).dot(PCs)
