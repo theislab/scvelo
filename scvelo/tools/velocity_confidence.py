@@ -32,7 +32,7 @@ def velocity_confidence(data, vkey='velocity', copy=False):
         raise ValueError(
             'You need to run `tl.velocity` first.')
 
-    idx = adata.var['velocity_genes'].tolist()
+    idx = np.array(adata.var.velocity_genes.values, dtype=bool)
     X, V = adata.layers['Ms'][:, idx].copy(), adata.layers[vkey][:, idx].copy()
     indices = get_indices(dist=adata.uns['neighbors']['distances'])[0]
 
@@ -81,7 +81,7 @@ def velocity_confidence_transition(data, vkey='velocity', scale=10, copy=False):
         raise ValueError(
             'You need to run `tl.velocity` first.')
 
-    idx = adata.var['velocity_genes'].tolist()
+    idx = np.array(adata.var.velocity_genes.values, dtype=bool)
     T = transition_matrix(adata, vkey=vkey, scale=scale)
     dX = T.dot(adata.layers['Ms'][:, idx]) - adata.layers['Ms'][:, idx]
     dX -= dX.mean(1)[:, None]
