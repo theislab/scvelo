@@ -27,21 +27,20 @@ def vals_to_csr(vals, rows, cols, shape, split_negative=False):
 
 
 class VelocityGraph:
-    def __init__(self, adata, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, n_recurse_neighbors=None,
-                 random_neighbors_at_max=None, sqrt_transform=False, approx=False, report=False):
-        subset = np.ones(adata.n_vars, dtype=bool)
-        if 'velocity_genes' in adata.var.keys(): subset = adata.var['velocity_genes'].tolist()
-
+    def __init__(self, adata, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, sqrt_transform=False,
+                 n_recurse_neighbors=None, random_neighbors_at_max=None, approx=False, report=False):
+        subset = adata.var.velocity_genes.values if 'velocity_genes' in adata.var.keys() else np.ones(adata.n_vars, bool)
         X = adata.layers[xkey].A[:, subset] if issparse(adata.layers[xkey]) else adata.layers[xkey][:, subset]
         V = adata.layers[vkey].A[:, subset] if issparse(adata.layers[vkey]) else adata.layers[vkey][:, subset]
-        if approx and X.shape[1] > 100:
-            X_pca, PCs, _, _ = pca(X,  n_comps=50, svd_solver='arpack', return_info=True)
+
+        if approx is True and X.shape[1] > 100:
+            X_pca, PCs, _, _ = pca(X,  n_comps=30, svd_solver='arpack', return_info=True)
             self.X = np.array(X_pca, dtype=np.float32)
             self.V = (V - V.mean(0)).dot(PCs.T)
             self.V[V.sum(1) == 0] = 0
         else:
-            self.X = np.array(X.copy(), dtype=np.float32)
-            self.V = np.array(V.copy(), dtype=np.float32)
+            self.X = np.array(X, dtype=np.float32)
+            self.V = np.array(V, dtype=np.float32)
 
         self.sqrt_transform = sqrt_transform
         if sqrt_transform: self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
@@ -54,11 +53,19 @@ class VelocityGraph:
         if n_neighbors is None or n_neighbors < adata.uns['neighbors']['params']['n_neighbors']:
             self.indices = get_indices(dist=adata.uns['neighbors']['distances'], n_neighbors=n_neighbors)[0]
         else:
-            from .. import Neighbors
-            neighs = Neighbors(adata)
             if basis is None: basis = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()][-1]
-            neighs.compute_neighbors(n_neighbors=n_neighbors, use_rep=basis, n_pcs=10)
-            self.indices = get_indices(dist=neighs.distances)[0]
+            elif 'X_' + basis in adata.obsm.keys(): basis = 'X_' + basis
+
+            if isinstance(approx, str) and approx in adata.obsm.keys():
+                from sklearn.neighbors import NearestNeighbors
+                neighs = NearestNeighbors(n_neighbors=n_neighbors + 1)
+                neighs.fit(adata.obsm[approx][:, :2])
+                self.indices = neighs.kneighbors_graph(mode='connectivity').indices.reshape((-1, n_neighbors + 1))
+            else:
+                from .. import Neighbors
+                neighs = Neighbors(adata)
+                neighs.compute_neighbors(n_neighbors=n_neighbors, use_rep=basis, n_pcs=10)
+                self.indices = get_indices(dist=neighs.distances)[0]
 
         self.max_neighs = random_neighbors_at_max
 
@@ -69,7 +76,8 @@ class VelocityGraph:
             self.t0 = adata.obs[tkey].copy()
             init = min(self.t0) if isinstance(min(self.t0), int) else 0
             self.t0.cat.categories = np.arange(init, len(self.t0.cat.categories))
-            self.t1 = self.t0 + 1
+            self.t1 = self.t0.copy()
+            self.t1.cat.categories = self.t0.cat.categories + 1
         else: self.t0 = None
 
         self.report = report
