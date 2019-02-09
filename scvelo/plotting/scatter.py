@@ -6,6 +6,7 @@ from .docs import doc_scatter, doc_params
 from matplotlib import rcParams
 import matplotlib.pyplot as pl
 import numpy as np
+import pandas as pd
 from scipy.sparse import issparse
 
 
@@ -104,7 +105,7 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                 ub = np.percentile(c, 98)
                 kwargs.update({"vmax": ub})
 
-            if groups is not None or (not isinstance(c, str) and not isinstance(c[0], str) and any(np.isnan(c))):
+            if groups is not None or np.any(pd.isnull(c)):
                 zorder = 0 if zorder is None else zorder
                 ax = scatter(adata, basis=basis, color='lightgrey', ax=ax, zorder=zorder, **scatter_kwargs)
                 zorder += 1

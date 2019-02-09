@@ -23,7 +23,7 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
         n_counts -= n_nans
 
     if perc is not None:
-        if isinstance(perc, int): perc = [perc, 100] if perc < 50 else [0, perc]
+        if np.size(perc) < 2: perc = [perc, 100] if perc < 50 else [0, perc]
         lb, ub = np.percentile(data, perc)
         data = np.clip(data, lb, ub)
 
