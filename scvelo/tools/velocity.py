@@ -180,3 +180,37 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
               '    \'' + vkey + '\', velocity vectors for each individual cell (adata.layers)')
 
     return adata if copy else None
+
+
+def velocity_genes(data, vkey='velocity', min_r2=0.01, highly_variable=None, copy=False):
+    """Estimates velocities in a gene-specific manner
+
+    Arguments
+    ---------
+    data: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    vkey: `str` (default: `'velocity'`)
+        Name under which to refer to the computed velocities for `velocity_graph` and `velocity_embedding`.
+    min_r2: `float` (default: 0.01)
+        Minimum threshold for coefficient of determination
+    highly_variable: `bool` (default: `None`)
+        Whether to include highly variable genes only.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to `adata`.
+
+    Returns
+    -------
+    Updates `adata` attributes
+    velocity_genes: `.var`
+        genes to be used for further velocity analysis (velocity graph and embedding)
+    """
+    adata = data.copy() if copy else data
+    if vkey + '_genes' not in adata.var.keys(): velocity(data, vkey)
+
+    adata.var[vkey + '_genes'] = np.array(adata.var[vkey + '_genes'], dtype=bool) & (adata.var[vkey + '_r2'] > min_r2)
+    if highly_variable and 'highly_variable' in adata.var.keys():
+        adata.var[vkey + '_genes'] &= adata.var['highly_variable']
+
+    logg.info('Number of obtained velocity_genes:', np.sum(adata.var[vkey + '_genes']))
+
+    return adata if copy else None
