@@ -19,7 +19,8 @@ def quiver_autoscale(X_emb, V_emb):
 
 
 def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
-                       autoscale=True, all_comps=True, pca_transform=False, retain_scale=False, T=None, copy=False):
+                       direct_projection=True, pca_transform=None, retain_scale=False, autoscale=True, all_comps=True,
+                       T=None, copy=False):
     """Computes the single cell velocities in the embedding
 
     Arguments
@@ -36,22 +37,24 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
         Whether to allow self transitions, based on the confidences of transitioning to neighboring cell.
     use_negative_cosines: `bool` (default: `True`)
         Whether to use not only positive, but also negative cosines and use those transitions to the opposite way.
+    direct_projection: `bool` (default: `True`)
+        Whether to directly project the velocities into PCA space, thus skipping velocity graph.
+    pca_transform: `bool` (default: `None`)
+        same as direct_projection (deprecated)
+    retain_scale: `bool` (default: `False`)
+        Whether to retain scale from high dimensional space in embedding.
     autoscale: `bool` (default: `True`)
         Whether to scale the embedded velocities by a scalar multiplier,
         which simply ensures that the arrows in the embedding are properly scaled.
     all_comps: `bool` (default: `True`)
         Whether to compute the velocities on all embedding components or just the first two.
-    pca_transform: `bool` (default: `False`)
-        Wether to directly project the velocities into PCA space, skipping velocity graph.
-    retain_scale: `bool` (default: `False`)
-        Whether to retain scale from high dimensional space in embedding.
     T: `csr_matrix` (default: `None`)
         Allows the user to directly pass a transition matrix.
 
     Returns
     -------
     Returns or updates `adata` with the attributes
-    velocity_umap: `.obsm`
+    velocity_basis: `.obsm`
         coordinates of velocity projection on embedding
     """
     adata = data.copy() if copy else data
@@ -66,7 +69,7 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
 
     logg.info('computing velocity embedding', r=True)
 
-    if 'pca' in basis and pca_transform:
+    if 'pca' in basis and (direct_projection or pca_transform):
         V = adata.layers[vkey]
         PCs = adata.varm['PCs'] if all_comps else adata.varm['PCs'][:, :2]
         X_emb = adata.obsm['X_' + basis]
