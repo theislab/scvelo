@@ -1,4 +1,4 @@
-from .velocity import velocity
+from .velocity import velocity, velocity_genes
 from .velocity_graph import velocity_graph
 from .transition_matrix import transition_matrix
 from .velocity_embedding import velocity_embedding
