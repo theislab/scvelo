@@ -1,7 +1,7 @@
 |PyPI| |Docs| |travis|
 
 scVelo – stochastic single cell RNA velocity
-============================================
+********************************************
 
 .. image:: https://drive.google.com/uc?export=view&id=1rcgHou-YFTJCKDR-Vd37zQ_AvLiaHLut
    :width: 90px
@@ -25,7 +25,7 @@ obtain a velocity vector which can be projected into a lower-dimensional embeddi
 
 
 Main features of scVelo
------------------------
+=======================
 While the potentiality of RNA velocity sounds very promising, several limitations restrict the ability to make truthful
 predictions. Two of the main challenges, to bear in mind when interpreting results, are the following:
 
@@ -62,7 +62,7 @@ terms of memory and runtime without loss in accuracy and runs easily on your loc
 
 
 Installation
-------------
+============
 scVelo requires Python 3.6 or later. We recommend to use Miniconda_.
 
 Install scVelo from PyPi using::
@@ -75,13 +75,13 @@ Windows and Python 3.7 users further need to ``conda install pytables``.
 The splicing data can be obtained using the `velocyto command line interface`_.
 
 scVelo in action
-----------------
+================
 Import scvelo as::
 
     import scvelo as scv
 
 Read your data
-^^^^^^^^^^^^^^
+--------------
 Read your data file (loom, h5ad, csv, ...) using::
 
     adata = scv.read(filename, cache=True)
@@ -100,7 +100,7 @@ If you do not have a datasets yet, you can still play around using one of the in
     adata = scv.datasets.dentategyrus()
 
 Preprocessing
-^^^^^^^^^^^^^
+-------------
 For velocity estimation basic preprocessing (i.e. gene selection and normalization) is sufficient, e.g. using::
 
     scv.pp.filter_and_normalize(adata, **params)
@@ -110,13 +110,13 @@ For velocity estimation we need the first- and second-order moments (basically m
     scv.pp.moments(adata, **params)
 
 Velocity Tools
-^^^^^^^^^^^^^^
+--------------
 The core of the software is the efficient and robust estimation of velocities, obtained with::
 
     scv.tl.velocity(adata, mode='stochastic', **params)
 
 The velocities are vectors in gene expression space obtained by solving a stochastic model of transcriptional dynamics.
-The solution to the deterministic model is obtained by setting ``mode=deterministic``.
+The solution to the deterministic model is obtained by setting ``mode='deterministic'``.
 
 The velocities are stored in ``adata.layers`` just like the count matrices.
 
@@ -134,7 +134,7 @@ Note, that translation of velocities into a graph is only needed for non-linear 
 In PCA space you can skip the velocity graph and directly project into the embedding using ``direct_projection=True``.
 
 Visualization
-^^^^^^^^^^^^^
+-------------
 Finally the velocities can be projected and visualized in any embedding (e.g. UMAP) using any of these::
 
     scv.pl.velocity_embedding(adata, basis='umap', **params)
@@ -146,7 +146,13 @@ For every tool module there is a plotting counterpart, which allows you to exami
     scv.pl.velocity(adata, var_names=['gene_A', 'gene_B'], **params)
     scv.pl.velocity_graph(adata, **params)
 
+
+Docs & Feedback
+===============
 I recommend going through the documentation_ and some exemplary notebooks_.
+
+Your feedback, in particular any issue you stumble upon, is highly appreciated and addressed to `feedback@scvelo.de <mailto:feedback@scvelo.de>`_.
+
 
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
