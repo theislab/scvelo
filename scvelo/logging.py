@@ -4,6 +4,7 @@
 from . import settings
 from datetime import datetime
 from time import time as get_time
+from platform import python_version
 
 
 _VERBOSITY_LEVELS_FROM_STRINGS = {'error': 0, 'warn': 1, 'info': 2, 'hint': 3}
@@ -135,7 +136,7 @@ def print_passed_time():
 
 def print_version():
     from . import __version__
-    _write_log('Running scvelo', __version__, 'on {}.'.format(datetime.now().strftime("%Y-%m-%d %H:%M")))
+    _write_log('Running scvelo', __version__, '(python ' + python_version() + ')', 'on {}.'.format(get_date_string()))
 
 
 def print_versions():
@@ -148,7 +149,7 @@ def print_versions():
 
 
 def get_date_string():
-    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    return datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
 from anndata.logging import print_memory_usage
