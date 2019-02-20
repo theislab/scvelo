@@ -267,8 +267,10 @@ def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, yla
     pl.show()
 
 
-def plot(arrays, normalize=False, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None, dpi=None):
+def plot(arrays, normalize=False, colors=None, labels=None, xlabel=None, ylabel=None, xscale=None, yscale=None, ax=None,
+         figsize=None, dpi=None, show=True):
     ax = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
+    arrays = np.array(arrays)
     arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
 
     palette = default_palette(None)[::3][:len(arrays)].by_key()['color']
@@ -279,10 +281,16 @@ def plot(arrays, normalize=False, colors=None, labels=None, xlabel=None, ylabel=
         X = X / np.max(X) if normalize else X
         pl.plot(X, color=colors[i], label=labels[i] if labels is not None else None)
 
-    pl.legend()
     pl.xlabel(xlabel if xlabel is not None else '')
     pl.ylabel(ylabel if xlabel is not None else '')
-    pl.show()
+    if labels is not None: pl.legend()
+    if xscale is not None: pl.xscale(xscale)
+    if yscale is not None: pl.yscale(yscale)
+
+    if not show:
+        return ax
+    else:
+        pl.show()
 
 
 # def phase(adata, var=None, x=None, y=None, color='louvain', fits='all', xlabel='spliced', ylabel='unspliced',

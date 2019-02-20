@@ -145,7 +145,8 @@ def simulation(n_obs=300, n_vars=4, alpha=None, beta=None, gamma=None, alpha_=No
     var = {'true_t_': t_[:n_vars],
            'true_alpha': np.ones(n_vars) * alpha,
            'true_beta': np.ones(n_vars) * beta,
-           'true_gamma': np.ones(n_vars) * gamma}
+           'true_gamma': np.ones(n_vars) * gamma,
+           'true_scaling': np.ones(n_vars)}
     layers = {'unspliced': U, 'spliced': S}
 
     return AnnData(S, obs, var, layers=layers)

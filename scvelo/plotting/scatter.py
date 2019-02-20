@@ -110,21 +110,19 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                 ax = scatter(adata, basis=basis, color='lightgrey', ax=ax, zorder=zorder, **scatter_kwargs)
                 zorder += 1
 
-            pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, edgecolors='none', marker='.', zorder=zorder, **kwargs)
-
-            set_label(xlabel, ylabel, fontsize, basis)
-            set_title(title, layer, color, fontsize)
-            ax = update_axes(ax, fontsize, is_embedding, frameon)
-
             if basis in adata.var_names:
                 show_linear_fit(adata, basis, vkey, x)
-
                 from .simulation import show_full_dynamics
                 if 'true_alpha' in adata.var.keys():
                     show_full_dynamics(adata, basis)
                 if 'fit_alpha' in adata.var.keys():
                     show_full_dynamics(adata, basis, 'fit')
 
+            pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, edgecolors='none', marker='.', zorder=zorder, **kwargs)
+
+            set_label(xlabel, ylabel, fontsize, basis)
+            set_title(title, layer, color, fontsize)
+            ax = update_axes(ax, fontsize, is_embedding, frameon)
             if colorbar and not is_categorical(adata, color): set_colorbar(ax)
 
         savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)

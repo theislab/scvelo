@@ -1,7 +1,7 @@
 from .. import settings
 from .. import logging as logg
 from .utils import make_dense
-from .dynamical_model_utils import unspliced, spliced, derivatives, derivatives_o
+from .dynamical_model_utils import unspliced, spliced, vectorize, derivatives, find_swichting_time, assign_timepoints, fit_alpha, fit_scaling
 
 import numpy as np
 import matplotlib.pyplot as pl
@@ -16,55 +16,60 @@ class DynamicsRecovery:
             u = _layers['unspliced'] if use_raw or 'Mu' not in _layers.keys() else _layers['Mu']
             s = _layers['spliced'] if use_raw or 'Ms' not in _layers.keys() else _layers['Ms']
         self.s, self.u = make_dense(s).copy(), make_dense(u).copy()
+        self.scaling = u.sum(0) / s.sum(0) * 1.3
         self.use_raw = use_raw
 
         # initialize
-        self.u0, self.u0_ = None, None
-        self.s0, self.s0_ = None, None
-        self.ut, self.st = [], []
+        self.u0, self.s0, self.u0_, self.s0_ = None, None, None, None
+        self.ut, self.st, self.loss = [], [], []
+        self.t, self.tau, self.o = 0, 0, 0
 
         self.alpha, self.beta, self.gamma, self.alpha_, self.t_,  = None, None, None, None, None
-        self.t, self.tau, self.o = 0, 0, 0
-        if 'true_t' in adata.obs.keys():  # ToDo: remove this later
-            self.o = np.array(adata.obs.true_t < adata[:, gene].var.true_t_[0], dtype=int)
+        self.pars, self.m_dpars, self.v_dpars = np.ones((3, 1)), np.zeros((3, 1)), np.zeros((3, 1))
 
         self.weights, self.u_b, self.s_b = None, None, None
-        self.loss, self.dalpha, self.dbeta, self.dgamma = [], [], [], []
-        self.m_dalpha, self.m_dbeta, self.m_dgamma = [0], [0], [0]
-        self.v_dalpha, self.v_dbeta, self.v_dgamma = [0], [0], [0]
-
-        self.m_dpars = np.zeros((3, 1))
-        self.v_dpars = np.zeros((3, 1))
-
         if reinitialize or 'fit_alpha' not in adata.var.keys():
             self.initialize()
         else:
             self.load_pars(adata, gene)
 
     def initialize(self, perc=95):
-        u, s = self.u, self.s
-        su_norm = s / np.clip(s.max(0), 1e-3, None) + u / np.clip(u.max(0), 1e-3, None)
-        weights = su_norm >= np.percentile(su_norm, perc, axis=0)
-        x = weights.multiply(s).tocsr() if issparse(weights) else weights * s
-        y = weights.multiply(u).tocsr() if issparse(weights) else weights * u
-        xx_ = x.multiply(x).sum(0) if issparse(x) else (x ** 2).sum(0)
-        xy_ = x.multiply(y).sum(0) if issparse(x) else (x * y).sum(0)
-        gamma = xy_ / xx_
+        u, s = self.u / self.scaling, self.s
 
-        alpha_, beta = 0, 1
+        weights_u = u >= np.percentile(u, perc, axis=0)
+        weights_s = s >= np.percentile(s, perc, axis=0)
+
+        beta = 1
         alpha = u[u >= np.percentile(u, 95)].mean() * beta
 
-        self.alpha, self.beta, self.gamma, self.alpha_ = alpha, beta, gamma, alpha_
-        self.u0, self.u0_ = 0, alpha / beta * .8
-        self.s0, self.s0_ = 0, alpha / gamma * .8
+        # obtain gamma from linear regression fit
+        x = weights_s.multiply(s).tocsr() if issparse(weights_s) else weights_s * s
+        y = weights_s.multiply(u).tocsr() if issparse(weights_s) else weights_s * u
+        xx_ = x.multiply(x).sum(0) if issparse(x) else (x ** 2).sum(0)
+        xy_ = x.multiply(y).sum(0) if issparse(x) else (x * y).sum(0)
+        gamma = xy_ / xx_ * beta
 
+        # initialize switching points
+        u0_ = u[weights_u].mean()
+        s0_ = s[weights_u].mean()
+
+        self.alpha, self.beta, self.gamma, self.alpha_ = alpha, beta, gamma, 0
+        self.pars = np.array([alpha, beta, gamma])[:, None]
+
+        self.u0, self.s0, self.u0_, self.s0_ = 0, 0, u0_, s0_
+        self.t, self.tau, self.o = assign_timepoints(u, s, alpha, beta, gamma, u0_=u0_, s0_=s0_)
+        self.t_ = np.max(self.tau * self.o)
+
+        self.loss = [self.get_loss()]
         self.update_state_dependent()
+        self.update_scaling()
 
     def load_pars(self, adata, gene):
         idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
         self.alpha = adata.var['fit_alpha'][idx]
         self.beta = adata.var['fit_beta'][idx]
         self.gamma = adata.var['fit_gamma'][idx]
+        self.scaling = adata.var['fit_scaling'][idx]
         self.t_ = adata.var['fit_t_'][idx]
         self.t = adata.layers['fit_t'][:, idx]
 
@@ -73,73 +78,59 @@ class DynamicsRecovery:
         self.s0_ = spliced(self.t_, self.u0, self.s0, self.alpha, self.beta, self.gamma)
         self.update_state_dependent()
 
-    def fit(self, n_iter=100, r=1e-3, inits=None, state_gd=True, b1=0.9, b2=0.999, eps=1e-8, method='adam'):
-        for j in range(n_iter):
-            self.update_vars(r=r, inits=inits, state_gd=state_gd, b1=b1, b2=b2, eps=eps, method=method)
-            self.update_state_dependent()
+    def fit(self, n_iter=100, r=None, method=None, allow_deterioration=False):
+        improved_time_assignment, improved_scaling, idx_update = True, True, np.clip(int(n_iter / 10), 1, None)
+
+        for i in range(n_iter):
+            self.update_vars(r=r, method=method)
+            if improved_time_assignment or (i % idx_update == 1) or i == n_iter - 1:
+                improved_time_assignment = self.update_state_dependent()
+            if improved_scaling or (i % idx_update == 1) or i == n_iter - 1:
+                improved_scaling = self.update_scaling()
 
     def update_state_dependent(self):
-        def log(x):  # to avoid invalid values for log.
-            return np.log(np.clip(x, 1e-6, 1 - 1e-6))
+        u, s, tau, o = self.u / self.scaling, self.s, self.tau, self.o
+        alpha, beta, gamma, alpha_, scaling = self.alpha, self.beta, self.gamma, self.alpha_, self.scaling
 
-        u, s = self.u, self.s
+        # find optimal switching and assign timepoints/states
+        t0_ = find_swichting_time(u, s, tau, o, alpha, beta, gamma)
+        t, tau, o = assign_timepoints(u, s, alpha, beta, gamma, t0_)
+
+        return self.update_loss(t, t0_)
+
+    def update_scaling(self):
+        # fit scaling and update if improved
+        u, s, t, tau, o = self.u / self.scaling, self.s, self.t, self.tau, self.o
         alpha, beta, gamma, alpha_ = self.alpha, self.beta, self.gamma, self.alpha_
-        u0, s0, u0_, s0_ = self.u0, self.s0, self.u0_, self.s0_
+        u0, s0, u0_, s0_, t_ = self.u0, self.s0, self.u0_, self.s0_, 0 if self.t_ is None else self.t_
 
-        # assign states (on if above gamma fit, else off)
-        if True:  # ToDo: remove later
-            o = self.o
-        else:
-            o = np.array(u * s0_ - s * u0_ >= 0, dtype=int)
+        # fit alpha and scaling and update if improved
+        u = self.u / self.scaling
+        alpha = fit_alpha(u, s, beta, gamma, tau, o)
+        t0_ = find_swichting_time(u, s, tau, o, alpha, beta, gamma)
+        t, tau, o = assign_timepoints(u, s, alpha, beta, gamma, t0_)
+        improved_alpha = self.update_loss(t, t0_, alpha=alpha)
 
-        # vectorize state-dependent vars
-        alpha = alpha * o + alpha_ * (1 - o)
-        u0 = u0 * o + u0_ * (1 - o)
-        s0 = s0 * o + s0_ * (1 - o)
+        # fit scaling and update if improved
+        scaling = fit_scaling(u, t, t_, alpha, beta) * self.scaling
+        t0_ = find_swichting_time(u, s, tau, o, alpha, beta, gamma)
+        t, tau, o = assign_timepoints(u, s, alpha, beta, gamma, t0_)
+        improved_scaling = self.update_loss(t, t0_, scaling=scaling)
+        print(scaling)
 
-        # tau and t (explicitly given)
-        u_inf = alpha / beta
-        tau = - 1 / beta * log((u - u_inf) / (u0 - u_inf))
-        t_ = np.max(tau * o)
-        t = tau * o + (t_ + tau) * (1 - o)
+        return improved_alpha or improved_scaling
 
-        # find optimal t_
-        #u_inf = alpha / beta
-        #t_ = np.min(np.max(t * o), - 1 / beta * log((u_inf - u0_) / u_inf))
-
-        #u0_ = unspliced(t_, 0, alpha, beta)
-        #print(t_.round(2), u0_.round(2))
-
-        # remove jumps in time assignment
-        idx_ordered = np.argsort(t)
-        t_ord = t[idx_ordered]
-        dt_ord = t_ord - np.insert(t_ord[:-1], 0, 0)
-        dt_ord = np.clip(dt_ord, None, 2 * np.percentile(dt_ord, 95))
-        t[idx_ordered] = np.cumsum(dt_ord)
-
-        # find optimal t_
-        t_ = np.max(t * o)
-        tau = t * o + (t - t_) * (1 - o)
-
-        # estimated data via ODE
-        ut = unspliced(tau, u0, alpha, beta)
-        st = spliced(tau, s0, u0, alpha, beta, gamma)
-
-        self.ut, self.st = ut, st
-        self.t, self.tau, self.o, self.t_ = t.round(2), tau.round(2), o, t_
-
-    def update_vars(self, r=1e-6, inits=None, state_gd=True, b1=0.9, b2=0.999, eps=1e-8, n_regions=5, method='adam'):
-        inits = 'cont' if inits is None else inits
-        state_gd = False if 'learn' in inits else state_gd
-        if self.weights is None:
-            self.uniform_weighting(n_regions=n_regions, perc=95)
-        dalpha, dbeta, dgamma, dalpha_, du0, ds0, du0_, ds0_, loss = self.get_derivatives(state_gd)
-        self.loss = np.append(self.loss, loss)
-        self.dalpha = np.append(self.dalpha, dalpha)
-        self.dbeta = np.append(self.dbeta, dbeta)
-        self.dgamma = np.append(self.dgamma, dgamma)
+    def update_vars(self, r=None, method=None, allow_deterioration=False):
+        if r is None:
+            r = 1e-3 if method is 'adam' else 1e-6
+        # if self.weights is None:
+        #    self.uniform_weighting(n_regions=5, perc=95)
+        t, t_, alpha, beta, gamma, scaling = self.t, self.t_, self.alpha, self.beta, self.gamma, self.scaling
+        dalpha, dbeta, dgamma, dalpha_, dtau, dt_ = derivatives(self.u, self.s, t, t_, alpha, beta, gamma, scaling)
 
         if method is 'adam':
+            b1, b2, eps = 0.9, 0.999, 1e-8
+
             # update 1st and 2nd order gradient moments
             dpars = np.array([dalpha, dbeta, dgamma])
             m_dpars = b1 * self.m_dpars[:, -1] + (1 - b1) * dpars
@@ -154,54 +145,88 @@ class DynamicsRecovery:
             v_dpars /= (1 - b2 ** t)
 
             # Adam parameter update
-            self.alpha -= r * m_dpars[0] / (np.sqrt(v_dpars[0]) + eps)
-            self.beta -= r * m_dpars[1] / (np.sqrt(v_dpars[1]) + eps)
-            self.gamma -= r * m_dpars[2] / (np.sqrt(v_dpars[2]) + eps)
+            alpha -= r * m_dpars[0] / (np.sqrt(v_dpars[0]) + eps)
+            beta -= r * m_dpars[1] / (np.sqrt(v_dpars[1]) + eps)
+            gamma -= r * m_dpars[2] / (np.sqrt(v_dpars[2]) + eps)
+
         else:
-            self.alpha -= r * dalpha
-            self.beta -= r * dbeta
-            self.gamma -= r * dgamma
+            alpha -= r * dalpha
+            beta -= r * dbeta
+            gamma -= r * dgamma
+            # tau -= r * dtau
+            # t_ -= r * dt_
+            # t_ = np.max(self.tau * self.o)
+            # t = tau * self.o + (tau + t_) * (1 - self.o)
 
-        if inits is 'ss':
-            self.u0_ = np.array(self.alpha / self.beta)
-            self.s0_ = np.array(self.alpha / self.gamma)
-        elif inits is 'cont':
-            self.u0_ = np.max(self.ut * self.o)
-            self.s0_ = np.max(self.st * self.o)
-        elif inits is 'learn':
-            self.u0_ -= du0_ * r
-            self.s0_ -= ds0_ * r
-        elif inits is 'learn_all':
-            self.alpha_ -= dalpha_ * r
-            self.u0 -= du0 * r
-            self.s0 -= ds0 * r
-            self.u0_ -= du0_ * r
-            self.s0_ -= ds0_ * r
-        elif inits is 'lm':
-            off = self.o == 0
-            expu = np.exp(-self.beta * self.tau[off])
-            exps = np.exp(-self.gamma * self.tau[off])
-            self.u0_ = (expu * self.u[off]).sum() / (expu ** 2).sum()
+        improved_vars = self.update_loss(alpha=alpha, beta=beta, gamma=gamma, allow_deterioration=allow_deterioration)
 
-            s = self.s[off] + self.beta * self.u0_ / (self.gamma - self.beta) * (exps - expu)
-            self.s0_ = (exps * s).sum() / (exps ** 2).sum()
+    def get_ut(self):
+        tau, alpha, u0, s0 = vectorize(self.t, self.t_, self.alpha, self.beta, self.gamma)
+        return unspliced(tau, u0, alpha, self.beta) * self.scaling
 
-    def get_derivatives(self, state_gd=True):
-        alpha, beta, gamma, alpha_ = self.alpha, self.beta, self.gamma, self.alpha_
-        t, tau, o = self.t, self.tau, self.o
-        u0, s0, u0_, s0_ = self.u0, self.s0, self.u0_, self.s0_
-        diffU = np.multiply(np.array(self.ut - self.u), self.weights)  # TODO check if this actually are np arrays
-        diffS = np.multiply(np.array(self.st - self.s), self.weights)
+    def get_st(self):
+        tau, alpha, u0, s0 = vectorize(self.t, self.t_, self.alpha, self.beta, self.gamma)
+        return spliced(tau, s0, u0, alpha, self.beta, self.gamma)
 
-        if state_gd:
-            dL_dalpha, dL_dbeta, dL_dgamma, dL_dalpha_, dL_du0, dL_ds0, dL_du0_, dL_ds0_ = \
-                derivatives_o(alpha, beta, gamma, tau, o, diffU, diffS, alpha_, u0, s0, u0_, s0_)
-        else:
-            dL_dalpha, dL_dbeta, dL_dgamma, dL_dalpha_, dL_du0, dL_ds0, dL_du0_, dL_ds0_ = \
-                derivatives(alpha, beta, gamma, tau, o, diffU, diffS, alpha_, u0, s0, u0_, s0_)
+    def get_loss(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None):
+        t = self.t if t is None else t
+        t_ = self.t_ if t_ is None else t_
+        alpha = self.alpha if alpha is None else alpha
+        beta = self.beta if beta is None else beta
+        gamma = self.gamma if gamma is None else gamma
+        scaling = self.scaling if scaling is None else scaling
 
-        loss = np.sqrt(np.sum(diffU ** 2 + diffS ** 2) / len(diffU))
-        return dL_dalpha, dL_dbeta, dL_dgamma, dL_dalpha_, dL_du0, dL_ds0, dL_du0_, dL_ds0_, loss
+        tau, alpha_vec, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
+
+        udiff = np.array(unspliced(tau, u0, alpha_vec, beta) * scaling - self.u)
+        sdiff = np.array(spliced(tau, s0, u0, alpha_vec, beta, gamma) - self.s)
+        return np.sqrt(np.sum(udiff ** 2 + sdiff ** 2) / len(udiff))
+
+    def update_loss(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, allow_deterioration=False):
+        vals = [t_, alpha, beta, gamma, scaling]
+        vals_prev = [self.t_, self.alpha, self.beta, self.gamma, self.scaling]
+        vals_name = ['t_', 'alpha', 'beta', 'gamma', 'scaling']
+        new_vals, new_vals_prev, new_vals_name = [], [], []
+        loss_prev = self.loss[-1] if len(self.loss) > 0 else 1e6
+
+        for val, val_prev, val_name in zip(vals, vals_prev, vals_name):
+            if val is not None:
+                new_vals.append(val)
+                new_vals_prev.append(val_prev)
+                new_vals_name.append(val_name)
+
+        loss = self.get_loss(t, t_, alpha, beta, gamma, scaling)
+        improved = allow_deterioration or loss < loss_prev
+
+        if improved:
+            if len(self.loss) > 0 and loss_prev - loss > loss_prev * .01:  # improvement by at least 1%
+                print('Update:',
+                      ' '.join(map(str, new_vals_name)),
+                      ' '.join(map(str, np.round(new_vals_prev, 2))), '-->',
+                      ' '.join(map(str, np.round(new_vals, 2))))
+
+                print('    loss:', np.round(loss_prev, 2), '-->', np.round(loss, 2))
+
+            if 't_' in new_vals_name:
+                self.t = t
+                self.t_ = t_
+                self.o = o = np.array(t < t_, dtype=bool)
+                self.tau = t * o + (t - t_) * (1 - o)
+
+            if 'alpha' in new_vals_name: self.alpha = alpha
+            if 'beta' in new_vals_name: self.beta = beta
+            if 'gamma' in new_vals_name: self.gamma = gamma
+            if 'alpha' in new_vals_name or 'beta' in new_vals_name or 'gamma' in new_vals_name:
+                self.pars = np.c_[self.pars, np.array([self.alpha, self.beta, self.gamma])[:, None]]
+
+            if 'scaling' in new_vals_name: self.scaling = scaling
+
+        self.loss.append(loss if improved else loss_prev)
+
+        return improved
+
+    def scale_u(self, scaling=1):
+        self.scaling *= scaling
 
     def uniform_weighting(self, n_regions=5, perc=95):
         from numpy import union1d as union
@@ -243,7 +268,7 @@ class DynamicsRecovery:
         alpha, beta, gamma, = self.alpha, self.beta, self.gamma
         t, tau, o = self.t, self.tau, self.o
         idx = np.argsort(t)
-        t = t[idx]
+        t = np.sort(t)
         pl.plot(t, du_dalpha_o(beta, tau, o)[idx], label=r'$\partial u / \partial\alpha$')
         pl.plot(t, .2 * du_dbeta_o(alpha, beta, tau, o)[idx], label=r'$\partial u / \partial \beta$')
         pl.plot(t, ds_dalpha_o(beta, gamma, tau, o)[idx], label=r'$\partial s / \partial \alpha$')
@@ -254,7 +279,7 @@ class DynamicsRecovery:
         pl.xlabel('t')
 
 
-def read_pars(adata, pars_names=['alpha', 'beta', 'gamma', 't_'], key='fit'):
+def read_pars(adata, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling'], key='fit'):
     pars = []
     for name in pars_names:
         pkey = key + '_' + name
@@ -263,13 +288,13 @@ def read_pars(adata, pars_names=['alpha', 'beta', 'gamma', 't_'], key='fit'):
     return pars
 
 
-def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_'], add_key='fit'):
+def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling'], add_key='fit'):
     for i, name in enumerate(pars_names):
         adata.var[add_key + '_' + name] = pars[i]
 
 
-def recover_dynamics(data, var_names='all', n_iter=100, learning_rate=1e-3, inits=None, state_gd=True, add_key='fit',
-                     reinitialize=True, use_raw=False, copy=False, **kwargs):
+def recover_dynamics(data, var_names='all', n_iter=100, learning_rate=None, add_key='fit', t_max=None, use_raw=False,
+                     reinitialize=True, return_model=False, plot_results=False, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -290,25 +315,39 @@ def recover_dynamics(data, var_names='all', n_iter=100, learning_rate=1e-3, init
     idx = np.where(idx)[0]
     var_names = adata.var_names[idx]
 
-    alpha, beta, gamma, t_ = read_pars(adata)
+    alpha, beta, gamma, t_, scaling = read_pars(adata)
     T = adata.layers['fit_t'] if 'fit_t' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
-    L = np.zeros(shape=(n_iter, adata.n_vars)) * np.nan
+    L = []
 
     for i, gene in enumerate(var_names):
-        drec = DynamicsRecovery(adata, gene, use_raw=use_raw, reinitialize=reinitialize)
-        drec.fit(n_iter, learning_rate, inits=inits, state_gd=state_gd, **kwargs)
+        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, reinitialize=reinitialize)
+        if n_iter > 1:
+            dm.fit(n_iter, learning_rate, **kwargs)
 
         i = idx[i]
-        alpha[i], beta[i], gamma[i], t_[i] = drec.alpha, drec.beta, drec.gamma, drec.t_
-        T[:, i] = drec.t
-        L[:, i] = drec.loss
+        alpha[i], beta[i], gamma[i], t_[i], scaling[i] = dm.alpha, dm.beta, dm.gamma, dm.t_, dm.scaling
+        T[:, i] = dm.t
+        L.append(dm.loss)
 
-    write_pars(adata, [alpha, beta, gamma, t_])
+    if t_max is not None:
+        m = t_max / T.max(0)
+        T, t_, alpha, beta, gamma = T * m, t_ * m, alpha / m, beta / m, gamma / m
+
+    write_pars(adata, [alpha, beta, gamma, t_, scaling])
     adata.layers['fit_t'] = T
-    adata.varm['loss'] = L.T
+
+    cur_len = adata.varm['loss'].shape[1] if 'loss' in adata.varm.keys() else 2
+    max_len = max(np.max([len(l) for l in L]), cur_len)
+    loss = np.ones((adata.n_vars, max_len)) * np.nan
+
+    if 'loss' in adata.varm.keys():
+        loss[:, :cur_len] = adata.varm['loss']
+
+    loss[idx] = np.vstack([np.concatenate([l, np.ones(max_len-len(l)) * np.nan]) for l in L])
+    adata.varm['loss'] = loss
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n' 
               '    \'' + add_key + '_pars' + '\', fitted parameters for splicing dynamics (adata.var)')
 
-    return adata if copy else None
+    return dm if return_model else adata if copy else None
