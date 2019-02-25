@@ -9,7 +9,7 @@ from scipy.sparse import linalg, csr_matrix, issparse
 import numpy as np
 
 
-def cell_fate(data, groupby='clusters', disconnected_groups=None, n_neighbors=None, copy=False):
+def cell_fate(data, groupby='clusters', disconnected_groups=None, self_transitions=False, n_neighbors=None, copy=False):
     """Computes individual cell endpoints
 
     Arguments
@@ -43,7 +43,7 @@ def cell_fate(data, groupby='clusters', disconnected_groups=None, n_neighbors=No
     _adata.uns['velocity_graph'] = vgraph.graph
     _adata.uns['velocity_graph_neg'] = vgraph.graph_neg
 
-    T = transition_matrix(_adata)
+    T = transition_matrix(_adata, self_transitions=self_transitions)
     I = np.eye(_adata.n_obs)
     fate = np.linalg.inv(I - T)
     if issparse(T): fate = fate.A
@@ -63,7 +63,7 @@ def cell_fate(data, groupby='clusters', disconnected_groups=None, n_neighbors=No
     return adata if copy else None
 
 
-def cell_origin(data, groupby='clusters', distinct_clusters=None, self_transitions=False, n_neighbors=None):
+def cell_origin(data, groupby='clusters', disconnected_groups=None, self_transitions=False, n_neighbors=None):
     n_neighbors = 10 if n_neighbors is None else n_neighbors
     adata = data.copy()
     vgraph = VelocityGraph(adata, n_neighbors=n_neighbors, approx=True, n_recurse_neighbors=1)
@@ -76,8 +76,8 @@ def cell_origin(data, groupby='clusters', distinct_clusters=None, self_transitio
     fate = np.linalg.inv(I - T)
     if issparse(T): fate = fate.A
     cell_fates = np.array(data.obs[groupby][fate.argmax(1)])
-    if distinct_clusters is not None:
-        idx = data.obs[groupby].isin(distinct_clusters)
+    if disconnected_groups is not None:
+        idx = data.obs[groupby].isin(disconnected_groups)
         cell_fates[idx] = data.obs[groupby][idx]
     data.obs['cell_origin'] = cell_fates
     data.obs['cell_origin_confidence'] = fate.max(1) / fate.sum(1)
