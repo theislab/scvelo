@@ -83,10 +83,10 @@ def cell_origin(data, groupby='clusters', disconnected_groups=None, self_transit
         Returns
         -------
         Returns or updates `adata` with the attributes
-        cell_fate: `.obs`
-            most likely cell fate for each individual cell
-        cell_fate_confidence: `.obs`
-            confidence of transitioning to the assigned fate
+        cell_origin: `.obs`
+            most likely cell origin for each individual cell
+        cell_origin_confidence: `.obs`
+            confidence of coming from assigned origin
         """
     adata = data.copy() if copy else data
     logg.info('computing cell fates', r=True)
