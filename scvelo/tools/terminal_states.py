@@ -51,6 +51,7 @@ def cell_fate(data, groupby='clusters', disconnected_groups=None, self_transitio
     if disconnected_groups is not None:
         idx = _adata.obs[groupby].isin(disconnected_groups)
         cell_fates[idx] = _adata.obs[groupby][idx]
+
     adata.obs['cell_fate'] = cell_fates
     adata.obs['cell_fate_confidence'] = fate.max(1) / fate.sum(1)
     strings_to_categoricals(adata)
@@ -63,25 +64,58 @@ def cell_fate(data, groupby='clusters', disconnected_groups=None, self_transitio
     return adata if copy else None
 
 
-def cell_origin(data, groupby='clusters', disconnected_groups=None, self_transitions=False, n_neighbors=None):
-    n_neighbors = 10 if n_neighbors is None else n_neighbors
-    adata = data.copy()
-    vgraph = VelocityGraph(adata, n_neighbors=n_neighbors, approx=True, n_recurse_neighbors=1)
-    vgraph.compute_cosines()
-    adata.uns['velocity_graph'] = vgraph.graph
-    adata.uns['velocity_graph_neg'] = vgraph.graph_neg
+def cell_origin(data, groupby='clusters', disconnected_groups=None, self_transitions=False, n_neighbors=None, copy=False):
+    """Computes individual cell root points
 
-    T = transition_matrix(adata, self_transitions=self_transitions, backward=True)
-    I = np.eye(data.n_obs)
+        Arguments
+        ---------
+        data: :class:`~anndata.AnnData`
+            Annotated data matrix.
+        groupby: `str` (default: `'clusters'`)
+            Key to which to assign the fates.
+        disconnected_groups: list of `str` (default: `None`)
+            Which groups to treat as disconnected for fate assignment.
+        n_neighbors: `int` (default: `None`)
+            Number of neighbors to restrict transitions to.
+        copy: `bool` (default: `False`)
+            Return a copy instead of writing to `adata`.
+
+        Returns
+        -------
+        Returns or updates `adata` with the attributes
+        cell_fate: `.obs`
+            most likely cell fate for each individual cell
+        cell_fate_confidence: `.obs`
+            confidence of transitioning to the assigned fate
+        """
+    adata = data.copy() if copy else data
+    logg.info('computing cell fates', r=True)
+
+    n_neighbors = 10 if n_neighbors is None else n_neighbors
+    _adata = adata.copy()
+    vgraph = VelocityGraph(_adata, n_neighbors=n_neighbors, approx=True, n_recurse_neighbors=1)
+    vgraph.compute_cosines()
+    _adata.uns['velocity_graph'] = vgraph.graph
+    _adata.uns['velocity_graph_neg'] = vgraph.graph_neg
+
+    T = transition_matrix(_adata, self_transitions=self_transitions, backward=True)
+    I = np.eye(_adata.n_obs)
     fate = np.linalg.inv(I - T)
     if issparse(T): fate = fate.A
-    cell_fates = np.array(data.obs[groupby][fate.argmax(1)])
+    cell_fates = np.array(_adata.obs[groupby][fate.argmax(1)])
     if disconnected_groups is not None:
-        idx = data.obs[groupby].isin(disconnected_groups)
-        cell_fates[idx] = data.obs[groupby][idx]
-    data.obs['cell_origin'] = cell_fates
-    data.obs['cell_origin_confidence'] = fate.max(1) / fate.sum(1)
-    strings_to_categoricals(data)
+        idx = _adata.obs[groupby].isin(disconnected_groups)
+        cell_fates[idx] = _adata.obs[groupby][idx]
+
+    adata.obs['cell_origin'] = cell_fates
+    adata.obs['cell_origin_confidence'] = fate.max(1) / fate.sum(1)
+    strings_to_categoricals(adata)
+
+    logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
+    logg.hint(
+        'added\n'
+        '    \'cell_origin\', most likely cell origin (adata.obs)\n'
+        '    \'cell_origin_confidence\', confidence of coming from the assigned origin (adata.obs)')
 
 
 def eigs(T, k=10, eps=1e-3, perc=None):
