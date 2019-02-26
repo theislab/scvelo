@@ -73,8 +73,8 @@ def forebrain():
     return adata
 
 
-def simulation(n_obs=300, n_vars=4, alpha=None, beta=None, gamma=None, alpha_=None, t_max=None,
-               noise_model='normal', noise_level=1):
+def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_=None, t_max=None,
+               noise_model='normal', noise_level=1, switches=None):
     """Simulation of mRNA metabolism with transcription, splicing and degradation
 
     Returns
@@ -129,9 +129,19 @@ def simulation(n_obs=300, n_vars=4, alpha=None, beta=None, gamma=None, alpha_=No
         t *= t_max / np.max(t)
     t_max = np.max(t)
 
-    # switching time point obtained as fraction of t_max rounded down
-    t_ = np.array([np.max(t[t < t_i * t_max]) for t_i in [.4, .7, 1, .1]])
+    def cycle(array, n_vars=None):
+        if isinstance(array, (list, tuple)):
+            return array if n_vars is None else array * int(np.ceil(n_vars / len(array)))
+        else:
+            return [array] if n_vars is None else [array] * n_vars
 
+    # switching time point obtained as fraction of t_max rounded down
+    switches = cycle([.4, .7, 1, .1], n_vars) if switches is None else cycle(switches, n_vars)
+    t_ = np.array([np.max(t[t < t_i * t_max]) for t_i in switches])
+
+    noise_level = cycle(noise_level, len(switches) if n_vars is None else n_vars)
+
+    n_vars = max(len(switches), len(noise_level))
     U = np.zeros(shape=(len(t), n_vars))
     S = np.zeros(shape=(len(t), n_vars))
     for i in range(n_vars):
@@ -139,7 +149,7 @@ def simulation(n_obs=300, n_vars=4, alpha=None, beta=None, gamma=None, alpha_=No
         if noise_model is 'gillespie':
             U[:, i], S[:, i] = simulate_gillespie(alpha_vec, beta, gamma)
         else:
-            U[:, i], S[:, i] = simulate_dynamics(tau, alpha_vec, beta, gamma, u0_vec, s0_vec, noise_model, noise_level)
+            U[:, i], S[:, i] = simulate_dynamics(tau, alpha_vec, beta, gamma, u0_vec, s0_vec, noise_model, noise_level[i])
 
     obs = {'true_t': t.round(2)}
     var = {'true_t_': t_[:n_vars],

@@ -1,3 +1,4 @@
+from scipy.sparse import issparse
 import warnings
 import numpy as np
 exp = np.exp
@@ -6,20 +7,37 @@ exp = np.exp
 """Dynamics delineation and simulation"""
 
 
+def log(x, eps=1e-6):  # to avoid invalid values for log.
+    return np.log(np.clip(x, eps, 1 - eps))
+
+
+def inv(x):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        x_inv = 1 / x * (x != 0)
+    return x_inv
+
+
+def convolve(x, weights=None):
+    return (weights.multiply(x).tocsr() if issparse(weights) else weights * x) if weights is not None else x
+
+
+def apply_weight(arrays, w=None):
+    return arrays if w is None else [array[w] for array in arrays]
+
+
 def unspliced(tau, u0, alpha, beta):
     expu = exp(-beta * tau)
     return u0 * expu + alpha / beta * (1 - expu)
 
 
 def spliced(tau, s0, u0, alpha, beta, gamma):
-    c = (alpha - u0 * beta) / (gamma - beta)
+    c = (alpha - u0 * beta) * inv(gamma - beta)
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
     return s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
 
 
 def tau_u(u, u0, alpha, beta):
-    def log(x):  # to avoid invalid values for log.
-        return np.log(np.clip(x, 1e-6, 1 - 1e-6))
     u_ratio = (u - alpha / beta) / (u0 - alpha / beta)
     return - 1 / beta * log(u_ratio)
 
@@ -28,7 +46,7 @@ def tau_s(s, s0, u0, alpha, beta, gamma, u=None, tau=None, eps=1e-2):
     if tau is None:
         tau = tau_u(u, u0, alpha, beta) if u is not None else 1
     tau_prev, loss, n_iter, max_iter, mixed_states = 1e6, 1e6, 0, 10, np.any(alpha == 0)
-    b0 = (alpha - beta * u0) / (gamma - beta)
+    b0 = (alpha - beta * u0) * inv(gamma - beta)
     g0 = s0 - alpha / gamma + b0
 
     with warnings.catch_warnings():
@@ -54,20 +72,61 @@ def tau_s(s, s0, u0, alpha, beta, gamma, u=None, tau=None, eps=1e-2):
     return np.clip(tau, 0, None)
 
 
+def linreg(u, s):  # linear regression fit
+    ss_ = s.multiply(s).sum(0) if issparse(s) else (s ** 2).sum(0)
+    us_ = s.multiply(u).sum(0) if issparse(s) else (s * u).sum(0)
+    return us_ / ss_
+
+
+def tau_inv(u, s, u0, s0, alpha, beta, gamma):
+    beta_ = beta * inv(gamma - beta)
+    c0 = alpha / gamma - s0 - beta_ * (alpha / beta - u0)
+    cs = alpha / gamma - s - beta_ * (alpha / beta - u)
+    tau = - 1 / gamma * log(cs / c0)
+    return tau
+
+
 def find_swichting_time(u, s, tau, o, alpha, beta, gamma):
     off, on = o == 0, o == 1
     if off.sum() > 0:
         u_, s_, tau_ = u[off], s[off], tau[off]
-        c = (alpha / (gamma - beta) - alpha / gamma) * exp(-gamma * tau_)
-        c_obs = (s_ - beta / (gamma - beta) * u_ + c)
+        c = (alpha * inv(gamma - beta) - alpha / gamma) * exp(-gamma * tau_)
+        c_obs = (s_ - beta * inv(gamma - beta) * u_ + c)
         exp_t0_ = (c_obs * c).sum() / (c ** 2).sum()
-        t0_ = -1 / gamma * np.log(exp_t0_) if exp_t0_ > 0 else np.max(tau[on])
+        t0_ = -1 / gamma * np.log(exp_t0_) if exp_t0_ > 0 else np.max(tau[on]) if on.sum() > 0 else np.max(tau)
     else:
         t0_ = np.max(tau)
     return t0_
 
 
-def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, n_timepoints=300):
+def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None):
+    if t0_ is None:
+        t0_ = tau_u(u0_, 0, alpha, beta)
+    if u0_ is None or s0_ is None:
+        u0_ = unspliced(t0_, 0, alpha, beta)
+        s0_ = spliced(t0_, 0, 0, alpha, beta, gamma)
+
+    tau = tau_inv(u, s, 0, 0, alpha, beta, gamma)
+    tau = np.clip(tau, 0, t0_)
+
+    tau_ = tau_inv(u, s, u0_, s0_, 0, beta, gamma)
+    tau_ = np.clip(tau_, 0, np.max(tau_[s > 0]))
+
+    xt = np.vstack([unspliced(tau, 0, alpha, beta), spliced(tau, 0, 0, alpha, beta, gamma)]).T
+    xt_ = np.vstack([unspliced(tau_, u0_, 0, beta), spliced(tau_, s0_, u0_, 0, beta, gamma)]).T
+    x_obs = np.vstack([u, s]).T
+
+    diffx = np.linalg.norm(xt - x_obs, axis=1)
+    diffx_ = np.linalg.norm(xt_ - x_obs, axis=1)
+
+    o = np.argmin([diffx_, diffx], axis=0)
+    tau = tau * o + tau_ * (1 - o)
+    t = tau * o + (tau_ + t0_) * (1 - o)
+
+    return t, tau, o
+
+
+def assign_timepoints_projection(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, n_timepoints=300):
     if t0_ is None:
         t0_ = tau_u(u0_, 0, alpha, beta)
     if u0_ is None or s0_ is None:
@@ -121,7 +180,7 @@ def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, n_
     return t, tau, o
 
 
-def fit_alpha(u, s, beta, gamma, tau, o, fit_scaling=False):
+def fit_alpha(u, s, tau, o, beta, gamma, fit_scaling=False):
     off, on = o == 0, o == 1
 
     # 'on' state
@@ -137,8 +196,8 @@ def fit_alpha(u, s, beta, gamma, tau, o, fit_scaling=False):
     c_beta_ = 1 / beta * (1 - expu0_) * expu_
 
     # from spliced dynamics
-    c_gamma = (1 - exps) / gamma + (exps - expu) / (gamma - beta)
-    c_gamma_ = ((1 - exps0_) / gamma + (exps0_ - expu0_) / (gamma - beta)) * exps_ - (1 - expu0_) * (exps_ - expu_) / (gamma - beta)
+    c_gamma = (1 - exps) / gamma + (exps - expu) * inv(gamma - beta)
+    c_gamma_ = ((1 - exps0_) / gamma + (exps0_ - expu0_) * inv(gamma - beta)) * exps_ - (1 - expu0_) * (exps_ - expu_) * inv(gamma - beta)
 
     # concatenating together
     c = np.concatenate([c_beta, c_gamma, c_beta_, c_gamma_]).T
@@ -164,7 +223,7 @@ def fit_scaling(u, t, t_, alpha, beta):
 
 
 def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0):
-    o = np.array(t < t_, dtype=bool)
+    o = np.array(t < t_, dtype=int)
     tau = t * o + (t - t_) * (1 - o)
 
     u0_ = unspliced(t_, u0, alpha, beta)
@@ -190,54 +249,82 @@ def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0):
 # def ds_du0(beta, gamma, tau):
 #     return - beta / (gamma - beta) * (exp(-gamma * tau) - exp(-beta * tau))
 
-def dus_u0s0(tau, beta, gamma):
-    du_u0 = exp(-beta * tau)
-    ds_s0 = exp(-gamma * tau)
-    ds_u0 = - beta / (gamma - beta) * (ds_s0 - du_u0)
-    return du_u0, ds_s0, ds_u0
+# def dus_u0s0(tau, beta, gamma):
+#     du_u0 = exp(-beta * tau)
+#     ds_s0 = exp(-gamma * tau)
+#     ds_u0 = - beta / (gamma - beta) * (ds_s0 - du_u0)
+#     return du_u0, ds_s0, ds_u0
+
+# def dus_tau(tau, alpha, beta, gamma, u0=0, s0=0, du0_t0=0, ds0_t0=0):
+#     expu, exps, cb, cc = exp(-beta * tau), exp(-gamma * tau), alpha - beta * u0, alpha - gamma * s0
+#     du_tau = (cb - du0_t0) * expu
+#     ds_tau = (cc - ds0_t0) * exps - cb / (gamma - beta) * (gamma * exps - beta * expu)
+#     + du0_t0 * beta / (gamma - beta) * (exps - expu)
+#     return du_tau, ds_tau
 
 
-def dus_tau(tau, alpha, beta, gamma, u0=0, s0=0, du0_t0=0, ds0_t0=0):
-    expu, exps, cb, cc = exp(-beta * tau), exp(-gamma * tau), alpha - beta * u0, alpha - gamma * s0
-    du_tau = (cb - du0_t0) * expu
-    ds_tau = (cc - ds0_t0) * exps - cb / (gamma - beta) * (gamma * exps - beta * expu) + du0_t0 * beta / (gamma - beta) * (exps - expu)
-    return du_tau, ds_tau
+def dtau(u, s, alpha, beta, gamma, u0, s0, du0=[0, 0, 0], ds0=[0, 0, 0, 0]):
+    a, b, g, gb, b0 = alpha, beta, gamma, gamma - beta, beta * inv(gamma - beta)
+
+    cu = s - a/g - b0 * (u - a/b)
+    c0 = s0 - a/g - b0 * (u0 - a/b)
+    cu += cu == 0
+    c0 += c0 == 0
+    cu_, c0_ = 1 / cu, 1 / c0
+
+    dtau_a = b0/g * (c0_ - cu_) + 1/g * c0_ * (ds0[0] - b0 * du0[0])
+    dtau_b = 1/gb**2 * ((u - a/g) * cu_ - (u0 - a/g) * c0_)
+
+    dtau_c = - a/g * (1/g**2 - 1/gb**2) * (cu_ - c0_) - b0/g/gb * (u*cu_ - u0*c0_)  # + 1/g**2 * np.log(cu/c0)
+
+    return dtau_a, dtau_b, dtau_c
 
 
-def du(tau, alpha, beta, u0=0, du0=[0, 0, 0]):
+def du(tau, alpha, beta, u0=0, du0=[0, 0, 0], dtau=[0, 0, 0]):
     # du0 is the derivative du0 / d(alpha, beta, tau)
     expu, cb = exp(-beta * tau), alpha / beta
-    du_a = du0[0] * expu + 1. / beta * (1 - expu)
-    du_b = du0[1] * expu - cb / beta * (1 - expu) + (cb - u0) * tau * expu
-    du_tau = (alpha - beta * u0 - du0[2]) * expu
-    return du_a, du_b, du_tau
+    du_a = du0[0] * expu + 1. / beta * (1 - expu) + (alpha - beta * u0) * dtau[0] * expu
+    du_b = du0[1] * expu - cb / beta * (1 - expu) + (cb - u0) * tau * expu + (alpha - beta * u0) * dtau[1] * expu
+    # du_tau = (alpha - beta * u0 - du0[2]) * expuå
+    return du_a, du_b
 
 
-def ds(tau, alpha, beta, gamma, u0=0, s0=0, du0=[0, 0, 0], ds0=[0, 0, 0, 0]):
+def ds(tau, alpha, beta, gamma, u0=0, s0=0, du0=[0, 0, 0], ds0=[0, 0, 0, 0], dtau=[0, 0, 0]):
     # ds0 is the derivative ds0 / d(alpha, beta, gamma, tau)
     expu, exps, = exp(-beta * tau), exp(-gamma * tau)
-    expus, cb, cc = exps - expu, alpha / beta, alpha / gamma
+    expus = exps - expu
 
-    cbu = (alpha - beta * u0) / (gamma - beta)
-    ccu = (alpha - gamma * u0) / (gamma - beta)
+    cbu = (alpha - beta * u0) * inv(gamma - beta)
+    ccu = (alpha - gamma * u0) * inv(gamma - beta)
     ccs = alpha / gamma - s0 - cbu
 
-    ds_a = ds0[0] * exps + 1. / gamma * (1 - exps) + 1 / (gamma - beta) * (1 - beta * du0[0]) * expus
-    ds_b = ds0[1] * exps + cbu * tau * expu + 1 / (gamma - beta) * (ccu - beta * du0[1]) * expus
-    ds_c = ds0[2] * exps + ccs * tau * exps - cc / gamma * (1 - exps) - cbu / (gamma - beta) * expus
+    # dsu0 = ds0 * exps - beta / (gamma - beta) * du0
 
-    ds_dtau = (alpha - gamma * s0 - ds0[3]) * exps - cbu * (gamma * exps - beta * expu) + du0[2] * beta / (gamma - beta) * (exps - expu)
+    ds_a = ds0[0] * exps + 1. / gamma * (1 - exps) + 1 * inv(gamma - beta) * (1 - beta * du0[0]) * expus + (ccs * gamma * exps + cbu * beta * expu) * dtau[0]
+    ds_b = ds0[1] * exps + cbu * tau * expu + 1 * inv(gamma - beta) * (ccu - beta * du0[1]) * expus + (ccs * gamma * exps + cbu * beta * expu) * dtau[1]
+    ds_c = ds0[2] * exps + ccs * tau * exps - alpha / gamma**2 * (1 - exps) - cbu * inv(gamma - beta) * expus + (ccs * gamma * exps + cbu * beta * expu) * dtau[2]
 
-    return ds_a, ds_b, ds_c, ds_dtau
+    # ds_dtau = (alpha - gamma * s0 - ds0[3]) * exps - cbu * (gamma * exps - beta * expu) + du0[2] * beta * inv(gamma - beta) * (exps - expu)
+
+    return ds_a, ds_b, ds_c
 
 
-def derivatives(u, s, t, t0_, alpha, beta, gamma, scaling=1, alpha_=0, u0=0, s0=0, update_switch=False, weights=None):
+def derivatives(u, s, t, t0_, alpha, beta, gamma, scaling=1, alpha_=0, u0=0, s0=0, weights=None):
     o = np.array(t < t0_, dtype=int)
 
     du0 = np.array(du(t0_, alpha, beta, u0))[:, None] * (1 - o)[None, :]
     ds0 = np.array(ds(t0_, alpha, beta, gamma, u0, s0))[:, None] * (1 - o)[None, :]
 
     tau, alpha, u0, s0 = vectorize(t, t0_, alpha, beta, gamma, alpha_, u0, s0)
+    dt = np.array(dtau(u, s, alpha, beta, gamma, u0, s0, du0, ds0))
+
+    # state-dependent derivatives:
+    du_a, du_b = du(tau, alpha, beta, u0, du0, dt)
+    du_a, du_b = du_a * scaling, du_b * scaling
+
+    ds_a, ds_b, ds_c = ds(tau, alpha, beta, gamma, u0, s0, du0, ds0, dt)
+
+    # evaluate derivative of likelihood:
     udiff = np.array(unspliced(tau, u0, alpha, beta) * scaling - u)
     sdiff = np.array(spliced(tau, s0, u0, alpha, beta, gamma) - s)
 
@@ -245,21 +332,14 @@ def derivatives(u, s, t, t0_, alpha, beta, gamma, scaling=1, alpha_=0, u0=0, s0=
         udiff = np.multiply(udiff, weights)
         sdiff = np.multiply(sdiff, weights)
 
-    # state-dependent derivatives:
-    du_a, du_b, du_tau = du(tau, alpha, beta, u0, du0)
-    du_a, du_b, du_tau = du_a * scaling, du_b * scaling, du_tau * scaling
-    ds_a, ds_b, ds_c, ds_tau = ds(tau, alpha, beta, gamma, u0, s0, du0, ds0)
-
     dl_a = (du_a * (1 - o)).dot(udiff) + (ds_a * (1 - o)).dot(sdiff)
     dl_a_ = (du_a * o).dot(udiff) + (ds_a * o).dot(sdiff)
 
     dl_b = du_b.dot(udiff) + ds_b.dot(sdiff)
     dl_c = ds_c.dot(sdiff)
 
-    if update_switch:
-        dl_tau = du_tau * udiff + ds_tau * sdiff
-        dl_t0_ = - du_tau.dot(udiff) - ds_tau.dot(sdiff)
-    else:
-        dl_tau, dl_t0_ = None, None
+    # dl_tau = du_tau * udiff + ds_tau * sdiff
+    # dl_t0_ = - du_tau.dot(udiff) - ds_tau.dot(sdiff)
+    dl_tau, dl_t0_ = None, None
 
     return dl_a, dl_b, dl_c, dl_a_, dl_tau, dl_t0_
