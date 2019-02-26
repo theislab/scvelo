@@ -1,6 +1,7 @@
 from .. import settings
-from .utils import is_categorical, update_axes, set_label, set_title, default_basis, default_color, default_color_map, \
-    default_size, interpret_colorkey, get_components, set_colorbar, savefig_or_show, make_unique_list, show_linear_fit
+from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
+    default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
+    show_linear_fit
 from .docs import doc_scatter, doc_params
 
 from matplotlib import rcParams
@@ -80,9 +81,12 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
 
         else:
             if basis in adata.var_names:
-                x = adata[:, basis].layers['spliced'] if use_raw else adata[:, basis].layers['Ms']
-                y = adata[:, basis].layers['unspliced'] if use_raw else adata[:, basis].layers['Mu']
-                x, y = x.A if issparse(x) else x, y.A if issparse(y) else y
+                xkey, ykey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
+                x = make_dense(adata[:, basis].layers[xkey])
+                y = make_dense(adata[:, basis].layers[ykey])
+                if use_raw and False:
+                    x = np.clip(x, None, np.percentile(x, 99))
+                    y = np.clip(y, None, np.percentile(y, 99))
                 xlabel, ylabel = 'spliced', 'unspliced'
                 title = basis if title is None else title
 
@@ -111,12 +115,15 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                 zorder += 1
 
             if basis in adata.var_names:
-                show_linear_fit(adata, basis, vkey, x)
+                fits = show_linear_fit(adata, basis, vkey, xkey)
                 from .simulation import show_full_dynamics
                 if 'true_alpha' in adata.var.keys():
-                    show_full_dynamics(adata, basis)
+                    fit = show_full_dynamics(adata, basis)
+                    fits.append(fit)
                 if 'fit_alpha' in adata.var.keys():
-                    show_full_dynamics(adata, basis, 'fit')
+                    fit = show_full_dynamics(adata, basis, 'fit')
+                    fits.append(fit)
+                pl.legend(fits, loc='lower right')
 
             pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, edgecolors='none', marker='.', zorder=zorder, **kwargs)
 
