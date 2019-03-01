@@ -9,7 +9,7 @@ def mean(x, axis=0):
 
 
 def make_dense(X):
-    return X.A if issparse(X) and X.ndim==2 else X.A1 if issparse(X) else X
+    return X.A if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) else X
 
 
 def sum_obs(A):

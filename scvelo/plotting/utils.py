@@ -13,6 +13,10 @@ from scipy.sparse import issparse
 from cycler import Cycler, cycler
 
 
+def make_dense(X):
+    return X.A if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) else X
+
+
 def strings_to_categoricals(adata):
     """Transform string annotations to categoricals.
     """
@@ -239,8 +243,8 @@ def adjust_palette(palette, length):
         return palette
 
 
-def show_linear_fit(adata, basis, vkey, x):
-    xnew = np.linspace(0, x.max() * 1.02)
+def show_linear_fit(adata, basis, vkey, xkey):
+    xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
     vkeys = adata.layers.keys() if vkey is None else make_unique_list(vkey)
     fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
     for fit in fits:
@@ -249,14 +253,14 @@ def show_linear_fit(adata, basis, vkey, x):
         beta = adata[:, basis].var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
         offset = adata[:, basis].var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
         pl.plot(xnew, gamma / beta * xnew + offset / beta, c='k', linestyle=linestyle)
-    pl.legend(fits, loc='lower right')
+    return fits
 
 
 def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None, dpi=None):
     ax = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
     arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
 
-    palette = default_palette(None)[::3][:len(arrays)].by_key()['color']
+    palette = default_palette(None).by_key()['color'][::-1]
     colors = palette if colors is None or len(colors) < len(arrays) else colors
 
     for i, array in enumerate(arrays):
@@ -273,7 +277,7 @@ def plot(arrays, normalize=False, colors=None, labels=None, xlabel=None, ylabel=
     arrays = np.array(arrays)
     arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
 
-    palette = default_palette(None)[::3][:len(arrays)].by_key()['color']
+    palette = default_palette(None).by_key()['color'][::-1]
     colors = palette if colors is None or len(colors) < len(arrays) else colors
 
     for i, array in enumerate(arrays):
