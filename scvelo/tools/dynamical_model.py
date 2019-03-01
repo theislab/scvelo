@@ -6,6 +6,7 @@ from .dynamical_model_utils import unspliced, spliced, vectorize, derivatives, f
 import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.sparse import issparse
 
 
@@ -353,21 +354,79 @@ class DynamicsRecovery:
         self.weights = weights * len(u) / np.sum(weights)
         self.u_b, self.s_b = u_b, s_b
 
-    def plot_phase(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False):
-        u, s = self.u, self.s
-        t, t_, alpha, beta, gamma, scaling = self.get_vals(t, t_, alpha, beta, gamma, scaling, reassign_time)
-        ut = self.get_ut(t, t_, alpha, beta, gamma, scaling)
-        st = self.get_st(t, t_, alpha, beta, gamma, scaling)
+    def plot_phase(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False,
+                   color=None, colorbar=False, optimal=False):
+        multi = 0
+        for param in [alpha, beta, gamma]:
+            if param is not None and not np.isscalar(param):
+                multi += 1
 
-        idx_sorted = np.argsort(t)
-        ut, st, t = ut[idx_sorted], st[idx_sorted], t[idx_sorted]
+        if multi == 0:
+            u, s = self.u, self.s
+            t, t_, alpha, beta, gamma, scaling = self.get_vals(t, t_, alpha, beta, gamma, scaling, reassign_time)
+            ut = self.get_ut(t, t_, alpha, beta, gamma, scaling)
+            st = self.get_st(t, t_, alpha, beta, gamma, scaling)
 
-        o = np.array(t < t_, dtype=int)
-        pl.scatter(s[o == 1], u[o == 1], color='lightblue', )
-        pl.scatter(s[o == 0], u[o == 0], color='lightgrey')
-        pl.plot(st, ut, color='purple')
-        pl.xlabel('s')
-        pl.ylabel('u')
+            idx_sorted = np.argsort(t)
+            ut, st, t = ut[idx_sorted], st[idx_sorted], t[idx_sorted]
+
+            o = np.array(t < t_, dtype=int)
+            pl.scatter(s[o == 1], u[o == 1], color='lightblue', )
+            pl.scatter(s[o == 0], u[o == 0], color='lightgrey')
+            color = 'purple' if color is None else color
+            linestyle = '-' if not optimal else '--'
+            pl.plot(st, ut, color=color, linestyle=linestyle)
+            pl.xlabel('s')
+            pl.ylabel('u')
+            if colorbar:
+                ax = pl.gca()
+                cax = inset_axes(ax, width="2%", height="30%", loc=4, borderpad=0)
+                import matplotlib as mpl
+                cmap = mpl.colors.LinearSegmentedColormap.from_list("", ["blue", "purple", "red"])
+                cb1 = mpl.colorbar.ColorbarBase(cax, cmap=cmap, orientation='vertical')
+                cb1.set_ticks([0.1, 0.9])
+                cb1.ax.set_yticklabels(['-', '+'])
+                pl.sca(ax)
+        elif multi == 1:
+            a = alpha
+            b = beta
+            g = gamma
+            if alpha is not None and not np.isscalar(alpha):
+                n = len(alpha)
+                loss = []
+                for i in range(n):
+                    colorbar = True if i == n - 1 else False
+                    self.plot_phase(t, t_, alpha[i], b, g, scaling=scaling, reassign_time=reassign_time,
+                                    color=[(i+1)/n, 0, 1-(i+1)/n], colorbar=colorbar)
+                    loss.append(self.get_loss(t, t_, alpha[i], b, g, scaling=scaling, reassign_time=reassign_time))
+                opt = np.argmin(loss)
+                self.plot_phase(t, t_, alpha[opt], b, g, scaling=scaling, reassign_time=reassign_time,
+                                color=[0, 1, 0], colorbar=False, optimal=True)
+            elif beta is not None and not np.isscalar(beta):
+                n = len(beta)
+                loss = []
+                for i in range(n):
+                    colorbar = True if i == n - 1 else False
+                    self.plot_phase(t, t_, a, beta[i], g, scaling=scaling, reassign_time=reassign_time,
+                                    color=[(i+1)/n, 0, 1-(i+1)/n], colorbar=colorbar)
+                    loss.append(self.get_loss(t, t_, a, beta[i], g, scaling=scaling, reassign_time=reassign_time))
+                opt = np.argmin(loss)
+                self.plot_phase(t, t_, a, beta[opt], g, scaling=scaling, reassign_time=reassign_time,
+                                color=[0, 1, 0], colorbar=False, optimal=True)
+            elif gamma is not None and not np.isscalar(gamma):
+                n = len(gamma)
+                loss = []
+                for i in range(n):
+                    colorbar = True if i == n - 1 else False
+                    self.plot_phase(t, t_, a, b, gamma[i], scaling=scaling, reassign_time=reassign_time,
+                                    color=[(i+1)/n, 0, 1-(i+1)/n], colorbar=colorbar)
+                    loss.append(self.get_loss(t, t_, a, b, gamma[i], scaling=scaling, reassign_time=reassign_time))
+                opt = np.argmin(loss)
+                self.plot_phase(t, t_, a, b, gamma[opt], scaling=scaling, reassign_time=reassign_time,
+                                color=[0, 1, 0], colorbar=False, optimal=True)
+        elif multi == 2:
+            print('Too many varying Values. Only one varying parameter allowed.')
+
 
     def plot_regions(self):
         u, s, ut, st = self.u, self.s, self.ut, self.st
