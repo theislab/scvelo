@@ -8,7 +8,6 @@ from matplotlib import rcParams
 import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
-from scipy.sparse import issparse
 
 
 @doc_params(scatter=doc_scatter)
@@ -62,11 +61,11 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
         color, layer, basis = colors[0], layers[0], bases[0]
         color = default_color(adata) if color is None else color
         color_map = default_color_map(adata, color) if color_map is None else color_map
-        frameon = frameon if frameon is not None else settings._frameon
 
         is_embedding = ((x is None) | (y is None)) and basis not in adata.var_names
         basis = default_basis(adata) if basis is None and is_embedding else basis
         size = default_size(adata) if size is None else size
+        frameon = frameon if frameon is not None else True if not is_embedding else settings._frameon
 
         if projection == '3d':
             from mpl_toolkits.mplot3d import Axes3D
@@ -84,9 +83,6 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                 xkey, ykey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
                 x = make_dense(adata[:, basis].layers[xkey])
                 y = make_dense(adata[:, basis].layers[ykey])
-                if use_raw and False:
-                    x = np.clip(x, None, np.percentile(x, 99))
-                    y = np.clip(y, None, np.percentile(y, 99))
                 xlabel, ylabel = 'spliced', 'unspliced'
                 title = basis if title is None else title
 
@@ -118,12 +114,16 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                 fits = show_linear_fit(adata, basis, vkey, xkey)
                 from .simulation import show_full_dynamics
                 if 'true_alpha' in adata.var.keys():
-                    fit = show_full_dynamics(adata, basis)
+                    fit = show_full_dynamics(adata, basis, 'true', use_raw)
                     fits.append(fit)
                 if 'fit_alpha' in adata.var.keys():
-                    fit = show_full_dynamics(adata, basis, 'fit')
+                    fit = show_full_dynamics(adata, basis, 'fit', use_raw)
                     fits.append(fit)
-                pl.legend(fits, loc='lower right')
+                if len(fits) > 0 and legend_loc is not None:
+                    pl.legend(fits, loc='lower right')
+                if use_raw and perc is not None:
+                    pl.xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
+                    pl.ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
 
             pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, edgecolors='none', marker='.', zorder=zorder, **kwargs)
 

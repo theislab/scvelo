@@ -1,13 +1,13 @@
 from .. import settings
 from .. import logging as logg
 from .utils import make_dense
-from .dynamical_model_utils import unspliced, spliced, vectorize, derivatives, find_swichting_time, assign_timepoints, fit_alpha, fit_scaling, linreg, convolve
+from .dynamical_model_utils import unspliced, spliced, vectorize, derivatives, find_swichting_time, fit_alpha, \
+    fit_scaling, linreg, convolve, assign_timepoints, assign_timepoints_projection
 
 import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from scipy.sparse import issparse
 
 
 class DynamicsRecovery:
@@ -86,14 +86,19 @@ class DynamicsRecovery:
         self.s0_ = spliced(self.t_, self.u0, self.s0, self.alpha, self.beta, self.gamma)
         self.update_state_dependent()
 
-    def fit(self, n_iter=100, r=None, method=None, clip_loss=None):
-        improved, idx_update = True, np.clip(int(n_iter / 10), 1, None)
+    def fit(self, max_iter=100, r=None, method=None, clip_loss=None):
+        improved, idx_update = True, np.clip(int(max_iter / 10), 1, None)
 
-        for i in range(n_iter):
+        for i in range(max_iter):
             self.update_vars(r=r, method=method, clip_loss=clip_loss)
-            if improved or (i % idx_update == 1) or i == n_iter - 1:
+            if improved or (i % idx_update == 1) or i == max_iter - 1:
                 improved = self.update_state_dependent()
-                # improved = improved or self.update_scaling()
+            if i > 5:
+                loss_prev, loss = np.max(self.loss[-5:]), self.loss[-1]
+                if loss_prev - loss < loss_prev * .001:
+                    improved = self.shuffle_pars()
+                    if not improved:
+                        break
 
     def update_state_dependent(self):
         u, s, w = self.u / self.scaling, self.s, self.weights
@@ -121,8 +126,6 @@ class DynamicsRecovery:
         t_w, tau_w, o_w = (self.t, self.tau, self.o) if w is None else (self.t[w], self.tau[w], self.o[w])
         alpha, t0_ = self.alpha, self.t_
         scaling = fit_scaling(u_w, t_w, t0_, alpha, beta)
-        # t0_ = find_swichting_time(u_w / scaling, s_w, tau_w, o_w, alpha, beta, gamma)
-        # t, tau, o = assign_timepoints(u / scaling, s, alpha, beta, gamma, t0_)
         improved_scaling = self.update_loss(scaling=scaling * self.scaling, reassign_time=True)  # update if improved
 
         return improved_tau or improved_alpha or improved_scaling
@@ -149,7 +152,7 @@ class DynamicsRecovery:
 
     def update_vars(self, r=None, method=None, clip_loss=None):
         if r is None:
-            r = 1e-3 if method is 'adam' else 1e-6
+            r = 1e-2 if method is 'adam' else 1e-6
         if clip_loss is None:
             clip_loss = False if method is 'adam' else True
         # if self.weights is None:
@@ -237,9 +240,19 @@ class DynamicsRecovery:
         return fit_scaling(u, t, self.t_, self.alpha, self.beta)
 
     def get_time_assignment(self, t_=None, alpha=None, beta=None, gamma=None):
-        t_ = self.get_optimal_switch(alpha, beta, gamma) if t_ is None else t_
-        t, tau, o = assign_timepoints(self.u / self.scaling, self.s, self.alpha if alpha is None else alpha,
-                                      self.beta if beta is None else beta, self.gamma if gamma is None else gamma, t_)
+        t, tau, o = assign_timepoints(self.u / self.scaling, self.s,
+                                      self.alpha if alpha is None else alpha,
+                                      self.beta if beta is None else beta,
+                                      self.gamma if gamma is None else gamma,
+                                      self.get_optimal_switch(alpha, beta, gamma) if t_ is None else t_)
+        return t, tau, o
+
+    def get_time_assignment_projection(self, t_=None, alpha=None, beta=None, gamma=None):
+        t, tau, o = assign_timepoints_projection(self.u / self.scaling, self.s,
+                                                 self.alpha if alpha is None else alpha,
+                                                 self.beta if beta is None else beta,
+                                                 self.gamma if gamma is None else gamma,
+                                                 self.get_optimal_switch(alpha, beta, gamma) if t_ is None else t_)
         return t, tau, o
 
     def get_loss(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False):
@@ -261,7 +274,7 @@ class DynamicsRecovery:
 
         udiff = np.array(unspliced(tau, u0, alpha, beta) * scaling - u)
         sdiff = np.array(spliced(tau, s0, u0, alpha, beta, gamma) - s)
-        loss = np.sqrt(np.sum(udiff ** 2 + sdiff ** 2) / len(udiff))
+        loss = np.sum(udiff ** 2 + sdiff ** 2) / len(udiff)
         return loss
 
     def get_likelihood(self):
@@ -276,8 +289,8 @@ class DynamicsRecovery:
         sdiff = np.array(spliced(tau, s0, u0, alpha, beta, gamma) - s) / std_s
 
         denom = 2 * np.pi * std_u * std_s * np.sqrt(1 - corr**2)
-        nom = -.5 / (1 - corr**2) * (np.sum(udiff ** 2) + np.sum(sdiff ** 2) - 2 * corr * np.sum(udiff * sdiff))
-        likelihood = 1 / denom * np.exp(nom)
+        nom = -.5 / (1 - corr**2) * (np.sum(udiff ** 2) + np.sum(sdiff ** 2) - 2 * corr * np.sum(udiff * sdiff)) / (2 * len(udiff))
+        likelihood = 1 / np.sqrt(denom) * np.exp(nom)
 
         return likelihood
 
@@ -327,6 +340,20 @@ class DynamicsRecovery:
 
         return perform_update
 
+    def shuffle_pars(self, alpha_sight=[-.5, .5], gamma_sight=[-.5, .5], num=5):
+        alpha_vals = np.linspace(alpha_sight[0], alpha_sight[1], num=num) * self.alpha + self.alpha
+        gamma_vals = np.linspace(gamma_sight[0], gamma_sight[1], num=num) * self.gamma + self.gamma
+
+        x, y = alpha_vals, gamma_vals
+        f = lambda x, y: self.get_loss(alpha=x, gamma=y, reassign_time=True)
+        z = np.zeros((len(x), len(x)))
+
+        for i, xi in enumerate(x):
+            for j, yi in enumerate(y):
+                z[i, j] = f(xi, yi)
+        ix, iy = np.unravel_index(z.argmin(), z.shape)
+        return self.update_loss(alpha=x[ix], gamma=y[ix], reassign_time=True)
+
     def scale_u(self, scaling=1):
         self.scaling *= scaling
 
@@ -357,7 +384,7 @@ class DynamicsRecovery:
     def plot_phase(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False,
                    color=None, colorbar=False, optimal=False):
         multi = 0
-        for param in [alpha, beta, gamma]:
+        for param in [alpha, beta, gamma, t_]:
             if param is not None and not np.isscalar(param):
                 multi += 1
 
@@ -388,9 +415,7 @@ class DynamicsRecovery:
                 cb1.ax.set_yticklabels(['-', '+'])
                 pl.sca(ax)
         elif multi == 1:
-            a = alpha
-            b = beta
-            g = gamma
+            a, b, g = alpha, beta, gamma
             if alpha is not None and not np.isscalar(alpha):
                 n = len(alpha)
                 loss = []
@@ -424,9 +449,61 @@ class DynamicsRecovery:
                 opt = np.argmin(loss)
                 self.plot_phase(t, t_, a, b, gamma[opt], scaling=scaling, reassign_time=reassign_time,
                                 color=[0, 1, 0], colorbar=False, optimal=True)
+            elif t_ is not None and not np.isscalar(t_):
+                n = len(t_)
+                loss = []
+                for i in range(n):
+                    colorbar = True if i == n - 1 else False
+                    self.plot_phase(t, t_[i], a, b, g, scaling=scaling, reassign_time=reassign_time,
+                                    color=[(i+1)/n, 0, 1-(i+1)/n], colorbar=colorbar)
+                    loss.append(self.get_loss(t, t_[i], a, b, g, scaling=scaling, reassign_time=reassign_time))
+                opt = np.argmin(loss)
+                self.plot_phase(t, t_[opt], a, b, g, scaling=scaling, reassign_time=reassign_time,
+                                color=[0, 1, 0], colorbar=False, optimal=True)
         elif multi == 2:
             print('Too many varying Values. Only one varying parameter allowed.')
 
+    def plot_contours(self, alpha_sight=[-.9, .9], gamma_sight=[-.9, .9], num=20, dpi=None):
+        alpha_vals = np.linspace(alpha_sight[0], alpha_sight[1], num=num) * self.alpha + self.alpha
+        gamma_vals = np.linspace(gamma_sight[0], gamma_sight[1], num=num) * self.gamma + self.gamma
+
+        x, y = gamma_vals, alpha_vals
+        f0 = lambda x, y: self.get_loss(alpha=y, gamma=x, reassign_time=False)
+        fp = lambda x, y: self.get_loss(alpha=y, gamma=x, reassign_time=True)
+        z0, zp = np.zeros((len(x), len(x))), np.zeros((len(x), len(x)))
+
+        for i, xi in enumerate(x):
+            for j, yi in enumerate(y):
+                z0[i, j] = f0(xi, yi)
+                zp[i, j] = fp(xi, yi)
+
+        # ix, iy = np.unravel_index(zp.argmin(), zp.shape)
+        # gamma_opt, alpha_opt = x[ix],  y[iy]
+
+        figsize = rcParams['figure.figsize']
+        fig, (ax1, ax2) = pl.subplots(1, 2, figsize=(figsize[0], figsize[1] / 2), dpi=dpi)
+        ax1.contourf(x, y, np.log1p(zp.T), levels=20, cmap='RdGy_r')
+        contours = ax1.contour(x, y, np.log1p(zp.T), 4, colors='k', linewidths=.5)
+        ax1.clabel(contours, inline=True, fontsize=8)
+        ax1.scatter(x=self.gamma, y=self.alpha, s=50, c='purple', zorder=3)
+        # ax1.quiver(self.gamma, self.alpha, 0, self.get_optimal_alpha() - self.alpha, color='k', zorder=3,
+        #            headlength=4, headwidth=3, headaxislength=3, alpha=.5)
+        ax1.set_xlabel(r'$\gamma$')
+        ax1.set_ylabel(r'$\alpha$')
+        ax1.set_title('MSE (profiled)')
+
+        ax2.contourf(x, y, np.log1p(z0.T), levels=20, cmap='RdGy_r')
+        contours = ax2.contour(x, y, np.log1p(z0.T), 4, colors='k', linewidths=.5)
+        ax2.clabel(contours, inline=True, fontsize=8)
+        ax2.scatter(x=self.gamma, y=self.alpha, s=50, c='purple', zorder=3)
+        ax2.set_xlabel(r'$\gamma$')
+        ax2.set_ylabel(r'$\alpha$')
+        ax2.set_title('MSE')
+
+        ix, iy = np.unravel_index(zp.argmin(), zp.shape)
+        x_opt, y_opt = x[ix].round(2), y[ix].round(2)
+
+        return x_opt, y_opt
 
     def plot_regions(self):
         u, s, ut, st = self.u, self.s, self.ut, self.st
@@ -477,7 +554,7 @@ def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling
         adata.var[add_key + '_' + name] = pars[i]
 
 
-def recover_dynamics(data, var_names='all', n_iter=100, learning_rate=None, add_key='fit', t_max=None, use_raw=False,
+def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, add_key='fit', t_max=None, use_raw=False,
                      reinitialize=True, return_model=False, plot_results=False, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
@@ -504,8 +581,8 @@ def recover_dynamics(data, var_names='all', n_iter=100, learning_rate=None, add_
 
     for i, gene in enumerate(var_names):
         dm = DynamicsRecovery(adata, gene, use_raw=use_raw, reinitialize=reinitialize)
-        if n_iter > 1:
-            dm.fit(n_iter, learning_rate, **kwargs)
+        if max_iter > 1:
+            dm.fit(max_iter, learning_rate, **kwargs)
 
         i = idx[i]
         alpha[i], beta[i], gamma[i], t_[i], scaling[i] = dm.alpha, dm.beta, dm.gamma, dm.t_, dm.scaling
@@ -529,6 +606,10 @@ def recover_dynamics(data, var_names='all', n_iter=100, learning_rate=None, add_
 
     loss[idx] = np.vstack([np.concatenate([l, np.ones(max_len-len(l)) * np.nan]) for l in L])
     adata.varm['loss'] = loss
+
+    if 'velocity_new' not in adata.layers.keys():
+        adata.layers['velocity_new'] = np.ones(adata.X.shape) * np.nan
+    # adata.layers['velocity_new'][:, idx] = dm.beta * dm.u - dm.gamma * dm.s
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n' 
