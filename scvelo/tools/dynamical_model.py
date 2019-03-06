@@ -584,9 +584,9 @@ def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, ad
         if max_iter > 1:
             dm.fit(max_iter, learning_rate, **kwargs)
 
-        i = idx[i]
-        alpha[i], beta[i], gamma[i], t_[i], scaling[i] = dm.alpha, dm.beta, dm.gamma, dm.t_, dm.scaling
-        T[:, i] = dm.t
+        ix = idx[i]
+        alpha[ix], beta[ix], gamma[ix], t_[ix], scaling[ix] = dm.alpha, dm.beta, dm.gamma, dm.t_, dm.scaling
+        T[:, ix] = dm.t
         L.append(dm.loss)
         if plot_results and i < 4:
             P.append(dm.pars)
@@ -607,10 +607,6 @@ def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, ad
     loss[idx] = np.vstack([np.concatenate([l, np.ones(max_len-len(l)) * np.nan]) for l in L])
     adata.varm['loss'] = loss
 
-    if 'velocity_new' not in adata.layers.keys():
-        adata.layers['velocity_new'] = np.ones(adata.X.shape) * np.nan
-    # adata.layers['velocity_new'][:, idx] = dm.beta * dm.u - dm.gamma * dm.s
-
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n' 
               '    \'' + add_key + '_pars' + '\', fitted parameters for splicing dynamics (adata.var)')
@@ -621,9 +617,8 @@ def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, ad
         fig, axes = pl.subplots(nrows=len(var_names[:4]), ncols=6, figsize=figsize)
         pl.subplots_adjust(wspace=0.7, hspace=0.5)
         for i, gene in enumerate(var_names[:4]):
-            P[i] *= np.array([1 / m[i], 1 / m[i], 1 / m[i], m[i], 1])[:, None]
+            P[i] *= np.array([1 / m[idx[i]], 1 / m[idx[i]], 1 / m[idx[i]], m[idx[i]], 1])[:, None]
             for j, pij in enumerate(P[i]):
-                # pij = pij / m[i] if j < 3 else pij * m[i] if j == 3 else pij
                 axes[i][j].plot(pij)
             axes[i][len(P[i])].plot(L[i])
             if i == 0:
