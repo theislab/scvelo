@@ -89,7 +89,6 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
     nrows = int(np.ceil(len(var_names) / ncols))
     ncols = int(ncols * nplts)
     figsize = rcParams['figure.figsize'] if figsize is None else figsize
-    #n_row, n_col = len(var_names), (1 + len(layers) + (mode == 'stochastic')*2)
     ax = pl.figure(figsize=(figsize[0] * ncols / 2, figsize[1] * nrows / 2), dpi=dpi) if ax is None else ax
     gs = pl.GridSpec(nrows, ncols, wspace=0.3, hspace=0.5)
 
@@ -102,28 +101,16 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
 
         # spliced/unspliced phase portrait with steady-state estimate
         ax = pl.subplot(gs[v * nplts])
-        scatter(adata, basis=var, color=color, colorbar=colorbar, frameon=True, title=var, size=size, alpha=alpha,
-                fontsize=fontsize, xlabel='spliced', ylabel='unspliced', show=False, ax=ax, save=False, **kwargs)
-
-        xnew = np.linspace(0, s.max() * 1.02)
-        for fit in fits:
-            linestyle = '--' if fit in stochastic_fits else '-'
-            gamma = _adata.var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
-            beta = _adata.var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
-            offset = _adata.var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
-            pl.plot(xnew, gamma / beta * xnew + offset / beta, c='k', linestyle=linestyle)
-        if v == len(var_names)-1: pl.legend(fits, loc='lower right', prop={'size': .5*fontsize})
-
-        ax.xaxis.set_major_locator(MaxNLocator(nbins=3))
-        ax.yaxis.set_major_locator(MaxNLocator(nbins=3))
-        ax.tick_params(axis='both', which='major', labelsize=.7*fontsize)
+        scatter(adata, basis=var, color=color, colorbar=colorbar, frameon=True, title=var, size=size, use_raw=use_raw,
+                alpha=alpha, fontsize=fontsize, xlabel='spliced', ylabel='unspliced', show=False, ax=ax, save=False,
+                legend_loc=None if v < len(var_names)-1 else 'lower right', **kwargs)
 
         # velocity and expression plots
         for l, layer in enumerate(layers):
             ax = pl.subplot(gs[v * nplts + l + 1])
             title = 'expression' if layer == skey else layer
-            scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map, colorbar=colorbar, title=title, perc=perc,
-                    fontsize=fontsize, size=size, alpha=alpha, frameon=False, show=False, ax=ax, save=False, **kwargs)
+            scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map, colorbar=colorbar, title=title,
+                    perc=perc, use_raw=use_raw, fontsize=fontsize, size=size, alpha=alpha, frameon=False, show=False, ax=ax, save=False, **kwargs)
 
         if mode == 'stochastic':
             ss, us = second_order_moments(_adata)
@@ -138,7 +125,7 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
 
             scatter(adata, x=x, y=y, color=color, colorbar=colorbar, title=var, fontsize=40/ncols, size=size, perc=perc,
                     xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$',
-                    frameon=True, ax=ax, save=False, show=False, **kwargs)
+                    use_raw=use_raw, frameon=True, ax=ax, save=False, show=False, **kwargs)
 
             xnew = np.linspace(x.min(), x.max() * 1.02)
             for fit in stochastic_fits:
