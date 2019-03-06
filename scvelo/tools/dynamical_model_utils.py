@@ -80,8 +80,11 @@ def linreg(u, s):  # linear regression fit
 
 def tau_inv(u, s, u0, s0, alpha, beta, gamma):
     beta_ = beta * inv(gamma - beta)
-    c0 = alpha / gamma - s0 - beta_ * (alpha / beta - u0)
-    cs = alpha / gamma - s - beta_ * (alpha / beta - u)
+    ceta_ = alpha / gamma - beta_ * (alpha / beta)
+
+    c0 = s0 - beta_ * u0 - ceta_
+    cs = s - beta_ * u - ceta_
+
     tau = - 1 / gamma * log(cs / c0)
     return tau
 
@@ -90,10 +93,15 @@ def find_swichting_time(u, s, tau, o, alpha, beta, gamma):
     off, on = o == 0, o == 1
     if off.sum() > 0:
         u_, s_, tau_ = u[off], s[off], tau[off]
-        c = (alpha * inv(gamma - beta) - alpha / gamma) * exp(-gamma * tau_)
-        c_obs = (s_ - beta * inv(gamma - beta) * u_ + c)
-        exp_t0_ = (c_obs * c).sum() / (c ** 2).sum()
-        t0_ = -1 / gamma * np.log(exp_t0_) if exp_t0_ > 0 else np.max(tau[on]) if on.sum() > 0 else np.max(tau)
+
+        beta_ = beta * inv(gamma - beta)
+        ceta_ = alpha / gamma - beta_ * alpha / beta
+
+        x = - ceta_ * exp(-gamma * tau_)
+        y = s_ - beta_ * u_
+
+        exp_t0_ = (y * x).sum() / (x ** 2).sum()
+        t0_ = -1 / gamma * log(exp_t0_ + 1) if -1 < exp_t0_ < 0 else np.max(tau[on]) if on.sum() > 0 else np.max(tau)
     else:
         t0_ = np.max(tau)
     return t0_
