@@ -36,7 +36,7 @@ def cleanup(data, clean='layers', keep=None, copy=False):
         Annotated data matrix.
     clean: `str` or list of `str` (default: `layers`)
         Which attributes to consider for freeing memory.
-    keep: `str` or list of `str` (default: `['spliced', unspliced']`)
+    keep: `str` or list of `str` (default: None)
         Which attributes to keep.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to adata.
@@ -47,24 +47,22 @@ def cleanup(data, clean='layers', keep=None, copy=False):
     """
     adata = data.copy() if copy else data
 
-    keep = list() if keep is None else list(keep)
+    if isinstance(keep, str):
+        keep = list([keep])
+    elif keep is None:
+        keep = list()
+
     keep.extend(['spliced', 'unspliced', 'Ms', 'Mu', 'clusters', 'neighbors'])
 
-    if any(['obs' in clean, 'all' in clean]):
-        for key in list(adata.obs.keys()):
-            if key not in keep: del adata.obs[key]
+    ann_dict = {'obs': adata.obs_keys(), 'var': adata.var_keys(),
+                'uns': adata.uns_keys(), 'layers': list(adata.layers.keys())}
 
-    if any(['var' in clean, 'all' in clean]):
-        for key in list(adata.var.keys()):
-            if key not in keep: del adata.var[key]
+    if 'all' not in clean:
+        ann_dict = {ann: values for (ann, values) in ann_dict.items() if ann in clean}
 
-    if any(['uns' in clean, 'all' in clean]):
-        for key in list(adata.uns.keys()):
-            if key not in keep: del adata.uns[key]
-
-    if any(['layers' in clean, 'all' in clean]):
-        for key in list(adata.layers.keys()):  # remove layers that are not needed
-            if key not in keep: del adata.layers[key]
+    for (ann, values) in ann_dict.items():
+        for value in values:
+            if value not in keep: del(getattr(adata, ann)[value])
 
     return adata if copy else None
 
