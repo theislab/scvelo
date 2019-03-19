@@ -33,7 +33,8 @@ def strings_to_categoricals(adata):
 def is_categorical(adata, c):
     from pandas.api.types import is_categorical as cat
     strings_to_categoricals(adata)
-    return isinstance(c, str) and (c in adata.obs.keys() and cat(adata.obs[c]) or is_color_like(c))
+    str_not_var = isinstance(c, str) and c not in adata.var_names
+    return str_not_var and (c in adata.obs.keys() and cat(adata.obs[c]) or is_color_like(c))
 
 
 def default_basis(adata):
