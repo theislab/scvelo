@@ -1,4 +1,5 @@
 from .. import settings
+from .. import AnnData
 from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
     default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
     show_linear_fit
@@ -11,7 +12,7 @@ import pandas as pd
 
 
 @doc_params(scatter=doc_scatter)
-def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
+def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
             colorbar=True, palette=None, size=None, alpha=None, perc=None, sort_order=True, groups=None,
             components=None, projection='2d', legend_loc='none', legend_fontsize=None, legend_fontweight=None,
             right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
@@ -38,6 +39,7 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                       "legend_fontsize": legend_fontsize, "legend_fontweight": legend_fontweight,
                       "right_margin": right_margin, "left_margin": left_margin, "show": False, "save": None}
 
+    adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
     colors, layers, bases = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(basis)
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else bases if len(bases) > 1 else None
     if multikey is not None:
@@ -94,8 +96,10 @@ def scatter(adata, x=None, y=None, basis=None, vkey=None, color=None, use_raw=No
                 x = adata[:, x].layers[layer] if layer in adata.layers.keys() else adata[:, x].X
                 y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
 
-            c = interpret_colorkey(adata, basis, color, perc) if basis in adata.var_names and color in adata.layers.keys() \
-                else interpret_colorkey(adata, color, layer, perc)
+            if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
+                c = interpret_colorkey(adata, basis, color, perc)
+            else:
+                c = interpret_colorkey(adata, color, layer, perc)
 
             if layer is not None and 'velocity' in layer and isinstance(color, str) and color in adata.var_names:
                 ub = np.percentile(np.abs(c), 98)
