@@ -47,11 +47,7 @@ def cleanup(data, clean='layers', keep=None, copy=False):
     """
     adata = data.copy() if copy else data
 
-    if isinstance(keep, str):
-        keep = list([keep])
-    elif keep is None:
-        keep = list()
-
+    keep = list([keep]) if isinstance(keep, str) else list() if keep is None else list(keep)
     keep.extend(['spliced', 'unspliced', 'Ms', 'Mu', 'clusters', 'neighbors'])
 
     ann_dict = {'obs': adata.obs_keys(), 'var': adata.var_keys(),
