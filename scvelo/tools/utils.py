@@ -9,7 +9,10 @@ def mean(x, axis=0):
 
 
 def make_dense(X):
-    return X.A if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) else X
+    XA = X.A if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) else X
+    if XA.ndim == 2:
+        XA = XA[0] if XA.shape[0] == 1 else XA[:, 0] if XA.shape[1] == 1 else XA
+    return XA
 
 
 def sum_obs(A):
@@ -229,3 +232,9 @@ def cutoff_small_velocities(adata, vkey='velocity', key_added='velocity_cut', fr
     velocity_graph(adata, vkey=key_added, approx=True)
     velocity_embedding(adata, vkey=key_added)
 
+
+def make_unique_list(key, allow_array=False):
+    from pandas import unique
+    is_list = isinstance(key, (list, tuple, np.record)) if allow_array else isinstance(key, (list, tuple, np.ndarray, np.record))
+    is_list_of_str = is_list and all(isinstance(item, str) for item in key)
+    return unique(key) if is_list_of_str else key if is_list and len(key) < 20 else [key]

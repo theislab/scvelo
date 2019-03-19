@@ -1,10 +1,16 @@
+from .utils import make_dense
+
+import matplotlib.pyplot as pl
+from matplotlib import rcParams
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
 from scipy.sparse import issparse
 import warnings
 import numpy as np
 exp = np.exp
 
 
-"""Dynamics delineation and simulation"""
+"""Helper functions"""
 
 
 def log(x, eps=1e-6):  # to avoid invalid values for log.
@@ -26,6 +32,15 @@ def apply_weight(arrays, w=None):
     return arrays if w is None else [array[w] for array in arrays]
 
 
+def linreg(u, s):  # linear regression fit
+    ss_ = s.multiply(s).sum(0) if issparse(s) else (s ** 2).sum(0)
+    us_ = s.multiply(u).sum(0) if issparse(s) else (s * u).sum(0)
+    return us_ / ss_
+
+
+"""Dynamics delineation"""
+
+
 def unspliced(tau, u0, alpha, beta):
     expu = exp(-beta * tau)
     return u0 * expu + alpha / beta * (1 - expu)
@@ -40,42 +55,6 @@ def spliced(tau, s0, u0, alpha, beta, gamma):
 def tau_u(u, u0, alpha, beta):
     u_ratio = (u - alpha / beta) / (u0 - alpha / beta)
     return - 1 / beta * log(u_ratio)
-
-
-def tau_s(s, s0, u0, alpha, beta, gamma, u=None, tau=None, eps=1e-2):
-    if tau is None:
-        tau = tau_u(u, u0, alpha, beta) if u is not None else 1
-    tau_prev, loss, n_iter, max_iter, mixed_states = 1e6, 1e6, 0, 10, np.any(alpha == 0)
-    b0 = (alpha - beta * u0) * inv(gamma - beta)
-    g0 = s0 - alpha / gamma + b0
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-
-        while np.abs(tau - tau_prev).max() > eps and loss > eps and n_iter < max_iter:
-            tau_prev, n_iter = tau, n_iter + 1
-
-            expu, exps = b0 * exp(-beta * tau), g0 * exp(-gamma * tau)
-            f = exps - expu + alpha / gamma  # >0
-            ft = - gamma * exps + beta * expu  # >0 if on else <0
-            ftt = gamma ** 2 * exps - beta ** 2 * expu
-
-            # ax^2 + bx + c = 0  <->  1/2 ftt x^2 + ft x + f = s, where x = (tau - tau_prev)
-            a, b, c = ftt / 2, ft, f - s
-            term = b ** 2 - 4 * a * c
-            update = (-b + np.sqrt(term)) / (2 * a)
-            if mixed_states:  # linear approx for off-state due of non-injectivity: tau = tau_prev - c / b
-                update = np.nan_to_num(update) * (alpha > 0) + (- c / b) * (alpha <= 0)
-            tau = np.nan_to_num(tau_prev + update) * (s != 0) if np.any(term > 0) else tau_prev / 10
-            loss = np.abs(alpha / gamma + g0 * exp(-gamma * tau) - b0 * exp(-beta * tau) - s).max()
-
-    return np.clip(tau, 0, None)
-
-
-def linreg(u, s):  # linear regression fit
-    ss_ = s.multiply(s).sum(0) if issparse(s) else (s ** 2).sum(0)
-    us_ = s.multiply(u).sum(0) if issparse(s) else (s * u).sum(0)
-    return us_ / ss_
 
 
 def tau_inv(u, s, u0, s0, alpha, beta, gamma):
@@ -107,83 +86,51 @@ def find_swichting_time(u, s, tau, o, alpha, beta, gamma):
     return t0_
 
 
-def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None):
+def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mode='hard'):
     if t0_ is None:
-        t0_ = tau_u(u0_, 0, alpha, beta)
+        t0_ = tau_inv(u0_, s0_, 0, 0, alpha, beta, gamma)
     if u0_ is None or s0_ is None:
-        u0_ = unspliced(t0_, 0, alpha, beta)
-        s0_ = spliced(t0_, 0, 0, alpha, beta, gamma)
+        u0_, s0_ = (unspliced(t0_, 0, alpha, beta), spliced(t0_, 0, 0, alpha, beta, gamma))
 
-    tau = tau_inv(u, s, 0, 0, alpha, beta, gamma)
-    tau = np.clip(tau, 0, t0_)
+    x_obs = np.vstack([u, s]).T
 
-    tau_ = tau_inv(u, s, u0_, s0_, 0, beta, gamma)
-    tau_ = np.clip(tau_, 0, np.max(tau_[s > 0]))
+    if mode is 'projection':
+        t0 = tau_u(np.min(u[s > 0]), u0_, 0, beta)
+        tpoints = np.linspace(0, t0_, num=200)
+        tpoints_ = np.linspace(0, t0, num=200)[1:]
+
+        xt = np.vstack([unspliced(tpoints, 0, alpha, beta), spliced(tpoints, 0, 0, alpha, beta, gamma)]).T
+        xt_ = np.vstack([unspliced(tpoints_, u0_, 0, beta), spliced(tpoints_, s0_, u0_, 0, beta, gamma)]).T
+
+        # assign time points (oth. projection onto 'on' and 'off' curve)
+        tau, tau_ = np.zeros(len(u)), np.zeros(len(u))
+        for i, xi in enumerate(x_obs):
+            diffx, diffx_ = ((xt - xi)**2).sum(1), ((xt_ - xi)**2).sum(1)
+            tau[i] = tpoints[np.argmin(diffx)]
+            tau_[i] = tpoints_[np.argmin(diffx_)]
+
+    else:
+        tau = tau_inv(u, s, 0, 0, alpha, beta, gamma)
+        tau = np.clip(tau, 0, t0_)
+
+        tau_ = tau_inv(u, s, u0_, s0_, 0, beta, gamma)
+        tau_ = np.clip(tau_, 0, np.max(tau_[s > 0]))
 
     xt = np.vstack([unspliced(tau, 0, alpha, beta), spliced(tau, 0, 0, alpha, beta, gamma)]).T
     xt_ = np.vstack([unspliced(tau_, u0_, 0, beta), spliced(tau_, s0_, u0_, 0, beta, gamma)]).T
-    x_obs = np.vstack([u, s]).T
 
-    diffx = np.linalg.norm(xt - x_obs, axis=1)
-    diffx_ = np.linalg.norm(xt_ - x_obs, axis=1)
+    diffx = ((xt - x_obs)**2).sum(1)
+    diffx_ = ((xt_ - x_obs)**2).sum(1)
 
-    o = np.argmin([diffx_, diffx], axis=0)
+    o = 1 - np.argmin([diffx, diffx_], axis=0)
     tau = tau * o + tau_ * (1 - o)
     t = tau * o + (tau_ + t0_) * (1 - o)
 
-    return t, tau, o
-
-
-def assign_timepoints_projection(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, n_timepoints=300):
-    if t0_ is None:
-        t0_ = tau_u(u0_, 0, alpha, beta)
-    if u0_ is None or s0_ is None:
-        u0_ = unspliced(t0_, 0, alpha, beta)
-        s0_ = spliced(t0_, 0, 0, alpha, beta, gamma)
-
-    tpoints = np.linspace(0, t0_, num=n_timepoints)
-    tpoints_ = np.linspace(0, tau_u(np.min(u[s > 0]), u0_, 0, beta), num=n_timepoints)[1:]
-
-    xt = np.vstack([unspliced(tpoints, 0, alpha, beta), spliced(tpoints, 0, 0, alpha, beta, gamma)]).T
-    xt_ = np.vstack([unspliced(tpoints_, u0_, 0, beta), spliced(tpoints_, s0_, u0_, 0, beta, gamma)]).T
-    x_obs = np.vstack([u, s]).T
-
-    # assign time points (oth. projection onto 'on' and 'off' curve)
-    tau, o, diff = np.zeros(len(u)), np.zeros(len(u), dtype=int), np.zeros(len(u))
-    tau_alt, diff_alt = np.zeros(len(u)), np.zeros(len(u))
-    for i, xi in enumerate(x_obs):
-        diffs, diffs_ = np.linalg.norm((xt - xi), axis=1), np.linalg.norm((xt_ - xi), axis=1)
-        idx, idx_ = np.argmin(diffs), np.argmin(diffs_)
-
-        o[i] = np.argmin([diffs_[idx_], diffs[idx]])
-        tau[i] = [tpoints_[idx_], tpoints[idx]][o[i]]
-        diff[i] = [diffs_[idx_], diffs[idx]][o[i]]
-
-        tau_alt[i] = [tpoints_[idx_], tpoints[idx]][1-o[i]]
-        diff_alt[i] = [diffs_[idx_], diffs[idx]][1-o[i]]
-
-    t = tau * o + (t0_ + tau) * (1 - o)
-
-    # # remove meaningless jumps (reassign timepoints/states)
-    # idx_ord = np.argsort(t)
-    # t_ord = t[idx_ord]
-    # dt_ord = t_ord - np.insert(t_ord[:-1], 0, 0)
-    # dt = dt_ord[np.argsort(idx_ord)]
-    # # Poisson with std = sqrt(mean) -> ~99.9% confidence
-    # idx = np.where(dt > dt.mean() + 3 * np.sqrt(dt.mean()))[0]
-    #
-    # if len(idx) > 0:
-    #     tvals = t[idx]
-    #     idx_jumps = np.where(t * (1 - o) >= np.min(tvals[tvals > t0_]))[0] if np.any(tvals > t0_) else []
-    #     idx_jumps_ = np.where(t * o >= np.min(tvals[tvals <= t0_]))[0] if np.any(tvals <= t0_) else []
-    #     idx = np.array(np.concatenate([idx_jumps, idx_jumps_]), dtype=int)
-    #
-    #     # change if alternative is reasonable
-    #     change = diff_alt[idx] < np.clip(2 * diff[idx], diff.mean() + 2 * diff.std(), None)
-    #     tau[idx] = tau_alt[idx] * change + tau[idx] * (1 - change)
-    #     o[idx] = (1 - o[idx]) * change + o[idx] * (1 - change)
-    #
-    #     t = tau * o + (t0_ + tau) * (1 - o)
+    if mode is 'soft':
+        var = np.var(s)
+        l = np.exp(- .5 * diffx / var)
+        l_ = np.exp(- .5 * diffx_ / var)
+        o = l / (l + l_)
 
     return t, tau, o
 
@@ -215,13 +162,15 @@ def fit_alpha(u, s, tau, o, beta, gamma, fit_scaling=False):
     if fit_scaling:  # alternatively compute alpha and scaling simultaneously
         c = np.concatenate([c_gamma, c_gamma_]).T
         x = np.concatenate([s[on], s[off]]).T
-        alpha_alt = (c * x).sum() / (c ** 2).sum()
+        alpha = (c * x).sum() / (c ** 2).sum()
 
         c = np.concatenate([c_beta, c_beta_]).T
         x = np.concatenate([u[on], u[off]]).T
-        scaling = (c * x).sum() / (c ** 2).sum() / alpha_alt  # ~ alpha * z / alpha
+        scaling = (c * x).sum() / (c ** 2).sum() / alpha  # ~ alpha * z / alpha
+        return alpha, scaling
 
-    return alpha
+    else:
+        return alpha
 
 
 def fit_scaling(u, t, t_, alpha, beta):
@@ -231,7 +180,7 @@ def fit_scaling(u, t, t_, alpha, beta):
 
 
 def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0):
-    o = np.array(t < t_, dtype=int)
+    o = np.array(t <= t_, dtype=int)
     tau = t * o + (t - t_) * (1 - o)
 
     u0_ = unspliced(t_, u0, alpha, beta)
@@ -246,29 +195,6 @@ def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0):
 
 
 """State-independent derivatives"""
-
-
-# def du_du0(beta, tau):
-#     return exp(-beta * tau)
-
-# def ds_ds0(gamma, tau):
-#     return exp(-gamma * tau)
-
-# def ds_du0(beta, gamma, tau):
-#     return - beta / (gamma - beta) * (exp(-gamma * tau) - exp(-beta * tau))
-
-# def dus_u0s0(tau, beta, gamma):
-#     du_u0 = exp(-beta * tau)
-#     ds_s0 = exp(-gamma * tau)
-#     ds_u0 = - beta / (gamma - beta) * (ds_s0 - du_u0)
-#     return du_u0, ds_s0, ds_u0
-
-# def dus_tau(tau, alpha, beta, gamma, u0=0, s0=0, du0_t0=0, ds0_t0=0):
-#     expu, exps, cb, cc = exp(-beta * tau), exp(-gamma * tau), alpha - beta * u0, alpha - gamma * s0
-#     du_tau = (cb - du0_t0) * expu
-#     ds_tau = (cc - ds0_t0) * exps - cb / (gamma - beta) * (gamma * exps - beta * expu)
-#     + du0_t0 * beta / (gamma - beta) * (exps - expu)
-#     return du_tau, ds_tau
 
 
 def dtau(u, s, alpha, beta, gamma, u0, s0, du0=[0, 0, 0], ds0=[0, 0, 0, 0]):
@@ -293,7 +219,6 @@ def du(tau, alpha, beta, u0=0, du0=[0, 0, 0], dtau=[0, 0, 0]):
     expu, cb = exp(-beta * tau), alpha / beta
     du_a = du0[0] * expu + 1. / beta * (1 - expu) + (alpha - beta * u0) * dtau[0] * expu
     du_b = du0[1] * expu - cb / beta * (1 - expu) + (cb - u0) * tau * expu + (alpha - beta * u0) * dtau[1] * expu
-    # du_tau = (alpha - beta * u0 - du0[2]) * expuå
     return du_a, du_b
 
 
@@ -306,19 +231,15 @@ def ds(tau, alpha, beta, gamma, u0=0, s0=0, du0=[0, 0, 0], ds0=[0, 0, 0, 0], dta
     ccu = (alpha - gamma * u0) * inv(gamma - beta)
     ccs = alpha / gamma - s0 - cbu
 
-    # dsu0 = ds0 * exps - beta / (gamma - beta) * du0
-
     ds_a = ds0[0] * exps + 1. / gamma * (1 - exps) + 1 * inv(gamma - beta) * (1 - beta * du0[0]) * expus + (ccs * gamma * exps + cbu * beta * expu) * dtau[0]
     ds_b = ds0[1] * exps + cbu * tau * expu + 1 * inv(gamma - beta) * (ccu - beta * du0[1]) * expus + (ccs * gamma * exps + cbu * beta * expu) * dtau[1]
     ds_c = ds0[2] * exps + ccs * tau * exps - alpha / gamma**2 * (1 - exps) - cbu * inv(gamma - beta) * expus + (ccs * gamma * exps + cbu * beta * expu) * dtau[2]
-
-    # ds_dtau = (alpha - gamma * s0 - ds0[3]) * exps - cbu * (gamma * exps - beta * expu) + du0[2] * beta * inv(gamma - beta) * (exps - expu)
 
     return ds_a, ds_b, ds_c
 
 
 def derivatives(u, s, t, t0_, alpha, beta, gamma, scaling=1, alpha_=0, u0=0, s0=0, weights=None):
-    o = np.array(t < t0_, dtype=int)
+    o = np.array(t <= t0_, dtype=int)
 
     du0 = np.array(du(t0_, alpha, beta, u0))[:, None] * (1 - o)[None, :]
     ds0 = np.array(ds(t0_, alpha, beta, gamma, u0, s0))[:, None] * (1 - o)[None, :]
@@ -346,8 +267,308 @@ def derivatives(u, s, t, t0_, alpha, beta, gamma, scaling=1, alpha_=0, u0=0, s0=
     dl_b = du_b.dot(udiff) + ds_b.dot(sdiff)
     dl_c = ds_c.dot(sdiff)
 
-    # dl_tau = du_tau * udiff + ds_tau * sdiff
-    # dl_t0_ = - du_tau.dot(udiff) - ds_tau.dot(sdiff)
     dl_tau, dl_t0_ = None, None
-
     return dl_a, dl_b, dl_c, dl_a_, dl_tau, dl_t0_
+
+
+"""Base Class for Dynamics Recovery"""
+
+
+class BaseDynamics:
+    def __init__(self, n_obs):
+        self.s, self.u, self.use_raw = None, None, None
+
+        zeros, zeros3 = np.zeros(n_obs), np.zeros((3, 1))
+        self.u0, self.s0, self.u0_, self.s0_, self.t_, self.scaling = None, None, None, None, None, None
+        self.ut, self.st, self.t, self.tau, self.o, self.weights = zeros, zeros, zeros, zeros, zeros, zeros
+
+        self.alpha, self.beta, self.gamma, self.alpha_, self.pars = None, None, None, None, None
+        self.dpars, self.m_dpars, self.v_dpars, self.loss = zeros3, zeros3, zeros3, []
+
+    def get_vals(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False):
+        alpha = self.alpha if alpha is None else alpha
+        beta = self.beta if beta is None else beta
+        gamma = self.gamma if gamma is None else gamma
+        scaling = self.scaling if scaling is None else scaling
+        t = self.t if t is None else t
+        u, s, tau, o, w = self.u / scaling, self.s, self.tau, self.o, self.weights
+
+        if reassign_time:
+            u_w, s_w, tau_w, o_w = (u, s, tau, o) if w is None else (u[w], s[w], tau[w], o[w])
+            t_ = find_swichting_time(u_w, s_w, tau_w, o_w, alpha, beta, gamma) if t_ is None else t_
+            t, tau, o = assign_timepoints(u, s, alpha, beta, gamma, t_)
+        else:
+            t_ = self.t_ if t_ is None else t_
+        return t, t_, alpha, beta, gamma, scaling
+
+    def get_ut(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False):
+        t, t_, alpha, beta, gamma, scaling = self.get_vals(t, t_, alpha, beta, gamma, scaling, reassign_time)
+        tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
+        return unspliced(tau, u0, alpha, beta) * scaling
+
+    def get_st(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False):
+        t, t_, alpha, beta, gamma, scaling = self.get_vals(t, t_, alpha, beta, gamma, scaling, reassign_time)
+        tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
+        return spliced(tau, s0, u0, alpha, beta, gamma)
+
+    def get_optimal_switch(self, alpha=None, beta=None, gamma=None):
+        u, s, tau, o, w = self.u / self.scaling, self.s, self.tau, self.o, self.weights
+        if w is not None:
+            u, s, tau, o = (u[w], s[w], tau[w], o[w])
+        return find_swichting_time(u, s, tau, o,
+                                   self.alpha if alpha is None else alpha,
+                                   self.beta if beta is None else beta,
+                                   self.gamma if gamma is None else gamma)
+
+    def get_optimal_alpha(self):
+        u, s, tau, o, w = self.u / self.scaling, self.s, self.tau, self.o, self.weights
+        if w is not None:
+            u, s, tau, o = (u[w], s[w], tau[w], o[w])
+        return fit_alpha(u, s, tau, o, self.beta, self.gamma)
+
+    def get_optimal_scaling(self):
+        u, t, w = self.u / self.scaling, self.t, self.weights
+        if w is not None: u, t = (u[w], t[w])
+        return fit_scaling(u, t, self.t_, self.alpha, self.beta)
+
+    def get_time_assignment(self, t_=None, alpha=None, beta=None, gamma=None, mode='hard'):
+        t, tau, o = assign_timepoints(self.u / self.scaling, self.s,
+                                      self.alpha if alpha is None else alpha,
+                                      self.beta if beta is None else beta,
+                                      self.gamma if gamma is None else gamma,
+                                      self.get_optimal_switch(alpha, beta, gamma) if t_ is None else t_, mode=mode)
+        return t, tau, o
+
+    def get_loss(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False):
+        alpha = self.alpha if alpha is None else alpha
+        beta = self.beta if beta is None else beta
+        gamma = self.gamma if gamma is None else gamma
+        scaling = self.scaling if scaling is None else scaling
+        t = self.t if t is None else t
+        u, s, tau, o, w = self.u, self.s, self.tau, self.o, self.weights
+        if w is not None: u, s, t, tau, o = u[w], s[w], t[w], tau[w], o[w]
+
+        if reassign_time:
+            t_ = find_swichting_time(u / scaling, s, tau, o, alpha, beta, gamma) if t_ is None else t_
+            t, tau, o = assign_timepoints(u / scaling, s, alpha, beta, gamma, t_)
+        else:
+            t_ = self.t_ if t_ is None else t_
+
+        tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
+
+        udiff = np.array(unspliced(tau, u0, alpha, beta) * scaling - u)
+        sdiff = np.array(spliced(tau, s0, u0, alpha, beta, gamma) - s)
+        loss = np.sum(udiff ** 2 + sdiff ** 2) / len(udiff)
+        return loss
+
+    def get_likelihood(self):
+        u, s, t, t_ = self.u, self.s, self.t, self.t_
+        alpha, beta, gamma, scaling = self.alpha, self.beta, self.gamma, self.scaling
+        tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
+
+        std_u, std_s, = np.std(u), np.std(s)
+        corr = np.corrcoef(u, s)[0, 1]
+
+        udiff = np.array(unspliced(tau, u0, alpha, beta) * scaling - u) / std_u
+        sdiff = np.array(spliced(tau, s0, u0, alpha, beta, gamma) - s) / std_s
+
+        denom = 2 * np.pi * std_u * std_s * np.sqrt(1 - corr ** 2)
+        nom = -.5 / (1 - corr ** 2) * (np.sum(udiff ** 2) + np.sum(sdiff ** 2) - 2 * corr * np.sum(udiff * sdiff)) / (
+                    2 * len(udiff))
+        likelihood = 1 / np.sqrt(denom) * np.exp(nom)
+
+        return likelihood
+
+    def uniform_weighting(self, n_regions=5, perc=95):  # deprecated
+        from numpy import union1d as union
+        from numpy import intersect1d as intersect
+        u, s = self.u, self.s
+        u_b = np.linspace(0, np.percentile(u, perc), n_regions)
+        s_b = np.linspace(0, np.percentile(s, perc), n_regions)
+
+        regions, weights = {}, np.ones(len(u))
+        for i in range(n_regions):
+            if i == 0:
+                region = intersect(np.where(u < u_b[i + 1]), np.where(s < s_b[i + 1]))
+            elif i < n_regions - 1:
+                lower_cut = union(np.where(u > u_b[i]), np.where(s > s_b[i]))
+                upper_cut = intersect(np.where(u < u_b[i + 1]), np.where(s < s_b[i + 1]))
+                region = intersect(lower_cut, upper_cut)
+            else:
+                region = union(np.where(u > u_b[i]), np.where(s > s_b[i]))  # lower_cut for last region
+            regions[i] = region
+            if len(region) > 0:
+                weights[region] = n_regions / len(region)
+        # set weights accordingly such that each region has an equal overall contribution.
+        self.weights = weights * len(u) / np.sum(weights)
+        self.u_b, self.s_b = u_b, s_b
+
+    def plot_phase(self, adata=None, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None,
+                   reassign_time=False, optimal=False, mode='soft', **kwargs):
+        from ..plotting.scatter import scatter
+        from ..plotting.utils import interpret_colorkey
+
+        multi = 0
+        for param in [alpha, beta, gamma, t_]:
+            if param is not None and not np.isscalar(param):
+                multi += 1
+
+        if multi == 0:
+            u, s = self.u, self.s
+            t, t_, alpha, beta, gamma, scaling = self.get_vals(t, t_, alpha, beta, gamma, scaling, reassign_time)
+            ut = self.get_ut(t, t_, alpha, beta, gamma, scaling)
+            st = self.get_st(t, t_, alpha, beta, gamma, scaling)
+
+            idx_sorted = np.argsort(t)
+            ut, st, t = ut[idx_sorted], st[idx_sorted], t[idx_sorted]
+
+            if adata is not None:
+                ax = scatter(adata, x=s, y=u, colorbar=False, show=False, **kwargs)
+            else:
+                args = {"color": self.get_time_assignment(mode=mode)[2], "color_map": 'RdYlGn', "vmin": -.1, "vmax": 1.1}
+                args.update(kwargs)
+                ax = scatter(x=s, y=u, colorbar=False, show=False, **args)
+
+            linestyle = '-' if not optimal else '--'
+            pl.plot(st, ut, color='purple', linestyle=linestyle)
+            pl.xlabel('s')
+            pl.ylabel('u')
+            if False:  # colorbar
+                ax = pl.gca()
+                cax = inset_axes(ax, width="2%", height="30%", loc=4, borderpad=0)
+                import matplotlib as mpl
+                cmap = mpl.colors.LinearSegmentedColormap.from_list("", ["blue", "purple", "red"])
+                cb1 = mpl.colorbar.ColorbarBase(cax, cmap=cmap, orientation='vertical')
+                cb1.set_ticks([0.1, 0.9])
+                cb1.ax.set_yticklabels(['-', '+'])
+                pl.sca(ax)
+        elif multi == 1:
+            a, b, g = alpha, beta, gamma
+            if alpha is not None and not np.isscalar(alpha):
+                n = len(alpha)
+                loss = []
+                for i in range(n):
+                    colorbar = True if i == n - 1 else False
+                    self.plot_phase(t, t_, alpha[i], b, g, scaling=scaling, reassign_time=reassign_time,
+                                    color=[(i+1)/n, 0, 1-(i+1)/n], colorbar=colorbar)
+                    loss.append(self.get_loss(t, t_, alpha[i], b, g, scaling=scaling, reassign_time=reassign_time))
+                opt = np.argmin(loss)
+                self.plot_phase(t, t_, alpha[opt], b, g, scaling=scaling, reassign_time=reassign_time,
+                                color=[0, 1, 0], colorbar=False, optimal=True)
+            elif beta is not None and not np.isscalar(beta):
+                n = len(beta)
+                loss = []
+                for i in range(n):
+                    colorbar = True if i == n - 1 else False
+                    self.plot_phase(t, t_, a, beta[i], g, scaling=scaling, reassign_time=reassign_time,
+                                    color=[(i+1)/n, 0, 1-(i+1)/n], colorbar=colorbar)
+                    loss.append(self.get_loss(t, t_, a, beta[i], g, scaling=scaling, reassign_time=reassign_time))
+                opt = np.argmin(loss)
+                self.plot_phase(t, t_, a, beta[opt], g, scaling=scaling, reassign_time=reassign_time,
+                                color=[0, 1, 0], colorbar=False, optimal=True)
+            elif gamma is not None and not np.isscalar(gamma):
+                n = len(gamma)
+                loss = []
+                for i in range(n):
+                    colorbar = True if i == n - 1 else False
+                    self.plot_phase(t, t_, a, b, gamma[i], scaling=scaling, reassign_time=reassign_time,
+                                    color=[(i+1)/n, 0, 1-(i+1)/n], colorbar=colorbar)
+                    loss.append(self.get_loss(t, t_, a, b, gamma[i], scaling=scaling, reassign_time=reassign_time))
+                opt = np.argmin(loss)
+                self.plot_phase(t, t_, a, b, gamma[opt], scaling=scaling, reassign_time=reassign_time,
+                                color=[0, 1, 0], colorbar=False, optimal=True)
+            elif t_ is not None and not np.isscalar(t_):
+                n = len(t_)
+                loss = []
+                for i in range(n):
+                    colorbar = True if i == n - 1 else False
+                    self.plot_phase(t, t_[i], a, b, g, scaling=scaling, reassign_time=reassign_time,
+                                    color=[(i+1)/n, 0, 1-(i+1)/n], colorbar=colorbar)
+                    loss.append(self.get_loss(t, t_[i], a, b, g, scaling=scaling, reassign_time=reassign_time))
+                opt = np.argmin(loss)
+                self.plot_phase(t, t_[opt], a, b, g, scaling=scaling, reassign_time=reassign_time,
+                                color=[0, 1, 0], colorbar=False, optimal=True)
+        elif multi == 2:
+            print('Too many varying Values. Only one varying parameter allowed.')
+
+    def plot_regions(self):
+        u, s, ut, st = self.u, self.s, self.ut, self.st
+        u_b, s_b = self.u_b, self.s_b
+
+        pl.figure(dpi=100)
+        pl.scatter(s, u, color='grey')
+        pl.xlim(0);
+        pl.ylim(0);
+        pl.xlabel('spliced');
+        pl.ylabel('unspliced')
+
+        for i in range(len(s_b)):
+            pl.plot([s_b[i], s_b[i], 0], [0, u_b[i], u_b[i]])
+
+    def plot_derivatives(self):
+        u, s = self.u, self.s
+        alpha, beta, gamma = self.alpha, self.beta, self.gamma
+        t, tau, o, t_ = self.t, self.tau, self.o, self.t_
+
+        du0 = np.array(du(t_, alpha, beta))[:, None] * (1 - o)[None, :]
+        ds0 = np.array(ds(t_, alpha, beta, gamma))[:, None] * (1 - o)[None, :]
+
+        tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
+        dt = np.array(dtau(u, s, alpha, beta, gamma, u0, s0))
+
+        du_a, du_b = du(tau, alpha, beta, u0=u0, du0=du0, dtau=dt)
+        ds_a, ds_b, ds_c = ds(tau, alpha, beta, gamma, u0=u0, s0=s0, du0=du0, ds0=ds0, dtau=dt)
+
+        idx = np.argsort(t)
+        t = np.sort(t)
+
+        pl.plot(t, du_a[idx], label=r'$\partial u / \partial\alpha$')
+        pl.plot(t, .2 * du_b[idx], label=r'$\partial u / \partial \beta$')
+        pl.plot(t, ds_a[idx], label=r'$\partial s / \partial \alpha$')
+        pl.plot(t, ds_b[idx], label=r'$\partial s / \partial \beta$')
+        pl.plot(t, .2 * ds_c[idx], label=r'$\partial s / \partial \gamma$')
+
+        pl.legend()
+        pl.xlabel('t')
+
+    def plot_contours(self, alpha_sight=[-.9, .9], gamma_sight=[-.9, .9], num=20, dpi=None):
+        alpha_vals = np.linspace(alpha_sight[0], alpha_sight[1], num=num) * self.alpha + self.alpha
+        gamma_vals = np.linspace(gamma_sight[0], gamma_sight[1], num=num) * self.gamma + self.gamma
+
+        x, y = gamma_vals, alpha_vals
+        f0 = lambda x, y: self.get_loss(alpha=y, gamma=x, reassign_time=False)
+        fp = lambda x, y: self.get_loss(alpha=y, gamma=x, reassign_time=True)
+        z0, zp = np.zeros((len(x), len(x))), np.zeros((len(x), len(x)))
+
+        for i, xi in enumerate(x):
+            for j, yi in enumerate(y):
+                z0[i, j] = f0(xi, yi)
+                zp[i, j] = fp(xi, yi)
+
+        # ix, iy = np.unravel_index(zp.argmin(), zp.shape)
+        # gamma_opt, alpha_opt = x[ix],  y[iy]
+
+        figsize = rcParams['figure.figsize']
+        fig, (ax1, ax2) = pl.subplots(1, 2, figsize=(figsize[0], figsize[1] / 2), dpi=dpi)
+        ax1.contourf(x, y, np.log1p(zp.T), levels=20, cmap='RdGy_r')
+        contours = ax1.contour(x, y, np.log1p(zp.T), 4, colors='k', linewidths=.5)
+        ax1.clabel(contours, inline=True, fontsize=8)
+        ax1.scatter(x=self.gamma, y=self.alpha, s=50, c='purple', zorder=3)
+        # ax1.quiver(self.gamma, self.alpha, 0, self.get_optimal_alpha() - self.alpha, color='k', zorder=3,
+        #            headlength=4, headwidth=3, headaxislength=3, alpha=.5)
+        ax1.set_xlabel(r'$\gamma$')
+        ax1.set_ylabel(r'$\alpha$')
+        ax1.set_title('MSE (profiled)')
+
+        ax2.contourf(x, y, np.log1p(z0.T), levels=20, cmap='RdGy_r')
+        contours = ax2.contour(x, y, np.log1p(z0.T), 4, colors='k', linewidths=.5)
+        ax2.clabel(contours, inline=True, fontsize=8)
+        ax2.scatter(x=self.gamma, y=self.alpha, s=50, c='purple', zorder=3)
+        ax2.set_xlabel(r'$\gamma$')
+        ax2.set_ylabel(r'$\alpha$')
+        ax2.set_title('MSE')
+
+        ix, iy = np.unravel_index(zp.argmin(), zp.shape)
+        x_opt, y_opt = x[ix].round(2), y[ix].round(2)
+
+        return x_opt, y_opt
