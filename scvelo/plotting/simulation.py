@@ -30,9 +30,9 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True):
     return alpha, ut, st, vt
 
 
-def show_full_dynamics(adata, basis, key='true', use_raw=False):
+def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1):
     color = 'grey' if key is 'true' else 'purple'
-    linewidth = .5 if key is 'true' else 1
+    linewidth = .5 * linewidth if key is 'true' else linewidth
 
     _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=True)
     pl.plot(st, ut, color=color, linewidth=linewidth)
@@ -43,7 +43,7 @@ def show_full_dynamics(adata, basis, key='true', use_raw=False):
         if len(st) < 500:
             skey, ukey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
             s, u = make_dense(adata[:, basis].layers[skey]), make_dense(adata[:, basis].layers[ukey])
-            pl.plot(np.array([s, st]), np.array([u, ut]), color='grey', linewidth=.2)
+            pl.plot(np.array([s, st]), np.array([u, ut]), color='grey', linewidth=.2 * linewidth)
 
     idx = np.where(adata.var_names == basis)[0][0]
     beta, gamma = adata.var[key + '_beta'][idx], adata.var[key + '_gamma'][idx]
