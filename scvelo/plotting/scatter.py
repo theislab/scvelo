@@ -13,7 +13,7 @@ import pandas as pd
 
 @doc_params(scatter=doc_scatter)
 def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
-            colorbar=True, palette=None, size=None, alpha=None, perc=None, sort_order=True, groups=None,
+            colorbar=True, palette=None, size=None, alpha=None, linewidth=None, perc=None, sort_order=True, groups=None,
             components=None, projection='2d', legend_loc='none', legend_fontsize=None, legend_fontweight=None,
             right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
             dpi=None, frameon=None, show=True, save=None, ax=None, zorder=None, ncols=None, **kwargs):
@@ -50,7 +50,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         for i, gs in enumerate(
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):
             if i < len(multikey):
-                scatter(adata, x=x, y=y, size=size, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
+                scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
                         colorbar=colorbar, perc=perc, frameon=frameon, ax=pl.subplot(gs), zorder=zorder,
                         color=colors[i] if len(colors) > 1 else color,
                         layer=layers[i] if len(layers) > 1 else layer,
@@ -67,6 +67,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         is_embedding = ((x is None) | (y is None)) and basis not in adata.var_names
         basis = default_basis(adata) if basis is None and is_embedding else basis
         size = default_size(adata) if size is None else size
+        linewidth = 1 if linewidth is None else linewidth
         frameon = frameon if frameon is not None else True if not is_embedding else settings._frameon
 
         if projection == '3d':
@@ -115,13 +116,13 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 zorder += 1
 
             if basis in adata.var_names:
-                fits = show_linear_fit(adata, basis, vkey, xkey)
+                fits = show_linear_fit(adata, basis, vkey, xkey, linewidth)
                 from .simulation import show_full_dynamics
                 if 'true_alpha' in adata.var.keys():
-                    fit = show_full_dynamics(adata, basis, 'true', use_raw)
+                    fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth)
                     fits.append(fit)
                 if 'fit_alpha' in adata.var.keys():
-                    fit = show_full_dynamics(adata, basis, 'fit', use_raw)
+                    fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth)
                     fits.append(fit)
                 if len(fits) > 0 and legend_loc is not None:
                     pl.legend(fits, loc='lower right')

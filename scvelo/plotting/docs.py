@@ -32,6 +32,8 @@ size: `float` (default: 5)
     Point size.
 alpha: `float` (default: 1)
     Set blending - 0 transparent to 1 opaque.
+linewidth: `float` (default: 1)
+    Scaling factor for the width of occurring lines.
 perc: tuple, e.g. [2,98] (default: `None`)
     Specify percentile for continuous coloring.
 sort_order: `bool` (default: `True`)

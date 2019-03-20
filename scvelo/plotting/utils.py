@@ -244,7 +244,7 @@ def adjust_palette(palette, length):
         return palette
 
 
-def show_linear_fit(adata, basis, vkey, xkey):
+def show_linear_fit(adata, basis, vkey, xkey, linewidth=1):
     xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
     vkeys = adata.layers.keys() if vkey is None else make_unique_list(vkey)
     fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
@@ -253,7 +253,7 @@ def show_linear_fit(adata, basis, vkey, xkey):
         gamma = adata[:, basis].var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
         beta = adata[:, basis].var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
         offset = adata[:, basis].var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
-        pl.plot(xnew, gamma / beta * xnew + offset / beta, c='k', linestyle=linestyle)
+        pl.plot(xnew, gamma / beta * xnew + offset / beta, c='k', linestyle=linestyle, linewidth=linewidth)
     return fits
 
 
