@@ -54,14 +54,14 @@ def get_version_from_git(parent):
 
     try:
         p = run(["git", "rev-parse", "--show-toplevel"],
-                cwd=parent, stdout=PIPE, stderr=PIPE, encoding="utf-8", check=True)
+                cwd=str(parent), stdout=PIPE, stderr=PIPE, encoding="utf-8", check=True)
     except (OSError, CalledProcessError):
         return None
     if Path(p.stdout.rstrip("\r\n")).resolve() != parent.resolve():
         return None
 
     p = run(["git", "describe", "--tags", "--dirty", "--always", "--long", "--match", "v[0-9]*"],
-            cwd=parent, stdout=PIPE, stderr=PIPE, encoding="utf-8", check=True)
+            cwd=str(parent), stdout=PIPE, stderr=PIPE, encoding="utf-8", check=True)
 
     release, dev, hex_, dirty = match_groups(
         f"{RE_GIT_DESCRIBE}$", p.stdout.rstrip("\r\n")
