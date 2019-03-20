@@ -33,7 +33,8 @@ def strings_to_categoricals(adata):
 def is_categorical(adata, c):
     from pandas.api.types import is_categorical as cat
     strings_to_categoricals(adata)
-    return isinstance(c, str) and (c in adata.obs.keys() and cat(adata.obs[c]) or is_color_like(c))
+    str_not_var = isinstance(c, str) and c not in adata.var_names
+    return str_not_var and (c in adata.obs.keys() and cat(adata.obs[c]) or is_color_like(c))
 
 
 def default_basis(adata):
@@ -256,7 +257,8 @@ def show_linear_fit(adata, basis, vkey, xkey):
     return fits
 
 
-def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None, dpi=None):
+def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None,
+         dpi=None, show=True):
     ax = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
     arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
 
@@ -265,10 +267,13 @@ def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, yla
 
     for i, array in enumerate(arrays):
         pl.hist(array[np.isfinite(array)], bins=bins, alpha=alpha, color=colors[i], label=labels[i] if labels is not None else None)
-    pl.legend()
     pl.xlabel(xlabel if xlabel is not None else '')
     pl.ylabel(ylabel if xlabel is not None else '')
-    pl.show()
+    if labels is not None: pl.legend()
+    if not show:
+        return ax
+    else:
+        pl.show()
 
 
 def plot(arrays, normalize=False, colors=None, labels=None, xlabel=None, ylabel=None, xscale=None, yscale=None, ax=None,

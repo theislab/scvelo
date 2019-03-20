@@ -19,7 +19,7 @@ def quiver_autoscale(X_emb, V_emb):
 
 
 def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
-                       direct_projection=True, pca_transform=None, retain_scale=False, autoscale=True, all_comps=True,
+                       direct_projection=None, pca_transform=None, retain_scale=False, autoscale=True, all_comps=True,
                        T=None, copy=False):
     """Computes the single cell velocities in the embedding
 
@@ -69,6 +69,8 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
 
     logg.info('computing velocity embedding', r=True)
 
+    if pca_transform is None and direct_projection is None:
+        pca_transform = True if 'pca' in basis else False
     if 'pca' in basis and (direct_projection or pca_transform):
         V = adata.layers[vkey]
         PCs = adata.varm['PCs'] if all_comps else adata.varm['PCs'][:, :2]
