@@ -406,7 +406,7 @@ class BaseDynamics:
     def plot_phase(self, adata=None, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None,
                    reassign_time=False, optimal=False, mode='soft', **kwargs):
         from ..plotting.scatter import scatter
-        from ..plotting.utils import interpret_colorkey
+        from ..plotting.simulation import show_full_dynamics
 
         multi = 0
         for param in [alpha, beta, gamma, t_]:
@@ -422,12 +422,10 @@ class BaseDynamics:
             idx_sorted = np.argsort(t)
             ut, st, t = ut[idx_sorted], st[idx_sorted], t[idx_sorted]
 
-            if adata is not None:
-                ax = scatter(adata, x=s, y=u, colorbar=False, show=False, **kwargs)
-            else:
-                args = {"color": self.get_time_assignment(mode=mode)[2], "color_map": 'RdYlGn', "vmin": -.1, "vmax": 1.1}
-                args.update(kwargs)
-                ax = scatter(x=s, y=u, colorbar=False, show=False, **args)
+            args = {"color": self.get_time_assignment(mode=mode)[2], "color_map": 'RdYlGn', "vmin": -.1, "vmax": 1.1}
+            args.update(kwargs)
+
+            ax = scatter(adata, x=s, y=u, colorbar=False, show=False, **kwargs)
 
             linestyle = '-' if not optimal else '--'
             pl.plot(st, ut, color='purple', linestyle=linestyle)
@@ -448,46 +446,39 @@ class BaseDynamics:
                 n = len(alpha)
                 loss = []
                 for i in range(n):
-                    colorbar = True if i == n - 1 else False
-                    self.plot_phase(t, t_, alpha[i], b, g, scaling=scaling, reassign_time=reassign_time,
-                                    color=[(i+1)/n, 0, 1-(i+1)/n], colorbar=colorbar)
+                    self.plot_phase(adata, t, t_, alpha[i], b, g, scaling=scaling, reassign_time=reassign_time, **kwargs)
                     loss.append(self.get_loss(t, t_, alpha[i], b, g, scaling=scaling, reassign_time=reassign_time))
                 opt = np.argmin(loss)
-                self.plot_phase(t, t_, alpha[opt], b, g, scaling=scaling, reassign_time=reassign_time,
-                                color=[0, 1, 0], colorbar=False, optimal=True)
+                self.plot_phase(adata, t, t_, alpha[opt], b, g, scaling=scaling, reassign_time=reassign_time,
+                                optimal=True, **kwargs)
             elif beta is not None and not np.isscalar(beta):
                 n = len(beta)
                 loss = []
                 for i in range(n):
-                    colorbar = True if i == n - 1 else False
                     self.plot_phase(t, t_, a, beta[i], g, scaling=scaling, reassign_time=reassign_time,
-                                    color=[(i+1)/n, 0, 1-(i+1)/n], colorbar=colorbar)
+                                    color=[(i+1)/n, 0, 1-(i+1)/n])
                     loss.append(self.get_loss(t, t_, a, beta[i], g, scaling=scaling, reassign_time=reassign_time))
                 opt = np.argmin(loss)
-                self.plot_phase(t, t_, a, beta[opt], g, scaling=scaling, reassign_time=reassign_time,
-                                color=[0, 1, 0], colorbar=False, optimal=True)
+                self.plot_phase(adata, t, t_, a, beta[opt], g, scaling=scaling, reassign_time=reassign_time,
+                                color=[0, 1, 0], optimal=True)
             elif gamma is not None and not np.isscalar(gamma):
                 n = len(gamma)
                 loss = []
                 for i in range(n):
-                    colorbar = True if i == n - 1 else False
-                    self.plot_phase(t, t_, a, b, gamma[i], scaling=scaling, reassign_time=reassign_time,
-                                    color=[(i+1)/n, 0, 1-(i+1)/n], colorbar=colorbar)
+                    self.plot_phase(adata, t, t_, a, b, gamma[i], scaling=scaling, reassign_time=reassign_time,
+                                    color=[(i+1)/n, 0, 1-(i+1)/n])
                     loss.append(self.get_loss(t, t_, a, b, gamma[i], scaling=scaling, reassign_time=reassign_time))
                 opt = np.argmin(loss)
                 self.plot_phase(t, t_, a, b, gamma[opt], scaling=scaling, reassign_time=reassign_time,
-                                color=[0, 1, 0], colorbar=False, optimal=True)
+                                color=[0, 1, 0], optimal=True)
             elif t_ is not None and not np.isscalar(t_):
                 n = len(t_)
                 loss = []
                 for i in range(n):
-                    colorbar = True if i == n - 1 else False
-                    self.plot_phase(t, t_[i], a, b, g, scaling=scaling, reassign_time=reassign_time,
-                                    color=[(i+1)/n, 0, 1-(i+1)/n], colorbar=colorbar)
+                    self.plot_phase(adata, t, t_[i], a, b, g, scaling=scaling, reassign_time=reassign_time, **kwargs)
                     loss.append(self.get_loss(t, t_[i], a, b, g, scaling=scaling, reassign_time=reassign_time))
                 opt = np.argmin(loss)
-                self.plot_phase(t, t_[opt], a, b, g, scaling=scaling, reassign_time=reassign_time,
-                                color=[0, 1, 0], colorbar=False, optimal=True)
+                self.plot_phase(adata, t, t_[opt], a, b, g, scaling=scaling, reassign_time=reassign_time, optimal=True, **kwargs)
         elif multi == 2:
             print('Too many varying Values. Only one varying parameter allowed.')
 
