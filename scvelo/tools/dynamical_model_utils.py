@@ -339,7 +339,7 @@ class BaseDynamics:
                                       self.get_optimal_switch(alpha, beta, gamma) if t_ is None else t_, mode=mode)
         return t, tau, o
 
-    def get_loss(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False):
+    def get_loss(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False, **kwargs):
         alpha = self.alpha if alpha is None else alpha
         beta = self.beta if beta is None else beta
         gamma = self.gamma if gamma is None else gamma
@@ -566,3 +566,53 @@ class BaseDynamics:
         x_opt, y_opt = x[ix].round(2), y[ix].round(2)
 
         return x_opt, y_opt
+
+    def new_plot_contours(self, x_key='gamma', y_key='alpha', y_sight=[-.9, .9], x_sight=[-.9, .9], num=20, dpi=None, fontsize=8, **kwargs):
+        from ..plotting.utils import update_axes
+        x_var = eval('self.' + x_key)
+        y_var = eval('self.' + y_key)
+
+        x = np.linspace(x_sight[0], x_sight[1], num=num) * x_var + x_var
+        y = np.linspace(y_sight[0], y_sight[1], num=num) * y_var + y_var
+
+        f0 = lambda x, y: self.get_loss(**{x_key: x, y_key: y},
+                                        reassign_time=False)  # alpha=y, gamma=x, reassign_time=False)
+        fp = lambda x, y: self.get_loss(**{x_key: x, y_key: y},
+                                        reassign_time=True)  # alpha=y, gamma=x, reassign_time=True)
+        z0, zp = np.zeros((len(x), len(x))), np.zeros((len(x), len(x)))
+
+        for i, xi in enumerate(x):
+            for j, yi in enumerate(y):
+                z0[i, j] = f0(xi, yi)
+                zp[i, j] = fp(xi, yi)
+
+        # ix, iy = np.unravel_index(zp.argmin(), zp.shape)
+        # gamma_opt, alpha_opt = x[ix],  y[iy]
+
+        figsize = rcParams['figure.figsize']
+        fig, (ax1, ax2) = pl.subplots(1, 2, figsize=(figsize[0], figsize[1] / 2), dpi=dpi)
+        ax1.contourf(x, y, np.log1p(zp.T), levels=20, cmap='RdGy_r')
+        contours = ax1.contour(x, y, np.log1p(zp.T), 4, colors='k', linewidths=.5)
+        ax1.clabel(contours, inline=True, fontsize=fontsize * .75)
+        ax1.scatter(x=self.gamma, y=self.alpha, s=50, c='purple', zorder=3, **kwargs)
+        # ax1.quiver(self.gamma, self.alpha, 0, self.get_optimal_alpha() - self.alpha, color='k', zorder=3,
+        #            headlength=4, headwidth=3, headaxislength=3, alpha=.5)
+        ax1.set_xlabel(r'$'+'\\'+x_key+'$', fontsize=fontsize)
+        ax1.set_ylabel(r'$'+'\\'+y_key+'$', fontsize=fontsize)
+        ax1.set_title('MSE (profiled)', fontsize=fontsize)
+        ax1 = update_axes(ax1, fontsize, frameon=True)
+
+        ax2.contourf(x, y, np.log1p(z0.T), levels=20, cmap='RdGy_r')
+        contours = ax2.contour(x, y, np.log1p(z0.T), 4, colors='k', linewidths=.5)
+        ax2.clabel(contours, inline=True, fontsize=fontsize * .75)
+        ax2.scatter(x=x_var, y=y_var, s=50, c='purple', zorder=3, **kwargs)
+        ax2.set_xlabel(r'$'+'\\'+x_key+'$', fontsize=fontsize)
+        ax2.set_ylabel(r'$'+'\\'+y_key+'$', fontsize=fontsize)
+        ax2.set_title('MSE', fontsize=fontsize)
+        ax2 = update_axes(ax2, fontsize, frameon=True)
+
+        ix, iy = np.unravel_index(zp.argmin(), zp.shape)
+        x_opt, y_opt = x[ix].round(2), y[ix].round(2)
+
+        return x_opt, y_opt
+
