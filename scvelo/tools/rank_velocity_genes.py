@@ -98,7 +98,7 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', resolution=N
         for i, cat in enumerate(vc.cat.categories):
             cells_in_cat = np.where(vc == cat)[0]
             new_cat = most_common_in_list(adata.obs[match_with][cells_in_cat])
-            vc = vc.cat.rename_categories({cat: new_cat + ' ' + cat})
+            vc = vc.cat.rename_categories({cat: str(new_cat) + ' ' + str(cat)})
         vdata.obs['louvain'] = vc
 
     adata.obs[vkey + '_clusters'] = vdata.obs['louvain'].copy()

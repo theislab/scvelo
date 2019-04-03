@@ -26,8 +26,11 @@ class DynamicsRecovery(BaseDynamics):
         u_raw = u if use_raw else make_dense(_layers['unspliced'])
 
         # set weights for fitting (exclude dropouts and extreme outliers)
-        s_filter = np.ravel(s_raw > 0) & np.ravel(s < np.percentile(s, 99))
-        u_filter = np.ravel(u_raw > 0) & np.ravel(u < np.percentile(u, 99))
+        s_filter = np.ravel(s_raw > 0)
+        u_filter = np.ravel(u_raw > 0)
+        s_filter &= np.ravel(s < np.percentile(s[s_filter], 99))
+        u_filter &= np.ravel(u < np.percentile(u[u_filter], 99))
+
         self.weights = s_filter & u_filter
 
         if load_pars and 'fit_alpha' in adata.var.keys():
@@ -37,18 +40,15 @@ class DynamicsRecovery(BaseDynamics):
 
     def initialize(self):
         self.scaling = self.u.sum(0) / self.s.sum(0) * 1.3
-        u, s = self.u / self.scaling, self.s
-
+        u, s, w = self.u / self.scaling, self.s, self.weights
+        u_w, s_w, perc = u[w], s[w], 95
         # initialize beta and gamma from extreme quantiles of s
-        perc = 95
-        weights_s = s >= np.percentile(s, perc, axis=0)
-        u_w, s_w = convolve(u, weights_s), convolve(s, weights_s)
-
-        beta, gamma = 1, linreg(u_w, s_w)
+        weights_s = s_w >= np.percentile(s_w, perc, axis=0)
+        beta, gamma = 1, linreg(convolve(u_w, weights_s), convolve(s_w, weights_s))
 
         # initialize alpha and switching points from extreme quantiles of u
-        weights_u = u >= np.percentile(u, perc, axis=0)
-        u_w, s_w = u[weights_u], s[weights_u]
+        weights_u = u_w >= np.percentile(u_w, perc, axis=0)
+        u_w, s_w = u_w[weights_u], s_w[weights_u]
 
         alpha, u0_, s0_ = u_w.mean(), u_w.mean(), s_w.mean()
         alpha_, u0, s0, = 0, 0, 0
