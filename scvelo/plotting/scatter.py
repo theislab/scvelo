@@ -121,11 +121,12 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if 'true_alpha' in adata.var.keys():
                     fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth)
                     fits.append(fit)
-                if 'fit_alpha' in adata.var.keys():
-                    fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth)
+                if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
+                    fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth,
+                                             show_assigments=vkey is not None and 'assingments' in vkey)
                     fits.append(fit)
                 if len(fits) > 0 and legend_loc is not None:
-                    pl.legend(fits, loc='lower right')
+                    pl.legend(fits, loc=legend_loc if legend_loc is not 'none' else 'lower right')
                 if use_raw and perc is not None:
                     pl.xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
                     pl.ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)

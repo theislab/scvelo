@@ -49,7 +49,7 @@ def make_unique_list(key, allow_array=False):
     return unique(key) if is_list_of_str else key if is_list and len(key) < 20 else [key]
 
 
-def update_axes(ax, fontsize, is_embedding, frameon):
+def update_axes(ax, fontsize, is_embedding=False, frameon=None):
     frameon = settings._frameon if frameon is None else frameon
     if frameon:
         if is_embedding:
