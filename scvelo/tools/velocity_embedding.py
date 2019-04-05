@@ -73,6 +73,11 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
         pca_transform = True if 'pca' in basis else False
     if 'pca' in basis and (direct_projection or pca_transform):
         V = adata.layers[vkey]
+        if 'velocity_genes' in adata.var.keys():
+            V = V[:, adata.var.velocity_genes]
+        nans = np.isnan(V.sum(0))
+        if np.any(nans):
+            V = V[:, ~nans]
         PCs = adata.varm['PCs'] if all_comps else adata.varm['PCs'][:, :2]
         X_emb = adata.obsm['X_' + basis]
         V_emb = (V - V.mean(0)).dot(PCs)
