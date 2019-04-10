@@ -50,8 +50,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         for i, gs in enumerate(
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):
             if i < len(multikey):
-                scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
-                        colorbar=colorbar, perc=perc, frameon=frameon, ax=pl.subplot(gs), zorder=zorder,
+                scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel, vkey=vkey,
+                        color_map=color_map, colorbar=colorbar, perc=perc, frameon=frameon, ax=pl.subplot(gs), zorder=zorder,
                         color=colors[i] if len(colors) > 1 else color,
                         layer=layers[i] if len(layers) > 1 else layer,
                         basis=bases[i] if len(bases) > 1 else basis,
@@ -123,7 +123,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     fits.append(fit)
                 if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
                     fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth,
-                                             show_assigments=vkey is not None and 'assingments' in vkey)
+                                             show_assigments=vkey is not None and 'assignment' in vkey)
                     fits.append(fit)
                 if len(fits) > 0 and legend_loc is not None:
                     pl.legend(fits, loc=legend_loc if legend_loc is not 'none' else 'lower right')

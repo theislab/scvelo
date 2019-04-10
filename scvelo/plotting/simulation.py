@@ -26,7 +26,7 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
     ut = unspliced(tau, u0, alpha, beta) * scaling
     st = spliced(tau, s0, u0, alpha, beta, gamma)
 
-    vt = spliced(tau + np.max(tau)/100, s0, u0, alpha, beta, gamma) - st
+    vt = ut * beta - st * gamma
     return alpha, ut, st, vt
 
 
