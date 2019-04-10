@@ -122,7 +122,7 @@ def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mo
     diffx = ((xt - x_obs)**2).sum(1)
     diffx_ = ((xt_ - x_obs)**2).sum(1)
 
-    o = 1 - np.argmin([diffx, diffx_], axis=0)
+    o = 1 if mode is 'on' else 0 if mode is 'off' else 1 - np.argmin([diffx, diffx_], axis=0)
     tau = tau * o + tau_ * (1 - o)
     t = tau * o + (tau_ + t0_) * (1 - o)
 
@@ -157,7 +157,8 @@ def fit_alpha(u, s, tau, o, beta, gamma, fit_scaling=False):
     # concatenating together
     c = np.concatenate([c_beta, c_gamma, c_beta_, c_gamma_]).T
     x = np.concatenate([u[on], s[on], u[off], s[off]]).T
-    alpha = (c * x).sum() / (c ** 2).sum()
+
+    alpha = (c * x).sum() / (c ** 2).sum() if (on.sum() > 0 and off.sum() > 0) else None
 
     if fit_scaling:  # alternatively compute alpha and scaling simultaneously
         c = np.concatenate([c_gamma, c_gamma_]).T
@@ -301,15 +302,25 @@ class BaseDynamics:
             t_ = self.t_ if t_ is None else t_
         return t, t_, alpha, beta, gamma, scaling
 
-    def get_ut(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False):
+    def get_ut(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False, mode=None):
         t, t_, alpha, beta, gamma, scaling = self.get_vals(t, t_, alpha, beta, gamma, scaling, reassign_time)
-        tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
-        return unspliced(tau, u0, alpha, beta) * scaling
+        tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma) if mode is None \
+            else (self.get_time_assignment(mode='on')[1], self.alpha, self.u0, self.s0) if mode is 'on' \
+            else (self.get_time_assignment(mode='off')[1], self.alpha_, self.u0_, self.s0_)
+        return unspliced(tau, u0, alpha, beta)
 
-    def get_st(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False):
+    def get_st(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, reassign_time=False, mode=None):
         t, t_, alpha, beta, gamma, scaling = self.get_vals(t, t_, alpha, beta, gamma, scaling, reassign_time)
-        tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
+        tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma) if mode is None \
+            else (self.get_time_assignment(mode='on')[1], self.alpha, self.u0, self.s0) if mode is 'on' \
+            else (self.get_time_assignment(mode='off')[1], self.alpha_, self.u0_, self.s0_)
         return spliced(tau, s0, u0, alpha, beta, gamma)
+
+    def get_vt(self, mode='soft'):
+        t, t_, alpha, beta, gamma, scaling = self.get_vals()
+        _, _, o = self.get_time_assignment(mode='soft')
+        u, s, u_, s_ = self.get_ut(mode='on'), self.get_st(mode='on'), self.get_ut(mode='off'), self.get_st(mode='off')
+        return (beta * u - gamma * s) * o + (beta * u_ - gamma * s_) * (1 - o)
 
     def get_optimal_switch(self, alpha=None, beta=None, gamma=None):
         u, s, tau, o, w = self.u / self.scaling, self.s, self.tau, self.o, self.weights
@@ -416,8 +427,8 @@ class BaseDynamics:
         if multi == 0:
             u, s = self.u, self.s
             t, t_, alpha, beta, gamma, scaling = self.get_vals(t, t_, alpha, beta, gamma, scaling, reassign_time)
-            ut = self.get_ut(t, t_, alpha, beta, gamma, scaling)
-            st = self.get_st(t, t_, alpha, beta, gamma, scaling)
+            ut = self.get_ut(t, t_, alpha, beta, gamma) * scaling
+            st = self.get_st(t, t_, alpha, beta, gamma) * scaling
 
             idx_sorted = np.argsort(t)
             ut, st, t = ut[idx_sorted], st[idx_sorted], t[idx_sorted]

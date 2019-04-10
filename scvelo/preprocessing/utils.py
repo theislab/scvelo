@@ -97,7 +97,8 @@ def filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
 
 
 def filter_genes(data, min_counts=None, min_cells=None, max_counts=None, max_cells=None,
-                 min_counts_u=None,  min_cells_u=None, max_counts_u=None, max_cells_u=None, copy=False):
+                 min_counts_u=None,  min_cells_u=None, max_counts_u=None, max_cells_u=None,
+                 min_shared_counts=None, min_shared_cells=None, copy=False):
     """Filter genes based on number of cells or counts.
     Keep genes that have at least `min_counts` counts or are expressed in at
     least `min_cells` cells or have at most `max_counts` counts or are expressed
@@ -126,6 +127,10 @@ def filter_genes(data, min_counts=None, min_cells=None, max_counts=None, max_cel
         Maximum number of unspliced counts required for a gene to pass filtering.
     max_cells_u : `int`, optional (default: `None`)
         Maximum number of unspliced cells expressed required for a gene to pass filtering.
+    min_shared_counts: `int`, optional (default: `None`)
+        Minimum number of counts (in cells expressed simultaneously in unspliced and spliced) required for a gene.
+    min_shared_cells: `int`, optional (default: `None`)
+        Minimum number of cells required for a gene to be expressed simultaneously in unspliced and spliced.
     copy : `bool`, optional (default: `False`)
         Determines whether a copy is returned.
 
@@ -139,32 +144,43 @@ def filter_genes(data, min_counts=None, min_cells=None, max_counts=None, max_cel
     set_initial_size(adata)
 
     layers = [layer for layer in ['spliced', 'unspliced'] if layer in adata.layers.keys()]
+    if min_shared_counts is not None or min_shared_cells is not None: layers.extend(['shared'])
+
     for layer in layers:
-        X = adata.layers[layer]
+
         if layer is 'spliced':
             _min_counts, _min_cells, _max_counts, _max_cells = min_counts, min_cells, max_counts, max_cells
-        else:
+        elif layer is 'unspliced':
             _min_counts, _min_cells, _max_counts, _max_cells = min_counts_u, min_cells_u, max_counts_u, max_cells_u
+        else:  # shared counts/cells
+            _min_counts, _min_cells, _max_counts, _max_cells = min_shared_counts, min_shared_cells, None, None
 
         if layer in adata.layers.keys():
-            gene_subset = np.ones(adata.n_vars, dtype=bool)
-            if _min_counts is not None or _max_counts is not None:
-                gene_subset, _ = filter(X, min_counts=_min_counts, max_counts=_max_counts)
-                adata._inplace_subset_var(gene_subset)
+            X = adata.layers[layer]
+        else:  # shared counts/cells
+            Xs, Xu = adata.layers['spliced'], adata.layers['unspliced']
+            nonzeros = (Xs > 0).multiply(Xu > 0) if issparse(Xs) else (Xs > 0) * (Xu > 0)
+            X = nonzeros.multiply(Xs) + nonzeros.multiply(Xu) if issparse(nonzeros) else nonzeros * (Xs + Xu)
 
-            if _min_cells is not None or _max_cells is not None:
-                gene_subset, _ = filter(X, min_cells=_min_cells, max_cells=_max_cells)
-                adata._inplace_subset_var(gene_subset)
+        gene_subset = np.ones(adata.n_vars, dtype=bool)
 
-            s = np.sum(~gene_subset)
-            if s > 0:
-                logg.info('Filtered out {} genes that are detected'.format(s), end=' ')
-                if _min_cells is not None or _min_counts is not None:
-                    logg.info('in less than', str(_min_cells) + ' cells (' + str(layer) + ').' if _min_counts is None
-                              else str(_min_counts) + ' counts (' + str(layer) + ').', no_indent=True)
-                if max_cells is not None or max_counts is not None:
-                    logg.info('in more than ', str(_max_cells) + ' cells(' + str(layer) + ').' if _max_counts is None
-                              else str(_max_counts) + ' counts (' + str(layer) + ').', no_indent=True)
+        if _min_counts is not None or _max_counts is not None:
+            gene_subset, _ = filter(X, min_counts=_min_counts, max_counts=_max_counts)
+            adata._inplace_subset_var(gene_subset)
+
+        if _min_cells is not None or _max_cells is not None:
+            gene_subset, _ = filter(X, min_cells=_min_cells, max_cells=_max_cells)
+            adata._inplace_subset_var(gene_subset)
+
+        s = np.sum(~gene_subset)
+        if s > 0:
+            logg.info('Filtered out {} genes that are detected'.format(s), end=' ')
+            if _min_cells is not None or _min_counts is not None:
+                logg.info('in less than', str(_min_cells) + ' cells (' + str(layer) + ').' if _min_counts is None
+                          else str(_min_counts) + ' counts (' + str(layer) + ').', no_indent=True)
+            if max_cells is not None or max_counts is not None:
+                logg.info('in more than ', str(_max_cells) + ' cells(' + str(layer) + ').' if _max_counts is None
+                          else str(_max_counts) + ' counts (' + str(layer) + ').', no_indent=True)
 
     return adata if copy else None
 
@@ -328,8 +344,9 @@ def log1p(data, copy=False):
     return adata if copy else None
 
 
-def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=None, min_cells_u=None, n_top_genes=None,
-                         flavor='seurat', log=True, copy=False):
+def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=None, min_cells_u=None,
+                         min_shared_counts=None, min_shared_cells=None, n_top_genes=None, flavor='seurat', log=True,
+                         copy=False):
     """Filtering, normalization and log transform
 
     Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
@@ -358,6 +375,10 @@ def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=Non
         Minimum number of cells expressed required for a gene to pass filtering (spliced).
     min_cells_u: `int` (default: `None`)
         Minimum number of cells expressed required for a gene to pass filtering (unspliced).
+    min_shared_counts: `int`, optional (default: `None`)
+        Minimum number of counts (in cells expressed simultaneously in unspliced and spliced) required for a gene.
+    min_shared_cells: `int`, optional (default: `None`)
+        Minimum number of cells required for a gene to be expressed simultaneously in unspliced and spliced.
     n_top_genes: `int` (default: `None`)
         Number of genes to keep.
     flavor: {'seurat', 'cell_ranger', 'svr'}, optional (default: 'seurat')
@@ -376,7 +397,8 @@ def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=Non
     if 'spliced' not in adata.layers.keys() or 'unspliced' not in adata.layers.keys():
         raise ValueError('Could not find spliced / unspliced counts.')
 
-    filter_genes(adata, min_counts=min_counts, min_counts_u=min_counts_u, min_cells=min_cells, min_cells_u=min_cells_u)
+    filter_genes(adata, min_counts=min_counts, min_counts_u=min_counts_u, min_cells=min_cells, min_cells_u=min_cells_u,
+                 min_shared_counts=min_shared_counts, min_shared_cells=min_shared_cells,)
     normalize_per_cell(adata)
     if n_top_genes is not None:
         filter_genes_dispersion(adata, n_top_genes=n_top_genes, flavor=flavor)
