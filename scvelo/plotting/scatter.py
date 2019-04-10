@@ -9,6 +9,7 @@ from matplotlib import rcParams
 import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
+from scipy.stats import gaussian_kde as kde
 
 
 @doc_params(scatter=doc_scatter)
@@ -125,6 +126,25 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth,
                                              show_assigments=vkey is not None and 'assingments' in vkey)
                     fits.append(fit)
+                if 'density' in vkey:
+                    scale_param = 10
+                    eval_pts = 50
+                    alpha_param = .3
+
+                    offset = max(y) / scale_param
+                    b_s = np.linspace(0, max(x), eval_pts)
+                    dvals_s = kde(x)(b_s)
+                    scale_s = offset / np.max(dvals_s)
+                    pl.plot(b_s, dvals_s * scale_s - offset)
+                    pl.fill_between(b_s, -offset, dvals_s * scale_s - offset, alpha=alpha_param)
+
+                    offset = max(x) / scale_param
+                    b_u = np.linspace(0, max(y), eval_pts)
+                    dvals_u = kde(y)(b_u)
+                    scale_u = offset / np.max(dvals_u)
+                    pl.plot(dvals_u * scale_u - offset, b_u)
+                    pl.fill_between(dvals_u * scale_u - offset, 0, b_u, alpha=alpha_param)
+
                 if len(fits) > 0 and legend_loc is not None:
                     pl.legend(fits, loc=legend_loc if legend_loc is not 'none' else 'lower right')
                 if use_raw and perc is not None:
