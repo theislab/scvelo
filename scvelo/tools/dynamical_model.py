@@ -10,7 +10,7 @@ from matplotlib import rcParams
 
 
 class DynamicsRecovery(BaseDynamics):
-    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, load_pars=None):
+    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, load_pars=None, fix_scaling=None):
         super(DynamicsRecovery, self).__init__(adata.n_obs)
 
         _layers = adata[:, gene].layers
@@ -26,12 +26,12 @@ class DynamicsRecovery(BaseDynamics):
         u_raw = u if use_raw else make_dense(_layers['unspliced'])
 
         # set weights for fitting (exclude dropouts and extreme outliers)
-        s_filter = np.ravel(s_raw > 0)
-        u_filter = np.ravel(u_raw > 0)
-        s_filter &= np.ravel(s < np.percentile(s[s_filter], 99))
-        u_filter &= np.ravel(u < np.percentile(u[u_filter], 99))
+        nonzero = np.ravel(s_raw > 0) & np.ravel(u_raw > 0)
+        s_filter = np.ravel(s < np.percentile(s[nonzero], 98))
+        u_filter = np.ravel(u < np.percentile(u[nonzero], 98))
 
-        self.weights = s_filter & u_filter
+        self.weights = s_filter & u_filter & nonzero
+        self.fix_scaling = fix_scaling
 
         if load_pars and 'fit_alpha' in adata.var.keys():
             self.load_pars(adata, gene)
@@ -39,11 +39,18 @@ class DynamicsRecovery(BaseDynamics):
             self.initialize()
 
     def initialize(self):
-        self.scaling = self.u.sum(0) / self.s.sum(0) * 1.3
-        u, s, w = self.u / self.scaling, self.s, self.weights
+        u, s, w = self.u, self.s, self.weights
         u_w, s_w, perc = u[w], s[w], 95
+
+        self.scaling = u[w].max(0) / s[w].max(0) * 1.3 if self.fix_scaling is None else self.fix_scaling
+        u, u_w = self.u / self.scaling, u_w / self.scaling
+
         # initialize beta and gamma from extreme quantiles of s
-        weights_s = s_w >= np.percentile(s_w, perc, axis=0)
+        if True:
+            weights_s = s_w >= np.percentile(s_w, perc, axis=0)
+        else:
+            us_norm = s_w / np.clip(np.max(s_w, axis=0), 1e-3, None) + u_w / np.clip(np.max(u_w, axis=0), 1e-3, None)
+            weights_s = us_norm >= np.percentile(us_norm, perc, axis=0)
         beta, gamma = 1, linreg(convolve(u_w, weights_s), convolve(s_w, weights_s))
 
         # initialize alpha and switching points from extreme quantiles of u
@@ -63,7 +70,7 @@ class DynamicsRecovery(BaseDynamics):
 
         self.loss = [self.get_loss()]
         self.update_state_dependent()
-        self.update_scaling()
+        # self.update_scaling()
 
     def load_pars(self, adata, gene):
         idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
@@ -86,12 +93,12 @@ class DynamicsRecovery(BaseDynamics):
             self.update_vars(r=r, method=method, clip_loss=clip_loss)
             if improved or (i % idx_update == 1) or i == max_iter - 1:
                 improved = self.update_state_dependent()
-            if i > 5:
-                loss_prev, loss = np.max(self.loss[-5:]), self.loss[-1]
-                if loss_prev - loss < loss_prev * .001:
+            if i > 10 and (i % idx_update == 1):
+                loss_prev, loss = np.max(self.loss[-10:]), self.loss[-1]
+                if loss_prev - loss < loss_prev * 1e-3:
                     improved = self.shuffle_pars()
-                    if not improved:
-                        break
+                    if not improved: break
+        self.update_state_dependent()
 
     def update_state_dependent(self):
         u, s, w = self.u / self.scaling, self.s, self.weights
@@ -110,16 +117,18 @@ class DynamicsRecovery(BaseDynamics):
         # fit alpha (generalized lin.reg)
         tau_w, o_w = (self.tau, self.o) if w is None else (self.tau[w], self.o[w])
         alpha = fit_alpha(u_w, s_w, tau_w, o_w, beta, gamma)
+        alpha = self.alpha if alpha is None else alpha
 
         alpha_vals = alpha + np.linspace(-1, 1, num=5) * alpha / 10
         for alpha in alpha_vals:
             improved_alpha = improved_alpha or self.update_loss(alpha=alpha, reassign_time=True)  # update if improved
 
         # fit scaling (generalized lin.reg)
-        t_w, tau_w, o_w = (self.t, self.tau, self.o) if w is None else (self.t[w], self.tau[w], self.o[w])
-        alpha, t0_ = self.alpha, self.t_
-        scaling = fit_scaling(u_w, t_w, t0_, alpha, beta)
-        improved_scaling = self.update_loss(scaling=scaling * self.scaling, reassign_time=True)  # update if improved
+        if self.fix_scaling is None:
+            t_w, tau_w, o_w = (self.t, self.tau, self.o) if w is None else (self.t[w], self.tau[w], self.o[w])
+            alpha, t0_ = self.alpha, self.t_
+            scaling = fit_scaling(u_w, t_w, t0_, alpha, beta)
+            improved_scaling = self.update_loss(scaling=scaling*self.scaling, reassign_time=True)  # update if improved
 
         return improved_tau or improved_alpha or improved_scaling
 
@@ -262,7 +271,7 @@ def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling
 
 
 def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, add_key='fit', t_max=None, use_raw=False,
-                     load_pars=None, return_model=False, plot_results=False, copy=False, **kwargs):
+                     fix_scaling=None, load_pars=None, return_model=False, plot_results=False, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -278,24 +287,26 @@ def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, ad
     logg.info('recovering dynamics', r=True)
 
     if var_names is 'all':
-        idx = np.ones(adata.n_vars, dtype=bool)
+        var_names = adata.var_names.tolist()
     else:
         var_names = make_unique_list(var_names, allow_array=True)
-        idx = adata.var_names.isin(var_names)
+        var_names = [name for name in var_names if name in adata.var_names]
+
     if 'velocity_genes' in var_names and 'velocity_genes' in adata.var.keys():
-        idx = idx & np.array(adata.var.velocity_genes.values)
-    idx = np.where(idx)[0]
-    var_names = adata.var_names[idx]
+        var_names = [name for name in var_names if adata[:, name].var.velocity_genes.values]
 
     alpha, beta, gamma, t_, scaling = read_pars(adata)
+    idx = []
     L, P, T = [], [], adata.layers['fit_t'] if 'fit_t' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
 
     for i, gene in enumerate(var_names):
-        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars)
+        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars, fix_scaling=fix_scaling)
         if max_iter > 1:
             dm.fit(max_iter, learning_rate, **kwargs)
 
-        ix = idx[i]
+        ix = np.where(adata.var_names == gene)[0][0]
+        idx.append(ix)
+
         alpha[ix], beta[ix], gamma[ix], t_[ix], scaling[ix] = dm.alpha, dm.beta, dm.gamma, dm.t_, dm.scaling
         T[:, ix] = dm.t
         L.append(dm.loss)
@@ -337,3 +348,58 @@ def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, ad
                     axes[i][j].set_title(name, fontsize=fontsize)
 
     return dm if return_model else adata if copy else None
+
+
+def dynamical_velocity(data, vkey='dynamical_velocity', mode=None, copy=False):
+    adata = data.copy() if copy else data
+    if 'fit_alpha' not in adata.var.keys():
+        raise ValueError('Run tl.recover_dynamics first.')
+
+    logg.info('computing dynamical velocities', r=True)
+
+    alpha = adata.var['fit_alpha'].values
+    beta = adata.var['fit_beta'].values
+    gamma = adata.var['fit_gamma'].values
+    z = adata.var['fit_scaling'].values
+
+    u, s = adata.layers['Mu'] / z, adata.layers['Ms']
+
+    if mode is 'ode':
+        t = adata.layers['fit_t']
+        t_ = adata.var['fit_t_'].values
+
+        u0 = unspliced(t_, 0, alpha, beta)
+        s0 = spliced(t_, 0, 0, alpha, beta, gamma)
+
+        tau = tau_inv(u, s, 0, 0, alpha, beta, gamma)
+        tau = np.clip(tau, 0, t_)
+
+        tau_ = tau_inv(u, s, u0, s0, 0, beta, gamma)
+        tau_ = np.clip(tau_, 0, np.max(tau_[s > 0], axis=0))
+
+        ut = unspliced(tau, 0, alpha, beta)
+        ut_ = unspliced(tau_, u0, 0, beta)
+
+        st = spliced(tau, 0, 0, alpha, beta, gamma)
+        st_ = spliced(tau_, u0, s0, 0, beta, gamma)
+
+        diffx = (u - ut) ** 2 + (s - st) ** 2
+        diffx_ = (u - ut_) ** 2 + (s - st_) ** 2
+
+        var = np.var(s, axis=0)
+        l = np.exp(- .5 * diffx / var) + .1
+        l_ = np.exp(- .5 * diffx_ / var) + .1
+        o = l / (l + l_)
+
+        ut = ut * o + ut_ * (1 - o)
+        st = st * o + st_ * (1 - o)
+    else:
+        ut, st = u, s
+
+    adata.layers['dynamical_velocity'] = ut * beta - st * gamma
+
+    logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
+    logg.hint('added \n'
+              '    \'' + vkey + '\', velocity vectors for each individual cell (adata.layers)')
+
+    return adata if copy else None
