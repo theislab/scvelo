@@ -2,7 +2,7 @@ from .. import settings
 from .. import logging as logg
 from .utils import make_dense, make_unique_list
 from .dynamical_model_utils import BaseDynamics, unspliced, spliced, vectorize, derivatives, \
-    find_swichting_time, fit_alpha, fit_scaling, linreg, convolve, assign_timepoints
+    find_swichting_time, fit_alpha, fit_scaling, linreg, convolve, assign_timepoints, tau_inv
 
 import numpy as np
 import matplotlib.pyplot as pl
@@ -393,10 +393,11 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode=None, copy=False):
 
         ut = ut * o + ut_ * (1 - o)
         st = st * o + st_ * (1 - o)
+        vt = ut * beta - st * gamma
     else:
-        ut, st = u, s
+        vt = u * beta - s * gamma
 
-    adata.layers['dynamical_velocity'] = ut * beta - st * gamma
+    adata.layers[vkey] = vt
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n'
