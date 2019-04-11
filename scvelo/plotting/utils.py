@@ -258,6 +258,23 @@ def show_linear_fit(adata, basis, vkey, xkey, linewidth=1):
     return fits
 
 
+def show_density(x, y, eval_pts=50, scale=10, alpha=.3):
+    from scipy.stats import gaussian_kde as kde
+    offset = max(y) / scale
+    b_s = np.linspace(0, max(x), eval_pts)
+    dvals_s = kde(x)(b_s)
+    scale_s = offset / np.max(dvals_s)
+    pl.plot(b_s, dvals_s * scale_s - offset)
+    pl.fill_between(b_s, -offset, dvals_s * scale_s - offset, alpha=alpha)
+
+    offset = max(x) / scale
+    b_u = np.linspace(0, max(y), eval_pts)
+    dvals_u = kde(y)(b_u)
+    scale_u = offset / np.max(dvals_u)
+    pl.plot(dvals_u * scale_u - offset, b_u)
+    pl.fill_between(dvals_u * scale_u - offset, 0, b_u, alpha=alpha)
+
+
 def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None,
          dpi=None, show=True):
     ax = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
