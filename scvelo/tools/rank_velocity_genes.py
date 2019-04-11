@@ -63,8 +63,8 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', resolution=N
     vdata.var = adata.var.copy()
 
     tmp_filter = np.ones(vdata.n_vars, dtype=bool)
-    if 'velocity_genes' in vdata.var.keys():
-        tmp_filter &= vdata.var['velocity_genes']
+    if vkey + '_genes' in vdata.var.keys():
+        tmp_filter &= vdata.var[vkey + '_genes']
 
     if 'unspliced' in vdata.layers.keys():
         n_counts = (vdata.layers['unspliced'] > 0).sum(0)
@@ -154,8 +154,8 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
     logg.info('ranking velocity genes', r=True)
 
     tmp_filter = np.ones(adata.n_vars, dtype=bool)
-    if 'velocity_genes' in adata.var.keys():
-        tmp_filter &= adata.var['velocity_genes']
+    if vkey + '_genes' in adata.var.keys():
+        tmp_filter &= adata.var[vkey + '_genes']
 
     if 'unspliced' in adata.layers.keys():
         n_counts = (adata.layers['unspliced'] > 0).sum(0)
