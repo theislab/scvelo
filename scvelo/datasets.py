@@ -145,11 +145,16 @@ def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_
     U = np.zeros(shape=(len(t), n_vars))
     S = np.zeros(shape=(len(t), n_vars))
     for i in range(n_vars):
-        tau, alpha_vec, u0_vec, s0_vec = vectorize(t, t_[i], alpha, beta, gamma, alpha_=alpha_, u0=0, s0=0)
+        alpha_i = alpha[i] if isinstance(alpha, (tuple, list, np.ndarray)) else alpha
+        beta_i = beta[i] if isinstance(beta, (tuple, list, np.ndarray)) else beta
+        gamma_i = gamma[i] if isinstance(gamma, (tuple, list, np.ndarray)) else gamma
+        tau, alpha_vec, u0_vec, s0_vec = vectorize(t, t_[i], alpha_i, beta_i, gamma_i, alpha_=alpha_, u0=0, s0=0)
+        beta_i
         if noise_model is 'gillespie':
             U[:, i], S[:, i] = simulate_gillespie(alpha_vec, beta, gamma)
         else:
-            U[:, i], S[:, i] = simulate_dynamics(tau, alpha_vec, beta, gamma, u0_vec, s0_vec, noise_model, noise_level[i])
+            U[:, i], S[:, i] = simulate_dynamics(tau, alpha_vec, beta_i, gamma_i,
+                                                 u0_vec, s0_vec, noise_model, noise_level[i])
 
     obs = {'true_t': t.round(2)}
     var = {'true_t_': t_[:n_vars],

@@ -125,7 +125,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth,
                                              show_assigments=vkey is not None and 'assignment' in vkey)
                     fits.append(fit)
-                if vkey is not None and 'density' in vkey: show_density(x, y)
+                if vkey is not None and 'density' in vkey:
+                    show_density(x, y)
 
                 if len(fits) > 0 and legend_loc is not None:
                     pl.legend(fits, loc=legend_loc if legend_loc is not 'none' else 'lower right')
