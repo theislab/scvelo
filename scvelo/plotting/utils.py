@@ -248,13 +248,31 @@ def show_linear_fit(adata, basis, vkey, xkey, linewidth=1):
     xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
     vkeys = adata.layers.keys() if vkey is None else make_unique_list(vkey)
     fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
-    for fit in fits:
+    for i, fit in enumerate(fits):
         linestyle = '--' if 'variance_' + fit in adata.layers.keys() else '-'
         gamma = adata[:, basis].var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
         beta = adata[:, basis].var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
         offset = adata[:, basis].var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
-        pl.plot(xnew, gamma / beta * xnew + offset / beta, c='k', linestyle=linestyle, linewidth=linewidth)
+        pl.plot(xnew, gamma / beta * xnew + offset / beta, linestyle=linestyle, linewidth=linewidth,
+                c='k' if i == 0 else None)
     return fits
+
+
+def show_density(x, y, eval_pts=50, scale=10, alpha=.3):
+    from scipy.stats import gaussian_kde as kde
+    offset = max(y) / scale
+    b_s = np.linspace(0, max(x), eval_pts)
+    dvals_s = kde(x)(b_s)
+    scale_s = offset / np.max(dvals_s)
+    pl.plot(b_s, dvals_s * scale_s - offset)
+    pl.fill_between(b_s, -offset, dvals_s * scale_s - offset, alpha=alpha)
+
+    offset = max(x) / scale
+    b_u = np.linspace(0, max(y), eval_pts)
+    dvals_u = kde(y)(b_u)
+    scale_u = offset / np.max(dvals_u)
+    pl.plot(dvals_u * scale_u - offset, b_u)
+    pl.fill_between(dvals_u * scale_u - offset, 0, b_u, alpha=alpha)
 
 
 def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None,

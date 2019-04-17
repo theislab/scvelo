@@ -128,8 +128,8 @@ def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mo
 
     if mode is 'soft':
         var = np.var(s)
-        l = np.exp(- .5 * diffx / var)
-        l_ = np.exp(- .5 * diffx_ / var)
+        l = np.exp(- .5 * diffx / var) + .1
+        l_ = np.exp(- .5 * diffx_ / var) + .1
         o = l / (l + l_)
 
     return t, tau, o
@@ -281,7 +281,7 @@ class BaseDynamics:
 
         zeros, zeros3 = np.zeros(n_obs), np.zeros((3, 1))
         self.u0, self.s0, self.u0_, self.s0_, self.t_, self.scaling = None, None, None, None, None, None
-        self.ut, self.st, self.t, self.tau, self.o, self.weights = zeros, zeros, zeros, zeros, zeros, zeros
+        self.t, self.tau, self.o, self.weights = zeros, zeros, zeros, zeros
 
         self.alpha, self.beta, self.gamma, self.alpha_, self.pars = None, None, None, None, None
         self.dpars, self.m_dpars, self.v_dpars, self.loss = zeros3, zeros3, zeros3, []
@@ -425,10 +425,10 @@ class BaseDynamics:
                 multi += 1
 
         if multi == 0:
-            u, s = self.u, self.s
             t, t_, alpha, beta, gamma, scaling = self.get_vals(t, t_, alpha, beta, gamma, scaling, reassign_time)
+            u, s = self.u, self.s
             ut = self.get_ut(t, t_, alpha, beta, gamma) * scaling
-            st = self.get_st(t, t_, alpha, beta, gamma) * scaling
+            st = self.get_st(t, t_, alpha, beta, gamma)
 
             idx_sorted = np.argsort(t)
             ut, st, t = ut[idx_sorted], st[idx_sorted], t[idx_sorted]

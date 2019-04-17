@@ -31,7 +31,7 @@ def toy_data(n_obs):
     return adata
 
 
-def dentategyrus():
+def dentategyrus(adjusted=True):
     """Dentate Gyrus dataset from Hochgerner et al. (2018).
 
     Dentate gyrus is part of the hippocampus involved in learning, episodic memory formation and spatial coding.
@@ -42,18 +42,25 @@ def dentategyrus():
     -------
     Returns `adata` object
     """
-    filename = 'data/DentateGyrus/10X43_1.loom'
-    url = 'http://pklab.med.harvard.edu/velocyto/DG1/10X43_1.loom'
-    adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
-    cleanup(adata, clean='all', keep={'spliced', 'unspliced', 'ambiguous'})
 
-    url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_clusters.npy'
-    url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_umap.npy'
+    if adjusted:
+        filename = 'data/DentateGyrus/10X43_1.h5ad'
+        url = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/10X43_1.h5ad'
+        adata = read(filename, backup_url=url, sparse=True, cache=True)
 
-    adata.obs['clusters'] = load('./data/DentateGyrus/DG_clusters.npy', url_louvain)
-    adata.obsm['X_umap'] = load('./data/DentateGyrus/DG_umap.npy', url_umap)
+    else:
+        filename = 'data/DentateGyrus/10X43_1.loom'
+        url = 'http://pklab.med.harvard.edu/velocyto/DG1/10X43_1.loom'
+        adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
+        cleanup(adata, clean='all', keep={'spliced', 'unspliced', 'ambiguous'})
 
-    adata.obs['clusters'] = pd.Categorical(adata.obs['clusters'])
+        url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_clusters.npy'
+        url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_umap.npy'
+
+        adata.obs['clusters'] = load('./data/DentateGyrus/DG_clusters.npy', url_louvain)
+        adata.obsm['X_umap'] = load('./data/DentateGyrus/DG_umap.npy', url_umap)
+
+        adata.obs['clusters'] = pd.Categorical(adata.obs['clusters'])
 
     return adata
 
@@ -145,11 +152,16 @@ def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_
     U = np.zeros(shape=(len(t), n_vars))
     S = np.zeros(shape=(len(t), n_vars))
     for i in range(n_vars):
-        tau, alpha_vec, u0_vec, s0_vec = vectorize(t, t_[i], alpha, beta, gamma, alpha_=alpha_, u0=0, s0=0)
+        alpha_i = alpha[i] if isinstance(alpha, (tuple, list, np.ndarray)) else alpha
+        beta_i = beta[i] if isinstance(beta, (tuple, list, np.ndarray)) else beta
+        gamma_i = gamma[i] if isinstance(gamma, (tuple, list, np.ndarray)) else gamma
+        tau, alpha_vec, u0_vec, s0_vec = vectorize(t, t_[i], alpha_i, beta_i, gamma_i, alpha_=alpha_, u0=0, s0=0)
+        beta_i
         if noise_model is 'gillespie':
             U[:, i], S[:, i] = simulate_gillespie(alpha_vec, beta, gamma)
         else:
-            U[:, i], S[:, i] = simulate_dynamics(tau, alpha_vec, beta, gamma, u0_vec, s0_vec, noise_model, noise_level[i])
+            U[:, i], S[:, i] = simulate_dynamics(tau, alpha_vec, beta_i, gamma_i,
+                                                 u0_vec, s0_vec, noise_model, noise_level[i])
 
     obs = {'true_t': t.round(2)}
     var = {'true_t_': t_[:n_vars],

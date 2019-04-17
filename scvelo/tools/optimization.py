@@ -5,10 +5,12 @@ import numpy as np
 import warnings
 
 
-def get_weight(x, y, perc):
+def get_weight(x, y=None, perc=95):
     if issparse(x): x = x.A
-    if issparse(y): y = y.A
-    xy_norm = x / np.clip(x.max(0), 1e-3, None) + y / np.clip(y.max(0), 1e-3, None)
+    xy_norm = x / np.clip(np.max(x, axis=0), 1e-3, None)
+    if y is not None:
+        if issparse(y): y = y.A
+        xy_norm += y / np.clip(np.max(y, axis=0), 1e-3, None)
     if isinstance(perc, int):
         weights = xy_norm >= np.percentile(xy_norm, perc, axis=0)
     else:

@@ -30,8 +30,8 @@ class VelocityGraph:
     def __init__(self, adata, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, sqrt_transform=False,
                  n_recurse_neighbors=None, random_neighbors_at_max=None, approx=False, report=False):
 
-        subset = np.array(adata.var.velocity_genes.values, dtype=bool) \
-            if 'velocity_genes' in adata.var.keys() else np.ones(adata.n_vars, bool)
+        subset = np.array(adata.var[vkey + '_genes'].values, dtype=bool) \
+            if vkey + '_genes' in adata.var.keys() else np.ones(adata.n_vars, bool)
         X = adata.layers[xkey].A[:, subset] if issparse(adata.layers[xkey]) else adata.layers[xkey][:, subset]
         V = adata.layers[vkey].A[:, subset] if issparse(adata.layers[vkey]) else adata.layers[vkey][:, subset]
 

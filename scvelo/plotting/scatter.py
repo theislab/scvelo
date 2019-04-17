@@ -2,14 +2,13 @@ from .. import settings
 from .. import AnnData
 from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
     default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
-    show_linear_fit
+    show_linear_fit, show_density
 from .docs import doc_scatter, doc_params
 
 from matplotlib import rcParams
 import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
-from scipy.stats import gaussian_kde as kde
 
 
 @doc_params(scatter=doc_scatter)
@@ -51,8 +50,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         for i, gs in enumerate(
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):
             if i < len(multikey):
-                scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel, color_map=color_map,
-                        colorbar=colorbar, perc=perc, frameon=frameon, ax=pl.subplot(gs), zorder=zorder,
+                scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel, vkey=vkey,
+                        color_map=color_map, colorbar=colorbar, perc=perc, frameon=frameon, ax=pl.subplot(gs), zorder=zorder,
                         color=colors[i] if len(colors) > 1 else color,
                         layer=layers[i] if len(layers) > 1 else layer,
                         basis=bases[i] if len(bases) > 1 else basis,
@@ -124,26 +123,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     fits.append(fit)
                 if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
                     fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth,
-                                             show_assigments=vkey is not None and 'assingments' in vkey)
+                                             show_assigments=vkey is not None and 'assignment' in vkey)
                     fits.append(fit)
-                if 'density' in vkey:
-                    scale_param = 10
-                    eval_pts = 50
-                    alpha_param = .3
-
-                    offset = max(y) / scale_param
-                    b_s = np.linspace(0, max(x), eval_pts)
-                    dvals_s = kde(x)(b_s)
-                    scale_s = offset / np.max(dvals_s)
-                    pl.plot(b_s, dvals_s * scale_s - offset)
-                    pl.fill_between(b_s, -offset, dvals_s * scale_s - offset, alpha=alpha_param)
-
-                    offset = max(x) / scale_param
-                    b_u = np.linspace(0, max(y), eval_pts)
-                    dvals_u = kde(y)(b_u)
-                    scale_u = offset / np.max(dvals_u)
-                    pl.plot(dvals_u * scale_u - offset, b_u)
-                    pl.fill_between(dvals_u * scale_u - offset, 0, b_u, alpha=alpha_param)
+                if vkey is not None and 'density' in vkey:
+                    show_density(x, y)
 
                 if len(fits) > 0 and legend_loc is not None:
                     pl.legend(fits, loc=legend_loc if legend_loc is not 'none' else 'lower right')
