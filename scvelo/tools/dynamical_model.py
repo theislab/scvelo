@@ -42,11 +42,14 @@ class DynamicsRecovery(BaseDynamics):
         u, s, w = self.u, self.s, self.weights
         u_w, s_w, perc = u[w], s[w], 95
 
-        self.scaling = u[w].max(0) / s[w].max(0) * 1.3 if self.fix_scaling is None else self.fix_scaling
+        if self.fix_scaling is None or self.fix_scaling is False:
+            self.scaling = u[w].max(0) / s[w].max(0) * 1.3
+        else:
+            self.scaling = self.fix_scaling
         u, u_w = self.u / self.scaling, u_w / self.scaling
 
         # initialize beta and gamma from extreme quantiles of s
-        if True:
+        if False:
             weights_s = s_w >= np.percentile(s_w, perc, axis=0)
         else:
             us_norm = s_w / np.clip(np.max(s_w, axis=0), 1e-3, None) + u_w / np.clip(np.max(u_w, axis=0), 1e-3, None)
@@ -271,7 +274,7 @@ def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling
 
 
 def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, add_key='fit', t_max=None, use_raw=False,
-                     fix_scaling=None, load_pars=None, return_model=False, plot_results=False, copy=False, **kwargs):
+                     min_loss=True, fix_scaling=None, load_pars=None, return_model=False, plot_results=False, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -307,13 +310,14 @@ def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, ad
         ix = np.where(adata.var_names == gene)[0][0]
         idx.append(ix)
 
-        alpha[ix], beta[ix], gamma[ix], t_[ix], scaling[ix] = dm.alpha, dm.beta, dm.gamma, dm.t_, dm.scaling
+        alpha[ix], beta[ix], gamma[ix], t_[ix], scaling[ix] = dm.pars[:, np.argmin(dm.loss) if min_loss else -1]
         T[:, ix] = dm.t
         L.append(dm.loss)
         if plot_results and i < 4:
             P.append(dm.pars)
 
-    m = t_max / T.max(0) if t_max is not None else np.ones(adata.n_vars)
+    T_max = np.percentile(T, 95, axis=0) - np.percentile(T, 5, axis=0)
+    m = t_max / T_max if t_max is not None else np.ones(adata.n_vars)
     alpha, beta, gamma, T, t_ = alpha / m, beta / m, gamma / m, T * m, t_ * m
 
     write_pars(adata, [alpha, beta, gamma, t_, scaling])
@@ -362,12 +366,12 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode=None, copy=False):
     gamma = adata.var['fit_gamma'].values
     z = adata.var['fit_scaling'].values
 
+    t = adata.layers['fit_t']
+    t_ = adata.var['fit_t_'].values
+
     u, s = adata.layers['Mu'] / z, adata.layers['Ms']
 
-    if mode is 'ode':
-        t = adata.layers['fit_t']
-        t_ = adata.var['fit_t_'].values
-
+    if mode is 'soft':
         u0 = unspliced(t_, 0, alpha, beta)
         s0 = spliced(t_, 0, 0, alpha, beta, gamma)
 
@@ -391,13 +395,17 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode=None, copy=False):
         l_ = np.exp(- .5 * diffx_ / var) + .1
         o = l / (l + l_)
 
-        ut = ut * o + ut_ * (1 - o)
-        st = st * o + st_ * (1 - o)
-        vt = ut * beta - st * gamma
-    else:
-        vt = u * beta - s * gamma
+        u = ut * o + ut_ * (1 - o)
+        s = st * o + st_ * (1 - o)
 
-    adata.layers[vkey] = vt
+    elif mode is 'hard':
+        o = np.array(t <= t_, dtype=int)
+        tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma,)
+
+        u = unspliced(tau, u0, alpha, beta)
+        s = spliced(tau, s0, u0, alpha, beta, gamma)
+
+    adata.layers[vkey] = u * beta - s * gamma
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n'
