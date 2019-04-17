@@ -31,7 +31,7 @@ def toy_data(n_obs):
     return adata
 
 
-def dentategyrus():
+def dentategyrus(adjusted=True):
     """Dentate Gyrus dataset from Hochgerner et al. (2018).
 
     Dentate gyrus is part of the hippocampus involved in learning, episodic memory formation and spatial coding.
@@ -42,18 +42,25 @@ def dentategyrus():
     -------
     Returns `adata` object
     """
-    filename = 'data/DentateGyrus/10X43_1.loom'
-    url = 'http://pklab.med.harvard.edu/velocyto/DG1/10X43_1.loom'
-    adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
-    cleanup(adata, clean='all', keep={'spliced', 'unspliced', 'ambiguous'})
 
-    url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_clusters.npy'
-    url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_umap.npy'
+    if adjusted:
+        filename = 'data/DentateGyrus/10X43_1.h5ad'
+        url = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/10X43_1.h5ad'
+        adata = read(filename, backup_url=url, sparse=True, cache=True)
 
-    adata.obs['clusters'] = load('./data/DentateGyrus/DG_clusters.npy', url_louvain)
-    adata.obsm['X_umap'] = load('./data/DentateGyrus/DG_umap.npy', url_umap)
+    else:
+        filename = 'data/DentateGyrus/10X43_1.loom'
+        url = 'http://pklab.med.harvard.edu/velocyto/DG1/10X43_1.loom'
+        adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
+        cleanup(adata, clean='all', keep={'spliced', 'unspliced', 'ambiguous'})
 
-    adata.obs['clusters'] = pd.Categorical(adata.obs['clusters'])
+        url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_clusters.npy'
+        url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_umap.npy'
+
+        adata.obs['clusters'] = load('./data/DentateGyrus/DG_clusters.npy', url_louvain)
+        adata.obsm['X_umap'] = load('./data/DentateGyrus/DG_umap.npy', url_umap)
+
+        adata.obs['clusters'] = pd.Categorical(adata.obs['clusters'])
 
     return adata
 
