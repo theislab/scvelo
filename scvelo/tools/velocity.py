@@ -98,6 +98,7 @@ def write_pars(adata, vkey, pars, pars_names, add_key=None):
     for i, key in enumerate(pars_names):
         key = vkey + key + '_' + add_key if add_key is not None else vkey + key
         if len(set(pars[i])) > 1: adata.var[key] = pars[i]
+        elif key in adata.var.keys(): del adata.var[key]
 
 
 def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False,
