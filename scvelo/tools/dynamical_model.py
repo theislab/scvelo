@@ -4,6 +4,7 @@ from .utils import make_dense, make_unique_list
 from .dynamical_model_utils import BaseDynamics, unspliced, spliced, vectorize, derivatives, \
     find_swichting_time, fit_alpha, fit_scaling, linreg, convolve, assign_timepoints, tau_inv
 
+import warnings
 import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
@@ -120,7 +121,7 @@ class DynamicsRecovery(BaseDynamics):
         # fit alpha (generalized lin.reg)
         tau_w, o_w = (self.tau, self.o) if w is None else (self.tau[w], self.o[w])
         alpha = fit_alpha(u_w, s_w, tau_w, o_w, beta, gamma)
-        alpha = self.alpha if alpha is None else alpha
+        alpha = self.alpha if alpha is None or alpha != alpha else alpha
 
         alpha_vals = alpha + np.linspace(-1, 1, num=5) * alpha / 10
         for alpha in alpha_vals:
@@ -183,14 +184,23 @@ class DynamicsRecovery(BaseDynamics):
             v_dpars /= (1 - b2 ** t)
 
             # Adam parameter update
-            alpha -= r * m_dpars[0] / (np.sqrt(v_dpars[0]) + eps)
-            beta -= r * m_dpars[1] / (np.sqrt(v_dpars[1]) + eps)
-            gamma -= r * m_dpars[2] / (np.sqrt(v_dpars[2]) + eps)
+            # Parameters are restricted to be positive
+            n_alpha = alpha - r * m_dpars[0] / (np.sqrt(v_dpars[0]) + eps)
+            alpha = n_alpha if n_alpha > 0 else alpha
+            n_beta = beta - r * m_dpars[1] / (np.sqrt(v_dpars[1]) + eps)
+            beta = n_beta if n_beta > 0 else beta
+            n_gamma = gamma - r * m_dpars[2] / (np.sqrt(v_dpars[2]) + eps)
+            gamma = n_gamma if n_gamma > 0 else gamma
 
         else:
-            alpha -= r * dalpha
-            beta -= r * dbeta
-            gamma -= r * dgamma
+            # Parameters are restricted to be positive
+            n_alpha = alpha - r * dalpha
+            alpha = n_alpha if n_alpha > 0 else alpha
+            n_beta = beta - r * dbeta
+            beta = n_beta if n_beta > 0 else beta
+            n_gamma = gamma - r * dgamma
+            gamma = n_gamma if n_gamma > 0 else gamma
+
             # tau -= r * dtau
             # t_ -= r * dt_
             # t_ = np.max(self.tau * self.o)
@@ -316,7 +326,9 @@ def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, ad
         if plot_results and i < 4:
             P.append(dm.pars)
 
-    T_max = np.percentile(T, 95, axis=0) - np.percentile(T, 5, axis=0)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        T_max = np.nanpercentile(T, 95, axis=0) - np.nanpercentile(T, 5, axis=0)
     m = t_max / T_max if t_max is not None else np.ones(adata.n_vars)
     alpha, beta, gamma, T, t_ = alpha / m, beta / m, gamma / m, T * m, t_ * m
 
