@@ -52,19 +52,33 @@ def spliced(tau, s0, u0, alpha, beta, gamma):
     return s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
 
 
+def unspliced_spliced(tau, s0, u0, alpha, beta, gamma):
+    c = (alpha - u0 * beta) * inv(gamma - beta)
+    expu, exps = exp(-beta * tau), exp(-gamma * tau)
+    u = u0 * expu + alpha / beta * (1 - expu)
+    s = s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
+    return u, s
+
+
 def tau_u(u, u0, alpha, beta):
     u_ratio = (u - alpha / beta) / (u0 - alpha / beta)
     return - 1 / beta * log(u_ratio)
 
 
-def tau_inv(u, s, u0, s0, alpha, beta, gamma):
-    beta_ = beta * inv(gamma - beta)
-    ceta_ = alpha / gamma - beta_ * (alpha / beta)
+def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
+    if s is None:
+        c0 = u0 - alpha / beta
+        cu = u - alpha / beta
 
-    c0 = s0 - beta_ * u0 - ceta_
-    cs = s - beta_ * u - ceta_
+        tau = - 1 / beta * log(cu / c0)
+    else:
+        beta_ = beta * inv(gamma - beta)
+        ceta_ = alpha / gamma - beta_ * (alpha / beta)
 
-    tau = - 1 / gamma * log(cs / c0)
+        c0 = s0 - beta_ * u0 - ceta_
+        cs = s - beta_ * u - ceta_
+
+        tau = - 1 / gamma * log(cs / c0)
     return tau
 
 
@@ -84,6 +98,101 @@ def find_swichting_time(u, s, tau, o, alpha, beta, gamma):
     else:
         t0_ = np.max(tau)
     return t0_
+
+
+def compute_state_likelihoods(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, adjust_variance=False,
+                              normalized=True, mode='hard'):
+    def nanvar(x, axis=0):
+        return np.nanvar(x, axis) if np.isnan(x).any() else np.var(x, axis)
+
+    if t0_ is None:
+        t0_ = tau_inv(u0_, s0_, 0, 0, alpha, beta, gamma)
+    if u0_ is None or s0_ is None:
+        u0_, s0_ = (unspliced(t0_, 0, alpha, beta), spliced(t0_, 0, 0, alpha, beta, gamma))
+
+    # compute inverse timepoints
+    if mode is 'projection':
+        t0 = tau_u(np.min(u[s > 0]), u0_, 0, beta)
+        tpoints = np.linspace(0, t0_, num=200)
+        tpoints_ = np.linspace(0, t0, num=200)[1:]
+
+        x_obs = np.vstack([u, s]).T
+        xt = np.vstack([unspliced(tpoints, 0, alpha, beta), spliced(tpoints, 0, 0, alpha, beta, gamma)]).T
+        xt_ = np.vstack([unspliced(tpoints_, u0_, 0, beta), spliced(tpoints_, s0_, u0_, 0, beta, gamma)]).T
+
+        # assign time points (oth. projection onto 'on' and 'off' curve)
+        tau, tau_ = np.zeros(len(u)), np.zeros(len(u))
+        for i, xi in enumerate(x_obs):
+            diffx, diffx_ = ((xt - xi)**2).sum(1), ((xt_ - xi)**2).sum(1)
+            tau[i] = tpoints[np.argmin(diffx)]
+            tau_[i] = tpoints_[np.argmin(diffx_)]
+    else:
+        tau = tau_inv(u, s, 0, 0, alpha, beta, gamma)
+        tau = np.clip(tau, 0, t0_)
+
+        tau_ = tau_inv(u, s, u0_, s0_, 0, beta, gamma)
+        tau_ = np.clip(tau_, 0, np.max(tau_[s > 0]))
+
+    # compute distances from states (induction state, repression state, steady state)
+    distu, distu_,  = u - unspliced(tau, 0, alpha, beta), u - unspliced(tau_, u0_, 0, beta)
+    dists, dists_,  = s - spliced(tau, 0, 0, alpha, beta, gamma), s - spliced(tau_, u0_, s0_, 0, beta, gamma)
+
+    distu_steady, distu_steady_ = u - alpha / beta, u
+    dists_steady, dists_steady_ = s - alpha / gamma, s
+
+    # compute variances of distances
+    varu, varu_ = nanvar(distu), nanvar(distu_)
+    vars, vars_ = nanvar(dists), nanvar(dists_)
+
+    varu_steady, varu_steady_ = nanvar(distu_steady), nanvar(distu_steady_)
+    vars_steady, vars_steady_ = nanvar(dists_steady), nanvar(dists_steady_)
+
+    # compute variance weighted distances
+    distx = distu ** 2 / varu + dists ** 2 / vars
+    distx_ = distu_ ** 2 / varu_ + dists_ ** 2 / vars_
+    distx_steady = distu_steady ** 2 / varu_steady + dists_steady ** 2 / vars_steady
+    distx_steady_ = distu_steady_ ** 2 / varu_steady_ + dists_steady_ ** 2 / vars_steady_
+
+    if adjust_variance:  # recompute variance weighted distances
+        id_state = np.argmin([distx_, distx, distx_steady_, distx_steady], axis=0)
+
+        on, off, steady, steady_  = (id_state == 1), (id_state == 0), (id_state == 3), (id_state == 2)
+        on, off, steady, steady_ = on / on, off / off, steady / steady, steady_ / steady_
+
+        varu, varu_ = np.nanvar(distu * on, 0), np.nanvar(distu_ * off, 0)
+        vars, vars_ = np.nanvar(dists * on, 0), np.nanvar(dists_ * off, 0)
+
+        varu_steady, varu_steady_ = np.nanvar(distu_steady * steady, 0), np.nanvar(distu_steady_ * steady_, 0)
+        vars_steady, vars_steady_ = np.nanvar(dists_steady * steady, 0), np.nanvar(dists_steady_ * steady_, 0)
+
+        distx = distu ** 2 / varu + dists ** 2 / vars
+        distx_ = distu_ ** 2 / varu_ + dists_ ** 2 / vars_
+        distx_steady = distu_steady ** 2 / varu_steady + dists_steady ** 2 / vars_steady
+        distx_steady_ = distu_steady_ ** 2 / varu_steady_ + dists_steady_ ** 2 / vars_steady_
+
+    if mode is 'soft':
+        div = 1 / (2 * np.pi)
+        varx = np.sqrt(varu * vars)
+        varx_ = np.sqrt(varu_ * vars_)
+        varx_steady = np.sqrt(varu_steady * vars_steady)
+        varx_steady_ = np.sqrt(varu_steady_ * vars_steady_)
+
+        l = div / varx * np.exp(-.5 * distx)
+        l_ = div / varx_ * np.exp(-.5 * distx_)
+        l_steady = div / varx_steady * np.exp(-.5 * distx_steady)
+        l_steady_ = div / varx_steady_ * np.exp(-.5 * distx_steady_)
+
+        if normalized:
+            l, l_, l_steady, l_steady_ = np.array([l, l_, l_steady, l_steady_]) / (l + l_ + l_steady + l_steady_)
+
+        return l, l_, l_steady, l_steady_
+
+    else:
+        o = 1 if mode is 'on' else 0 if mode is 'off' else np.argmin([distx_, distx, distx_steady_, distx_steady], axis=0)
+        tau = tau * (o == 1) + tau_ * (1 - o)
+        t = tau * o + (tau_ + t0_) * (1 - o)
+
+        return t, tau, o
 
 
 def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mode='hard'):
@@ -116,13 +225,15 @@ def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mo
         tau_ = tau_inv(u, s, u0_, s0_, 0, beta, gamma)
         tau_ = np.clip(tau_, 0, np.max(tau_[s > 0]))
 
+    # l, l_, l_steady, l_steady_ = compute_state_likelihoods(u, s, alpha, beta, gamma, t0_, u0_, s0_)
+
     xt = np.vstack([unspliced(tau, 0, alpha, beta), spliced(tau, 0, 0, alpha, beta, gamma)]).T
     xt_ = np.vstack([unspliced(tau_, u0_, 0, beta), spliced(tau_, s0_, u0_, 0, beta, gamma)]).T
 
     diffx = ((xt - x_obs)**2).sum(1)
     diffx_ = ((xt_ - x_obs)**2).sum(1)
 
-    o = 1 if mode is 'on' else 0 if mode is 'off' else 1 - np.argmin([diffx, diffx_], axis=0)
+    o = 1 if mode is 'on' else 0 if mode is 'off' else np.argmax([diffx_, diffx], axis=0)
     tau = tau * o + tau_ * (1 - o)
     t = tau * o + (tau_ + t0_) * (1 - o)
 
@@ -369,6 +480,7 @@ class BaseDynamics:
 
         udiff = np.array(unspliced(tau, u0, alpha, beta) * scaling - u)
         sdiff = np.array(spliced(tau, s0, u0, alpha, beta, gamma) - s)
+
         loss = np.sum(udiff ** 2 + sdiff ** 2) / len(udiff)
         return loss
 

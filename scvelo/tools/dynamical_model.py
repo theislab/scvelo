@@ -301,12 +301,11 @@ def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, ad
 
     if var_names is 'all':
         var_names = adata.var_names.tolist()
+        if 'velocity_genes' in var_names and 'velocity_genes' in adata.var.keys():
+            var_names = [name for name in var_names if adata[:, name].var.velocity_genes.values]
     else:
         var_names = make_unique_list(var_names, allow_array=True)
         var_names = [name for name in var_names if name in adata.var_names]
-
-    if 'velocity_genes' in var_names and 'velocity_genes' in adata.var.keys():
-        var_names = [name for name in var_names if adata[:, name].var.velocity_genes.values]
 
     alpha, beta, gamma, t_, scaling = read_pars(adata)
     idx = []
@@ -366,7 +365,7 @@ def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, ad
     return dm if return_model else adata if copy else None
 
 
-def dynamical_velocity(data, vkey='dynamical_velocity', mode=None, copy=False):
+def dynamical_velocity(data, vkey='dynamical_velocity', mode='soft', perc_ss=None, use_raw=False, copy=False):
     adata = data.copy() if copy else data
     if 'fit_alpha' not in adata.var.keys():
         raise ValueError('Run tl.recover_dynamics first.')
@@ -381,7 +380,12 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode=None, copy=False):
     t = adata.layers['fit_t']
     t_ = adata.var['fit_t_'].values
 
-    u, s = adata.layers['Mu'] / z, adata.layers['Ms']
+    if use_raw or 'Ms' not in adata.layers.keys():
+        u = adata.layers['unspliced'] / z
+        s = adata.layers['spliced']
+    else:
+        u = adata.layers['Mu'] / z
+        s = adata.layers['Ms']
 
     if mode is 'soft':
         u0 = unspliced(t_, 0, alpha, beta)
@@ -399,16 +403,53 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode=None, copy=False):
         st = spliced(tau, 0, 0, alpha, beta, gamma)
         st_ = spliced(tau_, u0, s0, 0, beta, gamma)
 
-        diffx = (u - ut) ** 2 + (s - st) ** 2
-        diffx_ = (u - ut_) ** 2 + (s - st_) ** 2
+        ut_ss = alpha / beta
+        st_ss = alpha / gamma
 
-        var = np.var(s, axis=0)
-        l = np.exp(- .5 * diffx / var) + .1
-        l_ = np.exp(- .5 * diffx_ / var) + .1
-        o = l / (l + l_)
+        var_ut = np.var(u - ut, 0)
+        var_ut_ = np.var(u - ut_, 0)
 
-        u = ut * o + ut_ * (1 - o)
-        s = st * o + st_ * (1 - o)
+        var_st = np.var(s - st, 0)
+        var_st_ = np.var(s - st_, 0)
+
+        if perc_ss is None:
+            var_ut_ss = np.var(u, 0)
+            var_st_ss = np.var(s, 0)
+
+            var_ut_ss_ = np.var(u - ut_ss, 0)
+            var_st_ss_ = np.var(s - st_ss, 0)
+
+        else:
+            from .optimization import get_weight
+            w = ~ get_weight(u, s, perc_ss, 'l2')
+            w_ = ~ get_weight(ut_ss - u, st_ss - s, perc_ss, 'l2')
+            w = w / w
+            w_ = w_ / w_
+
+            var_ut_ss = np.nanvar(w * u, 0)
+            var_st_ss = np.nanvar(w * s, 0)
+
+            var_ut_ss_ = np.nanvar(w_ * (u - ut_ss), 0)
+            var_st_ss_ = np.nanvar(w_ * (s - st_ss), 0)
+
+        expx = np.exp(- .5 * ((u - ut) ** 2 / var_ut + (s - st) ** 2 / var_st))
+        expx_ = np.exp(- .5 * ((u - ut_) ** 2 / var_ut_ + (s - st_) ** 2 / var_st_))
+        expx_ss = np.exp(- .5 * (u ** 2 / var_ut_ss + s ** 2 / var_st_ss))
+        expx_ss_ = np.exp(- .5 * ((u - ut_ss) ** 2 / var_ut_ss_ + (s - st_ss) ** 2 / var_st_ss_))
+
+        div = 1 / (2 * np.pi)
+        l = div / np.sqrt(var_ut * var_st) * expx
+        l_ = div / np.sqrt(var_ut_ * var_st_) * expx_
+        l_ss = div / np.sqrt(var_ut_ss * var_st_ss) * expx_ss
+        l_ss_ = div / np.sqrt(var_ut_ss_ * var_st_ss_) * expx_ss_
+        l_sum = l + l_ + l_ss + l_ss_
+
+        o = l / l_sum
+        o_ = l_ / l_sum
+
+        u = ut * o + ut_ * o_
+        s = st * o + st_ * o_
+        alpha = alpha * o
 
     elif mode is 'hard':
         o = np.array(t <= t_, dtype=int)
@@ -418,6 +459,7 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode=None, copy=False):
         s = spliced(tau, s0, u0, alpha, beta, gamma)
 
     adata.layers[vkey] = u * beta - s * gamma
+    adata.layers[vkey + '_u'] = alpha - beta * u
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n'
