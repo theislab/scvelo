@@ -320,6 +320,42 @@ def plot(arrays, normalize=False, colors=None, labels=None, xlabel=None, ylabel=
         pl.show()
 
 
+def fraction_timeseries(adata, xkey='clusters', tkey='dpt_pseudotime', bins=30, legend_loc='best', title=None,
+                        fontsize=None, ax=None, figsize=None, dpi=None, xlabel=None, ylabel=None, show=True):
+    t = np.linspace(0, 1 + 1 / bins, bins)
+    types = np.unique(adata.obs[xkey].values)
+
+    y = []
+    for i in range(bins - 1):
+        mask = np.all([adata.obs[tkey].values <= t[i + 1], adata.obs[tkey].values > t[i]], axis=0)
+        x = list(adata[mask].obs[xkey].values)
+        y.append([])
+        for name in types:
+            occur = x.count(name)
+            y[-1].append(occur)
+        y[-1] /= np.sum(y[-1])
+    y = np.array(y).T
+
+    ax = pl.figure(figsize=figsize, dpi=dpi) if ax is None else ax
+
+    pl.stackplot(t[:-1], y, baseline='zero', labels=types,
+                 colors=adata.uns['clusters_colors'] if 'clusters_colors' in adata.uns.keys() else None,
+                 edgecolor='white')
+
+    pl.legend(types, loc=legend_loc)
+    if title is not None:
+        pl.title(title, fontsize=fontsize)
+    pl.xlabel(tkey if xlabel is None else xlabel, fontsize=fontsize)
+    pl.ylabel(xkey + ' fractions' if ylabel is None else ylabel, fontsize=fontsize)
+    pl.xlim(adata.obs[tkey].values.min(), adata.obs[tkey].values.max())
+    pl.ylim(0, 1)
+
+    if not show:
+        return ax
+    else:
+        pl.show()
+
+
 # def phase(adata, var=None, x=None, y=None, color='louvain', fits='all', xlabel='spliced', ylabel='unspliced',
 #           fontsize=None, show=True, ax=None, **kwargs):
 #     if isinstance(var, str) and (var in adata.var_names):
