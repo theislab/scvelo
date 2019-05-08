@@ -16,7 +16,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             colorbar=True, palette=None, size=None, alpha=None, linewidth=None, perc=None, sort_order=True, groups=None,
             components=None, projection='2d', legend_loc='none', legend_fontsize=None, legend_fontweight=None,
             right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
-            dpi=None, frameon=None, show=True, save=None, ax=None, zorder=None, ncols=None, **kwargs):
+            dpi=None, frameon=None, density=None, linear_fit=None, show=True, save=None, ax=None, zorder=None,
+            ncols=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -51,7 +52,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):
             if i < len(multikey):
                 scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel, vkey=vkey,
-                        color_map=color_map, colorbar=colorbar, perc=perc, frameon=frameon, ax=pl.subplot(gs), zorder=zorder,
+                        color_map=color_map, colorbar=colorbar, perc=perc, frameon=frameon, zorder=zorder,
+                        fontsize=fontsize, density=density, linear_fit=linear_fit, ax=pl.subplot(gs),
                         color=colors[i] if len(colors) > 1 else color,
                         layer=layers[i] if len(layers) > 1 else layer,
                         basis=bases[i] if len(bases) > 1 else basis,
@@ -102,13 +104,20 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             else:
                 c = interpret_colorkey(adata, color, layer, perc)
 
-            if layer is not None and 'velocity' in layer and isinstance(color, str) and color in adata.var_names:
-                ub = np.percentile(np.abs(c), 98)
-                kwargs.update({"vmin": -ub, "vmax": ub})
-            if layer is not None and ('spliced' in layer or 'Ms' in layer or 'Mu' in layer) \
+            if layer is not None and any(l in layer for l in ['spliced', 'Ms', 'Mu', 'velocity']) \
                     and isinstance(color, str) and color in adata.var_names:
-                ub = np.percentile(c, 98)
-                kwargs.update({"vmax": ub})
+                ub = np.percentile(np.abs(c), 98)
+                if "vmax" not in kwargs:
+                    kwargs.update({"vmax": ub})
+                if "vmin" not in kwargs and 'velocity' in layer:
+                    kwargs.update({"vmin": -ub})
+
+            if "vmid" in kwargs:
+                if not isinstance(c, str) and not isinstance(c[0], str):
+                    vmid, lb, ub = kwargs["vmid"], np.min(c), np.max(c)
+                    crange = min(np.abs(vmid - lb), np.abs(ub - vmid))
+                    kwargs.update({"vmin": vmid - crange, "vmax": vmid + crange})
+                kwargs.pop("vmid")
 
             if groups is not None or np.any(pd.isnull(c)):
                 zorder = 0 if zorder is None else zorder
@@ -125,14 +134,21 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth,
                                              show_assigments=vkey is not None and 'assignment' in vkey)
                     fits.append(fit)
-                if vkey is not None and 'density' in vkey:
-                    show_density(x, y)
-
                 if len(fits) > 0 and legend_loc is not None:
-                    pl.legend(fits, loc=legend_loc if legend_loc is not 'none' else 'lower right')
+                    if legend_loc is 'none':
+                        pl.legend(fits, fontsize=legend_fontsize, loc='lower right', bbox_to_anchor=(.98, 0))
+                    else:
+                        pl.legend(fits, fontsize=legend_fontsize, loc=legend_loc)
                 if use_raw and perc is not None:
                     pl.xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
                     pl.ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
+
+            if density:
+                show_density(x, y)
+
+            if linear_fit:
+                xnew = np.linspace(0, x.max() * 1.02)
+                pl.plot(xnew, xnew * (x * y).sum() / (x ** 2).sum())
 
             pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, edgecolors='none', marker='.', zorder=zorder, **kwargs)
 
