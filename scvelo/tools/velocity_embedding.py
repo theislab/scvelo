@@ -76,8 +76,9 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
         PCs = adata.varm['PCs'] if all_comps else adata.varm['PCs'][:, :2]
 
         if vkey + '_genes' in adata.var.keys():
-            V = V[:, adata.var[vkey + '_genes']]
-            PCs = PCs[adata.var[vkey + '_genes']]
+            vgenes = np.array(adata.var[vkey + '_genes'], dtype=bool)
+            V = V[:, vgenes]
+            PCs = PCs[vgenes]
         nans = np.isnan(V.sum(0))
         if np.any(nans):
             V = V[:, ~nans]
