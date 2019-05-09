@@ -86,14 +86,14 @@ Read your data file (loom, h5ad, csv, ...) using::
 
     adata = scv.read(filename, cache=True)
 
-which stores the data matrix (``adata.X``) with dimension :math:`n_{\mathrm{obs}} \times n_{\mathrm{vars}}`,
+which stores the data matrix (``adata.X``),
 annotation of cells / observations (``adata.obs``) and genes / variables (``adata.var``), unstructured annotation such
 as graphs (``adata.uns``) and additional data layers where spliced and unspliced counts are stored (``adata.layers``) .
 
 If you already have an existing preprocessed adata object you can simply merge the spliced/unspliced counts via::
 
     ldata = scv.read(filename.loom, cache=True)
-    adata = scv.utils.merge(adata, ldata
+    adata = scv.utils.merge(adata, ldata)
 
 If you do not have a datasets yet, you can still play around using one of the in-built datasets, e.g.::
 
