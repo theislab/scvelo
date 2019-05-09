@@ -234,7 +234,8 @@ def cutoff_small_velocities(adata, vkey='velocity', key_added='velocity_cut', fr
 
 
 def make_unique_list(key, allow_array=False):
-    from pandas import unique
+    from pandas import unique, Index
+    if isinstance(key, Index): key = key.tolist()
     is_list = isinstance(key, (list, tuple, np.record)) if allow_array else isinstance(key, (list, tuple, np.ndarray, np.record))
     is_list_of_str = is_list and all(isinstance(item, str) for item in key)
     return unique(key) if is_list_of_str else key if is_list and len(key) < 20 else [key]

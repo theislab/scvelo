@@ -143,14 +143,14 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     pl.xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
                     pl.ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
 
+            pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, edgecolors='none', marker='.', zorder=zorder, **kwargs)
+
             if density:
                 show_density(x, y)
 
             if linear_fit:
                 xnew = np.linspace(0, x.max() * 1.02)
                 pl.plot(xnew, xnew * (x * y).sum() / (x ** 2).sum())
-
-            pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, edgecolors='none', marker='.', zorder=zorder, **kwargs)
 
             set_label(xlabel, ylabel, fontsize, basis)
             set_title(title, layer, color, fontsize)
