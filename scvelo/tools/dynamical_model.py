@@ -283,7 +283,7 @@ def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling
         adata.var[add_key + '_' + name] = pars[i]
 
 
-def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, add_key='fit', t_max=None, use_raw=False,
+def recover_dynamics(data, var_names='velocity_genes', max_iter=100, learning_rate=None, add_key='fit', t_max=None, use_raw=False,
                      min_loss=True, fix_scaling=None, load_pars=None, return_model=False, plot_results=False, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
@@ -299,18 +299,16 @@ def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, ad
     adata = data.copy() if copy else data
     logg.info('recovering dynamics', r=True)
 
-    if var_names is 'all':
-        var_names = adata.var_names.tolist()
-        if 'velocity_genes' in var_names and 'velocity_genes' in adata.var.keys():
-            var_names = [name for name in var_names if adata[:, name].var.velocity_genes.values]
-    else:
-        var_names = make_unique_list(var_names, allow_array=True)
-        var_names = [name for name in var_names if name in adata.var_names]
+    if isinstance(var_names, str):
+        var_names = adata.var_names[adata.var[var_names]] if 'genes' in var_names and var_names in adata.var.keys() else adata.var_names
+    var_names = make_unique_list(var_names, allow_array=True)
+    var_names = [name for name in var_names if name in adata.var_names]
 
     alpha, beta, gamma, t_, scaling = read_pars(adata)
     idx = []
     L, P, T = [], [], adata.layers['fit_t'] if 'fit_t' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
 
+    progress = logg.ProgressReporter(len(var_names))
     for i, gene in enumerate(var_names):
         dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars, fix_scaling=fix_scaling)
         if max_iter > 1:
@@ -324,6 +322,9 @@ def recover_dynamics(data, var_names='all', max_iter=100, learning_rate=None, ad
         L.append(dm.loss)
         if plot_results and i < 4:
             P.append(dm.pars)
+
+        progress.update()
+    progress.finish()
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
