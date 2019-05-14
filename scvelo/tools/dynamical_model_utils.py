@@ -678,7 +678,7 @@ class BaseDynamics:
         ax1.set_xlabel(x_label, fontsize=fontsize)
         ax1.set_ylabel(y_label, fontsize=fontsize)
         ax1.set_title('MSE (profiled)', fontsize=fontsize)
-        ax1 = update_axes(ax1, fontsize, frameon=True)
+        ax1 = update_axes(ax1, fontsize=fontsize, frameon=True)
 
         ax2.contourf(x, y, np.log1p(z0.T), levels=20, cmap='RdGy_r')
         contours = ax2.contour(x, y, np.log1p(z0.T), 4, colors='k', linewidths=.5)
@@ -687,7 +687,7 @@ class BaseDynamics:
         ax2.set_xlabel(x_label, fontsize=fontsize)
         ax2.set_ylabel(y_label, fontsize=fontsize)
         ax2.set_title('MSE', fontsize=fontsize)
-        ax2 = update_axes(ax2, fontsize, frameon=True)
+        ax2 = update_axes(ax2, fontsize=fontsize, frameon=True)
 
         ix, iy = np.unravel_index(zp.argmin(), zp.shape)
         x_opt, y_opt = x[ix].round(2), y[ix].round(2)

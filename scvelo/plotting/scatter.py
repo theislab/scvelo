@@ -2,7 +2,7 @@ from .. import settings
 from .. import AnnData
 from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
     default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
-    show_linear_fit, show_density
+    show_linear_fit, show_density, n_categories
 from .docs import doc_scatter, doc_params
 
 from matplotlib import rcParams
@@ -14,10 +14,10 @@ import pandas as pd
 @doc_params(scatter=doc_scatter)
 def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
             colorbar=True, palette=None, size=None, alpha=None, linewidth=None, perc=None, sort_order=True, groups=None,
-            components=None, projection='2d', legend_loc='none', legend_fontsize=None, legend_fontweight=None,
+            components=None, projection='2d', legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
-            dpi=None, frameon=None, density=None, linear_fit=None, show=True, save=None, ax=None, zorder=None,
-            ncols=None, **kwargs):
+            xlim=None, ylim=None, density=None, linear_fit=None, dpi=None, frameon=None, show=True, save=None, ax=None,
+            zorder=None, ncols=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -36,9 +36,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         If `show==False` a `matplotlib.Axis`
     """
     scatter_kwargs = {"use_raw": use_raw, "sort_order": sort_order, "alpha": alpha, "components": components,
-                      "projection": projection, "legend_loc": legend_loc, "groups": groups, "palette": palette,
-                      "legend_fontsize": legend_fontsize, "legend_fontweight": legend_fontweight,
-                      "right_margin": right_margin, "left_margin": left_margin, "show": False, "save": None}
+                      "projection": projection, "groups": groups, "palette": palette, "legend_fontsize": legend_fontsize,
+                      "legend_fontweight": legend_fontweight, "right_margin": right_margin, "left_margin": left_margin,
+                      "show": False, "save": None}
 
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
     colors, layers, bases = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(basis)
@@ -53,7 +53,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if i < len(multikey):
                 scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel, vkey=vkey,
                         color_map=color_map, colorbar=colorbar, perc=perc, frameon=frameon, zorder=zorder,
-                        fontsize=fontsize, density=density, linear_fit=linear_fit, ax=pl.subplot(gs),
+                        legend_loc=legend_loc, fontsize=fontsize, density=density, linear_fit=linear_fit,
+                        xlim=xlim, ylim=ylim, ax=pl.subplot(gs),
                         color=colors[i] if len(colors) > 1 else color,
                         layer=layers[i] if len(layers) > 1 else layer,
                         basis=bases[i] if len(bases) > 1 else basis,
@@ -80,24 +81,38 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
         if is_categorical(adata, color) and is_embedding:
             from scanpy.api.pl import scatter as scatter_
+            few_cats = n_categories(adata, color) <= 4
+            legend_loc = 'none' if legend_loc is False else 'upper right' if legend_loc is None and few_cats \
+                else 'on data' if legend_loc is None else legend_loc
             ax = scatter_(adata, basis=basis, color=color, color_map=color_map, size=size, frameon=frameon, ax=ax,
-                          title=title, **scatter_kwargs, **kwargs)
+                          title=title, legend_loc=legend_loc, **scatter_kwargs, **kwargs)
 
         else:
             if basis in adata.var_names:
                 xkey, ykey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
                 x = make_dense(adata[:, basis].layers[xkey])
                 y = make_dense(adata[:, basis].layers[ykey])
-                xlabel, ylabel = 'spliced', 'unspliced'
+                xlabel = 'spliced' if xlabel is None else xlabel
+                ylabel = 'unspliced' if ylabel is None else ylabel
                 title = basis if title is None else title
 
             elif is_embedding:
                 X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
                 x, y = X_emb[:, 0], X_emb[:, 1]
 
-            elif isinstance(x, str) and isinstance(y, str) and x in adata.var_names and y in adata.var_names:
-                x = adata[:, x].layers[layer] if layer in adata.layers.keys() else adata[:, x].X
-                y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
+            elif isinstance(x, str) and isinstance(y, str):
+                xlabel = x if xlabel is None else xlabel
+                ylabel = y if ylabel is None else ylabel
+                if x in adata.var_names and y in adata.var_names:
+                    x = adata[:, x].layers[layer] if layer in adata.layers.keys() else adata[:, x].X
+                    y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
+                elif x in adata.var.keys() and y in adata.var.keys():
+                    x, y = adata.var[x], adata.var[y]
+                elif x in adata.obs.keys() and y in adata.obs.keys():
+                    x, y = adata.obs[x], adata.obs[y]
+            else:
+                x = x.A1 if isinstance(x, np.matrix) else x.ravel()
+                y = y.A1 if isinstance(y, np.matrix) else y.ravel()
 
             if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
                 c = interpret_colorkey(adata, basis, color, perc)
@@ -134,11 +149,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth,
                                              show_assigments=vkey is not None and 'assignment' in vkey)
                     fits.append(fit)
-                if len(fits) > 0 and legend_loc is not None:
-                    if legend_loc is 'none':
-                        pl.legend(fits, fontsize=legend_fontsize, loc='lower right', bbox_to_anchor=(.98, 0))
-                    else:
-                        pl.legend(fits, fontsize=legend_fontsize, loc=legend_loc)
+                if len(fits) > 0 and legend_loc is not False:
+                    pl.legend(fits, fontsize=legend_fontsize, loc='lower right' if legend_loc is None else legend_loc)
                 if use_raw and perc is not None:
                     pl.xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
                     pl.ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
@@ -154,7 +166,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
             set_label(xlabel, ylabel, fontsize, basis)
             set_title(title, layer, color, fontsize)
-            ax = update_axes(ax, fontsize, is_embedding, frameon)
+            ax = update_axes(ax, xlim, ylim, fontsize, is_embedding, frameon)
             if colorbar and not is_categorical(adata, color): set_colorbar(ax)
 
         savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)

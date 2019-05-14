@@ -37,6 +37,11 @@ def is_categorical(adata, c):
     return str_not_var and (c in adata.obs.keys() and cat(adata.obs[c]) or is_color_like(c))
 
 
+def n_categories(adata, c):
+    from pandas.api.types import is_categorical as cat
+    return len(adata.obs[c].cat.categories) if (c in adata.obs.keys() and cat(adata.obs[c])) else 0
+
+
 def default_basis(adata):
     keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
     return keys[-1] if len(keys) > 0 else None
@@ -50,7 +55,12 @@ def make_unique_list(key, allow_array=False):
     return unique(key) if is_list_of_str else key if is_list and len(key) < 20 else [key]
 
 
-def update_axes(ax, fontsize, is_embedding=False, frameon=None):
+def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, frameon=None):
+    if xlim is not None:
+        ax.set_xlim(xlim)
+    if ylim is not None:
+        ax.set_ylim(ylim)
+
     frameon = settings._frameon if frameon is None else frameon
     if frameon:
         if is_embedding:
@@ -65,6 +75,7 @@ def update_axes(ax, fontsize, is_embedding=False, frameon=None):
         ax.set_ylabel('')
         ax.tick_params(which='both', bottom=False, left=False, labelbottom=False, labelleft=False)
         ax.set_frame_on(False)
+
     return ax
 
 
@@ -281,19 +292,30 @@ def show_density(x, y, eval_pts=50, scale=10, alpha=.3):
     pl.xlim(-offset)
 
 
-def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, ylabel=None, ax=None, figsize=None,
-         dpi=None, show=True):
-    ax = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
+def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, ylabel=None, cutoff=None,
+         fontsize=None, legend_fontsize=None, xlim=None, ylim=None, ax=None, figsize=None, dpi=None, show=True):
+    fig = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
+    ax = pl.subplot()
+    update_axes(ax, xlim, ylim, fontsize, frameon=True)
+
     arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
 
     palette = default_palette(None).by_key()['color'][::-1]
     colors = palette if colors is None or len(colors) < len(arrays) else colors
 
+    bmin, bmax = np.min(arrays), np.max(arrays)
+    bins = np.arange(bmin, bmax + (bmax - bmin) / bins, (bmax - bmin) / bins)
+
     for i, array in enumerate(arrays):
-        pl.hist(array[np.isfinite(array)], bins=bins, alpha=alpha, color=colors[i], label=labels[i] if labels is not None else None)
-    pl.xlabel(xlabel if xlabel is not None else '')
-    pl.ylabel(ylabel if xlabel is not None else '')
-    if labels is not None: pl.legend()
+        x = array[np.isfinite(array)]
+        pl.hist(x[x < cutoff] if cutoff is not None else x, bins=bins, alpha=alpha, color=colors[i],
+                label=labels[i] if labels is not None else None)
+
+    set_label(xlabel if xlabel is not None else '', ylabel if xlabel is not None else '', fontsize=fontsize)
+
+    if labels is not None:
+        pl.legend(fontsize=legend_fontsize)
+
     if not show:
         return ax
     else:
