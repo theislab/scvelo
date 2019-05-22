@@ -404,11 +404,8 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode='soft', perc_ss=Non
         tau_ = tau_inv(u, s, u0, s0, 0, beta, gamma)
         tau_ = np.clip(tau_, 0, np.max(tau_[s > 0], axis=0))
 
-        ut = unspliced(tau, 0, alpha, beta)
-        ut_ = unspliced(tau_, u0, 0, beta)
-
-        st = spliced(tau, 0, 0, alpha, beta, gamma)
-        st_ = spliced(tau_, u0, s0, 0, beta, gamma)
+        ut, st = mRNA(tau, 0, 0, alpha, beta, gamma)
+        ut_, st_ = mRNA(tau_, u0, s0, 0, beta, gamma)
 
         ut_ss = alpha / beta
         st_ss = alpha / gamma
@@ -465,8 +462,7 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode='soft', perc_ss=Non
 
     elif mode is 'hard':
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma,)
-        u = unspliced(tau, u0, alpha, beta)
-        s = spliced(tau, s0, u0, alpha, beta, gamma)
+        u, s = mRNA(tau, s0, u0, alpha, beta, gamma)
 
     adata.layers[vkey] = u * beta - s * gamma
     adata.layers[vkey + '_u'] = alpha - beta * u
