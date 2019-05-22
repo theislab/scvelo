@@ -52,7 +52,7 @@ def spliced(tau, s0, u0, alpha, beta, gamma):
     return s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
 
 
-def unspliced_spliced(tau, s0, u0, alpha, beta, gamma):
+def mRNA(tau, s0, u0, alpha, beta, gamma):
     c = (alpha - u0 * beta) * inv(gamma - beta)
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
     u = u0 * expu + alpha / beta * (1 - expu)
@@ -66,12 +66,12 @@ def tau_u(u, u0, alpha, beta):
 
 
 def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
-    if s is None:
+    if s is None:  # tau_inv(u)
         c0 = u0 - alpha / beta
         cu = u - alpha / beta
 
         tau = - 1 / beta * log(cu / c0)
-    else:
+    else:  # tau_inv(u, s)
         beta_ = beta * inv(gamma - beta)
         ceta_ = alpha / gamma - beta_ * (alpha / beta)
 
@@ -100,25 +100,20 @@ def find_swichting_time(u, s, tau, o, alpha, beta, gamma):
     return t0_
 
 
-def compute_state_likelihoods(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, adjust_variance=False,
-                              normalized=True, mode='hard'):
-    def nanvar(x, axis=0):
-        return np.nanvar(x, axis) if np.isnan(x).any() else np.var(x, axis)
-
+def assign_tau(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mode='hard'):
     if t0_ is None:
         t0_ = tau_inv(u0_, s0_, 0, 0, alpha, beta, gamma)
     if u0_ is None or s0_ is None:
         u0_, s0_ = (unspliced(t0_, 0, alpha, beta), spliced(t0_, 0, 0, alpha, beta, gamma))
 
-    # compute inverse timepoints
     if mode is 'projection':
+        x_obs = np.vstack([u, s]).T
         t0 = tau_u(np.min(u[s > 0]), u0_, 0, beta)
         tpoints = np.linspace(0, t0_, num=200)
         tpoints_ = np.linspace(0, t0, num=200)[1:]
 
-        x_obs = np.vstack([u, s]).T
-        xt = np.vstack([unspliced(tpoints, 0, alpha, beta), spliced(tpoints, 0, 0, alpha, beta, gamma)]).T
-        xt_ = np.vstack([unspliced(tpoints_, u0_, 0, beta), spliced(tpoints_, s0_, u0_, 0, beta, gamma)]).T
+        xt = np.vstack(mRNA(tpoints, 0, 0, alpha, beta, gamma)).T
+        xt_ = np.vstack(mRNA(tpoints_, s0_, u0_, 0, beta, gamma)).T
 
         # assign time points (oth. projection onto 'on' and 'off' curve)
         tau, tau_ = np.zeros(len(u)), np.zeros(len(u))
@@ -132,116 +127,73 @@ def compute_state_likelihoods(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=
 
         tau_ = tau_inv(u, s, u0_, s0_, 0, beta, gamma)
         tau_ = np.clip(tau_, 0, np.max(tau_[s > 0]))
+    return tau, tau_, t0_
+
+
+def compute_divergence(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, tau=None, tau_=None, normalized=True,
+                       mode='distance', var_scale=True, fit_steady_state=True):
+    """Estimates the divergence (avaiable metrics: distance, mse, likelihood, loglikelihood) of ODE to observations
+
+    Arguments
+    ---------
+    mode: `'distance'`, `'mse'`, `'likelihood'`, `'loglikelihood'` (default: `'distance'`)
+
+    """
+    if u0_ is None or s0_ is None:
+        u0_, s0_ = mRNA(t0_, 0, 0, alpha, beta, gamma)
+    if tau is None or tau_ is None or t0_ is None:
+        tau, tau_, t0_ = assign_tau(u, s, alpha, beta, gamma, t0_, u0_, s0_, mode)
 
     # compute distances from states (induction state, repression state, steady state)
-    distu, distu_,  = u - unspliced(tau, 0, alpha, beta), u - unspliced(tau_, u0_, 0, beta)
-    dists, dists_,  = s - spliced(tau, 0, 0, alpha, beta, gamma), s - spliced(tau_, u0_, s0_, 0, beta, gamma)
+    ut, st = mRNA(tau, 0, 0, alpha, beta, gamma)
+    ut_, st_ = mRNA(tau_, u0_, s0_, 0, beta, gamma)
 
-    distu_steady, distu_steady_ = u - alpha / beta, u
-    dists_steady, dists_steady_ = s - alpha / gamma, s
+    distu, distu_  = u - ut, u - ut_
+    dists, dists_  = s - st, s - st_
 
-    # compute variances of distances
-    varu, varu_ = nanvar(distu), nanvar(distu_)
-    vars, vars_ = nanvar(dists), nanvar(dists_)
+    distx = distu ** 2 + dists ** 2
+    distx_ = distu_ ** 2 + dists_ ** 2
 
-    varu_steady, varu_steady_ = nanvar(distu_steady), nanvar(distu_steady_)
-    vars_steady, vars_steady_ = nanvar(dists_steady), nanvar(dists_steady_)
-
-    # compute variance weighted distances
-    distx = distu ** 2 / varu + dists ** 2 / vars
-    distx_ = distu_ ** 2 / varu_ + dists_ ** 2 / vars_
-    distx_steady = distu_steady ** 2 / varu_steady + dists_steady ** 2 / vars_steady
-    distx_steady_ = distu_steady_ ** 2 / varu_steady_ + dists_steady_ ** 2 / vars_steady_
-
-    if adjust_variance:  # recompute variance weighted distances
-        id_state = np.argmin([distx_, distx, distx_steady_, distx_steady], axis=0)
-
-        on, off, steady, steady_  = (id_state == 1), (id_state == 0), (id_state == 3), (id_state == 2)
-        on, off, steady, steady_ = on / on, off / off, steady / steady, steady_ / steady_
-
-        varu, varu_ = np.nanvar(distu * on, 0), np.nanvar(distu_ * off, 0)
-        vars, vars_ = np.nanvar(dists * on, 0), np.nanvar(dists_ * off, 0)
-
-        varu_steady, varu_steady_ = np.nanvar(distu_steady * steady, 0), np.nanvar(distu_steady_ * steady_, 0)
-        vars_steady, vars_steady_ = np.nanvar(dists_steady * steady, 0), np.nanvar(dists_steady_ * steady_, 0)
-
-        distx = distu ** 2 / varu + dists ** 2 / vars
-        distx_ = distu_ ** 2 / varu_ + dists_ ** 2 / vars_
-        distx_steady = distu_steady ** 2 / varu_steady + dists_steady ** 2 / vars_steady
-        distx_steady_ = distu_steady_ ** 2 / varu_steady_ + dists_steady_ ** 2 / vars_steady_
-
-    if mode is 'soft':
-        div = 1 / (2 * np.pi)
-        varx = np.sqrt(varu * vars)
-        varx_ = np.sqrt(varu_ * vars_)
-        varx_steady = np.sqrt(varu_steady * vars_steady)
-        varx_steady_ = np.sqrt(varu_steady_ * vars_steady_)
-
-        l = div / varx * np.exp(-.5 * distx)
-        l_ = div / varx_ * np.exp(-.5 * distx_)
-        l_steady = div / varx_steady * np.exp(-.5 * distx_steady)
-        l_steady_ = div / varx_steady_ * np.exp(-.5 * distx_steady_)
-
-        if normalized:
-            l, l_, l_steady, l_steady_ = np.array([l, l_, l_steady, l_steady_]) / (l + l_ + l_steady + l_steady_)
-
-        return l, l_, l_steady, l_steady_
-
+    if var_scale:
+        o = np.argmin([distx_, distx], axis=0)
+        varu = np.var(distu * o + distu_ + (1 - o))
+        vars = np.var(dists * o + dists_ + (1 - o))
+        distx = distu ** 2 / varu  + dists ** 2 / vars
+        distx_ = distu_ ** 2 / varu + dists_ ** 2 / vars
     else:
-        o = 1 if mode is 'on' else 0 if mode is 'off' else np.argmin([distx_, distx, distx_steady_, distx_steady], axis=0)
-        tau = tau * (o == 1) + tau_ * (1 - o)
-        t = tau * o + (tau_ + t0_) * (1 - o)
+        varu, vars = 1, 1
 
-        return t, tau, o
+    if fit_steady_state:
+        distx_steady = (u - alpha / beta) ** 2 / varu + (s - alpha / gamma) ** 2 / vars
+        distx_steady_ = u ** 2 / varu + s ** 2 / vars
+        res = np.array([distx_, distx, distx_steady_, distx_steady])
+    else:
+        res = np.array([distx_, distx])
+
+    if mode is 'likelihood':
+        res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+    elif mode is 'nll':
+        res = np.log(2 * np.pi * np.sqrt(varu * vars)) + .5 * res
+    if normalized:
+        res /= np.sum(res, axis=0)
+
+    return res
 
 
-def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mode='hard'):
+def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mode=None):
     if t0_ is None:
         t0_ = tau_inv(u0_, s0_, 0, 0, alpha, beta, gamma)
     if u0_ is None or s0_ is None:
         u0_, s0_ = (unspliced(t0_, 0, alpha, beta), spliced(t0_, 0, 0, alpha, beta, gamma))
 
-    x_obs = np.vstack([u, s]).T
+    tau, tau_, t0_ = assign_tau(u, s, alpha, beta, gamma, t0_, u0_, s0_, mode)  # this could be given from comp_dist-> faster
 
-    if mode is 'projection':
-        t0 = tau_u(np.min(u[s > 0]), u0_, 0, beta)
-        tpoints = np.linspace(0, t0_, num=200)
-        tpoints_ = np.linspace(0, t0, num=200)[1:]
-
-        xt = np.vstack([unspliced(tpoints, 0, alpha, beta), spliced(tpoints, 0, 0, alpha, beta, gamma)]).T
-        xt_ = np.vstack([unspliced(tpoints_, u0_, 0, beta), spliced(tpoints_, s0_, u0_, 0, beta, gamma)]).T
-
-        # assign time points (oth. projection onto 'on' and 'off' curve)
-        tau, tau_ = np.zeros(len(u)), np.zeros(len(u))
-        for i, xi in enumerate(x_obs):
-            diffx, diffx_ = ((xt - xi)**2).sum(1), ((xt_ - xi)**2).sum(1)
-            tau[i] = tpoints[np.argmin(diffx)]
-            tau_[i] = tpoints_[np.argmin(diffx_)]
-
-    else:
-        tau = tau_inv(u, s, 0, 0, alpha, beta, gamma)
-        tau = np.clip(tau, 0, t0_)
-
-        tau_ = tau_inv(u, s, u0_, s0_, 0, beta, gamma)
-        tau_ = np.clip(tau_, 0, np.max(tau_[s > 0]))
-
-    # l, l_, l_steady, l_steady_ = compute_state_likelihoods(u, s, alpha, beta, gamma, t0_, u0_, s0_)
-
-    xt = np.vstack([unspliced(tau, 0, alpha, beta), spliced(tau, 0, 0, alpha, beta, gamma)]).T
-    xt_ = np.vstack([unspliced(tau_, u0_, 0, beta), spliced(tau_, s0_, u0_, 0, beta, gamma)]).T
-
-    diffx = ((xt - x_obs)**2).sum(1)
-    diffx_ = ((xt_ - x_obs)**2).sum(1)
-
-    o = 1 if mode is 'on' else 0 if mode is 'off' else np.argmax([diffx_, diffx], axis=0)
-    tau = tau * o + tau_ * (1 - o)
-    t = tau * o + (tau_ + t0_) * (1 - o)
-
-    if mode is 'soft':
-        var = np.var(s)
-        l = np.exp(- .5 * diffx / var) + .1
-        l_ = np.exp(- .5 * diffx_ / var) + .1
-        o = l / (l + l_)
+    dxt = compute_divergence(u, s, alpha, beta, gamma, t0_, u0_, s0_, tau, tau_)#, fit_steady_states=fit_steady_states)
+    o = np.argmin(dxt, axis=0)
+    tau = tau * (o == 1) + tau_ * (o == 0)
+    if 2 in o: o[o == 2] = 1
+    if 3 in o: o[o == 3] = 0
+    t = tau * (o == 1) + (tau_ + t0_) * (o == 0)
 
     return t, tau, o
 
@@ -291,8 +243,8 @@ def fit_scaling(u, t, t_, alpha, beta):
     return (u * ut).sum() / (ut ** 2).sum()
 
 
-def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0):
-    o = np.array(t <= t_, dtype=int)
+def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0, sorted=False):
+    o = np.array(t < t_, dtype=int)
     tau = t * o + (t - t_) * (1 - o)
 
     u0_ = unspliced(t_, u0, alpha, beta)
@@ -303,6 +255,9 @@ def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0):
     s0 = s0 * o + s0_ * (1 - o)
     alpha = alpha * o + alpha_ * (1 - o)
 
+    if sorted:
+        idx = np.argsort(t)
+        tau, alpha, u0, s0 =  tau[idx], alpha[idx], u0[idx], s0[idx]
     return tau, alpha, u0, s0
 
 
@@ -351,7 +306,7 @@ def ds(tau, alpha, beta, gamma, u0=0, s0=0, du0=[0, 0, 0], ds0=[0, 0, 0, 0], dta
 
 
 def derivatives(u, s, t, t0_, alpha, beta, gamma, scaling=1, alpha_=0, u0=0, s0=0, weights=None):
-    o = np.array(t <= t0_, dtype=int)
+    o = np.array(t < t0_, dtype=int)
 
     du0 = np.array(du(t0_, alpha, beta, u0))[:, None] * (1 - o)[None, :]
     ds0 = np.array(ds(t0_, alpha, beta, gamma, u0, s0))[:, None] * (1 - o)[None, :]
@@ -489,16 +444,18 @@ class BaseDynamics:
         alpha, beta, gamma, scaling = self.alpha, self.beta, self.gamma, self.scaling
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
 
-        std_u, std_s, = np.std(u), np.std(s)
-        corr = np.corrcoef(u, s)[0, 1]
+        udiff = np.array(unspliced(tau, u0, alpha, beta) * scaling - u)
+        sdiff = np.array(spliced(tau, s0, u0, alpha, beta, gamma) - s)
 
-        udiff = np.array(unspliced(tau, u0, alpha, beta) * scaling - u) / std_u
-        sdiff = np.array(spliced(tau, s0, u0, alpha, beta, gamma) - s) / std_s
+        std_u, std_s, = np.std(udiff), np.std(sdiff)
+        corr = np.corrcoef(udiff, sdiff)[0, 1]
+
+        udiff /= std_u
+        sdiff /= std_s
 
         denom = 2 * np.pi * std_u * std_s * np.sqrt(1 - corr ** 2)
-        nom = -.5 / (1 - corr ** 2) * (np.sum(udiff ** 2) + np.sum(sdiff ** 2) - 2 * corr * np.sum(udiff * sdiff)) / (
-                    2 * len(udiff))
-        likelihood = 1 / np.sqrt(denom) * np.exp(nom)
+        nom = -.5 / (1 - corr ** 2) * (np.sum(udiff ** 2) + np.sum(sdiff ** 2) - 2 * corr * np.sum(udiff * sdiff)) # / (2 * len(udiff))
+        likelihood = 1 / denom * np.exp(nom)
 
         return likelihood
 

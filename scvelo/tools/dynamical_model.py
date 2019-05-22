@@ -1,7 +1,7 @@
 from .. import settings
 from .. import logging as logg
 from .utils import make_dense, make_unique_list
-from .dynamical_model_utils import BaseDynamics, unspliced, spliced, vectorize, derivatives, \
+from .dynamical_model_utils import BaseDynamics, unspliced, spliced, mRNA, vectorize, derivatives, \
     find_swichting_time, fit_alpha, fit_scaling, linreg, convolve, assign_timepoints, tau_inv
 
 import warnings
@@ -11,7 +11,8 @@ from matplotlib import rcParams
 
 
 class DynamicsRecovery(BaseDynamics):
-    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, load_pars=None, fix_scaling=None):
+    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, load_pars=None, fix_scaling=None,
+                 fit_steady_states=True):
         super(DynamicsRecovery, self).__init__(adata.n_obs)
 
         _layers = adata[:, gene].layers
@@ -33,6 +34,7 @@ class DynamicsRecovery(BaseDynamics):
 
         self.weights = s_filter & u_filter & nonzero
         self.fix_scaling = fix_scaling
+        self.fit_steady_states = fit_steady_states
 
         if load_pars and 'fit_alpha' in adata.var.keys():
             self.load_pars(adata, gene)
@@ -43,8 +45,10 @@ class DynamicsRecovery(BaseDynamics):
         u, s, w = self.u, self.s, self.weights
         u_w, s_w, perc = u[w], s[w], 95
 
-        if self.fix_scaling is None or self.fix_scaling is False:
-            self.scaling = u[w].max(0) / s[w].max(0) * 1.3
+        self.std = np.std(s_w)
+        if self.fix_scaling is None or self.fix_scaling is False or self.fix_scaling is True:
+            self.scaling = np.std(u_w) / self.std
+            # self.scaling = u[w].max(0) / s[w].max(0) * 1.3
         else:
             self.scaling = self.fix_scaling
         u, u_w = self.u / self.scaling, u_w / self.scaling
@@ -64,7 +68,7 @@ class DynamicsRecovery(BaseDynamics):
         alpha, u0_, s0_ = u_w.mean(), u_w.mean(), s_w.mean()
         alpha_, u0, s0, = 0, 0, 0
 
-        t, tau, o = assign_timepoints(u, s, alpha, beta, gamma, u0_=u0_, s0_=s0_)
+        t, tau, o = assign_timepoints(u, s, alpha, beta, gamma, u0_=u0_, s0_=s0_, fit_steady_states=self.fit_steady_states)
 
         # update object with initialized vars
         self.alpha, self.beta, self.gamma, self.alpha_ = alpha, beta, gamma, alpha_
@@ -128,7 +132,7 @@ class DynamicsRecovery(BaseDynamics):
             improved_alpha = improved_alpha or self.update_loss(alpha=alpha, reassign_time=True)  # update if improved
 
         # fit scaling (generalized lin.reg)
-        if self.fix_scaling is None:
+        if self.fix_scaling is None or self.fix_scaling is False:
             t_w, tau_w, o_w = (self.t, self.tau, self.o) if w is None else (self.t[w], self.tau[w], self.o[w])
             alpha, t0_ = self.alpha, self.t_
             scaling = fit_scaling(u_w, t_w, t0_, alpha, beta)
@@ -283,8 +287,9 @@ def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling
         adata.var[add_key + '_' + name] = pars[i]
 
 
-def recover_dynamics(data, var_names='velocity_genes', max_iter=100, learning_rate=None, add_key='fit', t_max=None, use_raw=False,
-                     min_loss=True, fix_scaling=None, load_pars=None, return_model=False, plot_results=False, copy=False, **kwargs):
+def recover_dynamics(data, var_names='velocity_genes', max_iter=100, learning_rate=None, add_key='fit', t_max=None,
+                     use_raw=False, min_loss=True, fix_scaling=None, fit_steady_states=True, load_pars=None,
+                     return_model=False, plot_results=False, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -299,8 +304,8 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=100, learning_ra
     adata = data.copy() if copy else data
     logg.info('recovering dynamics', r=True)
 
-    if isinstance(var_names, str):
-        var_names = adata.var_names[adata.var[var_names]] if 'genes' in var_names and var_names in adata.var.keys() else adata.var_names
+    if isinstance(var_names, str) and var_names not in adata.var_names:
+        var_names = adata.var_names[adata.var[var_names] == True] if 'genes' in var_names and var_names in adata.var.keys() else adata.var_names
     var_names = make_unique_list(var_names, allow_array=True)
     var_names = [name for name in var_names if name in adata.var_names]
 
@@ -310,7 +315,8 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=100, learning_ra
 
     progress = logg.ProgressReporter(len(var_names))
     for i, gene in enumerate(var_names):
-        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars, fix_scaling=fix_scaling)
+        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars,
+                              fix_scaling=fix_scaling, fit_steady_states=fit_steady_states)
         if max_iter > 1:
             dm.fit(max_iter, learning_rate, **kwargs)
 
@@ -443,6 +449,11 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode='soft', perc_ss=Non
         l_ = div / np.sqrt(var_ut_ * var_st_) * expx_
         l_ss = div / np.sqrt(var_ut_ss * var_st_ss) * expx_ss
         l_ss_ = div / np.sqrt(var_ut_ss_ * var_st_ss_) * expx_ss_
+
+        # from scvelo.tools.dynamical_model_utils import compute_divergence
+        # l, l_, l_ss, l_ss_ = compute_divergence(u, s, alpha, beta, gamma, t0_=t_, u0_=u0, s0_=s0, adjust_variance=False,
+        #                                         normalized=True, mode='likelihood', var_scale=True, perc_ss=perc_ss)
+
         l_sum = l + l_ + l_ss + l_ss_
 
         o = l / l_sum
@@ -453,9 +464,7 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode='soft', perc_ss=Non
         alpha = alpha * o
 
     elif mode is 'hard':
-        o = np.array(t <= t_, dtype=int)
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma,)
-
         u = unspliced(tau, u0, alpha, beta)
         s = spliced(tau, s0, u0, alpha, beta, gamma)
 
