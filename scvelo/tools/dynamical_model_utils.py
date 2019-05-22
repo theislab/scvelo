@@ -321,8 +321,10 @@ def derivatives(u, s, t, t0_, alpha, beta, gamma, scaling=1, alpha_=0, u0=0, s0=
     ds_a, ds_b, ds_c = ds(tau, alpha, beta, gamma, u0, s0, du0, ds0, dt)
 
     # evaluate derivative of likelihood:
-    udiff = np.array(unspliced(tau, u0, alpha, beta) * scaling - u)
-    sdiff = np.array(spliced(tau, s0, u0, alpha, beta, gamma) - s)
+    ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
+
+    udiff = np.array(ut * scaling - u)
+    sdiff = np.array(st - s)
 
     if weights is not None:
         udiff = np.multiply(udiff, weights)
@@ -433,8 +435,10 @@ class BaseDynamics:
 
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
 
-        udiff = np.array(unspliced(tau, u0, alpha, beta) * scaling - u)
-        sdiff = np.array(spliced(tau, s0, u0, alpha, beta, gamma) - s)
+        ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
+
+        udiff = np.array(ut * scaling - u)
+        sdiff = np.array(st - s)
 
         loss = np.sum(udiff ** 2 + sdiff ** 2) / len(udiff)
         return loss
@@ -444,8 +448,10 @@ class BaseDynamics:
         alpha, beta, gamma, scaling = self.alpha, self.beta, self.gamma, self.scaling
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
 
-        udiff = np.array(unspliced(tau, u0, alpha, beta) * scaling - u)
-        sdiff = np.array(spliced(tau, s0, u0, alpha, beta, gamma) - s)
+        ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
+
+        udiff = np.array(ut * scaling - u)
+        sdiff = np.array(st - s)
 
         std_u, std_s, = np.std(udiff), np.std(sdiff)
         corr = np.corrcoef(udiff, sdiff)[0, 1]

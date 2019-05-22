@@ -88,7 +88,7 @@ def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_
     -------
     Returns `adata` object
     """
-    from .tools.dynamical_model_utils import unspliced, spliced, vectorize
+    from .tools.dynamical_model_utils import unspliced, spliced, vectorize, mRNA
 
     def draw_poisson(n):
         from random import uniform  # draw from poisson
@@ -96,8 +96,7 @@ def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_
         return np.insert(t, 0, 0)  # prepend t0=0
 
     def simulate_dynamics(tau, alpha, beta, gamma, u0, s0, noise_model, noise_level):
-        ut = unspliced(tau, u0, alpha, beta)
-        st = spliced(tau, s0, u0, alpha, beta, gamma)
+        ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
 
         if noise_model is 'normal':  # add noise
             ut += np.random.normal(scale=noise_level * np.percentile(ut, 99) / 10, size=len(ut))
