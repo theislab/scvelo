@@ -292,7 +292,7 @@ def show_density(x, y, eval_pts=50, scale=10, alpha=.3):
     pl.xlim(-offset)
 
 
-def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, ylabel=None, cutoff=None,
+def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, xlabel=None, ylabel=None, cutoff=None,
          fontsize=None, legend_fontsize=None, xlim=None, ylim=None, ax=None, figsize=None, dpi=None, show=True):
     fig = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
     ax = pl.subplot()
@@ -303,12 +303,14 @@ def hist(arrays, alpha=.5, bins=None, colors=None, labels=None, xlabel=None, yla
     palette = default_palette(None).by_key()['color'][::-1]
     colors = palette if colors is None or len(colors) < len(arrays) else colors
 
-    bmin, bmax = np.min(arrays), np.max(arrays)
+    masked_arrays = np.ma.masked_invalid(arrays)
+    bmin, bmax = masked_arrays.min(), masked_arrays.max()
     bins = np.arange(bmin, bmax + (bmax - bmin) / bins, (bmax - bmin) / bins)
+    if cutoff is not None:
+        bins = bins[bins < cutoff]
 
-    for i, array in enumerate(arrays):
-        x = array[np.isfinite(array)]
-        pl.hist(x[x < cutoff] if cutoff is not None else x, bins=bins, alpha=alpha, color=colors[i],
+    for i, x in enumerate(arrays):
+        pl.hist(x[np.isfinite(x)], bins=bins, alpha=alpha, color=colors[i],
                 label=labels[i] if labels is not None else None)
 
     set_label(xlabel if xlabel is not None else '', ylabel if xlabel is not None else '', fontsize=fontsize)

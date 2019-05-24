@@ -38,6 +38,22 @@ def linreg(u, s):  # linear regression fit
     return us_ / ss_
 
 
+def test_bimodality(x, bins=30, kde=True):
+    from scipy.stats import gaussian_kde, norm
+
+    grid = np.linspace(np.min(x), np.max(x), bins)
+    x_grid = gaussian_kde(x)(grid) if kde else np.histogram(x, bins=grid, density=True)[0]
+
+    # id_max = int(bins / 2) + np.argmax(x_grid[int(bins / 2):])
+    # t_stat = (x_grid[id_max] - x_grid[:id_max].min()) / (np.std(x_grid) / np.sqrt(bins))
+
+    x_peak = min(x_grid[:int(bins / 5)].max(), x_grid[int(bins / 5):].max())
+    t_stat = (x_peak - x_grid[int(bins / 2)]) / (np.std(x_grid) / np.sqrt(bins))
+
+    p_val = norm.sf(t_stat)
+    return t_stat, p_val   # ~ t_test (reject unimodality if score > 3)
+
+
 """Dynamics delineation"""
 
 
@@ -60,25 +76,19 @@ def mRNA(tau, s0, u0, alpha, beta, gamma):
     return u, s
 
 
-def tau_u(u, u0, alpha, beta):
-    u_ratio = (u - alpha / beta) / (u0 - alpha / beta)
-    return - 1 / beta * log(u_ratio)
-
-
 def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
-    if s is None:  # tau_inv(u)
-        c0 = u0 - alpha / beta
-        cu = u - alpha / beta
-
-        tau = - 1 / beta * log(cu / c0)
-    else:  # tau_inv(u, s)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        is_invu = (gamma >= beta) if gamma is not None else True
+    any_invu = np.any(is_invu)
+    if  s is None or any_invu:           # tau_inv(u)
+        uinf = alpha / beta
+        tau = - 1 / beta * log((u - uinf) / (u0 - uinf))
+    if s is not None and not np.all(is_invu):   # tau_inv(u, s)
         beta_ = beta * inv(gamma - beta)
-        ceta_ = alpha / gamma - beta_ * (alpha / beta)
-
-        c0 = s0 - beta_ * u0 - ceta_
-        cs = s - beta_ * u - ceta_
-
-        tau = - 1 / gamma * log(cs / c0)
+        xinf = alpha / gamma - beta_ * (alpha / beta)
+        tau_ =  - 1 / gamma * log((s - beta_ * u - xinf) / (s0 - beta_ * u0 - xinf))
+        tau = tau * is_invu  + tau_ * np.invert(is_invu) if any_invu else tau_
     return tau
 
 
@@ -108,9 +118,11 @@ def assign_tau(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mode='har
 
     if mode is 'projection':
         x_obs = np.vstack([u, s]).T
-        t0 = tau_u(np.min(u[s > 0]), u0_, 0, beta)
-        tpoints = np.linspace(0, t0_, num=200)
-        tpoints_ = np.linspace(0, t0, num=200)[1:]
+        t0 = tau_inv(np.min(u[s > 0]), u0=u0_, alpha=0, beta=beta)
+
+        num = np.clip(int(len(u) / 5), 200, 500)
+        tpoints = np.linspace(0, t0_, num=num)
+        tpoints_ = np.linspace(0, t0, num=num)[1:]
 
         xt = np.vstack(mRNA(tpoints, 0, 0, alpha, beta, gamma)).T
         xt_ = np.vstack(mRNA(tpoints_, s0_, u0_, 0, beta, gamma)).T
@@ -186,10 +198,10 @@ def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mo
     if u0_ is None or s0_ is None:
         u0_, s0_ = (unspliced(t0_, 0, alpha, beta), spliced(t0_, 0, 0, alpha, beta, gamma))
 
-    tau, tau_, t0_ = assign_tau(u, s, alpha, beta, gamma, t0_, u0_, s0_, mode)  # this could be given from comp_dist-> faster
-
-    dxt = compute_divergence(u, s, alpha, beta, gamma, t0_, u0_, s0_, tau, tau_)#, fit_steady_states=fit_steady_states)
+    tau, tau_, t0_ = assign_tau(u, s, alpha, beta, gamma, t0_, u0_, s0_, mode)
+    dxt = compute_divergence(u, s, alpha, beta, gamma, t0_, u0_, s0_, tau, tau_)
     o = np.argmin(dxt, axis=0)
+
     tau = tau * (o == 1) + tau_ * (o == 0)
     if 2 in o: o[o == 2] = 1
     if 3 in o: o[o == 3] = 0
@@ -323,7 +335,8 @@ def derivatives(u, s, t, t0_, alpha, beta, gamma, scaling=1, alpha_=0, u0=0, s0=
     # evaluate derivative of likelihood:
     ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
 
-    udiff = np.array(ut * scaling - u)
+    # udiff = np.array(ut * scaling - u)
+    udiff = np.array(ut - u / scaling)
     sdiff = np.array(st - s)
 
     if weights is not None:

@@ -1,4 +1,4 @@
-from ..tools.dynamical_model_utils import unspliced, spliced, vectorize, tau_u
+from ..tools.dynamical_model_utils import unspliced, mRNA, vectorize, tau_inv
 from .utils import make_dense
 
 import numpy as np
@@ -8,6 +8,7 @@ from matplotlib import rcParams
 
 def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=None):
     idx = np.where(adata.var_names == basis)[0][0] if isinstance(basis, str) else basis
+    key = 'fit' if key + '_gamma' not in adata.var_keys() else key
 
     alpha = adata.var[key + '_alpha'][idx] if key + '_alpha' in adata.var.keys() else 1
     beta = adata.var[key + '_beta'][idx] if key + '_beta' in adata.var.keys() else 1
@@ -17,13 +18,13 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
 
     if extrapolate:
         u0_ = unspliced(t_, 0, alpha, beta)
-        tmax = t_ + tau_u(u0_ * 1e-4, u0_, 0, beta)
+        tmax = t_ + tau_inv(u0_ * 1e-4, u0=u0_, alpha=0, beta=beta)
         t = np.concatenate([np.linspace(0, t_, num=500), t_ + np.linspace(0, tmax, num=500)])
     else:
         t = adata.obs[key + '_t'].values if key is 'true' else adata.layers[key + '_t'][:, idx]
     tau, alpha, u0, s0 = vectorize(np.sort(t) if sort else t, t_, alpha, beta, gamma)
 
-    ut, st = spliced(tau, s0, u0, alpha, beta, gamma)
+    ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
     ut *= scaling
 
     vt = ut * beta - st * gamma
@@ -58,7 +59,7 @@ def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, sho
 def simulation(adata, var_names='all', legend_loc='upper right', linewidth=None, dpi=None, **kwargs):
     from ..tools.utils import make_dense
     from .scatter import scatter
-    var_names = adata.var_names if var_names is 'all' else [name for name in var_names if var_names in adata.var_names]
+    var_names = adata.var_names if var_names is 'all' else [name for name in var_names if name in adata.var_names]
 
     figsize = rcParams['figure.figsize']
     ncols = len(var_names)

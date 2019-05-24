@@ -42,19 +42,19 @@ class DynamicsRecovery(BaseDynamics):
             self.initialize()
 
     def initialize(self):
+        # set weights
         u, s, w = self.u, self.s, self.weights
         u_w, s_w, perc = u[w], s[w], 95
 
-        self.std = np.std(s_w)
-        if self.fix_scaling is None or self.fix_scaling is False or self.fix_scaling is True:
-            self.scaling = np.std(u_w) / self.std
+        # initialize scaling
+        scaling = self.fix_scaling
+        if not scaling or scaling is True:
+            scaling = np.std(u_w) / np.std(s_w)
             # self.scaling = u[w].max(0) / s[w].max(0) * 1.3
-        else:
-            self.scaling = self.fix_scaling
-        u, u_w = self.u / self.scaling, u_w / self.scaling
+        u, u_w = u / scaling, u_w / scaling
 
         # initialize beta and gamma from extreme quantiles of s
-        if False:
+        if True:
             weights_s = s_w >= np.percentile(s_w, perc, axis=0)
         else:
             us_norm = s_w / np.clip(np.max(s_w, axis=0), 1e-3, None) + u_w / np.clip(np.max(u_w, axis=0), 1e-3, None)
@@ -68,17 +68,19 @@ class DynamicsRecovery(BaseDynamics):
         alpha, u0_, s0_ = u_w.mean(), u_w.mean(), s_w.mean()
         alpha_, u0, s0, = 0, 0, 0
 
-        t, tau, o = assign_timepoints(u, s, alpha, beta, gamma, u0_=u0_, s0_=s0_, fit_steady_states=self.fit_steady_states)
+        alpha, beta, gamma = np.array([alpha, beta, gamma]) * scaling
+
+        # initialize time point assignment
+        t, tau, o = assign_timepoints(u, s, alpha, beta, gamma, u0_=u0_, s0_=s0_)
 
         # update object with initialized vars
-        self.alpha, self.beta, self.gamma, self.alpha_ = alpha, beta, gamma, alpha_
+        self.alpha, self.beta, self.gamma, self.alpha_, self.scaling = alpha, beta, gamma, alpha_, scaling
         self.u0, self.s0, self.u0_, self.s0_ = u0, s0, u0_, s0_
         self.t, self.tau, self.o, self.t_ = t, tau, o, np.max(tau * o)
         self.pars = np.array([alpha, beta, gamma, self.t_, self.scaling])[:, None]
 
         self.loss = [self.get_loss()]
         self.update_state_dependent()
-        # self.update_scaling()
 
     def load_pars(self, adata, gene):
         idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
