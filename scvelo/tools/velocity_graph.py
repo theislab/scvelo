@@ -1,6 +1,6 @@
 from .. import settings
 from .. import logging as logg
-from ..preprocessing.neighbors import pca, neighbors
+from ..preprocessing.neighbors import pca, neighbors, neighbors_to_be_recomputed
 from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
 
@@ -148,6 +148,7 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
         sparse matrix with transition probabilities
     """
     adata = data.copy() if copy else data
+    if 'neighbors' not in adata.uns.keys() or neighbors_to_be_recomputed(adata): neighbors(adata)
     if vkey not in adata.layers.keys(): velocity(adata, vkey=vkey)
 
     vgraph = VelocityGraph(adata, vkey=vkey, xkey=xkey, tkey=tkey, basis=basis, n_neighbors=n_neighbors, approx=approx,
