@@ -80,17 +80,20 @@ def scale(X, min=0, max=1):
 
 def get_indices(dist, n_neighbors=None):
     D = dist.copy()
+    D.data += 1e-6
+
     n_counts = (D > 0).sum(1).A1 if issparse(D) else (D > 0).sum(1)
     n_neighbors = n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
     rows = np.where(n_counts > n_neighbors)[0]
     cumsum_neighs = np.insert(n_counts.cumsum(), 0, 0)
     dat = D.data
-
     for row in rows:
         n0, n1 = cumsum_neighs[row], cumsum_neighs[row + 1]
         rm_idx = n0 + dat[n0:n1].argsort()[n_neighbors:]
         dat[rm_idx] = 0
     D.eliminate_zeros()
+
+    D.data -= 1e-6
     indices = D.indices.reshape((-1, n_neighbors))
     return indices, D
 

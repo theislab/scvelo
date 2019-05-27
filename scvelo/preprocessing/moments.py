@@ -40,7 +40,7 @@ def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', method='umap'
         raise ValueError('Could not find spliced / unspliced counts.')
     if any([not_yet_normalized(adata.layers[layer]) for layer in {'spliced', 'unspliced'}]):
         normalize_per_cell(adata)
-    if 'neighbors' not in adata.uns.keys() or neighbors_to_be_recomputed(adata, n_neighbors=n_neighbors):
+    if neighbors_to_be_recomputed(adata, n_neighbors=n_neighbors):
         if use_rep is None: use_rep = 'X_pca'
         neighbors(adata, n_neighbors=n_neighbors, use_rep=use_rep, n_pcs=n_pcs, method=method, metric=metric)
     if mode not in adata.uns['neighbors']:
