@@ -23,12 +23,11 @@ def toy_data(n_obs):
 
     """Random samples from Dentate Gyrus.
     """
-    adata = dentategyrus()
-    indices = np.random.choice(adata.n_obs, n_obs)
-    adata = adata[indices]
-    adata.obs_names = np.array(range(adata.n_obs), dtype='str')
-    adata.var_names_make_unique()
-    return adata
+    adata_dg = dentategyrus()
+    indices = np.random.choice(adata_dg.n_obs, n_obs)
+    adata = adata_dg[indices]
+    adata.obs_names_make_unique()
+    return adata.copy()
 
 
 def dentategyrus(adjusted=True):
