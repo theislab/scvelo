@@ -41,14 +41,17 @@ def linreg(u, s):  # linear regression fit
 def test_bimodality(x, bins=30, kde=True):
     from scipy.stats import gaussian_kde, norm
 
-    grid = np.linspace(np.min(x), np.max(x), bins)
+    grid = np.linspace(np.min(x), np.percentile(x, 99), bins)
     x_grid = gaussian_kde(x)(grid) if kde else np.histogram(x, bins=grid, density=True)[0]
 
     # id_max = int(bins / 2) + np.argmax(x_grid[int(bins / 2):])
     # t_stat = (x_grid[id_max] - x_grid[:id_max].min()) / (np.std(x_grid) / np.sqrt(bins))
 
-    x_peak = min(x_grid[:int(bins / 5)].max(), x_grid[int(bins / 5):].max())
-    t_stat = (x_peak - x_grid[int(bins / 2)]) / (np.std(x_grid) / np.sqrt(bins))
+    idx = int(bins / 2) - 2
+    idx += np.argmin(x_grid[idx: idx + 4])
+
+    x_peak = min(x_grid[:idx].max(), x_grid[idx:].max())
+    t_stat = (x_peak - x_grid[idx]) / (np.std(x_grid) / np.sqrt(bins))
 
     p_val = norm.sf(t_stat)
     return t_stat, p_val   # ~ t_test (reject unimodality if score > 3)
