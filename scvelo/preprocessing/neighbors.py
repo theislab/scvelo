@@ -1,6 +1,7 @@
 from .. import settings
 from .. import logging as logg
 
+from scanpy.neighbors import compute_connectivities_umap
 from scanpy.api import Neighbors
 from scanpy.api.pp import pca
 from scipy.sparse import issparse
@@ -70,10 +71,12 @@ def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_st
 
     if method is 'sklearn':
         from sklearn.neighbors import NearestNeighbors
-        neighbors = NearestNeighbors(n_neighbors=n_neighbors, n_jobs=num_threads)
-        neighbors.fit(adata.obsm['X_pca'] if use_rep is None else adata.obsm[use_rep])
-        neighbors.distances = neighbors.kneighbors_graph(mode='distance')
-        neighbors.connectivities = neighbors.kneighbors_graph(mode='connectivity')
+        X = adata.obsm['X_pca'] if use_rep is None else adata.obsm[use_rep]
+        neighbors = NearestNeighbors(n_neighbors=n_neighbors, metric=metric, metric_params=metric_kwds, n_jobs=num_threads)
+        neighbors.fit(X)
+        knn_distances, neighbors.knn_indices = neighbors.kneighbors()
+        neighbors.distances, neighbors.connectivities = \
+            compute_connectivities_umap(neighbors.knn_indices, knn_distances, X.shape[0], n_neighbors=30)
 
     elif method is 'hnsw':
         X = adata.obsm['X_pca'] if use_rep is None else adata.obsm[use_rep]
@@ -115,7 +118,6 @@ class FastNeighbors:
             print("In order to use fast approx neighbor search, you need to install hnswlib via \n \n"
                   "pip install -U pybind11 \n"
                   "pip install -U git+https://github.com/nmslib/hnswlib#subdirectory=python_bindings")
-        from scanpy.neighbors import compute_connectivities_umap
 
         ef_c, ef = max(ef_construction, self.n_neighbors), max(self.n_neighbors, ef)
         metric = 'l2' if metric is 'euclidean' else metric
