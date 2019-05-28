@@ -10,18 +10,10 @@ def test_einsum():
     assert np.allclose(norm(Ms), np.linalg.norm(Ms, axis=1))
 
 
-# def test_velocity_graph():
-#     adata = scv.datasets.toy_data(n_obs=500)
-#     scv.pp.recipe_velocity(adata, n_top_genes=300)
-#     scv.tl.velocity(adata)
-#
-#     scv.tl.velocity_graph(adata)
-#     graph = adata.uns['velocity_graph'] + adata.uns['velocity_graph_neg']
-#     graph.setdiag(0)
-#     graph.eliminate_zeros()
-#
-#     T = scv.tl.transition_matrix(adata)
-#     T.setdiag(0)
-#     T.eliminate_zeros()
-#
-#     assert np.allclose((T > 0).toarray(), (graph > 0).toarray())
+def test_pipeline():
+    adata = scv.datasets.simulation(n_obs=100)
+    scv.pp.filter_and_normalize(adata)
+    scv.pp.moments(adata)
+    scv.tl.velocity(adata)
+    scv.tl.velocity_graph(adata)
+    scv.tl.velocity_embedding(adata)
