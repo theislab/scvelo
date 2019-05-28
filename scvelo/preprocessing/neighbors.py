@@ -76,8 +76,9 @@ def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_st
         neighbors.connectivities = neighbors.kneighbors_graph(mode='connectivity')
 
     elif method is 'hnsw':
+        X = adata.obsm['X_pca'] if use_rep is None else adata.obsm[use_rep]
         neighbors = FastNeighbors(n_neighbors=n_neighbors, num_threads=num_threads)
-        neighbors.fit(adata.obsm['X_pca'] if use_rep is None else adata.obsm[use_rep], random_state=random_state)
+        neighbors.fit(X, metric=metric, random_state=random_state, **metric_kwds)
 
     else:
         neighbors = Neighbors(adata)
@@ -107,7 +108,7 @@ class FastNeighbors:
         self.knn_indices, self.knn_distances = None, None
         self.distances, self.connectivities = None, None
 
-    def fit(self, X, space='l2', M=16, ef=100, ef_construction=100, random_state=0):
+    def fit(self, X, metric='l2', M=16, ef=100, ef_construction=100, random_state=0):
         try:
             import hnswlib
         except ImportError:
@@ -117,9 +118,10 @@ class FastNeighbors:
         from scanpy.neighbors import compute_connectivities_umap
 
         ef_c, ef = max(ef_construction, self.n_neighbors), max(self.n_neighbors, ef)
+        metric = 'l2' if metric is 'euclidean' else metric
         ns, dim = X.shape
 
-        knn = hnswlib.Index(space=space, dim=dim)
+        knn = hnswlib.Index(space=metric, dim=dim)
         knn.init_index(max_elements=X.shape[0], ef_construction=ef_c, M=M, random_seed=random_state)
         knn.add_items(X)
         knn.set_ef(ef)
@@ -129,11 +131,11 @@ class FastNeighbors:
         n_neighbors = self.n_neighbors
         if knn_distances[0, 0] == 0:
             knn_distances = knn_distances[:, 1:]
-            knn_indices = knn_indices[:, 1:]
+            knn_indices = knn_indices[:, 1:].astype(int)
             n_neighbors -= 1
 
-        knn_indices = knn_indices.astype(int)
-        knn_distances = np.sqrt(knn_distances)
+        if metric is 'l2':
+            knn_distances = np.sqrt(knn_distances)
 
         self.distances, self.connectivities = compute_connectivities_umap(knn_indices, knn_distances, ns, n_neighbors)
         self.knn_indices = knn_indices
