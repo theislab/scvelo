@@ -1,4 +1,4 @@
-from .dynamical_model_utils import inv, unspliced, spliced, vectorize
+from .dynamical_model_utils import tau_inv, inv, unspliced, spliced, vectorize
 import warnings
 import numpy as np
 exp = np.exp
@@ -6,7 +6,7 @@ exp = np.exp
 
 def tau_s(s, s0, u0, alpha, beta, gamma, u=None, tau=None, eps=1e-2):
     if tau is None:
-        tau = tau_u(u, u0, alpha, beta) if u is not None else 1
+        tau = tau_inv(u, u0=u0, alpha=alpha, beta=beta) if u is not None else 1
     tau_prev, loss, n_iter, max_iter, mixed_states = 1e6, 1e6, 0, 10, np.any(alpha == 0)
     b0 = (alpha - beta * u0) * inv(gamma - beta)
     g0 = s0 - alpha / gamma + b0
@@ -36,12 +36,12 @@ def tau_s(s, s0, u0, alpha, beta, gamma, u=None, tau=None, eps=1e-2):
 
 def assign_timepoints_projection(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, n_timepoints=300):
     if t0_ is None:
-        t0_ = tau_u(u0_, 0, alpha, beta)
+        t0_ = tau_inv(u=u0_, u0=0, alpha=alpha, beta=beta)
     if u0_ is None or s0_ is None:
         u0_, s0_ = (unspliced(t0_, 0, alpha, beta), spliced(t0_, 0, 0, alpha, beta, gamma))
 
     tpoints = np.linspace(0, t0_, num=n_timepoints)
-    tpoints_ = np.linspace(0, tau_u(np.min(u[s > 0]), u0_, 0, beta), num=n_timepoints)[1:]
+    tpoints_ = np.linspace(0, tau_inv(np.min(u[s > 0]), u0=u0_, alpha=0, beta=beta), num=n_timepoints)[1:]
 
     xt = np.vstack([unspliced(tpoints, 0, alpha, beta), spliced(tpoints, 0, 0, alpha, beta, gamma)]).T
     xt_ = np.vstack([unspliced(tpoints_, u0_, 0, beta), spliced(tpoints_, s0_, u0_, 0, beta, gamma)]).T
