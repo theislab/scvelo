@@ -151,7 +151,7 @@ def compute_divergence(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, t
 
     Arguments
     ---------
-    mode: `'distance'`, `'mse'`, `'likelihood'`, `'loglikelihood'` (default: `'distance'`)
+    mode: `'distance'`, `'mse'`, `'likelihood'`, `'loglikelihood'`, `'soft_eval'` (default: `'distance'`)
 
     """
     if u0_ is None or s0_ is None:
@@ -173,6 +173,7 @@ def compute_divergence(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, t
         o = np.argmin([distx_, distx], axis=0)
         varu = np.var(distu * o + distu_ + (1 - o))
         vars = np.var(dists * o + dists_ + (1 - o))
+
         distx = distu ** 2 / varu  + dists ** 2 / vars
         distx_ = distu_ ** 2 / varu + dists_ ** 2 / vars
     else:
@@ -187,10 +188,16 @@ def compute_divergence(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, t
 
     if mode is 'likelihood':
         res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+        if normalized: res /= np.sum(res, axis=0)
+
     elif mode is 'nll':
         res = np.log(2 * np.pi * np.sqrt(varu * vars)) + .5 * res
-    if normalized:
-        res /= np.sum(res, axis=0)
+        if normalized: res /= np.sum(res, axis=0)
+
+    elif mode is 'soft_eval':
+        res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+        o_, o, _, _ = res / np.sum(res, axis=0)
+        res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
     return res
 
@@ -259,7 +266,9 @@ def fit_scaling(u, t, t_, alpha, beta):
 
 
 def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0, sorted=False):
-    o = np.array(t < t_, dtype=int)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        o = np.array(t < t_, dtype=int)
     tau = t * o + (t - t_) * (1 - o)
 
     u0_ = unspliced(t_, u0, alpha, beta)

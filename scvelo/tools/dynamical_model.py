@@ -2,7 +2,7 @@ from .. import settings
 from .. import logging as logg
 from .utils import make_dense, make_unique_list
 from .dynamical_model_utils import BaseDynamics, unspliced, spliced, mRNA, vectorize, derivatives, \
-    find_swichting_time, fit_alpha, fit_scaling, linreg, convolve, assign_timepoints, tau_inv
+    find_swichting_time, fit_alpha, fit_scaling, linreg, convolve, assign_timepoints, tau_inv, compute_divergence
 
 import warnings
 import numpy as np
@@ -381,93 +381,24 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode='soft', perc_ss=Non
 
     logg.info('computing dynamical velocities', r=True)
 
-    alpha = adata.var['fit_alpha'].values
-    beta = adata.var['fit_beta'].values
-    gamma = adata.var['fit_gamma'].values
-    z = adata.var['fit_scaling'].values
+    alpha, beta = adata.var['fit_alpha'].values, adata.var['fit_beta'].values
+    gamma, z = adata.var['fit_gamma'].values, adata.var['fit_scaling'].values
+    t, t_ = adata.layers['fit_t'], adata.var['fit_t_'].values
 
-    t = adata.layers['fit_t']
-    t_ = adata.var['fit_t_'].values
-
-    if use_raw or 'Ms' not in adata.layers.keys():
-        u = adata.layers['unspliced'] / z
-        s = adata.layers['spliced']
-    else:
-        u = adata.layers['Mu'] / z
-        s = adata.layers['Ms']
+    use_raw = use_raw or 'Ms' not in adata.layers.keys()
+    u = adata.layers['unspliced'] / z if use_raw else adata.layers['Mu'] / z
+    s = adata.layers['spliced'] if use_raw else adata.layers['Ms']
 
     if mode is 'soft':
-        u0 = unspliced(t_, 0, alpha, beta)
-        s0 = spliced(t_, 0, 0, alpha, beta, gamma)
-
-        tau = tau_inv(u, s, 0, 0, alpha, beta, gamma)
-        tau = np.clip(tau, 0, t_)
-
-        tau_ = tau_inv(u, s, u0, s0, 0, beta, gamma)
-        tau_ = np.clip(tau_, 0, np.max(tau_[s > 0], axis=0))
-
-        ut, st = mRNA(tau, 0, 0, alpha, beta, gamma)
-        ut_, st_ = mRNA(tau_, u0, s0, 0, beta, gamma)
-
-        ut_ss = alpha / beta
-        st_ss = alpha / gamma
-
-        var_ut = np.var(u - ut, 0)
-        var_ut_ = np.var(u - ut_, 0)
-
-        var_st = np.var(s - st, 0)
-        var_st_ = np.var(s - st_, 0)
-
-        if perc_ss is None:
-            var_ut_ss = np.var(u, 0)
-            var_st_ss = np.var(s, 0)
-
-            var_ut_ss_ = np.var(u - ut_ss, 0)
-            var_st_ss_ = np.var(s - st_ss, 0)
-
-        else:
-            from .optimization import get_weight
-            w = ~ get_weight(u, s, perc_ss, 'l2')
-            w_ = ~ get_weight(ut_ss - u, st_ss - s, perc_ss, 'l2')
-            w = w / w
-            w_ = w_ / w_
-
-            var_ut_ss = np.nanvar(w * u, 0)
-            var_st_ss = np.nanvar(w * s, 0)
-
-            var_ut_ss_ = np.nanvar(w_ * (u - ut_ss), 0)
-            var_st_ss_ = np.nanvar(w_ * (s - st_ss), 0)
-
-        expx = np.exp(- .5 * ((u - ut) ** 2 / var_ut + (s - st) ** 2 / var_st))
-        expx_ = np.exp(- .5 * ((u - ut_) ** 2 / var_ut_ + (s - st_) ** 2 / var_st_))
-        expx_ss = np.exp(- .5 * (u ** 2 / var_ut_ss + s ** 2 / var_st_ss))
-        expx_ss_ = np.exp(- .5 * ((u - ut_ss) ** 2 / var_ut_ss_ + (s - st_ss) ** 2 / var_st_ss_))
-
-        div = 1 / (2 * np.pi)
-        l = div / np.sqrt(var_ut * var_st) * expx
-        l_ = div / np.sqrt(var_ut_ * var_st_) * expx_
-        l_ss = div / np.sqrt(var_ut_ss * var_st_ss) * expx_ss
-        l_ss_ = div / np.sqrt(var_ut_ss_ * var_st_ss_) * expx_ss_
-
-        # from scvelo.tools.dynamical_model_utils import compute_divergence
-        # l, l_, l_ss, l_ss_ = compute_divergence(u, s, alpha, beta, gamma, t0_=t_, u0_=u0, s0_=s0, adjust_variance=False,
-        #                                         normalized=True, mode='likelihood', var_scale=True, perc_ss=perc_ss)
-
-        l_sum = l + l_ + l_ss + l_ss_
-
-        o = l / l_sum
-        o_ = l_ / l_sum
-
-        u = ut * o + ut_ * o_
-        s = st * o + st_ * o_
+        o_, o, ut, st = compute_divergence(u, s, alpha, beta, gamma, t0_=t_, mode='soft_eval')
         alpha = alpha * o
 
     elif mode is 'hard':
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma,)
-        u, s = mRNA(tau, s0, u0, alpha, beta, gamma)
+        ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
 
-    adata.layers[vkey] = u * beta - s * gamma
-    adata.layers[vkey + '_u'] = alpha - beta * u
+    adata.layers[vkey] = ut * beta - st * gamma
+    adata.layers[vkey + '_u'] = alpha - beta * ut
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n'

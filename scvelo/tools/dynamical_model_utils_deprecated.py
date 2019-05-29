@@ -1,4 +1,4 @@
-from .dynamical_model_utils import tau_u, inv, unspliced, spliced, vectorize
+from .dynamical_model_utils import inv, unspliced, spliced, vectorize
 import warnings
 import numpy as np
 exp = np.exp
