@@ -24,7 +24,7 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
         t = adata.obs[key + '_t'].values if key is 'true' else adata.layers[key + '_t'][:, idx]
     tau, alpha, u0, s0 = vectorize(np.sort(t) if sort else t, t_, alpha, beta, gamma)
 
-    ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
+    ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
     ut *= scaling
 
     vt = ut * beta - st * gamma

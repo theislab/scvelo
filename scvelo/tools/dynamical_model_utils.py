@@ -71,11 +71,10 @@ def spliced(tau, s0, u0, alpha, beta, gamma):
     return s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
 
 
-def mRNA(tau, s0, u0, alpha, beta, gamma):
-    c = (alpha - u0 * beta) * inv(gamma - beta)
+def mRNA(tau, u0, s0, alpha, beta, gamma):
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
     u = u0 * expu + alpha / beta * (1 - expu)
-    s = s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
+    s = s0 * exps + alpha / gamma * (1 - exps) + (alpha - u0 * beta) * inv(gamma - beta) * (exps - expu)
     return u, s
 
 
@@ -128,7 +127,7 @@ def assign_tau(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mode='har
         tpoints_ = np.linspace(0, t0, num=num)[1:]
 
         xt = np.vstack(mRNA(tpoints, 0, 0, alpha, beta, gamma)).T
-        xt_ = np.vstack(mRNA(tpoints_, s0_, u0_, 0, beta, gamma)).T
+        xt_ = np.vstack(mRNA(tpoints_, u0_, s0_, 0, beta, gamma)).T
 
         # assign time points (oth. projection onto 'on' and 'off' curve)
         tau, tau_ = np.zeros(len(u)), np.zeros(len(u))
@@ -214,7 +213,13 @@ def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mo
 
     tau = tau * (o == 1) + tau_ * (o == 0)
     if 2 in o: o[o == 2] = 1
-    if 3 in o: o[o == 3] = 0
+    if 3 in o:
+        o[o == 3] = 0
+
+        # tau[o == 3] = t0_ * 1.1
+        # t0_ = np.max([t0_, np.max(tau[o == 3])]) * 1.01
+        # o[o == 3] = 1
+
     t = tau * (o == 1) + (tau_ + t0_) * (o == 0)
 
     return t, tau, o
@@ -345,7 +350,7 @@ def derivatives(u, s, t, t0_, alpha, beta, gamma, scaling=1, alpha_=0, u0=0, s0=
     ds_a, ds_b, ds_c = ds(tau, alpha, beta, gamma, u0, s0, du0, ds0, dt)
 
     # evaluate derivative of likelihood:
-    ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
+    ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
 
     # udiff = np.array(ut * scaling - u)
     udiff = np.array(ut - u / scaling)
@@ -460,7 +465,7 @@ class BaseDynamics:
 
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
 
-        ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
+        ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
 
         udiff = np.array(ut * scaling - u)
         sdiff = np.array(st - s)
@@ -473,7 +478,7 @@ class BaseDynamics:
         alpha, beta, gamma, scaling = self.alpha, self.beta, self.gamma, self.scaling
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
 
-        ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
+        ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
 
         udiff = np.array(ut * scaling - u)
         sdiff = np.array(st - s)

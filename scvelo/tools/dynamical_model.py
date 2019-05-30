@@ -16,6 +16,7 @@ class DynamicsRecovery(BaseDynamics):
         super(DynamicsRecovery, self).__init__(adata.n_obs)
 
         _layers = adata[:, gene].layers
+        self.gene = gene
         self.use_raw = use_raw = use_raw or 'Ms' not in _layers.keys()
 
         # extract actual data
@@ -43,14 +44,13 @@ class DynamicsRecovery(BaseDynamics):
 
     def initialize(self):
         # set weights
-        u, s, w = self.u, self.s, self.weights
+        u, s, w = self.u * 1., self.s * 1., self.weights
         u_w, s_w, perc = u[w], s[w], 95
 
         # initialize scaling
         scaling = self.fix_scaling
         if not scaling or scaling is True:
-            scaling = np.std(u_w) / np.std(s_w)
-            # self.scaling = u[w].max(0) / s[w].max(0) * 1.3
+            scaling = np.std(u_w) / np.std(s_w) #/ 2
         u, u_w = u / scaling, u_w / scaling
 
         # initialize beta and gamma from extreme quantiles of s
@@ -395,7 +395,7 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode='soft', perc_ss=Non
 
     elif mode is 'hard':
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma,)
-        ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
+        ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
 
     adata.layers[vkey] = ut * beta - st * gamma
     adata.layers[vkey + '_u'] = alpha - beta * ut
