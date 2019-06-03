@@ -155,18 +155,25 @@ def extract_int_from_str(array):
 def strings_to_categoricals(adata):
     """Transform string annotations to categoricals.
     """
+    from pandas.api.types import is_string_dtype, is_integer_dtype, is_bool_dtype
     from pandas import Categorical
 
     def is_valid_dtype(values):
-        from pandas.api.types import is_string_dtype, is_integer_dtype, is_bool_dtype
         return is_string_dtype(values) or is_integer_dtype(values) or is_bool_dtype(values)
 
-    for df in [adata.obs, adata.var]:
-        string_cols = [key for key in df.columns if is_valid_dtype(df[key])]
-        for key in string_cols:
-            c = df[key]
-            c = Categorical(c)
-            if len(c.categories) < min(len(c), 100): df[key] = c
+    df = adata.obs
+    df_keys = [key for key in df.columns if is_valid_dtype(df[key])]
+    for key in df_keys:
+        c = df[key]
+        c = Categorical(c)
+        if len(c.categories) < min(len(c), 100): df[key] = c
+
+    df = adata.var
+    df_keys = [key for key in df.columns if is_string_dtype(df[key])]
+    for key in df_keys:
+        c = df[key]
+        c = Categorical(c)
+        if len(c.categories) < min(len(c), 100): df[key] = c
 
 
 def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):
