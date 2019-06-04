@@ -24,7 +24,6 @@ def test_pipeline():
     scv.tl.velocity_confidence(adata)
 
     adata.obs['clusters'] = np.repeat([0, 1], int(adata.n_obs / 2))
-    scv.tl.rank_velocity_genes(adata, match_with='clusters')
     scv.tl.paga(adata, groups='clusters')
     scv.tl.paga(adata, groups='clusters', use_rna_velocity=True)
 
