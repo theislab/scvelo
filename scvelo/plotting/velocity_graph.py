@@ -1,6 +1,6 @@
 from .. import settings
 from ..tools.transition_matrix import transition_matrix
-from .utils import savefig_or_show, default_basis
+from .utils import savefig_or_show, default_basis, get_components
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -55,7 +55,8 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n
         T = transition_matrix(adata, vkey=vkey, weight_indirect_neighbors=0, n_neighbors=n_neighbors, perc=perc)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        edges = draw_networkx_edges(Graph(T), adata.obsm['X_' + basis], width=edge_width, edge_color=edge_color, ax=ax)
+        X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
+        edges = draw_networkx_edges(Graph(T), X_emb, width=edge_width, edge_color=edge_color, ax=ax)
         edges.set_zorder(-2)
         edges.set_rasterized(settings._vector_friendly)
 
