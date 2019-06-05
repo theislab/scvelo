@@ -1,6 +1,7 @@
 from .. import settings
 from .. import logging as logg
 
+from scanpy.neighbors import compute_connectivities_umap
 from scanpy.api import Neighbors
 from scanpy.api.pp import pca
 from scipy.sparse import issparse
@@ -8,7 +9,7 @@ import numpy as np
 
 
 def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_state=0, method='umap',
-              metric='euclidean', metric_kwds={}, copy=False):
+              metric='euclidean', metric_kwds={}, num_threads=-1, copy=False):
     """
     Compute a neighborhood graph of observations [McInnes18]_.
     The neighbor search efficiency of this heavily relies on UMAP [McInnes18]_,
@@ -41,7 +42,7 @@ def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_st
         `n_neighbors` nearest neighbor.
     random_state
         A numpy random seed.
-    method : {{'umap', 'gauss', `sklearn`, `None`}}  (default: `'umap'`)
+    method : {{'umap', 'gauss', 'hnsw', 'sklearn', `None`}}  (default: `'umap'`)
         Use 'umap' [McInnes18]_ or 'gauss' (Gauss kernel following [Coifman05]_
         with adaptive width [Haghverdi16]_) for computing connectivities.
     metric
@@ -70,10 +71,17 @@ def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_st
 
     if method is 'sklearn':
         from sklearn.neighbors import NearestNeighbors
-        neighbors = NearestNeighbors(n_neighbors=n_neighbors)
-        neighbors.fit(adata.obsm['X_pca'] if use_rep is None else adata.obsm[use_rep])
-        neighbors.distances = neighbors.kneighbors_graph(mode='distance')
-        neighbors.connectivities = neighbors.kneighbors_graph(mode='connectivity')
+        X = adata.obsm['X_pca'] if use_rep is None else adata.obsm[use_rep]
+        neighbors = NearestNeighbors(n_neighbors=n_neighbors, metric=metric, metric_params=metric_kwds, n_jobs=num_threads)
+        neighbors.fit(X)
+        knn_distances, neighbors.knn_indices = neighbors.kneighbors()
+        neighbors.distances, neighbors.connectivities = \
+            compute_connectivities_umap(neighbors.knn_indices, knn_distances, X.shape[0], n_neighbors=30)
+
+    elif method is 'hnsw':
+        X = adata.obsm['X_pca'] if use_rep is None else adata.obsm[use_rep]
+        neighbors = FastNeighbors(n_neighbors=n_neighbors, num_threads=num_threads)
+        neighbors.fit(X, metric=metric, random_state=random_state, **metric_kwds)
 
     else:
         neighbors = Neighbors(adata)
@@ -94,6 +102,45 @@ def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_st
         '    \'distances\', weighted adjacency matrix\n'
         '    \'connectivities\', weighted adjacency matrix')
     return adata if copy else None
+
+
+class FastNeighbors:
+    def __init__(self, n_neighbors=30, num_threads=-1):
+        self.n_neighbors = n_neighbors
+        self.num_threads = num_threads
+        self.knn_indices, self.knn_distances = None, None
+        self.distances, self.connectivities = None, None
+
+    def fit(self, X, metric='l2', M=16, ef=100, ef_construction=100, random_state=0):
+        try:
+            import hnswlib
+        except ImportError:
+            print("In order to use fast approx neighbor search, you need to install hnswlib via \n \n"
+                  "pip install -U pybind11 \n"
+                  "pip install -U git+https://github.com/nmslib/hnswlib#subdirectory=python_bindings")
+
+        ef_c, ef = max(ef_construction, self.n_neighbors), max(self.n_neighbors, ef)
+        metric = 'l2' if metric is 'euclidean' else metric
+        ns, dim = X.shape
+
+        knn = hnswlib.Index(space=metric, dim=dim)
+        knn.init_index(max_elements=X.shape[0], ef_construction=ef_c, M=M, random_seed=random_state)
+        knn.add_items(X)
+        knn.set_ef(ef)
+
+        knn_indices, knn_distances = knn.knn_query(X, k=self.n_neighbors, num_threads=self.num_threads)
+
+        n_neighbors = self.n_neighbors
+        if knn_distances[0, 0] == 0:
+            knn_distances = knn_distances[:, 1:]
+            knn_indices = knn_indices[:, 1:].astype(int)
+            n_neighbors -= 1
+
+        if metric is 'l2':
+            knn_distances = np.sqrt(knn_distances)
+
+        self.distances, self.connectivities = compute_connectivities_umap(knn_indices, knn_distances, ns, n_neighbors)
+        self.knn_indices = knn_indices
 
 
 def select_distances(dist, n_neighbors=None):
@@ -130,11 +177,15 @@ def select_connectivities(connectivities, n_neighbors=None):
 
 def neighbors_to_be_recomputed(adata, n_neighbors=None):
     # check if neighbors graph is disrupted
-    n_neighs = (adata.uns['neighbors']['distances'] > 0).sum(1)
-    result = n_neighs.max() - n_neighs.min() >= 2
-    # check if neighbors graph has sufficient number of neighbors
-    if n_neighbors is not None:
-        result = result or n_neighbors > adata.uns['neighbors']['params']['n_neighbors']
+    if 'neighbors' not in adata.uns.keys() \
+            or 'distances' not in adata.uns['neighbors'] or 'params' not in adata.uns['neighbors']:
+        return True
+    else:
+        n_neighs = (adata.uns['neighbors']['distances'] > 0).sum(1)
+        result = n_neighs.max() - n_neighs.min() >= 2
+        # check if neighbors graph has sufficient number of neighbors
+        if n_neighbors is not None:
+            result = result or n_neighbors > adata.uns['neighbors']['params']['n_neighbors']
     return result
 
 

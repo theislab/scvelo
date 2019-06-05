@@ -32,8 +32,12 @@ def velocity_confidence(data, vkey='velocity', copy=False):
         raise ValueError(
             'You need to run `tl.velocity` first.')
 
-    idx = np.array(adata.var[vkey + '_genes'].values, dtype=bool)
-    X, V = adata.layers['Ms'][:, idx].copy(), adata.layers[vkey][:, idx].copy()
+    if vkey + '_genes' in adata.var.keys():
+        idx = np.array(adata.var[vkey + '_genes'], dtype=bool)
+        X, V = adata.layers['Ms'][:, idx].copy(), adata.layers[vkey][:, idx].copy()
+    else:
+        X, V = adata.layers['Ms'].copy(), adata.layers[vkey].copy()
+
     indices = get_indices(dist=adata.uns['neighbors']['distances'])[0]
 
     V -= V.mean(1)[:, None]
@@ -81,12 +85,16 @@ def velocity_confidence_transition(data, vkey='velocity', scale=10, copy=False):
         raise ValueError(
             'You need to run `tl.velocity` first.')
 
-    idx = np.array(adata.var[vkey + '_genes'].values, dtype=bool)
+    if vkey + '_genes' in adata.var.keys():
+        idx = np.array(adata.var[vkey + '_genes'], dtype=bool)
+        X, V = adata.layers['Ms'][:, idx].copy(), adata.layers[vkey][:, idx].copy()
+    else:
+        X, V = adata.layers['Ms'].copy(), adata.layers[vkey].copy()
+
     T = transition_matrix(adata, vkey=vkey, scale=scale)
-    dX = T.dot(adata.layers['Ms'][:, idx]) - adata.layers['Ms'][:, idx]
+    dX = T.dot(X) - X
     dX -= dX.mean(1)[:, None]
 
-    V = adata.layers[vkey][:, idx].copy()
     V -= V.mean(1)[:, None]
 
     adata.obs[vkey + '_confidence_transition'] = prod_sum_var(dX, V) / (norm(dX) * norm(V))

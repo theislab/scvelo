@@ -38,6 +38,54 @@ def linreg(u, s):  # linear regression fit
     return us_ / ss_
 
 
+def test_bimodality(x, bins=30, kde=True):
+    from scipy.stats import gaussian_kde, norm
+
+    grid = np.linspace(np.min(x), np.percentile(x, 99), bins)
+    x_grid = gaussian_kde(x)(grid) if kde else np.histogram(x, bins=grid, density=True)[0]
+
+    # id_max = int(bins / 2) + np.argmax(x_grid[int(bins / 2):])
+    # t_stat = (x_grid[id_max] - x_grid[:id_max].min()) / (np.std(x_grid) / np.sqrt(bins))
+
+    idx = int(bins / 2) - 2
+    idx += np.argmin(x_grid[idx: idx + 4])
+
+    x_peak = min(x_grid[:idx].max(), x_grid[idx:].max())
+    t_stat = (x_peak - x_grid[idx]) / (np.std(x_grid) / np.sqrt(bins))
+
+    p_val = norm.sf(t_stat)
+    return t_stat, p_val   # ~ t_test (reject unimodality if score > 3)
+
+
+def root_time(t, root=0):
+    t_root = t[root]
+    o = t >= t_root  # True if after 'root'
+    t_after = (t - t_root) * o
+    t_origin = np.max(t_after, axis=0)
+    t_before = (t + t_origin) * (1 - o)
+
+    t_switch = np.min(t_before, axis=0)
+    t_rooted = t_after + t_before
+    return t_rooted, t_switch
+
+
+def compute_shared_time(t, perc=None):
+    tx_list = np.percentile(t, [15, 20, 25, 30, 35] if perc is None else perc, axis=1)
+    tx_list /= tx_list.max(1)[:, None]
+
+    mse = []
+    for tx in tx_list:
+        tx_ = np.sort(tx)
+        linx = np.linspace(0, 1, num=len(tx_))
+        mse.append(np.sum((tx_ - linx) ** 2))
+    idx_best = np.argsort(mse)[:2]
+
+    t_shared = tx_list[idx_best].sum(0)
+    t_shared /= t_shared.max()
+
+    return t_shared
+
+
 """Dynamics delineation"""
 
 
@@ -52,33 +100,26 @@ def spliced(tau, s0, u0, alpha, beta, gamma):
     return s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
 
 
-def mRNA(tau, s0, u0, alpha, beta, gamma):
-    c = (alpha - u0 * beta) * inv(gamma - beta)
+def mRNA(tau, u0, s0, alpha, beta, gamma):
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
     u = u0 * expu + alpha / beta * (1 - expu)
-    s = s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
+    s = s0 * exps + alpha / gamma * (1 - exps) + (alpha - u0 * beta) * inv(gamma - beta) * (exps - expu)
     return u, s
 
 
-def tau_u(u, u0, alpha, beta):
-    u_ratio = (u - alpha / beta) / (u0 - alpha / beta)
-    return - 1 / beta * log(u_ratio)
-
-
 def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
-    if s is None:  # tau_inv(u)
-        c0 = u0 - alpha / beta
-        cu = u - alpha / beta
-
-        tau = - 1 / beta * log(cu / c0)
-    else:  # tau_inv(u, s)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        is_invu = (gamma >= beta) if gamma is not None else True
+    any_invu = np.any(is_invu)
+    if  s is None or any_invu:           # tau_inv(u)
+        uinf = alpha / beta
+        tau = - 1 / beta * log((u - uinf) / (u0 - uinf))
+    if s is not None and not np.all(is_invu):   # tau_inv(u, s)
         beta_ = beta * inv(gamma - beta)
-        ceta_ = alpha / gamma - beta_ * (alpha / beta)
-
-        c0 = s0 - beta_ * u0 - ceta_
-        cs = s - beta_ * u - ceta_
-
-        tau = - 1 / gamma * log(cs / c0)
+        xinf = alpha / gamma - beta_ * (alpha / beta)
+        tau_ =  - 1 / gamma * log((s - beta_ * u - xinf) / (s0 - beta_ * u0 - xinf))
+        tau = tau * is_invu  + tau_ * np.invert(is_invu) if any_invu else tau_
     return tau
 
 
@@ -108,12 +149,14 @@ def assign_tau(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mode='har
 
     if mode is 'projection':
         x_obs = np.vstack([u, s]).T
-        t0 = tau_u(np.min(u[s > 0]), u0_, 0, beta)
-        tpoints = np.linspace(0, t0_, num=200)
-        tpoints_ = np.linspace(0, t0, num=200)[1:]
+        t0 = tau_inv(np.min(u[s > 0]), u0=u0_, alpha=0, beta=beta)
+
+        num = np.clip(int(len(u) / 5), 200, 500)
+        tpoints = np.linspace(0, t0_, num=num)
+        tpoints_ = np.linspace(0, t0, num=num)[1:]
 
         xt = np.vstack(mRNA(tpoints, 0, 0, alpha, beta, gamma)).T
-        xt_ = np.vstack(mRNA(tpoints_, s0_, u0_, 0, beta, gamma)).T
+        xt_ = np.vstack(mRNA(tpoints_, u0_, s0_, 0, beta, gamma)).T
 
         # assign time points (oth. projection onto 'on' and 'off' curve)
         tau, tau_ = np.zeros(len(u)), np.zeros(len(u))
@@ -136,7 +179,7 @@ def compute_divergence(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, t
 
     Arguments
     ---------
-    mode: `'distance'`, `'mse'`, `'likelihood'`, `'loglikelihood'` (default: `'distance'`)
+    mode: `'distance'`, `'mse'`, `'likelihood'`, `'loglikelihood'`, `'soft_eval'` (default: `'distance'`)
 
     """
     if u0_ is None or s0_ is None:
@@ -158,6 +201,7 @@ def compute_divergence(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, t
         o = np.argmin([distx_, distx], axis=0)
         varu = np.var(distu * o + distu_ + (1 - o))
         vars = np.var(dists * o + dists_ + (1 - o))
+
         distx = distu ** 2 / varu  + dists ** 2 / vars
         distx_ = distu_ ** 2 / varu + dists_ ** 2 / vars
     else:
@@ -172,10 +216,16 @@ def compute_divergence(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, t
 
     if mode is 'likelihood':
         res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+        if normalized: res /= np.sum(res, axis=0)
+
     elif mode is 'nll':
         res = np.log(2 * np.pi * np.sqrt(varu * vars)) + .5 * res
-    if normalized:
-        res /= np.sum(res, axis=0)
+        if normalized: res /= np.sum(res, axis=0)
+
+    elif mode is 'soft_eval':
+        res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+        o_, o, _, _ = res / np.sum(res, axis=0)
+        res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
     return res
 
@@ -186,13 +236,19 @@ def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mo
     if u0_ is None or s0_ is None:
         u0_, s0_ = (unspliced(t0_, 0, alpha, beta), spliced(t0_, 0, 0, alpha, beta, gamma))
 
-    tau, tau_, t0_ = assign_tau(u, s, alpha, beta, gamma, t0_, u0_, s0_, mode)  # this could be given from comp_dist-> faster
-
-    dxt = compute_divergence(u, s, alpha, beta, gamma, t0_, u0_, s0_, tau, tau_)#, fit_steady_states=fit_steady_states)
+    tau, tau_, t0_ = assign_tau(u, s, alpha, beta, gamma, t0_, u0_, s0_, mode)
+    dxt = compute_divergence(u, s, alpha, beta, gamma, t0_, u0_, s0_, tau, tau_)
     o = np.argmin(dxt, axis=0)
+
     tau = tau * (o == 1) + tau_ * (o == 0)
     if 2 in o: o[o == 2] = 1
-    if 3 in o: o[o == 3] = 0
+    if 3 in o:
+        o[o == 3] = 0
+
+        # tau[o == 3] = t0_ * 1.1
+        # t0_ = np.max([t0_, np.max(tau[o == 3])]) * 1.01
+        # o[o == 3] = 1
+
     t = tau * (o == 1) + (tau_ + t0_) * (o == 0)
 
     return t, tau, o
@@ -244,7 +300,9 @@ def fit_scaling(u, t, t_, alpha, beta):
 
 
 def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0, sorted=False):
-    o = np.array(t < t_, dtype=int)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        o = np.array(t < t_, dtype=int)
     tau = t * o + (t - t_) * (1 - o)
 
     u0_ = unspliced(t_, u0, alpha, beta)
@@ -321,9 +379,10 @@ def derivatives(u, s, t, t0_, alpha, beta, gamma, scaling=1, alpha_=0, u0=0, s0=
     ds_a, ds_b, ds_c = ds(tau, alpha, beta, gamma, u0, s0, du0, ds0, dt)
 
     # evaluate derivative of likelihood:
-    ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
+    ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
 
-    udiff = np.array(ut * scaling - u)
+    # udiff = np.array(ut * scaling - u)
+    udiff = np.array(ut - u / scaling)
     sdiff = np.array(st - s)
 
     if weights is not None:
@@ -435,7 +494,7 @@ class BaseDynamics:
 
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
 
-        ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
+        ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
 
         udiff = np.array(ut * scaling - u)
         sdiff = np.array(st - s)
@@ -448,7 +507,7 @@ class BaseDynamics:
         alpha, beta, gamma, scaling = self.alpha, self.beta, self.gamma, self.scaling
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
 
-        ut, st = mRNA(tau, s0, u0, alpha, beta, gamma)
+        ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
 
         udiff = np.array(ut * scaling - u)
         sdiff = np.array(st - s)

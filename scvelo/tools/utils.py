@@ -80,17 +80,20 @@ def scale(X, min=0, max=1):
 
 def get_indices(dist, n_neighbors=None):
     D = dist.copy()
+    D.data += 1e-6
+
     n_counts = (D > 0).sum(1).A1 if issparse(D) else (D > 0).sum(1)
     n_neighbors = n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
     rows = np.where(n_counts > n_neighbors)[0]
     cumsum_neighs = np.insert(n_counts.cumsum(), 0, 0)
     dat = D.data
-
     for row in rows:
         n0, n1 = cumsum_neighs[row], cumsum_neighs[row + 1]
         rm_idx = n0 + dat[n0:n1].argsort()[n_neighbors:]
         dat[rm_idx] = 0
     D.eliminate_zeros()
+
+    D.data -= 1e-6
     indices = D.indices.reshape((-1, n_neighbors))
     return indices, D
 
@@ -152,18 +155,25 @@ def extract_int_from_str(array):
 def strings_to_categoricals(adata):
     """Transform string annotations to categoricals.
     """
+    from pandas.api.types import is_string_dtype, is_integer_dtype, is_bool_dtype
     from pandas import Categorical
 
     def is_valid_dtype(values):
-        from pandas.api.types import is_string_dtype, is_integer_dtype, is_bool_dtype
         return is_string_dtype(values) or is_integer_dtype(values) or is_bool_dtype(values)
 
-    for df in [adata.obs, adata.var]:
-        string_cols = [key for key in df.columns if is_valid_dtype(df[key])]
-        for key in string_cols:
-            c = df[key]
-            c = Categorical(c)
-            if len(c.categories) < min(len(c), 100): df[key] = c
+    df = adata.obs
+    df_keys = [key for key in df.columns if is_valid_dtype(df[key])]
+    for key in df_keys:
+        c = df[key]
+        c = Categorical(c)
+        if len(c.categories) < min(len(c), 100): df[key] = c
+
+    df = adata.var
+    df_keys = [key for key in df.columns if is_string_dtype(df[key])]
+    for key in df_keys:
+        c = df[key]
+        c = Categorical(c)
+        if len(c.categories) < min(len(c), 100): df[key] = c
 
 
 def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):

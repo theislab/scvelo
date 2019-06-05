@@ -64,7 +64,7 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', resolution=N
 
     tmp_filter = np.ones(vdata.n_vars, dtype=bool)
     if vkey + '_genes' in vdata.var.keys():
-        tmp_filter &= vdata.var[vkey + '_genes']
+        tmp_filter &= np.array(vdata.var[vkey + '_genes'].values, dtype=bool)
 
     if 'unspliced' in vdata.layers.keys():
         n_counts = (vdata.layers['unspliced'] > 0).sum(0)
@@ -83,6 +83,9 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', resolution=N
         tmp_filter &= (dispersions > min_dispersion)
 
     vdata._inplace_subset_var(tmp_filter)
+
+    if 'highly_variable' in vdata.var.keys():
+        vdata.var['highly_variable'] = np.array(vdata.var['highly_variable'], dtype=bool)
 
     import scanpy.api as sc
     verbosity_tmp = sc.settings.verbosity
@@ -155,7 +158,7 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
 
     tmp_filter = np.ones(adata.n_vars, dtype=bool)
     if vkey + '_genes' in adata.var.keys():
-        tmp_filter &= adata.var[vkey + '_genes']
+        tmp_filter &= np.array(adata.var[vkey + '_genes'].values, dtype=bool)
 
     if 'unspliced' in adata.layers.keys():
         n_counts = (adata.layers['unspliced'] > 0).sum(0)
@@ -174,7 +177,7 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
         tmp_filter &= (dispersions > min_dispersion)
 
     X = adata[:, tmp_filter].layers[vkey]
-    groups, groups_masks = select_groups(adata[:, tmp_filter], key=groupby)
+    groups, groups_masks = select_groups(adata, key=groupby)
 
     n_groups = groups_masks.shape[0]
     sizes = groups_masks.sum(1)

@@ -2,7 +2,7 @@ from .. import settings
 from .. import logging as logg
 from .utils import make_dense, make_unique_list
 from .dynamical_model_utils import BaseDynamics, unspliced, spliced, mRNA, vectorize, derivatives, \
-    find_swichting_time, fit_alpha, fit_scaling, linreg, convolve, assign_timepoints, tau_inv
+    find_swichting_time, fit_alpha, fit_scaling, linreg, convolve, assign_timepoints, tau_inv, compute_divergence
 
 import warnings
 import numpy as np
@@ -11,11 +11,12 @@ from matplotlib import rcParams
 
 
 class DynamicsRecovery(BaseDynamics):
-    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, load_pars=None, fix_scaling=None,
-                 fit_steady_states=True):
+    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, load_pars=None, fit_scaling=True,
+                 fit_time=True, fit_switching=True, fit_steady_states=True):
         super(DynamicsRecovery, self).__init__(adata.n_obs)
 
         _layers = adata[:, gene].layers
+        self.gene = gene
         self.use_raw = use_raw = use_raw or 'Ms' not in _layers.keys()
 
         # extract actual data
@@ -33,7 +34,9 @@ class DynamicsRecovery(BaseDynamics):
         u_filter = np.ravel(u < np.percentile(u[nonzero], 98))
 
         self.weights = s_filter & u_filter & nonzero
-        self.fix_scaling = fix_scaling
+        self.fit_scaling = fit_scaling
+        self.fit_time = fit_time
+        self.fit_switching = fit_switching
         self.fit_steady_states = fit_steady_states
 
         if load_pars and 'fit_alpha' in adata.var.keys():
@@ -42,19 +45,16 @@ class DynamicsRecovery(BaseDynamics):
             self.initialize()
 
     def initialize(self):
-        u, s, w = self.u, self.s, self.weights
+        # set weights
+        u, s, w = self.u * 1., self.s * 1., self.weights
         u_w, s_w, perc = u[w], s[w], 95
 
-        self.std = np.std(s_w)
-        if self.fix_scaling is None or self.fix_scaling is False or self.fix_scaling is True:
-            self.scaling = np.std(u_w) / self.std
-            # self.scaling = u[w].max(0) / s[w].max(0) * 1.3
-        else:
-            self.scaling = self.fix_scaling
-        u, u_w = self.u / self.scaling, u_w / self.scaling
+        # initialize scaling
+        scaling = np.std(u_w) / np.std(s_w) if isinstance(self.fit_scaling, bool) else self.fit_scaling
+        u, u_w = u / scaling, u_w / scaling
 
         # initialize beta and gamma from extreme quantiles of s
-        if False:
+        if True:
             weights_s = s_w >= np.percentile(s_w, perc, axis=0)
         else:
             us_norm = s_w / np.clip(np.max(s_w, axis=0), 1e-3, None) + u_w / np.clip(np.max(u_w, axis=0), 1e-3, None)
@@ -68,17 +68,19 @@ class DynamicsRecovery(BaseDynamics):
         alpha, u0_, s0_ = u_w.mean(), u_w.mean(), s_w.mean()
         alpha_, u0, s0, = 0, 0, 0
 
-        t, tau, o = assign_timepoints(u, s, alpha, beta, gamma, u0_=u0_, s0_=s0_, fit_steady_states=self.fit_steady_states)
+        alpha, beta, gamma = np.array([alpha, beta, gamma]) * scaling
+
+        # initialize time point assignment
+        t, tau, o = assign_timepoints(u, s, alpha, beta, gamma, u0_=u0_, s0_=s0_)
 
         # update object with initialized vars
-        self.alpha, self.beta, self.gamma, self.alpha_ = alpha, beta, gamma, alpha_
+        self.alpha, self.beta, self.gamma, self.alpha_, self.scaling = alpha, beta, gamma, alpha_, scaling
         self.u0, self.s0, self.u0_, self.s0_ = u0, s0, u0_, s0_
         self.t, self.tau, self.o, self.t_ = t, tau, o, np.max(tau * o)
         self.pars = np.array([alpha, beta, gamma, self.t_, self.scaling])[:, None]
 
         self.loss = [self.get_loss()]
         self.update_state_dependent()
-        # self.update_scaling()
 
     def load_pars(self, adata, gene):
         idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
@@ -88,10 +90,14 @@ class DynamicsRecovery(BaseDynamics):
         self.scaling = adata.var['fit_scaling'][idx]
         self.t_ = adata.var['fit_t_'][idx]
         self.t = adata.layers['fit_t'][:, idx]
+        self.o = self.t < self.t_
+        self.tau = self.t * self.o + (self.t - self.t_) * (1 - self.o)
+        self.pars = np.array([self.alpha, self.beta, self.gamma, self.t_, self.scaling])[:, None]
 
         self.u0, self.s0, self.alpha_ = 0, 0, 0
         self.u0_ = unspliced(self.t_, self.u0, self.alpha, self.beta)
         self.s0_ = spliced(self.t_, self.u0, self.s0, self.alpha, self.beta, self.gamma)
+
         self.update_state_dependent()
 
     def fit(self, max_iter=100, r=None, method=None, clip_loss=None):
@@ -114,29 +120,33 @@ class DynamicsRecovery(BaseDynamics):
         alpha, beta, gamma, scaling = self.alpha, self.beta, self.gamma, self.scaling
 
         improved_tau, improved_alpha, improved_scaling = False, False, False
-        # find optimal switching (generalized lin.reg) & assign timepoints/states (explicit)
-        tau_w, o_w = (self.tau, self.o) if w is None else (self.tau[w], self.o[w])
-        t0_ = find_swichting_time(u_w, s_w, tau_w, o_w, alpha, beta, gamma)
 
-        t0_vals = t0_ + np.linspace(-1, 1, num=5) * t0_ / 10
-        for t0_ in t0_vals:
-            improved_tau = improved_tau or self.update_loss(t_=t0_, reassign_time=True)  # update if improved
+        # find optimal switching (generalized lin.reg) & assign timepoints/states (explicit), update if improved
+        if self.fit_switching:
+            tau_w, o_w = (self.tau, self.o) if w is None else (self.tau[w], self.o[w])
+            t0_ = find_swichting_time(u_w, s_w, tau_w, o_w, alpha, beta, gamma)
 
-        # fit alpha (generalized lin.reg)
+            t0_vals = t0_ + np.linspace(-1, 1, num=5) * t0_ / 10
+            for t0_ in t0_vals:
+                improved_tau = improved_tau or self.update_loss(t_=t0_, reassign_time=self.fit_time)
+
+        # fit alpha (generalized lin.reg), update if improved
         tau_w, o_w = (self.tau, self.o) if w is None else (self.tau[w], self.o[w])
         alpha = fit_alpha(u_w, s_w, tau_w, o_w, beta, gamma)
         alpha = self.alpha if alpha is None or alpha != alpha else alpha
 
         alpha_vals = alpha + np.linspace(-1, 1, num=5) * alpha / 10
         for alpha in alpha_vals:
-            improved_alpha = improved_alpha or self.update_loss(alpha=alpha, reassign_time=True)  # update if improved
+            improved_alpha = improved_alpha or self.update_loss(alpha=alpha, reassign_time=self.fit_time)
 
-        # fit scaling (generalized lin.reg)
-        if self.fix_scaling is None or self.fix_scaling is False:
+        # fit scaling (generalized lin.reg), update if improved
+        if self.fit_scaling is True:
             t_w, tau_w, o_w = (self.t, self.tau, self.o) if w is None else (self.t[w], self.tau[w], self.o[w])
             alpha, t0_ = self.alpha, self.t_
-            scaling = fit_scaling(u_w, t_w, t0_, alpha, beta)
-            improved_scaling = self.update_loss(scaling=scaling*self.scaling, reassign_time=True)  # update if improved
+            z = fit_scaling(u_w, t_w, t0_, alpha, beta)
+            z_vals = z + np.linspace(-1, 1, num=5) * z / 2
+            for z in z_vals:
+                improved_scaling = self.update_loss(scaling=self.scaling*z, beta=self.beta*z, t_=self.t_/z, t=self.t/z)
 
         return improved_tau or improved_alpha or improved_scaling
 
@@ -162,7 +172,7 @@ class DynamicsRecovery(BaseDynamics):
 
     def update_vars(self, r=None, method=None, clip_loss=None):
         if r is None:
-            r = 1e-2 if method is 'adam' else 1e-6
+            r = 1e-2 if method is 'adam' else 1e-5
         if clip_loss is None:
             clip_loss = False if method is 'adam' else True
         # if self.weights is None:
@@ -243,10 +253,10 @@ class DynamicsRecovery(BaseDynamics):
                 print('    loss:', np.round(loss_prev, 2), '-->', np.round(loss, 2))
 
             if 't_' in new_vals_name or reassign_time:
-                self.t = t
+                if reassign_time: self.t = t
                 self.t_ = t_
-                self.o = o = np.array(t <= t_, dtype=bool)
-                self.tau = t * o + (t - t_) * (1 - o)
+                self.o = o = np.array(self.t <= t_, dtype=bool)
+                self.tau = self.t * o + (self.t - t_) * (1 - o)
 
             if 'alpha' in new_vals_name: self.alpha = alpha
             if 'beta' in new_vals_name: self.beta = beta
@@ -263,14 +273,14 @@ class DynamicsRecovery(BaseDynamics):
         gamma_vals = np.linspace(gamma_sight[0], gamma_sight[1], num=num) * self.gamma + self.gamma
 
         x, y = alpha_vals, gamma_vals
-        f = lambda x, y: self.get_loss(alpha=x, gamma=y, reassign_time=True)
+        f = lambda x, y: self.get_loss(alpha=x, gamma=y, reassign_time=self.fit_time)
         z = np.zeros((len(x), len(x)))
 
         for i, xi in enumerate(x):
             for j, yi in enumerate(y):
                 z[i, j] = f(xi, yi)
         ix, iy = np.unravel_index(z.argmin(), z.shape)
-        return self.update_loss(alpha=x[ix], gamma=y[ix], reassign_time=True)
+        return self.update_loss(alpha=x[ix], gamma=y[ix], reassign_time=self.fit_time)
 
 
 def read_pars(adata, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling'], key='fit'):
@@ -287,9 +297,9 @@ def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling
         adata.var[add_key + '_' + name] = pars[i]
 
 
-def recover_dynamics(data, var_names='velocity_genes', max_iter=100, learning_rate=None, add_key='fit', t_max=None,
-                     use_raw=False, min_loss=True, fix_scaling=None, fit_steady_states=True, load_pars=None,
-                     return_model=False, plot_results=False, copy=False, **kwargs):
+def recover_dynamics(data, var_names='velocity_genes', max_iter=100, learning_rate=None, t_max=None, use_raw=False,
+                     min_loss=True, fit_scaling=True, fit_time=True, fit_switching=True, fit_steady_states=True,
+                     load_pars=None, add_key='fit', return_model=False, plot_results=False, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -315,8 +325,8 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=100, learning_ra
 
     progress = logg.ProgressReporter(len(var_names))
     for i, gene in enumerate(var_names):
-        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars,
-                              fix_scaling=fix_scaling, fit_steady_states=fit_steady_states)
+        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars, fit_time=fit_time,
+                              fit_switching=fit_switching, fit_scaling=fit_scaling, fit_steady_states=fit_steady_states)
         if max_iter > 1:
             dm.fit(max_iter, learning_rate, **kwargs)
 
@@ -356,18 +366,20 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=100, learning_ra
               '    \'' + add_key + '_pars' + '\', fitted parameters for splicing dynamics (adata.var)')
 
     if plot_results:  # Plot Parameter Stats
-        figsize = [12, 5]  # rcParams['figure.figsize']
+        n_rows, n_cols = len(var_names[:4]), 6
+        figsize = [2 * n_cols, 1.5 * n_rows]  # rcParams['figure.figsize']
         fontsize = rcParams['font.size']
-        fig, axes = pl.subplots(nrows=len(var_names[:4]), ncols=6, figsize=figsize)
+        fig, axes = pl.subplots(nrows=n_rows, ncols=6, figsize=figsize)
         pl.subplots_adjust(wspace=0.7, hspace=0.5)
         for i, gene in enumerate(var_names[:4]):
             P[i] *= np.array([1 / m[idx[i]], 1 / m[idx[i]], 1 / m[idx[i]], m[idx[i]], 1])[:, None]
+            ax = axes[i] if n_rows > 1 else axes
             for j, pij in enumerate(P[i]):
-                axes[i][j].plot(pij)
-            axes[i][len(P[i])].plot(L[i])
+                ax[j].plot(pij)
+            ax[len(P[i])].plot(L[i])
             if i == 0:
                 for j, name in enumerate(['alpha', 'beta', 'gamma', 't_', 'scaling', 'loss']):
-                    axes[i][j].set_title(name, fontsize=fontsize)
+                    ax[j].set_title(name, fontsize=fontsize)
 
     return dm if return_model else adata if copy else None
 
@@ -379,93 +391,24 @@ def dynamical_velocity(data, vkey='dynamical_velocity', mode='soft', perc_ss=Non
 
     logg.info('computing dynamical velocities', r=True)
 
-    alpha = adata.var['fit_alpha'].values
-    beta = adata.var['fit_beta'].values
-    gamma = adata.var['fit_gamma'].values
-    z = adata.var['fit_scaling'].values
+    alpha, beta = adata.var['fit_alpha'].values, adata.var['fit_beta'].values
+    gamma, z = adata.var['fit_gamma'].values, adata.var['fit_scaling'].values
+    t, t_ = adata.layers['fit_t'], adata.var['fit_t_'].values
 
-    t = adata.layers['fit_t']
-    t_ = adata.var['fit_t_'].values
-
-    if use_raw or 'Ms' not in adata.layers.keys():
-        u = adata.layers['unspliced'] / z
-        s = adata.layers['spliced']
-    else:
-        u = adata.layers['Mu'] / z
-        s = adata.layers['Ms']
+    use_raw = use_raw or 'Ms' not in adata.layers.keys()
+    u = adata.layers['unspliced'] / z if use_raw else adata.layers['Mu'] / z
+    s = adata.layers['spliced'] if use_raw else adata.layers['Ms']
 
     if mode is 'soft':
-        u0 = unspliced(t_, 0, alpha, beta)
-        s0 = spliced(t_, 0, 0, alpha, beta, gamma)
-
-        tau = tau_inv(u, s, 0, 0, alpha, beta, gamma)
-        tau = np.clip(tau, 0, t_)
-
-        tau_ = tau_inv(u, s, u0, s0, 0, beta, gamma)
-        tau_ = np.clip(tau_, 0, np.max(tau_[s > 0], axis=0))
-
-        ut, st = mRNA(tau, 0, 0, alpha, beta, gamma)
-        ut_, st_ = mRNA(tau_, u0, s0, 0, beta, gamma)
-
-        ut_ss = alpha / beta
-        st_ss = alpha / gamma
-
-        var_ut = np.var(u - ut, 0)
-        var_ut_ = np.var(u - ut_, 0)
-
-        var_st = np.var(s - st, 0)
-        var_st_ = np.var(s - st_, 0)
-
-        if perc_ss is None:
-            var_ut_ss = np.var(u, 0)
-            var_st_ss = np.var(s, 0)
-
-            var_ut_ss_ = np.var(u - ut_ss, 0)
-            var_st_ss_ = np.var(s - st_ss, 0)
-
-        else:
-            from .optimization import get_weight
-            w = ~ get_weight(u, s, perc_ss, 'l2')
-            w_ = ~ get_weight(ut_ss - u, st_ss - s, perc_ss, 'l2')
-            w = w / w
-            w_ = w_ / w_
-
-            var_ut_ss = np.nanvar(w * u, 0)
-            var_st_ss = np.nanvar(w * s, 0)
-
-            var_ut_ss_ = np.nanvar(w_ * (u - ut_ss), 0)
-            var_st_ss_ = np.nanvar(w_ * (s - st_ss), 0)
-
-        expx = np.exp(- .5 * ((u - ut) ** 2 / var_ut + (s - st) ** 2 / var_st))
-        expx_ = np.exp(- .5 * ((u - ut_) ** 2 / var_ut_ + (s - st_) ** 2 / var_st_))
-        expx_ss = np.exp(- .5 * (u ** 2 / var_ut_ss + s ** 2 / var_st_ss))
-        expx_ss_ = np.exp(- .5 * ((u - ut_ss) ** 2 / var_ut_ss_ + (s - st_ss) ** 2 / var_st_ss_))
-
-        div = 1 / (2 * np.pi)
-        l = div / np.sqrt(var_ut * var_st) * expx
-        l_ = div / np.sqrt(var_ut_ * var_st_) * expx_
-        l_ss = div / np.sqrt(var_ut_ss * var_st_ss) * expx_ss
-        l_ss_ = div / np.sqrt(var_ut_ss_ * var_st_ss_) * expx_ss_
-
-        # from scvelo.tools.dynamical_model_utils import compute_divergence
-        # l, l_, l_ss, l_ss_ = compute_divergence(u, s, alpha, beta, gamma, t0_=t_, u0_=u0, s0_=s0, adjust_variance=False,
-        #                                         normalized=True, mode='likelihood', var_scale=True, perc_ss=perc_ss)
-
-        l_sum = l + l_ + l_ss + l_ss_
-
-        o = l / l_sum
-        o_ = l_ / l_sum
-
-        u = ut * o + ut_ * o_
-        s = st * o + st_ * o_
+        o_, o, ut, st = compute_divergence(u, s, alpha, beta, gamma, t0_=t_, mode='soft_eval')
         alpha = alpha * o
 
     elif mode is 'hard':
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma,)
-        u, s = mRNA(tau, s0, u0, alpha, beta, gamma)
+        ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
 
-    adata.layers[vkey] = u * beta - s * gamma
-    adata.layers[vkey + '_u'] = alpha - beta * u
+    adata.layers[vkey] = ut * beta - st * gamma
+    adata.layers[vkey + '_u'] = alpha - beta * ut
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n'

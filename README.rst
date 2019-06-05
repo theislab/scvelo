@@ -69,8 +69,13 @@ Install scVelo from PyPi using::
 
     pip install -U scvelo
 
-or from source using ``pip install git+https://github.com/theislab/scvelo``.
+or from source using::
+
+    pip install git+https://github.com/theislab/scvelo
+
 Windows and Python 3.7 users further need to ``conda install pytables``.
+
+Note: pip v19.0 appears to have a bug. If your installation breaks, consider downgrading to ``pip install pip==18.1``.
 
 The splicing data can be obtained using the `velocyto command line interface`_.
 
@@ -131,7 +136,7 @@ Using the graph you can then project the velocities into any embedding (such as 
     scv.tl.velocity_embedding(adata, basis='umap', **params)
 
 Note, that translation of velocities into a graph is only needed for non-linear embeddings.
-In PCA space you can skip the velocity graph and directly project into the embedding using ``direct_projection=True``.
+In PCA space you can skip the velocity graph and directly project into the embedding using ``scv.tl.velocity_embedding(adata, basis='pca', direct_projection=True)``.
 
 Visualization
 -------------
