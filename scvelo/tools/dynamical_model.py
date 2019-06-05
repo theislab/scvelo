@@ -11,7 +11,7 @@ from matplotlib import rcParams
 
 
 class DynamicsRecovery(BaseDynamics):
-    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, load_pars=None, fit_scaling=True,
+    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, load_pars=None, fit_scaling=False,
                  fit_time=True, fit_switching=True, fit_steady_states=True):
         super(DynamicsRecovery, self).__init__(adata.n_obs)
 
@@ -128,7 +128,7 @@ class DynamicsRecovery(BaseDynamics):
 
             t0_vals = t0_ + np.linspace(-1, 1, num=5) * t0_ / 10
             for t0_ in t0_vals:
-                improved_tau = improved_tau or self.update_loss(t_=t0_, reassign_time=self.fit_time)
+                improved_tau = improved_tau or self.update_loss(t_=t0_, reassign_time=True)
 
         # fit alpha (generalized lin.reg), update if improved
         tau_w, o_w = (self.tau, self.o) if w is None else (self.tau[w], self.o[w])
@@ -137,7 +137,7 @@ class DynamicsRecovery(BaseDynamics):
 
         alpha_vals = alpha + np.linspace(-1, 1, num=5) * alpha / 10
         for alpha in alpha_vals:
-            improved_alpha = improved_alpha or self.update_loss(alpha=alpha, reassign_time=self.fit_time)
+            improved_alpha = improved_alpha or self.update_loss(alpha=alpha, reassign_time=False)
 
         # fit scaling (generalized lin.reg), update if improved
         if self.fit_scaling is True:
@@ -146,7 +146,7 @@ class DynamicsRecovery(BaseDynamics):
             z = fit_scaling(u_w, t_w, t0_, alpha, beta)
             z_vals = z + np.linspace(-1, 1, num=5) * z / 2
             for z in z_vals:
-                improved_scaling = self.update_loss(scaling=self.scaling*z, beta=self.beta*z, t_=self.t_/z, t=self.t/z)
+                improved_scaling = self.update_loss(scaling=self.scaling*z, beta=self.beta*z, t_=self.t_/z, reassign_time=True)#t=self.t/z)
 
         return improved_tau or improved_alpha or improved_scaling
 
@@ -298,7 +298,7 @@ def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling
 
 
 def recover_dynamics(data, var_names='velocity_genes', max_iter=100, learning_rate=None, t_max=None, use_raw=False,
-                     min_loss=True, fit_scaling=True, fit_time=True, fit_switching=True, fit_steady_states=True,
+                     min_loss=True, fit_scaling=False, fit_time=True, fit_switching=True, fit_steady_states=True,
                      load_pars=None, add_key='fit', return_model=False, plot_results=False, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 

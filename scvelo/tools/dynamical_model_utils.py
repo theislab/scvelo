@@ -238,16 +238,14 @@ def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mo
 
     tau, tau_, t0_ = assign_tau(u, s, alpha, beta, gamma, t0_, u0_, s0_, mode)
     dxt = compute_divergence(u, s, alpha, beta, gamma, t0_, u0_, s0_, tau, tau_)
+
     o = np.argmin(dxt, axis=0)
 
-    tau = tau * (o == 1) + tau_ * (o == 0)
-    if 2 in o: o[o == 2] = 1
-    if 3 in o:
-        o[o == 3] = 0
+    tau_ *= (o == 0)
+    tau = tau * (o == 1) + tau_
 
-        # tau[o == 3] = t0_ * 1.1
-        # t0_ = np.max([t0_, np.max(tau[o == 3])]) * 1.01
-        # o[o == 3] = 1
+    if 2 in o: o[o == 2] = 1
+    if 3 in o: o[o == 3] = 0
 
     t = tau * (o == 1) + (tau_ + t0_) * (o == 0)
 
@@ -469,8 +467,8 @@ class BaseDynamics:
         if w is not None: u, t = (u[w], t[w])
         return fit_scaling(u, t, self.t_, self.alpha, self.beta)
 
-    def get_time_assignment(self, t_=None, alpha=None, beta=None, gamma=None, mode='hard'):
-        t, tau, o = assign_timepoints(self.u / self.scaling, self.s,
+    def get_time_assignment(self, t_=None, alpha=None, beta=None, gamma=None, scaling=None, mode='hard'):
+        t, tau, o = assign_timepoints(self.u / (self.scaling if scaling is None else scaling), self.s,
                                       self.alpha if alpha is None else alpha,
                                       self.beta if beta is None else beta,
                                       self.gamma if gamma is None else gamma,
