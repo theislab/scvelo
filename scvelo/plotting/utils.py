@@ -47,6 +47,13 @@ def default_basis(adata):
     return keys[-1] if len(keys) > 0 else None
 
 
+def check_basis(adata, basis):
+    if basis in adata.obsm.keys() and 'X_' + basis not in adata.obsm.keys():
+        adata.obsm['X_' + basis] = adata.obsm[basis]
+        del adata.obsm[basis]
+        logg.info('Renamed', '\'' + basis + '\'', 'to convention', '\'X_' + basis + '\' (adata.obsm).')
+
+
 def make_unique_list(key, allow_array=False):
     from pandas import unique, Index
     if isinstance(key, Index): key = key.tolist()
