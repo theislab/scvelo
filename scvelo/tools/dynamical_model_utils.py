@@ -57,6 +57,35 @@ def test_bimodality(x, bins=30, kde=True):
     return t_stat, p_val   # ~ t_test (reject unimodality if score > 3)
 
 
+def root_time(t, root=0):
+    t_root = t[root]
+    o = t >= t_root  # True if after 'root'
+    t_after = (t - t_root) * o
+    t_origin = np.max(t_after, axis=0)
+    t_before = (t + t_origin) * (1 - o)
+
+    t_switch = np.min(t_before, axis=0)
+    t_rooted = t_after + t_before
+    return t_rooted, t_switch
+
+
+def compute_shared_time(t, perc=None):
+    tx_list = np.percentile(t, [15, 20, 25, 30, 35] if perc is None else perc, axis=1)
+    tx_list /= tx_list.max(1)[:, None]
+
+    mse = []
+    for tx in tx_list:
+        tx_ = np.sort(tx)
+        linx = np.linspace(0, 1, num=len(tx_))
+        mse.append(np.sum((tx_ - linx) ** 2))
+    idx_best = np.argsort(mse)[:2]
+
+    t_shared = tx_list[idx_best].sum(0)
+    t_shared /= t_shared.max()
+
+    return t_shared
+
+
 """Dynamics delineation"""
 
 
