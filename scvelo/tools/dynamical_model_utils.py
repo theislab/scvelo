@@ -238,9 +238,12 @@ def assign_timepoints(u, s, alpha, beta, gamma, t0_=None, u0_=None, s0_=None, mo
 
     tau, tau_, t0_ = assign_tau(u, s, alpha, beta, gamma, t0_, u0_, s0_, mode)
     dxt = compute_divergence(u, s, alpha, beta, gamma, t0_, u0_, s0_, tau, tau_)
+
     o = np.argmin(dxt, axis=0)
 
-    tau = tau * (o == 1) + tau_ * (o == 0)
+    tau_ *= (o == 0)
+    tau = tau * (o == 1) + tau_
+
     if 2 in o: o[o == 2] = 1
     if 3 in o: o[o == 3] = 0
 
