@@ -74,10 +74,10 @@ or from source using::
     pip install git+https://github.com/theislab/scvelo
 
 
-Note (particularly for Windows users): If your installation does not go smooth, you might need to further ``conda install pytables``
-and/or ``pip install pip==18.1`` (due to a bug in the latest pip version).
+Parts of scVelo require (optional)::
 
-Parts of scVelo further require to `conda install -c conda-forge numba python-igraph louvain`.
+    conda install numba pytables
+    conda install -c conda-forge python-igraph louvain
 
 The splicing data can be obtained using the `velocyto command line interface`_.
 
