@@ -92,8 +92,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         else:
             if basis in adata.var_names:
                 xkey, ykey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
-                x = make_dense(adata[:, basis].layers[xkey])
-                y = make_dense(adata[:, basis].layers[ykey])
+                x = make_dense(adata[:, basis].layers[xkey]).flatten()
+                y = make_dense(adata[:, basis].layers[ykey]).flatten()
                 xlabel = 'spliced' if xlabel is None else xlabel
                 ylabel = 'unspliced' if ylabel is None else ylabel
                 title = basis if title is None else title
