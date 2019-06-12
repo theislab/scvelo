@@ -48,17 +48,18 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
         nrows = int(np.ceil(len(multikey) / ncols))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        ax = []
         for i, gs in enumerate(
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):
             if i < len(multikey):
-                scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel, vkey=vkey,
-                        color_map=color_map, colorbar=colorbar, perc=perc, frameon=frameon, zorder=zorder,
-                        legend_loc=legend_loc, fontsize=fontsize, density=density, linear_fit=linear_fit,
-                        xlim=xlim, ylim=ylim, ax=pl.subplot(gs),
-                        color=colors[i] if len(colors) > 1 else color,
-                        layer=layers[i] if len(layers) > 1 else layer,
-                        basis=bases[i] if len(bases) > 1 else basis,
-                        title=title[i] if isinstance(title, (list, tuple)) else title, **scatter_kwargs, **kwargs)
+                ax.append(scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel, vkey=vkey,
+                          color_map=color_map, colorbar=colorbar, perc=perc, frameon=frameon, zorder=zorder,
+                          legend_loc=legend_loc, fontsize=fontsize, density=density, linear_fit=linear_fit,
+                          xlim=xlim, ylim=ylim, ax=pl.subplot(gs),
+                          color=colors[i] if len(colors) > 1 else color,
+                          layer=layers[i] if len(layers) > 1 else layer,
+                          basis=bases[i] if len(bases) > 1 else basis,
+                          title=title[i] if isinstance(title, (list, tuple)) else title, **scatter_kwargs, **kwargs))
         savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if not show: return ax
 

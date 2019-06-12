@@ -82,17 +82,18 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
         nrows = int(np.ceil(len(multikey) / ncols))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        ax = []
         for i, gs in enumerate(
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):
             if i < len(multikey):
-                velocity_embedding_stream(adata, density=density, size=size, smooth=smooth, n_neighbors=n_neighbors,
-                                          linewidth=linewidth, ax=pl.subplot(gs),
-                                          color=colors[i] if len(colors) > 1 else color,
-                                          layer=layers[i] if len(layers) > 1 else layer,
-                                          vkey=vkeys[i] if len(vkeys) > 1 else vkey,
-                                          title=title[i] if isinstance(title, (list, tuple)) else title,
-                                          X_grid=None if len(vkeys) > 1 else X_grid,
-                                          V_grid=None if len(vkeys) > 1 else V_grid, **scatter_kwargs, **kwargs)
+                ax.append(velocity_embedding_stream(adata, density=density, size=size, smooth=smooth, n_neighbors=n_neighbors,
+                                                    linewidth=linewidth, ax=pl.subplot(gs),
+                                                    color=colors[i] if len(colors) > 1 else color,
+                                                    layer=layers[i] if len(layers) > 1 else layer,
+                                                    vkey=vkeys[i] if len(vkeys) > 1 else vkey,
+                                                    title=title[i] if isinstance(title, (list, tuple)) else title,
+                                                    X_grid=None if len(vkeys) > 1 else X_grid,
+                                                    V_grid=None if len(vkeys) > 1 else V_grid, **scatter_kwargs, **kwargs))
         savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if not show: return ax
 

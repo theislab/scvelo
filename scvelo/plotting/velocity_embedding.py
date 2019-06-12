@@ -65,16 +65,17 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
         ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
         nrows = int(np.ceil(len(multikey) / ncols))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        ax = []
         for i, gs in enumerate(
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):
             if i < len(multikey):
-                velocity_embedding(adata, density=density, scale=scale, size=size, ax=pl.subplot(gs),
-                                   arrow_size=arrow_size, arrow_length=arrow_length,
-                                   color=colors[i] if len(colors) > 1 else color,
-                                   layer=layers[i] if len(layers) > 1 else layer,
-                                   vkey=vkeys[i] if len(vkeys) > 1 else vkey,
-                                   title=title[i] if isinstance(title, (list, tuple)) else title,
-                                   **scatter_kwargs, **kwargs)
+                ax.append(velocity_embedding(adata, density=density, scale=scale, size=size, ax=pl.subplot(gs),
+                                             arrow_size=arrow_size, arrow_length=arrow_length,
+                                             color=colors[i] if len(colors) > 1 else color,
+                                             layer=layers[i] if len(layers) > 1 else layer,
+                                             vkey=vkeys[i] if len(vkeys) > 1 else vkey,
+                                             title=title[i] if isinstance(title, (list, tuple)) else title,
+                                             **scatter_kwargs, **kwargs))
         savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if not show: return ax
 
