@@ -2,7 +2,7 @@ from .. import settings
 from .. import AnnData
 from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
     default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
-    show_linear_fit, show_density, n_categories
+    show_linear_fit, show_density, n_categories, check_basis
 from .docs import doc_scatter, doc_params
 
 from matplotlib import rcParams
@@ -68,6 +68,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         color_map = default_color_map(adata, color) if color_map is None else color_map
 
         is_embedding = ((x is None) | (y is None)) and basis not in adata.var_names
+        check_basis(adata, basis)
         basis = default_basis(adata) if basis is None and is_embedding else basis
         size = default_size(adata) if size is None else size
         linewidth = 1 if linewidth is None else linewidth
