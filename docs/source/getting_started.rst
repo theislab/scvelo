@@ -3,22 +3,31 @@ Getting Started
 
 Welcome to scVelo!
 
-scVelo is a scalable toolkit for estimating and analyzing stochastic RNA velocities in single cells.
+scVelo is a scalable toolkit for estimating and analyzing RNA velocities in single cells.
 
-If you don't have working Python 3.6 yet, consider installing Miniconda_.
 
-Once you are set, install scVelo from PyPI_ with::
+Installation
+^^^^^^^^^^^^
 
-    pip install scvelo
+scVelo requires Python 3.6 or later. We recommend to use Miniconda_.
 
-If you want to work with the latest version on GitHub_, install scVelo from source::
+Install scVelo from PyPi using::
 
-    git clone https://github.com/theislab/scvelo.git
-    cd scvelo
-    pip install .
+    pip install -U scvelo
+
+or from source using::
+
+    pip install git+https://github.com/theislab/scvelo
+
+
+Parts of scVelo require (optional)::
+
+    conda install -c conda-forge numba pytables louvain
+
+The splicing data can be obtained using the `velocyto command line interface`_.
 
 Basic Usage
------------
+^^^^^^^^^^^
 
 Import scVelo as::
 
@@ -28,59 +37,57 @@ For beautiful visualization you can change the matplotlib settings to our defaul
 
     scv.settings.set_figure_params('scvelo')
 
-Read your data into an object
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Read your data file (loom, h5ad, xlsx, csv, tab, txt ...) to an :class:`~anndata.AnnData` object::
+Read your data
+''''''''''''''
+Read your data file (loom, h5ad, csv, ...) using::
 
     adata = scv.read(filename, cache=True)
 
-which stores the data matrix (``adata.X``) with dimension :math:`n_{\mathrm{obs}} \times n_{\mathrm{vars}}`,
-annotation of observations (``adata.obs``) and variables (``adata.var``), unstructured annotation (``adata.uns``) and
-additional layers (``adata.layers``).
+which stores the data matrix (``adata.X``),
+annotation of cells / observations (``adata.obs``) and genes / variables (``adata.var``), unstructured annotation such
+as graphs (``adata.uns``) and additional data layers where spliced and unspliced counts are stored (``adata.layers``) .
 
 .. raw:: html
 
     <img src="http://falexwolf.de/img/scanpy/anndata.svg" style="width: 300px">
 
-For instance, the data matrices relevant for velocity analysis can be retrieved via
-``adata.layers['spliced']`` and ``adata.layers['unspliced']``.
+If you already have an existing preprocessed adata object you can simply merge the spliced/unspliced counts via::
 
-he typical workflow consists of subsequent calls of preprocessing (``scv.pp.*``), analysis tools (``scv.tl.*``) and plotting (``scv.pl.*``).
+    ldata = scv.read(filename.loom, cache=True)
+    adata = scv.utils.merge(adata, ldata)
+
+If you do not have a datasets yet, you can still play around using one of the in-built datasets, e.g.::
+
+    adata = scv.datasets.dentategyrus()
+
+The typical workflow consists of subsequent calls of preprocessing (``scv.pp.*``), analysis tools (``scv.tl.*``) and plotting (``scv.pl.*``).
 
 Basic preprocessing
-^^^^^^^^^^^^^^^^^^^
+'''''''''''''''''''
 
-You are probably familiar with preprocessing. The very basic steps include gene selection by detection and variability, and normalization of each cell by total counts.
-Simply run::
+For velocity estimation basic preprocessing (i.e. gene selection and normalization) is sufficient, e.g. using::
 
     scv.pp.filter_and_normalize(adata, **params)
 
-I recommend using scanpy_ (which perfectly harmonizes with scVelo) to explore further preprocessing steps (such as correcting for batch effects).
-
-For processing of spliced and unspliced counts it suffices to compute their moments (which automatically normalizes the counts)::
+For velocity estimation we need the first- and second-order moments (basically means and variances), computed with::
 
     scv.pp.moments(adata, **params)
 
-That's all, no extensive preparation is needed.
-
 Velocity Tools
-^^^^^^^^^^^^^^
+''''''''''''''
 
-Now you are hitting the core of the package.
-
-Estimating the velocities for each individual cell is done in a single line::
+The core of the software is the efficient and robust estimation of velocities, obtained with::
 
     scv.tl.velocity(adata, mode='stochastic', **params)
 
-The velocities are vectors in gene expression space obtained by using a closed-form solution that
-solves a stochastic model of transcriptional dynamics. The stochastic model incorporates intrinsic expression variability.
-The solution to the deterministic model is obtained by setting mode to 'deterministic'.
+The velocities are vectors in gene expression space obtained by solving a stochastic model of transcriptional dynamics.
+The solution to the deterministic model is obtained by setting ``mode='deterministic'``.
 
 The velocities are stored in ``adata.layers`` just like the count matrices.
 
-Given these velocities we are interested in cell transitions that are likely. These are computed using cosine correlation
-(i.e. find potential transitions that correlate with the velocity vector) and are stored in a matrix that we call velocity graph::
+Now we would like to predict cell transitions that are in accordance with the velocity directions. These are computed
+using cosine correlation (i.e. find potential cell transitions that correlate with the velocity vector) and are stored
+in a matrix called velocity graph::
 
     scv.tl.velocity_graph(adata, **params)
 
@@ -88,17 +95,27 @@ Using the graph you can then project the velocities into any embedding (such as 
 
     scv.tl.velocity_embedding(adata, basis='umap', **params)
 
+Note, that translation of velocities into a graph is only needed for non-linear embeddings.
+In PCA space you can skip the velocity graph and directly project into the embedding using ``scv.tl.velocity_embedding(adata, basis='pca', direct_projection=True)``.
+
+
 Visualization
-^^^^^^^^^^^^^
-The velocities for all individual cells can be visualized using::
+'''''''''''''
+
+Finally the velocities can be projected and visualized in any embedding (e.g. UMAP) on single cell level, grid level, or as streamplot::
 
     scv.pl.velocity_embedding(adata, basis='umap', **params)
-
-For big datasets it might be useful to visualize the velocities on a grid::
-
     scv.pl.velocity_embedding_grid(adata, basis='umap', **params)
+    scv.pl.velocity_embedding_stream(adata, basis='umap', **params)
+
+For every tool module there is a plotting counterpart, which allows you to examine your results in detail, e.g.::
+
+    scv.pl.velocity(adata, var_names=['gene_A', 'gene_B'], **params)
+    scv.pl.velocity_graph(adata, **params)
+
 
 .. _Miniconda: http://conda.pydata.org/miniconda.html
 .. _PyPI: https://pypi.org/project/scvelo
 .. _GitHub: https://github.com/theislab/scvelo
 .. _scanpy: https://scanpy.readthedocs.io/en/latest/api
+.. _`velocyto command line interface`: http://velocyto.org/velocyto.py/tutorial/cli.html
