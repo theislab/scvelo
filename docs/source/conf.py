@@ -53,6 +53,7 @@ napoleon_custom_sections = [('Params', 'Parameters')]
 intersphinx_mapping = dict(
     python=('https://docs.python.org/3', None),
     anndata=('https://anndata.readthedocs.io/en/latest/', None),
+    scanpy=('https://scanpy.readthedocs.io/en/latest/', None)
 )
 
 templates_path = ['_templates']
@@ -171,8 +172,8 @@ def get_linenos(obj):
 
 project_dir = Path(__file__).parent.parent.parent  # project/docs/source/conf.py/../../.. → project/
 github_url1 = 'https://github.com/{github_user}/{github_repo}/tree/{github_version}'.format_map(html_context)
-github_url2 = 'https://github.com/theislab/anndata/tree/master'
-
+github_url2 = 'https://github.com/theislab/anndata/tree/master/anndata'
+github_url3 = 'https://github.com/theislab/scanpy/tree/master'
 from pathlib import PurePosixPath
 
 
@@ -184,7 +185,7 @@ def modurl(qualname):
         path = PurePosixPath(Path(module.__file__).resolve().relative_to(project_dir))
     except ValueError:
         # trying to document something from another package
-        github_url = github_url2
+        github_url = github_url2 if 'read_loom' in qualname else github_url3
         path = '/'.join(module.__file__.split('/')[-2:])
     start, end = get_linenos(obj)
     fragment = '#L{}-L{}'.format(start, end) if start and end else ''
