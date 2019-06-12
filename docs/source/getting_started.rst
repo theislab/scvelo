@@ -11,7 +11,7 @@ Installation
 
 scVelo requires Python 3.6 or later. We recommend to use Miniconda_.
 
-Install scVelo from PyPi using::
+Install scVelo from PyPI_ using::
 
     pip install -U scvelo
 
