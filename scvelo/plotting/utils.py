@@ -128,8 +128,10 @@ def default_color(adata):
 
 
 def default_color_map(adata, c):
-    return 'viridis_r' if isinstance(c, str) and c in adata.obs.keys() and not is_categorical(adata, c)\
-                          and adata.obs[c].min() == 0 and adata.obs[c].max() == 1 else None
+    if isinstance(c, str) and c in adata.obs.keys() and not is_categorical(adata, c): c = adata.obs[c]
+    obs_unitint = len(np.array(c).flatten()) == adata.n_obs and \
+                  (np.min(c) == 0 or np.min(c) is False) and (np.max(c) == 1 or np.max(c) is True)
+    return 'viridis_r' if obs_unitint else None
 
 
 def clip(c, perc):
@@ -314,7 +316,7 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, xlabel=None, ylabe
     bmin, bmax = masked_arrays.min(), masked_arrays.max()
     bins = np.arange(bmin, bmax + (bmax - bmin) / bins, (bmax - bmin) / bins)
     if cutoff is not None:
-        bins = bins[bins < cutoff]
+        bins = bins[(bins > cutoff[0]) & (bins < cutoff[1])] if isinstance(cutoff, list) else bins[bins < cutoff]
 
     for i, x in enumerate(arrays):
         pl.hist(x[np.isfinite(x)], bins=bins, alpha=alpha, color=colors[i],
