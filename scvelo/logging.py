@@ -104,7 +104,7 @@ def _write_log(*msg, end='\n'):
             f.write(out + end)
 
 
-def _sec_to_str(t):
+def _sec_to_str(t, show_microseconds=False):
     """Format time in seconds.
     Parameters
     ----------
@@ -112,9 +112,8 @@ def _sec_to_str(t):
         Time in seconds.
     """
     from functools import reduce
-    return "%d:%02d:%02d.%02d" % \
-        reduce(lambda ll, b: divmod(ll[0], b) + ll[1:],
-               [(t*100,), 100, 60, 60])
+    t_str = "%d:%02d:%02d.%02d" % reduce(lambda ll, b: divmod(ll[0], b) + ll[1:], [(t*100,), 100, 60, 60])
+    return t_str if show_microseconds else t_str[:-3]
 
 
 def get_passed_time():
@@ -125,13 +124,7 @@ def get_passed_time():
 
 
 def print_passed_time():
-    now = get_time()
-    elapsed = now - settings._previous_time
-    settings._previous_time = now
-
-    from functools import reduce
-    elapsed = "%d:%02d:%02d.%02d" % reduce(lambda ll, b: divmod(ll[0], b) + ll[1:], [(elapsed*100,), 100, 60, 60])
-    return elapsed
+    return _sec_to_str(get_passed_time())
 
 
 def print_version():
