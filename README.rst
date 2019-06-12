@@ -177,5 +177,4 @@ Your feedback, in particular any issue you stumble upon, is highly appreciated a
 .. _scanpy: https://github.com/theislab/scanpy
 .. _Miniconda: http://conda.pydata.org/miniconda.html
 .. _documentation: https://scvelo.readthedocs.io
-.. _notebooks: https://nbviewer.jupyter.org/github/theislab/scvelo_notebooks/tree/master/
 .. _`velocyto command line interface`: http://velocyto.org/velocyto.py/tutorial/cli.html
