@@ -76,8 +76,7 @@ or from source using::
 
 Parts of scVelo require (optional)::
 
-    conda install numba pytables
-    conda install -c conda-forge python-igraph louvain
+    conda install -c conda-forge numba pytables louvain
 
 The splicing data can be obtained using the `velocyto command line interface`_.
 
@@ -86,6 +85,10 @@ scVelo in action
 Import scvelo as::
 
     import scvelo as scv
+
+For beautiful visualization you can change the matplotlib settings to our defaults with::
+
+    scv.settings.set_figure_params('scvelo')
 
 Read your data
 --------------
@@ -142,7 +145,7 @@ In PCA space you can skip the velocity graph and directly project into the embed
 
 Visualization
 -------------
-Finally the velocities can be projected and visualized in any embedding (e.g. UMAP) using any of these::
+Finally the velocities can be projected and visualized in any embedding (e.g. UMAP) on single cell level, grid level, or as streamplot::
 
     scv.pl.velocity_embedding(adata, basis='umap', **params)
     scv.pl.velocity_embedding_grid(adata, basis='umap', **params)
@@ -156,7 +159,7 @@ For every tool module there is a plotting counterpart, which allows you to exami
 
 Docs & Feedback
 ===============
-I recommend going through the documentation_ and some exemplary notebooks_.
+I recommend going through the documentation_.
 
 Your feedback, in particular any issue you stumble upon, is highly appreciated and addressed to `feedback@scvelo.de <mailto:feedback@scvelo.de>`_.
 
