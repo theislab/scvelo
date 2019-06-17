@@ -10,7 +10,7 @@ from scanpy.api import AnnData, read, read_loom
 
 def load(filename, backup_url=None, **kwargs):
     numpy_ext = {'npy', 'npz'}
-    pandas_ext = {'csv', 'txt'}
+    pandas_ext = {'csv', 'txt', 'tsv'}
 
     if not os.path.exists(filename) and backup_url is None:
         raise FileNotFoundError('Did not find file {}.'.format(filename))
