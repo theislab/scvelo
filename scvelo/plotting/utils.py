@@ -148,7 +148,7 @@ def get_colors(adata, c):
             palette = default_palette(None)
             palette = adjust_palette(palette, length=len(adata.obs[c].cat.categories))
             adata.uns[c + '_colors'] = palette[:len(adata.obs[c].cat.categories)].by_key()['color']
-        cluster_ix = adata.obs[c].cat.codes
+        cluster_ix = adata.obs[c].cat.codes.values
         return np.array([adata.uns[c + '_colors'][cluster_ix[i]] for i in range(adata.n_obs)])
 
 
