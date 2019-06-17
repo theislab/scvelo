@@ -113,11 +113,14 @@ def merge(adata, ldata, copy=True):
     -------
     Returns a :class:`~anndata.AnnData` object
     """
+    adata.var_names_make_unique()
+    ldata.var_names_make_unique()
+
     if 'spliced' in ldata.layers.keys() and 'initial_size_spliced' not in ldata.obs.keys(): set_initial_size(ldata)
     elif 'spliced' in adata.layers.keys() and 'initial_size_spliced' not in adata.obs.keys(): set_initial_size(adata)
 
-    common_obs = adata.obs_names.intersection(ldata.obs_names)
-    common_vars = adata.var_names.intersection(ldata.var_names)
+    common_obs = pd.unique(adata.obs_names.intersection(ldata.obs_names))
+    common_vars = pd.unique(adata.var_names.intersection(ldata.var_names))
 
     if len(common_obs) == 0:
         clean_obs_names(adata)
@@ -130,6 +133,9 @@ def merge(adata, ldata, copy=True):
     else:
         adata._inplace_subset_obs(common_obs)
         _adata, _ldata = adata, ldata[common_obs]
+
+    _adata.var_names_make_unique()
+    _ldata.var_names_make_unique()
 
     same_vars = (len(_adata.var_names) == len(_ldata.var_names) and np.all(_adata.var_names == _ldata.var_names))
     if len(common_vars) > 0 and not same_vars:
