@@ -19,10 +19,13 @@ def show_proportions(adata):
     Prints the fractions of abundances.
     """
     layers_keys = [key for key in ['spliced', 'unspliced', 'ambiguous'] if key in adata.layers.keys()]
-    tot_mol_cell_layers = [adata.layers[key].sum(1) for key in layers_keys]
+    counts_per_cell_layers = [adata.layers[key].sum(1) for key in layers_keys]
+
+    counts_per_cell_sum = np.sum(counts_per_cell_layers, 0)
+    counts_per_cell_sum += counts_per_cell_sum == 0
 
     mean_abundances = np.round(
-        [np.mean(tot_mol_cell / np.sum(tot_mol_cell_layers, 0)) for tot_mol_cell in tot_mol_cell_layers], 2)
+        [np.mean(counts_per_cell / counts_per_cell_sum) for counts_per_cell in counts_per_cell_layers], 2)
 
     print('Abundance of ' + str(layers_keys) + ': ' + str(mean_abundances))
 
