@@ -32,6 +32,8 @@ class VelocityGraph:
 
         subset = np.array(adata.var[vkey + '_genes'].values, dtype=bool) \
             if vkey + '_genes' in adata.var.keys() else np.ones(adata.n_vars, bool)
+        xkey = xkey if xkey in adata.layers.keys() else 'spliced'
+
         X = adata.layers[xkey].A[:, subset] if issparse(adata.layers[xkey]) else adata.layers[xkey][:, subset]
         V = adata.layers[vkey].A[:, subset] if issparse(adata.layers[vkey]) else adata.layers[vkey][:, subset]
 
