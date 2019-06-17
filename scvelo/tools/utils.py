@@ -120,6 +120,7 @@ def groups_to_bool(adata, groups, groupby=None):
 
 
 def most_common_in_list(lst):
+    lst = [item for item in lst if item is not np.nan and item is not 'nan']
     lst = list(lst)
     return max(set(lst), key=lst.count)
 
