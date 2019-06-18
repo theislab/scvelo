@@ -176,17 +176,16 @@ def select_connectivities(connectivities, n_neighbors=None):
 
 
 def neighbors_to_be_recomputed(adata, n_neighbors=None):
-    # check if neighbors graph is disrupted
-    if 'neighbors' not in adata.uns.keys() \
-            or 'distances' not in adata.uns['neighbors'] or 'params' not in adata.uns['neighbors']:
+    # check whether neighbors graph is disrupted or whether graph has insufficient number of neighbors
+    invalid_neighs = 'neighbors' not in adata.uns.keys() \
+                     or 'distances' not in adata.uns['neighbors'] \
+                     or 'params' not in adata.uns['neighbors'] \
+                     or (n_neighbors is not None and n_neighbors > adata.uns['neighbors']['params']['n_neighbors'] )
+    if invalid_neighs:
         return True
     else:
         n_neighs = (adata.uns['neighbors']['distances'] > 0).sum(1)
-        result = n_neighs.max() - n_neighs.min() >= 2
-        # check if neighbors graph has sufficient number of neighbors
-        if n_neighbors is not None:
-            result = result or n_neighbors > adata.uns['neighbors']['params']['n_neighbors']
-    return result
+        return n_neighs.max() > 2 * n_neighs.min()
 
 
 def get_connectivities(adata, mode='connectivities', n_neighbors=None, recurse_neighbors=False):
