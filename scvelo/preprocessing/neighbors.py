@@ -61,13 +61,14 @@ def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_st
         Instead of decaying weights, this stores distances for each pair of
         neighbors.
     """
-    logg.info('computing neighbors', r=True)
     adata = adata.copy() if copy else adata
     if adata.isview: adata._init_as_actual(adata.copy())
 
     if (use_rep is None or use_rep is 'X_pca') \
             and ('X_pca' not in adata.obsm.keys() or n_pcs > adata.obsm['X_pca'].shape[1]):
         pca(adata, n_comps=n_pcs, svd_solver='arpack')
+
+    logg.info('computing neighbors', r=True)
 
     if method is 'sklearn':
         from sklearn.neighbors import NearestNeighbors
@@ -84,9 +85,11 @@ def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_st
         neighbors.fit(X, metric=metric, random_state=random_state, **metric_kwds)
 
     else:
+        logg.switch_verbosity('off', module='scanpy')
         neighbors = Neighbors(adata)
         neighbors.compute_neighbors(n_neighbors=n_neighbors, knn=knn, n_pcs=n_pcs, use_rep=use_rep, method=method,
                                     metric=metric, metric_kwds=metric_kwds, random_state=random_state, write_knn_indices=True)
+        logg.switch_verbosity('on', module='scanpy')
 
     adata.uns['neighbors'] = {}
     adata.uns['neighbors']['params'] = {'n_neighbors': n_neighbors, 'method': method}

@@ -88,12 +88,11 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', resolution=N
         vdata.var['highly_variable'] = np.array(vdata.var['highly_variable'], dtype=bool)
 
     import scanpy.api as sc
-    verbosity_tmp = sc.settings.verbosity
-    sc.settings.verbosity = 0
+    logg.switch_verbosity('off', module='scanpy')
     sc.pp.pca(vdata, n_comps=20, svd_solver='arpack')
     sc.pp.neighbors(vdata, n_pcs=20)
     sc.tl.louvain(vdata, resolution=resolution)
-    sc.settings.verbosity = verbosity_tmp
+    logg.switch_verbosity('on', module='scanpy')
 
     if isinstance(match_with, str) and match_with in adata.obs.keys():
         from .utils import most_common_in_list

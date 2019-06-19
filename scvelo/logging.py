@@ -2,9 +2,12 @@
 """
 
 from . import settings
+from sys import stdout
 from datetime import datetime
 from time import time as get_time
 from platform import python_version
+from anndata.logging import get_memory_usage
+from anndata.logging import print_memory_usage
 
 
 _VERBOSITY_LEVELS_FROM_STRINGS = {'error': 0, 'warn': 1, 'info': 2, 'hint': 3}
@@ -145,11 +148,24 @@ def get_date_string():
     return datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
-from anndata.logging import print_memory_usage
-from anndata.logging import get_memory_usage
+def switch_verbosity(mode='on', module=None):
+    if module is None: from . import settings
+    elif module is 'scanpy': from scanpy import settings
+    else: exec('from ' + module + ' import settings')
+
+    if mode is 'on' and hasattr(settings, 'tmp_verbosity'):
+        settings.verbosity = settings.tmp_verbosity
+        del settings.tmp_verbosity
+
+    elif mode is 'off':
+        settings.tmp_verbosity = settings.verbosity
+        settings.verbosity = 0
+
+    elif not isinstance(mode, str):
+        settings.tmp_verbosity = settings.verbosity
+        settings.verbosity = mode
 
 
-from sys import stdout
 class ProgressReporter:
     def __init__(self, total, interval=3):
         self.count = 0
@@ -169,3 +185,6 @@ class ProgressReporter:
         if settings.verbosity > 1:
             stdout.write('\r')
             stdout.flush()
+
+
+
