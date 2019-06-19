@@ -279,26 +279,38 @@ def show_linear_fit(adata, basis, vkey, xkey, linewidth=1):
     return fits
 
 
-def show_density(x, y, eval_pts=50, scale=10, alpha=.3):
+def show_density(x, y=None, eval_pts=50, scale=10, alpha=.3):
     from scipy.stats import gaussian_kde as kde
 
-    offset = max(y) / scale
-    b_s = np.linspace(min(x), max(x), eval_pts)
-    dvals_s = kde(x)(b_s)
-    scale_s = offset / np.max(dvals_s)
-    offset *= 1.3  # offset = - np.max(y) * 1.1
-    pl.plot(b_s, dvals_s * scale_s - offset, color='grey')
-    pl.fill_between(b_s, -offset, dvals_s * scale_s - offset, alpha=alpha, color='grey')
+    # density plot along x-coordinate
+    xnew = np.linspace(min(x), max(x), eval_pts)
+    vals = kde(x)(xnew)
+
+    if y is not None:
+        offset = max(y) / scale
+        scale_s = offset / np.max(vals)
+        offset *= 1.3
+        vals = vals * scale_s - offset
+    else:
+        offset = 0
+
+    pl.plot(xnew, vals, color='grey')
+    pl.fill_between(xnew, -offset, vals, alpha=alpha, color='grey')
     pl.ylim(-offset)
 
-    offset = max(x) / scale
-    b_u = np.linspace(min(y), max(y), eval_pts)
-    dvals_u = kde(y)(b_u)
-    scale_u = offset / np.max(dvals_u)
-    offset *= 1.3  # offset = - np.max(x) * 1.1
-    pl.plot(dvals_u * scale_u - offset, b_u, color='grey')
-    pl.fill_between(dvals_u * scale_u - offset, 0, b_u, alpha=alpha, color='grey')
-    pl.xlim(-offset)
+    # density plot along y-coordinate
+    if y is not None:
+        ynew = np.linspace(min(y), max(y), eval_pts)
+        vals = kde(y)(ynew)
+
+        offset = max(x) / scale
+        scale_u = offset / np.max(vals)
+        offset *= 1.3
+        vals = vals * scale_u - offset
+
+        pl.plot(vals, ynew, color='grey')
+        pl.fill_betweenx(ynew, -offset, vals, alpha=alpha, color='grey')
+        pl.xlim(-offset)
 
 
 def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, xlabel=None, ylabel=None, cutoff=None,
