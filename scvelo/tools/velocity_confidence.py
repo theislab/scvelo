@@ -1,7 +1,5 @@
 from .. import logging as logg
-from ..preprocessing.moments import moments
-from ..preprocessing.neighbors import neighbors
-from .utils import prod_sum_var, norm, get_indices
+from .utils import prod_sum_var, norm, get_indices, random_subsample
 from .transition_matrix import transition_matrix
 
 import numpy as np
@@ -104,23 +102,29 @@ def velocity_confidence_transition(data, vkey='velocity', scale=10, copy=False):
     return adata if copy else None
 
 
-def random_subsample(adata, frac=.5):
-    subset = np.random.choice([True, False], size=adata.n_obs, p=[frac, 1-frac]).sum()
-    adata.obs['subset'] = subset
-
-    adata_subset = adata[subset].copy()
-    neighbors(adata_subset)
-    moments(adata_subset)
-
-    return adata_subset
-
-
-def score_robustness(data, adata_subset=None, vkey='velocity', copy=False):
+def score_robustness(data, adata_subset=None, fraction=.5, vkey='velocity', copy=False):
     adata = data.copy() if copy else data
-    if adata_subset is None: adata_subset = random_subsample(adata)
-    V = adata[adata.obs['subset']].layers[vkey]
+
+    if adata_subset is None:
+        from ..preprocessing.moments import moments
+        from ..preprocessing.neighbors import neighbors
+        from .velocity import velocity
+
+        logg.switch_verbosity('off')
+        adata_subset = adata.copy()
+        subset = random_subsample(adata_subset, fraction=fraction, return_subset=True)
+        neighbors(adata_subset)
+        moments(adata_subset)
+        velocity(adata_subset, vkey=vkey)
+        logg.switch_verbosity('on')
+    else:
+        subset = adata.obs_names.isin(adata_subset.obs_names)
+
+    V = adata[subset].layers[vkey]
     V_subset = adata_subset.layers[vkey]
 
-    adata_subset.obs[vkey + '_score_robustness'] = prod_sum_var(V, V_subset) / (norm(V) * norm(V_subset))
+    score = np.nan * (subset == False)
+    score[subset] = prod_sum_var(V, V_subset) / (norm(V) * norm(V_subset))
+    adata.obs[vkey + '_score_robustness'] = score
 
     return adata_subset if copy else None

@@ -1,4 +1,5 @@
 from scipy.sparse import csr_matrix, issparse
+import matplotlib.pyplot as pl
 import pandas as pd
 import numpy as np
 import warnings
@@ -250,3 +251,50 @@ def make_unique_list(key, allow_array=False):
     is_list = isinstance(key, (list, tuple, np.record)) if allow_array else isinstance(key, (list, tuple, np.ndarray, np.record))
     is_list_of_str = is_list and all(isinstance(item, str) for item in key)
     return unique(key) if is_list_of_str else key if is_list and len(key) < 20 else [key]
+
+
+def test_bimodality(x, bins=30, kde=True, plot=False):
+    from scipy.stats import gaussian_kde, norm
+
+    grid = np.linspace(np.min(x), np.percentile(x, 99), bins)
+    kde_grid = gaussian_kde(x)(grid) if kde else np.histogram(x, bins=grid, density=True)[0]
+
+    idx = int(bins / 2) - 2
+    idx += np.argmin(kde_grid[idx: idx + 4])
+
+    peak_0 = kde_grid[:idx].argmax()
+    peak_1 = kde_grid[idx:].argmax()
+    kde_peak = kde_grid[idx:][peak_1]  # min(kde_grid[:idx][peak_0], kde_grid[idx:][peak_1])
+    kde_mid = kde_grid[idx:].mean()  # kde_grid[idx]
+
+    t_stat = (kde_peak - kde_mid) / (np.std(kde_grid) / np.sqrt(bins))
+    p_val = norm.sf(t_stat)
+
+    grid_0 = grid[:idx]
+    grid_1 = grid[idx:]
+    means = [(grid_0[peak_0] + grid_0[min(peak_0 +1, len(grid_0) -1)]) / 2,
+             (grid_1[peak_1] + grid_1[min(peak_1 +1, len(grid_1) -1)]) / 2]
+
+    if plot:
+        color = 'grey'
+        if kde:
+            pl.plot(grid, kde_grid, color=color)
+            pl.fill_between(grid, 0, kde_grid, alpha=.4, color=color)
+        else:
+            pl.hist(x, bins=grid, alpha=.4, density=True, color=color);
+        pl.axvline(means[0], color=color)
+        pl.axvline(means[1], color=color)
+        pl.axhline(kde_mid, alpha=.2, linestyle='--', color=color)
+        pl.show()
+
+    return t_stat, p_val, means   # ~ t_test (reject unimodality if t_stat > 3)
+
+
+def random_subsample(adata, fraction=.1, return_subset=False, copy=False):
+    adata_sub = adata.copy() if copy else adata
+    p, n = fraction, adata.n_obs
+    subset = np.random.choice([True, False], size=adata.n_obs, p=[p, 1 - p])
+    adata_sub._inplace_subset_obs(subset)
+
+    return adata_sub if copy else subset if return_subset else None
+
