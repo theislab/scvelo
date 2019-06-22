@@ -90,27 +90,26 @@ class VelocityGraph:
         vals, rows, cols, n_obs = [], [], [], self.X.shape[0]
         progress = logg.ProgressReporter(n_obs)
         for i in range(n_obs):
-            neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors, self.max_neighs)
-
-            if self.t0 is not None:
-                t0, t1 = self.t0[i], self.t1[i]
-                if t0 >= 0 and t1 > 0:
-                    t1_idx = np.where(self.t0 == t1)[0]
-                    if len(t1_idx) > len(neighs_idx):
-                        t1_idx = np.random.choice(t1_idx, len(neighs_idx), replace=False)
-                    if len(t1_idx) > 0:
-                        neighs_idx = np.unique(np.concatenate([neighs_idx, t1_idx]))
-
             if self.V[i].max() != 0 or self.V[i].min() != 0:
+                neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors, self.max_neighs)
+
+                if self.t0 is not None:
+                    t0, t1 = self.t0[i], self.t1[i]
+                    if t0 >= 0 and t1 > 0:
+                        t1_idx = np.where(self.t0 == t1)[0]
+                        if len(t1_idx) > len(neighs_idx):
+                            t1_idx = np.random.choice(t1_idx, len(neighs_idx), replace=False)
+                        if len(t1_idx) > 0:
+                            neighs_idx = np.unique(np.concatenate([neighs_idx, t1_idx]))
+
                 dX = self.X[neighs_idx] - self.X[i, None]  # 60% of runtime
                 if self.sqrt_transform: dX = np.sqrt(np.abs(dX)) * np.sign(dX)
                 val = cosine_correlation(dX, self.V[i])  # 40% of runtime
-            else:
-                val = np.zeros(len(neighs_idx))
-            vals.extend(val)
-            rows.extend(np.ones(len(neighs_idx)) * i)
-            cols.extend(neighs_idx)
-            if self.report: progress.update()
+
+                vals.extend(val)
+                rows.extend(np.ones(len(neighs_idx)) * i)
+                cols.extend(neighs_idx)
+                if self.report: progress.update()
         if self.report: progress.finish()
 
         vals = np.hstack(vals)
