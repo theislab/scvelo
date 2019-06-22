@@ -13,6 +13,11 @@ import numpy as np
 
 
 def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbors=None, min_mass=None, autoscale=True, adjust_for_stream=False):
+    # remove invalid cells
+    idx_valid = np.isfinite(X_emb.sum(1) + V_emb.sum(1))
+    X_emb = X_emb[idx_valid]
+    V_emb = V_emb[idx_valid]
+
     # prepare grid
     n_obs, n_dim = X_emb.shape
     density = 1 if density is None else density
