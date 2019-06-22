@@ -92,10 +92,12 @@ def velocity_confidence_transition(data, vkey='velocity', scale=10, copy=False):
     T = transition_matrix(adata, vkey=vkey, scale=scale)
     dX = T.dot(X) - X
     dX -= dX.mean(1)[:, None]
-
     V -= V.mean(1)[:, None]
 
-    adata.obs[vkey + '_confidence_transition'] = prod_sum_var(dX, V) / (norm(dX) * norm(V))
+    norms = norm(dX) * norm(V)
+    norms += norms == 0
+
+    adata.obs[vkey + '_confidence_transition'] = prod_sum_var(dX, V) / norms
 
     logg.hint('added \'' + vkey + '_confidence_transition\' (adata.obs)')
 
