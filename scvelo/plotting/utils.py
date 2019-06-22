@@ -134,6 +134,14 @@ def default_color_map(adata, c):
     return 'viridis_r' if obs_unitint else None
 
 
+def default_legend_loc(adata, color, legend_loc):
+    if legend_loc is False:
+        legend_loc = 'none'
+    elif legend_loc is None:
+        legend_loc = 'upper right' if n_categories(adata, color) <= 4 else 'on data'
+    return legend_loc
+
+
 def clip(c, perc):
     if np.size(perc) < 2: perc = [perc, 100] if perc < 50 else [0, perc]
     lb, ub = np.percentile(c, perc)
@@ -265,7 +273,7 @@ def adjust_palette(palette, length):
         return palette
 
 
-def show_linear_fit(adata, basis, vkey, xkey, linewidth=1):
+def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1):
     xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
     vkeys = adata.layers.keys() if vkey is None else make_unique_list(vkey)
     fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
@@ -279,7 +287,7 @@ def show_linear_fit(adata, basis, vkey, xkey, linewidth=1):
     return fits
 
 
-def show_density(x, y=None, eval_pts=50, scale=10, alpha=.3):
+def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3):
     from scipy.stats import gaussian_kde as kde
 
     # density plot along x-coordinate
