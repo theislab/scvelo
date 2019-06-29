@@ -20,14 +20,15 @@ def make_dense(X):
 def strings_to_categoricals(adata):
     """Transform string annotations to categoricals.
     """
-    from pandas.api.types import is_string_dtype
-    from pandas import Categorical
-    for df in [adata.obs, adata.var]:
-        string_cols = [key for key in df.columns if is_string_dtype(df[key])]
-        for key in string_cols:
-            c = df[key]
-            c = Categorical(c)
-            if len(c.categories) < len(c): df[key] = c
+    if not adata._isview:
+        from pandas.api.types import is_string_dtype
+        from pandas import Categorical
+        for df in [adata.obs, adata.var]:
+            string_cols = [key for key in df.columns if is_string_dtype(df[key])]
+            for key in string_cols:
+                c = df[key]
+                c = Categorical(c)
+                if len(c.categories) < len(c): df[key] = c
 
 
 def is_categorical(adata, c):

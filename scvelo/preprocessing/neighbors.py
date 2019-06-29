@@ -192,13 +192,16 @@ def neighbors_to_be_recomputed(adata, n_neighbors=None):
 
 
 def get_connectivities(adata, mode='connectivities', n_neighbors=None, recurse_neighbors=False):
-    C = adata.uns['neighbors'][mode]
-    if n_neighbors is not None and n_neighbors < adata.uns['neighbors']['params']['n_neighbors']:
-        C = select_connectivities(C, n_neighbors) if mode == 'connectivities' else select_distances(C, n_neighbors)
-    connectivities = C > 0
-    connectivities.setdiag(1)
-    if recurse_neighbors:
-        connectivities += connectivities.dot(connectivities * .5)
-        connectivities.data = np.clip(connectivities.data, 0, 1)
-    connectivities = connectivities.multiply(1. / connectivities.sum(1))
-    return connectivities.tocsr().astype(np.float32)
+    if 'neighbors' in adata.uns.keys():
+        C = adata.uns['neighbors'][mode]
+        if n_neighbors is not None and n_neighbors < adata.uns['neighbors']['params']['n_neighbors']:
+            C = select_connectivities(C, n_neighbors) if mode == 'connectivities' else select_distances(C, n_neighbors)
+        connectivities = C > 0
+        connectivities.setdiag(1)
+        if recurse_neighbors:
+            connectivities += connectivities.dot(connectivities * .5)
+            connectivities.data = np.clip(connectivities.data, 0, 1)
+        connectivities = connectivities.multiply(1. / connectivities.sum(1))
+        return connectivities.tocsr().astype(np.float32)
+    else:
+        return None
