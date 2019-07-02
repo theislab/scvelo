@@ -49,7 +49,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
     check_basis(adata, basis)
     colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
     for key in vkeys:
-        if key + '_' + basis not in adata.obsm_keys() and V is None:
+        if key + '_' + basis not in adata.obsm_keys() and basis not in adata.var_names and V is None:
             compute_velocity_embedding(adata, basis=basis, vkey=key)
 
     scatter_kwargs = {"basis": basis, "perc": perc, "use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
@@ -91,21 +91,37 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
         size = default_size(adata) / 2 if size is None else size
         _adata = adata[groups_to_bool(adata, groups, groupby=color)] if groups is not None and color in adata.obs.keys() else adata
 
-        density = 1 if density is None or density > 1 else density
-        ix_choice = np.random.choice(_adata.n_obs, size=int(density * _adata.n_obs), replace=False)
+        if basis in adata.var_names:
+            x = adata[:, basis].layers['spliced'] if use_raw else adata[:, basis].layers['Ms']
+            y = adata[:, basis].layers['unspliced'] if use_raw else adata[:, basis].layers['Mu']
+            dx = adata[:, basis].layers[vkey]
+            dy = adata[:, basis].layers[vkey + '_u'] * adata[:, basis].var['fit_scaling'].values \
+                if vkey + '_u' in adata.layers.keys() else np.zeros(adata.n_obs)
+            X = np.stack([x, y]).T
+            V = np.stack([dx, dy]).T
+            quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "edgecolors": 'k'}
+        else:
+            x = None if X is None else X[:, 0]
+            y = None if X is None else X[:, 1]
+            X = _adata.obsm['X_' + basis][:, get_components(components, basis, projection)] if X is None else X[:, :2]
+            V = _adata.obsm[vkey + '_' + basis][:, get_components(components, basis, projection)] if V is None else V[:, :2]
 
-        x, y = None if X is None else X[:, 0], None if X is None else X[:, 1]
-        X = _adata.obsm['X_' + basis][:, get_components(components, basis, projection)][ix_choice] if X is None else X[:, :2][ix_choice]
-        V = _adata.obsm[vkey + '_' + basis][:, get_components(components, basis, projection)][ix_choice] if V is None else V[:, :2][ix_choice]
-
-        hl, hw, hal = default_arrow(arrow_size)
-        scale = 1 / arrow_length if arrow_length is not None else scale if scale is not None else 1
-        quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .0005,
-                         "edgecolors": 'k', "headlength": hl, "headwidth": hw, "headaxislength": hal, "linewidth": .1}
+            hl, hw, hal = default_arrow(arrow_size)
+            scale = 1 / arrow_length if arrow_length is not None else scale if scale is not None else 1
+            quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .0005,
+                             "edgecolors": 'k', "headlength": hl, "headwidth": hw, "headaxislength": hal, "linewidth": .1}
         quiver_kwargs.update(kwargs)
 
-        c = interpret_colorkey(_adata, color, layer, perc)
-        c = c[ix_choice] if len(c) == _adata.n_obs else c
+        if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
+            c = interpret_colorkey(_adata, basis, color, perc)
+        else:
+            c = interpret_colorkey(_adata, color, layer, perc)
+
+        if density is not None and 0 < density < 1:
+            ix_choice = np.random.choice(_adata.n_obs, size=int(density * _adata.n_obs), replace=False)
+            c = c[ix_choice] if len(c) == _adata.n_obs else c
+            X = X[ix_choice]
+            V = V[ix_choice]
 
         if projection == '3d' and X.shape[1] > 2 and V.shape[1] > 2:
             V, size = V / scale / 5, size / 10

@@ -6,7 +6,22 @@ import matplotlib.pyplot as pl
 from matplotlib import rcParams
 
 
-def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=None):
+def get_dynamics(adata, key='fit', extrapolate=False, sorted=False, t=None):
+    alpha, beta, gamma, t_, scaling = get_vars(adata, key)
+    if extrapolate:
+        u0_ = unspliced(t_, 0, alpha, beta)
+        tmax = t_ + tau_inv(u0_ * 1e-4, u0=u0_, alpha=0, beta=beta)
+        t = np.concatenate([np.linspace(0, t_, num=500), t_ + np.linspace(0, tmax, num=500)])
+    elif t is None or t is True:
+        t = adata.obs[key + '_t'].values if key is 'true' else adata.layers[key + '_t']
+
+    tau, alpha, u0, s0 = vectorize(np.sort(t) if sorted else t, t_, alpha, beta, gamma)
+    ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
+
+    return alpha, ut, st
+
+
+def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=None, t=None):
     idx = np.where(adata.var_names == basis)[0][0] if isinstance(basis, str) else basis
     key = 'fit' if key + '_gamma' not in adata.var_keys() else key
 
@@ -16,12 +31,14 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
     t_ = adata.var[key + '_t_'][idx] if t_ is None else t_
     scaling = adata.var[key + '_scaling'][idx] if key + '_scaling' in adata.var.keys() else 1
 
+    if t is None or t is True:
+        t = adata.obs[key + '_t'].values if key is 'true' else adata.layers[key + '_t'][:, idx]
+
     if extrapolate:
         u0_ = unspliced(t_, 0, alpha, beta)
-        tmax = t_ + tau_inv(u0_ * 1e-4, u0=u0_, alpha=0, beta=beta)
-        t = np.concatenate([np.linspace(0, t_, num=500), t_ + np.linspace(0, tmax, num=500)])
-    else:
-        t = adata.obs[key + '_t'].values if key is 'true' else adata.layers[key + '_t'][:, idx]
+        tmax = np.max(t) if True else tau_inv(u0_ * 1e-4, u0=u0_, alpha=0, beta=beta)
+        t = np.concatenate([np.linspace(0, t_, num=500), np.linspace(t_, tmax, num=500)])
+
     tau, alpha, u0, s0 = vectorize(np.sort(t) if sort else t, t_, alpha, beta, gamma)
 
     ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
@@ -31,19 +48,19 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
     return alpha, ut, st, vt
 
 
-def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, show_assigments=False):
+def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, show_assigments=None):
     color = 'grey' if key is 'true' else 'purple'
     linewidth = .5 * linewidth if key is 'true' else linewidth
 
-    _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=True)
+    _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=True, t=show_assigments)
     pl.plot(st, ut, color=color, linewidth=linewidth)
 
     if key is not 'true':
-        _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=False, sort=False)
+        _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=False, sort=False, t=show_assigments)
         pl.scatter(st, ut, color=color, s=1)
-        if show_assigments:
+        if show_assigments is not None:
             skey, ukey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
-            s, u = make_dense(adata[:, basis].layers[skey]), make_dense(adata[:, basis].layers[ukey])
+            s, u = make_dense(adata[:, basis].layers[skey]).flatten(), make_dense(adata[:, basis].layers[ukey]).flatten()
             pl.plot(np.array([s, st]), np.array([u, ut]), color='grey', linewidth=.1 * linewidth)
 
     idx = np.where(adata.var_names == basis)[0][0]

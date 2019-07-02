@@ -148,7 +148,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
                     fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assigments=show_assigments)
                     fits.append(fit)
-                if len(fits) > 0 and legend_loc is not False:
+                if len(fits) > 0 and legend_loc is not False and legend_loc is not 'none':
                     pl.legend(fits, fontsize=legend_fontsize, loc='lower right' if legend_loc is None else legend_loc)
                 if use_raw and perc is not None:
                     pl.xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
