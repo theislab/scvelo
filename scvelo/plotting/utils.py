@@ -51,8 +51,14 @@ def default_basis(adata):
 def check_basis(adata, basis):
     if basis in adata.obsm.keys() and 'X_' + basis not in adata.obsm.keys():
         adata.obsm['X_' + basis] = adata.obsm[basis]
-        del adata.obsm[basis]
         logg.info('Renamed', '\'' + basis + '\'', 'to convention', '\'X_' + basis + '\' (adata.obsm).')
+
+
+def get_basis(adata, basis):
+    if isinstance(basis, str) and basis.startswith('X_'):
+        basis = basis[2:]
+    check_basis(adata, basis)
+    return basis
 
 
 def make_unique_list(key, allow_array=False):
@@ -61,6 +67,23 @@ def make_unique_list(key, allow_array=False):
     is_list = isinstance(key, (list, tuple, np.record)) if allow_array else isinstance(key, (list, tuple, np.ndarray, np.record))
     is_list_of_str = is_list and all(isinstance(item, str) for item in key)
     return unique(key) if is_list_of_str else key if is_list and len(key) < 20 else [key]
+
+
+def make_unique_valid_list(adata, keys):
+    keys = make_unique_list(keys)
+    if all(isinstance(item, str) for item in keys):
+        for i, key in enumerate(keys):
+            if key.startswith('X_'):
+                keys[i] = key = key[2:]
+            check_basis(adata, key)
+        valid_keys = np.hstack([adata.obs.keys(), adata.var.keys(), adata.varm.keys(), adata.obsm.keys(),
+                                [key[2:] for key in adata.obsm.keys()], list(adata.layers.keys())])
+        keys_ = keys
+        keys = [key for key in keys if key in valid_keys or key in adata.var_names]
+        keys_ = [key for key in keys_ if key not in keys]
+        if len(keys_) > 0:
+            logg.warn(', '.join(keys_), 'not found.')
+    return keys
 
 
 def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, frameon=None):

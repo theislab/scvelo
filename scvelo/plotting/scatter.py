@@ -2,7 +2,7 @@ from .. import settings
 from .. import AnnData
 from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
     default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
-    plot_linear_fit, plot_density, default_legend_loc, check_basis
+    plot_linear_fit, plot_density, default_legend_loc, make_unique_valid_list
 from .docs import doc_scatter, doc_params
 
 from matplotlib import rcParams
@@ -41,7 +41,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                       "show": False, "save": None}
 
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
-    colors, layers, bases = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(basis)
+    colors, layers, bases = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_valid_list(adata, basis)
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else bases if len(bases) > 1 else None
     if multikey is not None:
         if isinstance(title, (list, tuple)): title *= int(np.ceil(len(multikey) / len(title)))
@@ -69,7 +69,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         color_map = default_color_map(adata, color) if color_map is None else color_map
 
         is_embedding = ((x is None) | (y is None)) and basis not in adata.var_names
-        check_basis(adata, basis)
         basis = default_basis(adata) if basis is None and is_embedding else basis
         size = default_size(adata) if size is None else size
         linewidth = 1 if linewidth is None else linewidth
@@ -82,6 +81,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
         if is_categorical(adata, color) and is_embedding:
+
             from scanpy.api.pl import scatter as scatter_
             legend_loc = default_legend_loc(adata, color, legend_loc)
             ax = scatter_(adata, basis=basis, color=color, color_map=color_map, size=size, frameon=frameon, ax=ax,
@@ -145,7 +145,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if 'true_alpha' in adata.var.keys():
                     fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth)
                     fits.append(fit)
-                if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
+                if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamic' in vkey):
                     fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assigments=show_assigments)
                     fits.append(fit)
                 if len(fits) > 0 and legend_loc is not False and legend_loc is not 'none':

@@ -1,7 +1,7 @@
 from ..preprocessing.moments import second_order_moments
 from ..tools.rank_velocity_genes import rank_velocity_genes
 from .scatter import scatter
-from .utils import savefig_or_show, default_basis, default_size, check_basis
+from .utils import savefig_or_show, default_basis, default_size, get_basis
 
 import numpy as np
 import pandas as pd
@@ -58,8 +58,7 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
         A matplotlib axes object. Only works if plotting a single component.
 
     """
-    basis = default_basis(adata) if basis is None else basis
-    check_basis(adata, basis)
+    basis = default_basis(adata) if basis is None else get_basis(adata, basis)
 
     if isinstance(groupby, str) and groupby in adata.obs.keys():
         if 'rank_velocity_genes' not in adata.uns.keys() or adata.uns['rank_velocity_genes']['params']['groupby'] != groupby:

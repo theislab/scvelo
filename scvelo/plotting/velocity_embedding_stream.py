@@ -1,6 +1,6 @@
 from ..tools.velocity_embedding import velocity_embedding
 from ..tools.utils import groups_to_bool
-from .utils import default_basis, default_size, default_color, get_components, savefig_or_show, make_unique_list, check_basis
+from .utils import default_basis, default_size, default_color, get_components, savefig_or_show, make_unique_list, get_basis
 from .velocity_embedding_grid import compute_velocity_on_grid
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
@@ -49,8 +49,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
     -------
         `matplotlib.Axis` if `show==False`
     """
-    basis = default_basis(adata) if basis is None else basis
-    check_basis(adata, basis)
+    basis = default_basis(adata) if basis is None else get_basis(adata, basis)
     colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
     for key in vkeys:
         if key + '_' + basis not in adata.obsm_keys() and V is None:
