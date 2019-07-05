@@ -13,7 +13,7 @@ def make_dense(X):
     XA = X.A if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) else X
     if XA.ndim == 2:
         XA = XA[0] if XA.shape[0] == 1 else XA[:, 0] if XA.shape[1] == 1 else XA
-    return XA
+    return np.array(XA)
 
 
 def sum_obs(A):
@@ -298,3 +298,7 @@ def random_subsample(adata, fraction=.1, return_subset=False, copy=False):
 
     return adata_sub if copy else subset if return_subset else None
 
+
+def get_duplicates(array):
+    from collections import Counter
+    return np.array([item for (item, count) in Counter(array).items() if count > 1])
