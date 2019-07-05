@@ -58,7 +58,7 @@ def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, sho
     if key is not 'true':
         _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=False, sort=False, t=show_assigments)
         pl.scatter(st, ut, color=color, s=1)
-        if show_assigments is not None:
+        if show_assigments is not None and show_assigments is not False:
             skey, ukey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
             s, u = make_dense(adata[:, basis].layers[skey]).flatten(), make_dense(adata[:, basis].layers[ukey]).flatten()
             pl.plot(np.array([s, st]), np.array([u, ut]), color='grey', linewidth=.1 * linewidth)
