@@ -1,9 +1,12 @@
 from ..preprocessing.neighbors import get_connectivities
 from .utils import normalize
 
-from scipy.spatial.distance import pdist, squareform
-from scipy.sparse import csr_matrix
 import numpy as np
+from scipy.spatial.distance import pdist, squareform
+from scipy.sparse import csr_matrix, SparseEfficiencyWarning
+
+import warnings
+warnings.simplefilter('ignore', SparseEfficiencyWarning)
 
 
 def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_transitions=True, scale=10, perc=None,
