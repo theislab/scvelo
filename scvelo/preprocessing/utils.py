@@ -306,7 +306,6 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, k
 
     for layer in layers:
         X = adata.X if layer is 'X' else adata.layers[layer]
-        X = X.astype(np.float32)
         if not_yet_normalized(X) or enforce:
             counts = counts_per_cell if counts_per_cell is not None \
                 else get_initial_size(adata, layer) if use_initial_size else get_size(adata, layer)
@@ -315,8 +314,10 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, k
             # equivalent to scanpy.pp.normalize_per_cell(X, counts_per_cell_after, counts)
             counts_after = np.median(counts) if counts_per_cell_after is None else counts_per_cell_after
 
-            counts = counts / (counts_after + (counts_after == 0))
+            if counts_after > 0:
+                counts = counts / counts_after
             counts += counts == 0  # to avoid division by zero
+
             if issparse(X):
                 sparsefuncs.inplace_row_scale(X, 1 / counts)
             else:
