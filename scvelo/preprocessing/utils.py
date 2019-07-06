@@ -266,6 +266,15 @@ def not_yet_normalized(X):
     return np.allclose((X.data[:10] if issparse(X) else X[:, 0]) % 1, 0, atol=1e-3)
 
 
+def check_if_valid_dtype(adata, layer='X'):
+    X = adata.X if layer is 'X' else adata.layers[layer]
+    if 'int' in X.dtype.name:
+        if layer is 'X':
+            adata.X = adata.X.astype(np.float32)
+        elif layer in adata.layers.keys():
+            adata.layers[layer] = adata.layers[layer].astype(np.float32)
+
+
 def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, key_n_counts=None,
                        max_proportion_per_cell=None, use_initial_size=True, layers=['spliced', 'unspliced'],
                        enforce=False, copy=False):
@@ -305,7 +314,9 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, k
     modified_layers = []
 
     for layer in layers:
+        check_if_valid_dtype(adata, layer)
         X = adata.X if layer is 'X' else adata.layers[layer]
+
         if not_yet_normalized(X) or enforce:
             counts = counts_per_cell if counts_per_cell is not None \
                 else get_initial_size(adata, layer) if use_initial_size else get_size(adata, layer)
@@ -314,14 +325,14 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, k
             # equivalent to scanpy.pp.normalize_per_cell(X, counts_per_cell_after, counts)
             counts_after = np.median(counts) if counts_per_cell_after is None else counts_per_cell_after
 
-            if counts_after > 0:
-                counts = counts / counts_after
+            counts_after += counts_after == 0
+            counts = counts / counts_after
             counts += counts == 0  # to avoid division by zero
 
             if issparse(X):
                 sparsefuncs.inplace_row_scale(X, 1 / counts)
             else:
-                X = X / np.array(counts[:, None])
+                X /= np.array(counts[:, None])
             modified_layers.append(layer)
 
     adata.obs['n_counts' if key_n_counts is None else key_n_counts] = get_size(adata)
