@@ -196,7 +196,7 @@ def neighbors_to_be_recomputed(adata, n_neighbors=None):
         return True
     else:
         n_neighs = (adata.uns['neighbors']['distances'] > 0).sum(1)
-        return n_neighs.max() > 2 * n_neighs.min()
+        return n_neighs.max() * .1 > n_neighs.min()
 
 
 def get_connectivities(adata, mode='connectivities', n_neighbors=None, recurse_neighbors=False):

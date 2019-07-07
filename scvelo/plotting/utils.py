@@ -45,6 +45,8 @@ def n_categories(adata, c):
 
 def default_basis(adata):
     keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
+    if not keys:
+        raise ValueError('No basis specified.')
     return keys[-1] if len(keys) > 0 else None
 
 

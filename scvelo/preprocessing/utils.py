@@ -421,12 +421,11 @@ def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=Non
         filter_genes_dispersion(adata, n_top_genes=n_top_genes, flavor=flavor)
 
     log_advised = np.allclose(adata.X[:10].sum(), adata.layers['spliced'][:10].sum())
-    if log and log_advised:
-        log1p(adata)
+    if log and log_advised: log1p(adata)
 
-    logg.info('Logarithmized X.' if log and log_advised else
-              'Did not modify X as it looks preprocessed already.' if log else
-              'Consider logarithmizing X with `scv.pp.log1p` for better results.' if log_advised else '')
+    if log and log_advised: logg.info('Logarithmized X.')
+    elif log and not log_advised: logg.warn('Did not modify X as it looks preprocessed already.')
+    elif log_advised and not log: logg.warn('Consider logarithmizing X with `scv.pp.log1p` for better results.')
 
     return adata if copy else None
 
