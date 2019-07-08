@@ -84,6 +84,7 @@ class VPT(DPT):
         T = self._connectivities
         if density_normalize:
             q = np.asarray(T.sum(axis=0))
+            q += q == 0
             Q = spdiags(1.0 / q, 0, T.shape[0], T.shape[0]) if issparse(T) else np.diag(1.0 / q)
             K = Q.dot(T).dot(Q)
         else:
