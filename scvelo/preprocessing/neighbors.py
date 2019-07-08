@@ -71,8 +71,11 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
     elif use_rep not in adata.obsm.keys() and 'X_' + use_rep in adata.obsm.keys():
         use_rep = 'X_' + use_rep
 
-    if use_rep is 'X_pca' and ('X_pca' not in adata.obsm.keys() or n_pcs is not None and n_pcs > adata.obsm['X_pca'].shape[1]):
-        pca(adata, n_comps=30 if n_pcs is None else n_pcs, svd_solver='arpack')
+    if use_rep is 'X_pca':
+        if 'X_pca' not in adata.obsm.keys() or n_pcs is not None and n_pcs > adata.obsm['X_pca'].shape[1]:
+            pca(adata, n_comps=30 if n_pcs is None else n_pcs, svd_solver='arpack')
+        elif n_pcs is None and adata.obsm['X_pca'].shape[1] < 10:
+            logg.warn('Neighbors are computed on ', adata.obsm['X_pca'].shape[1], ' principal components only.')
 
     logg.info('computing neighbors', r=True)
 
