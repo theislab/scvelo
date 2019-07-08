@@ -149,7 +149,7 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
     """
     adata = data.copy() if copy else data
 
-    if groupby is None or groupby == 'velocity_clusters':
+    if groupby is None or groupby is 'velocity_clusters':
         velocity_clusters(adata, vkey=vkey, match_with=match_with, resolution=resolution)
         groupby = 'velocity_clusters'
 
@@ -165,8 +165,8 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
         min_counts = min(50, np.percentile(n_counts, 50)) if min_counts is None else min_counts
         tmp_filter &= (n_counts > min_counts)
 
-    if 'r2' in adata.var.keys():
-        r2 = adata.var.velocity_r2
+    if vkey + '_r2' in adata.var.keys():
+        r2 = adata.var[vkey + '_r2']
         min_r2 = .1 if min_r2 is None else min_r2  # np.percentile(r2[r2 > 0], 50)
         tmp_filter &= (r2 > min_r2)
 
@@ -214,7 +214,6 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
 
     key = 'rank_velocity_genes'
     if key not in adata.uns.keys(): adata.uns[key] = {}
-    #adata.uns[key] = {'groups': groups, 'names': rankings_gene_names, 'scores': rankings_gene_scores.round(0)}
 
     adata.uns[key] = \
         {'names': np.rec.fromarrays([n for n in rankings_gene_names], dtype=[(rn, 'U50') for rn in groups]),
