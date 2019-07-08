@@ -7,7 +7,7 @@ setup(
     version=__version__,
     install_requires=['scanpy>=1.3.3', 'anndata>=0.6.18', 'numpy>=1.14', 'pandas>=0.23.0', 'matplotlib>=2.2',
                       'scipy>=1.0', 'scikit-learn>=0.19.1, != 0.21.0, != 0.21.1',  # exclude buggy versions
-                      'umap-learn>=0.3.0', 'loompy>=2.0.12'],
+                      'joblib', 'umap-learn>=0.3.0', 'loompy>=2.0.12'],
     packages=find_packages(),
     include_dirs=[np.get_include()],
     author="Volker Bergen",
