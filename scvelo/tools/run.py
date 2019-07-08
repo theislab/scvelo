@@ -191,3 +191,11 @@ def convert_to_loom(adata, basis=None):
             print('Total: ' + str(round(time() - start, 2)))
 
     return VelocytoLoom(adata, basis)
+
+
+def test():
+    from ..datasets import simulation
+    from .velocity_graph import velocity_graph
+    adata = simulation(n_obs=100)
+    velocity_graph(adata)
+    print('Test run successfully.')
