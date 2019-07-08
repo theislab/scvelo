@@ -4,6 +4,23 @@ import numpy as np
 from scipy.sparse import issparse
 from sklearn.utils import sparsefuncs
 from anndata import AnnData
+import warnings
+
+
+def sum_obs(A):
+    """summation over axis 0 (obs) equivalent to np.sum(A, 0)
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return A.sum(0).A1 if issparse(A) else np.sum(A, axis=0)
+
+
+def sum_var(A):
+    """summation over axis 1 (var) equivalent to np.sum(A, 1)
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return A.sum(1).A1 if issparse(A) else np.sum(A, axis=1)
 
 
 def show_proportions(adata):
@@ -19,7 +36,7 @@ def show_proportions(adata):
     Prints the fractions of abundances.
     """
     layers_keys = [key for key in ['spliced', 'unspliced', 'ambiguous'] if key in adata.layers.keys()]
-    counts_per_cell_layers = [adata.layers[key].sum(1) for key in layers_keys]
+    counts_per_cell_layers = [sum_var(adata.layers[key]) for key in layers_keys]
 
     counts_per_cell_sum = np.sum(counts_per_cell_layers, 0)
     counts_per_cell_sum += counts_per_cell_sum == 0
@@ -68,7 +85,7 @@ def cleanup(data, clean='layers', keep=None, copy=False):
 
 def get_size(adata, layer=None):
     X = adata.X if layer is None else adata.layers[layer]
-    return X.sum(1).A1 if issparse(X) else X.sum(1)
+    return sum_var(X)
 
 
 def set_initial_size(adata, layers={'spliced', 'unspliced'}):
@@ -92,8 +109,7 @@ def get_initial_size(adata, layer=None, by_total_size=None):
 
 
 def filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
-    counts = X if (min_counts is not None or max_counts is not None) else X > 0
-    counts = counts.sum(0).A1 if issparse(counts) else counts.sum(0)
+    counts = sum_obs(X) if (min_counts is not None or max_counts is not None) else sum_obs(X > 0)
     lb = min_counts if min_counts is not None else min_cells if min_cells is not None else -np.inf
     ub = max_counts if max_counts is not None else max_cells if max_cells is not None else np.inf
     return (lb <= counts) & (counts <= ub), counts
@@ -256,10 +272,10 @@ def filter_genes_dispersion(data, flavor='seurat', min_disp=None, max_disp=None,
 
 def counts_per_cell_quantile(X, max_proportion_per_cell=.05, counts_per_cell=None):
     if counts_per_cell is None:
-        counts_per_cell = X.sum(1).A1 if issparse(X) else X.sum(1)
+        counts_per_cell = sum_var(X)
     gene_subset = np.all(X <= counts_per_cell[:, None] * max_proportion_per_cell, axis=0)
     if issparse(X): gene_subset = gene_subset.A1
-    return X[:, gene_subset].sum(1).A1 if issparse(X) else X[:, gene_subset].sum(1)
+    return sum_var(X[:, gene_subset])
 
 
 def not_yet_normalized(X):

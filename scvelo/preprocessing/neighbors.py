@@ -6,6 +6,7 @@ from scanpy.api import Neighbors
 from scanpy.api.pp import pca
 from scipy.sparse import issparse
 import numpy as np
+import warnings
 
 
 def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_state=0, method='umap',
@@ -95,9 +96,12 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
 
     else:
         logg.switch_verbosity('off', module='scanpy')
-        neighbors = Neighbors(adata)
-        neighbors.compute_neighbors(n_neighbors=n_neighbors, knn=knn, n_pcs=n_pcs, use_rep=use_rep, method=method,
-                                    metric=metric, metric_kwds=metric_kwds, random_state=random_state, write_knn_indices=True)
+        with warnings.catch_warnings():  # ignore numba warning (reported in umap/issues/252)
+            warnings.simplefilter("ignore")
+            neighbors = Neighbors(adata)
+            neighbors.compute_neighbors(n_neighbors=n_neighbors, knn=knn, n_pcs=n_pcs, use_rep=use_rep, method=method,
+                                        metric=metric, metric_kwds=metric_kwds, random_state=random_state,
+                                        write_knn_indices=True)
         logg.switch_verbosity('on', module='scanpy')
 
     adata.uns['neighbors'] = {}
@@ -208,11 +212,13 @@ def get_connectivities(adata, mode='connectivities', n_neighbors=None, recurse_n
         if n_neighbors is not None and n_neighbors < adata.uns['neighbors']['params']['n_neighbors']:
             C = select_connectivities(C, n_neighbors) if mode == 'connectivities' else select_distances(C, n_neighbors)
         connectivities = C > 0
-        connectivities.setdiag(1)
-        if recurse_neighbors:
-            connectivities += connectivities.dot(connectivities * .5)
-            connectivities.data = np.clip(connectivities.data, 0, 1)
-        connectivities = connectivities.multiply(1. / connectivities.sum(1))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            connectivities.setdiag(1)
+            if recurse_neighbors:
+                connectivities += connectivities.dot(connectivities * .5)
+                connectivities.data = np.clip(connectivities.data, 0, 1)
+            connectivities = connectivities.multiply(1. / connectivities.sum(1))
         return connectivities.tocsr().astype(np.float32)
     else:
         return None

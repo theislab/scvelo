@@ -3,6 +3,7 @@ import matplotlib.pyplot as pl
 import pandas as pd
 import numpy as np
 import warnings
+warnings.simplefilter("ignore")
 
 
 def mean(x, axis=0):
@@ -20,6 +21,12 @@ def sum_obs(A):
     """summation over axis 0 (obs) equivalent to np.sum(A, 0)
     """
     return A.sum(0).A1 if issparse(A) else np.einsum('ij -> j', A)
+
+
+def sum_var(A):
+    """summation over axis 1 (var) equivalent to np.sum(A, 1)
+    """
+    return A.sum(1).A1 if issparse(A) else np.sum(A, axis=1)
 
 
 def prod_sum_obs(A, B):
@@ -83,7 +90,7 @@ def get_indices(dist, n_neighbors=None):
     D = dist.copy()
     D.data += 1e-6
 
-    n_counts = (D > 0).sum(1).A1 if issparse(D) else (D > 0).sum(1)
+    n_counts = sum_var(D > 0)
     n_neighbors = n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
     rows = np.where(n_counts > n_neighbors)[0]
     cumsum_neighs = np.insert(n_counts.cumsum(), 0, 0)
