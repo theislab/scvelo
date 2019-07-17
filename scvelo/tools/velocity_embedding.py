@@ -15,12 +15,12 @@ def quiver_autoscale(X_emb, V_emb):
                   V_emb[:, 0], V_emb[:, 1], angles='xy', scale_units='xy', scale=None)
     Q._init()
     pl.clf()
+    pl.close()
     return Q.scale / scale_factor
 
 
 def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
-                       direct_projection=None, pca_transform=None, retain_scale=False, autoscale=True, all_comps=True,
-                       T=None, copy=False):
+                       direct_pca_projection=None, retain_scale=False, autoscale=True, all_comps=True, T=None, copy=False):
     """Computes the single cell velocities in the embedding
 
     Arguments
@@ -37,10 +37,8 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
         Whether to allow self transitions, based on the confidences of transitioning to neighboring cell.
     use_negative_cosines: `bool` (default: `True`)
         Whether to use not only positive, but also negative cosines and use those transitions to the opposite way.
-    direct_projection: `bool` (default: `True`)
+    direct_pca_projection: `bool` (default: `None`)
         Whether to directly project the velocities into PCA space, thus skipping velocity graph.
-    pca_transform: `bool` (default: `None`)
-        same as direct_projection (deprecated)
     retain_scale: `bool` (default: `False`)
         Whether to retain scale from high dimensional space in embedding.
     autoscale: `bool` (default: `True`)
@@ -61,17 +59,21 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
 
     if basis is None:
         keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
-        if len(keys) > 0: basis = keys[-1]
+        if len(keys) > 0: basis = 'pca' if direct_pca_projection else keys[-1]
         else: raise ValueError('No basis specified')
 
     if 'X_' + basis not in adata.obsm_keys():
         raise ValueError('You need compute the embedding first.')
 
+    if direct_pca_projection and 'pca' in basis:
+        logg.warn(
+            'Directly projecting velocities into PCA space is only for exploratory analysis on principal components.\n'
+            '         It does not reflect the actual velocity field from high dimensional gene expression space.\n'
+            '         To visualize velocities, consider using the velocity graph setting `direct_pca_projection=False`.\n')
+
     logg.info('computing velocity embedding', r=True)
 
-    if pca_transform is None and direct_projection is None:
-        pca_transform = True if 'pca' in basis else False
-    if 'pca' in basis and (direct_projection or pca_transform):
+    if direct_pca_projection and 'pca' in basis:
         V = adata.layers[vkey]
         PCs = adata.varm['PCs'] if all_comps else adata.varm['PCs'][:, :2]
 

@@ -1,6 +1,6 @@
 from .. import settings
 from ..tools.transition_matrix import transition_matrix
-from .utils import savefig_or_show, default_basis, get_components, check_basis
+from .utils import savefig_or_show, default_basis, get_components, get_basis
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -34,8 +34,7 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n
     -------
         `matplotlib.Axis` if `show==False`
     """
-    basis = default_basis(adata) if basis is None else basis
-    check_basis(adata, basis)
+    basis = default_basis(adata) if basis is None else get_basis(adata, basis)
     title = which_graph + ' graph' if title is None else title
     scatter_kwargs = {"basis": basis, "perc": perc, "use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
                       "components": components, "projection": projection, "legend_loc": legend_loc, "groups": groups,

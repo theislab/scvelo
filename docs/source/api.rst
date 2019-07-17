@@ -42,7 +42,6 @@ Tools (tl)
    tl.velocity_embedding
 
    tl.transition_matrix
-   tl.cell_fate
    tl.terminal_states
    tl.rank_velocity_genes
 

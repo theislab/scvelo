@@ -2,7 +2,7 @@ from .. import settings
 from .. import AnnData
 from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
     default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
-    show_linear_fit, show_density, n_categories, check_basis
+    plot_linear_fit, plot_density, default_legend_loc, make_unique_valid_list
 from .docs import doc_scatter, doc_params
 
 from matplotlib import rcParams
@@ -16,8 +16,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             colorbar=True, palette=None, size=None, alpha=None, linewidth=None, perc=None, sort_order=True, groups=None,
             components=None, projection='2d', legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
-            xlim=None, ylim=None, density=None, linear_fit=None, dpi=None, frameon=None, show=True, save=None, ax=None,
-            zorder=None, ncols=None, **kwargs):
+            xlim=None, ylim=None, show_density=None, show_assigments=None, show_linear_fit=None, dpi=None, frameon=None,
+            show=True, save=None, ax=None, zorder=None, ncols=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -41,7 +41,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                       "show": False, "save": None}
 
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
-    colors, layers, bases = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(basis)
+    colors, layers, bases = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_valid_list(adata, basis)
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else bases if len(bases) > 1 else None
     if multikey is not None:
         if isinstance(title, (list, tuple)): title *= int(np.ceil(len(multikey) / len(title)))
@@ -54,8 +54,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if i < len(multikey):
                 ax.append(scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel, vkey=vkey,
                           color_map=color_map, colorbar=colorbar, perc=perc, frameon=frameon, zorder=zorder,
-                          legend_loc=legend_loc, fontsize=fontsize, density=density, linear_fit=linear_fit,
-                          xlim=xlim, ylim=ylim, ax=pl.subplot(gs),
+                          legend_loc=legend_loc, fontsize=fontsize, xlim=xlim, ylim=ylim, ax=pl.subplot(gs),
+                          show_density=show_density, show_assigments=show_assigments, show_linear_fit=show_linear_fit,
                           color=colors[i] if len(colors) > 1 else color,
                           layer=layers[i] if len(layers) > 1 else layer,
                           basis=bases[i] if len(bases) > 1 else basis,
@@ -69,7 +69,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         color_map = default_color_map(adata, color) if color_map is None else color_map
 
         is_embedding = ((x is None) | (y is None)) and basis not in adata.var_names
-        check_basis(adata, basis)
         basis = default_basis(adata) if basis is None and is_embedding else basis
         size = default_size(adata) if size is None else size
         linewidth = 1 if linewidth is None else linewidth
@@ -82,18 +81,17 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
         if is_categorical(adata, color) and is_embedding:
+
             from scanpy.api.pl import scatter as scatter_
-            few_cats = n_categories(adata, color) <= 4
-            legend_loc = 'none' if legend_loc is False else 'upper right' if legend_loc is None and few_cats \
-                else 'on data' if legend_loc is None else legend_loc
+            legend_loc = default_legend_loc(adata, color, legend_loc)
             ax = scatter_(adata, basis=basis, color=color, color_map=color_map, size=size, frameon=frameon, ax=ax,
                           title=title, legend_loc=legend_loc, **scatter_kwargs, **kwargs)
 
         else:
             if basis in adata.var_names:
                 xkey, ykey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
-                x = make_dense(adata[:, basis].layers[xkey])
-                y = make_dense(adata[:, basis].layers[ykey])
+                x = make_dense(adata[:, basis].layers[xkey]).flatten()
+                y = make_dense(adata[:, basis].layers[ykey]).flatten()
                 xlabel = 'spliced' if xlabel is None else xlabel
                 ylabel = 'unspliced' if ylabel is None else ylabel
                 title = basis if title is None else title
@@ -142,16 +140,15 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 zorder += 1
 
             if basis in adata.var_names:
-                fits = show_linear_fit(adata, basis, vkey, xkey, linewidth)
+                fits = plot_linear_fit(adata, basis, vkey, xkey, linewidth)
                 from .simulation import show_full_dynamics
                 if 'true_alpha' in adata.var.keys():
                     fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth)
                     fits.append(fit)
-                if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
-                    fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth,
-                                             show_assigments=vkey is not None and 'assignment' in vkey)
+                if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamic' in vkey):
+                    fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assigments=show_assigments)
                     fits.append(fit)
-                if len(fits) > 0 and legend_loc is not False:
+                if len(fits) > 0 and legend_loc is not False and legend_loc is not 'none':
                     pl.legend(fits, fontsize=legend_fontsize, loc='lower right' if legend_loc is None else legend_loc)
                 if use_raw and perc is not None:
                     pl.xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
@@ -159,10 +156,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
             pl.scatter(x, y, c=c, cmap=color_map, s=size, alpha=alpha, edgecolors='none', marker='.', zorder=zorder, **kwargs)
 
-            if density:
-                show_density(x, y)
+            if show_density:
+                plot_density(x, y)
 
-            if linear_fit:
+            if show_linear_fit:
                 xnew = np.linspace(0, x.max() * 1.02)
                 pl.plot(xnew, xnew * (x * y).sum() / (x ** 2).sum())
 

@@ -20,14 +20,15 @@ def make_dense(X):
 def strings_to_categoricals(adata):
     """Transform string annotations to categoricals.
     """
-    from pandas.api.types import is_string_dtype
-    from pandas import Categorical
-    for df in [adata.obs, adata.var]:
-        string_cols = [key for key in df.columns if is_string_dtype(df[key])]
-        for key in string_cols:
-            c = df[key]
-            c = Categorical(c)
-            if len(c.categories) < len(c): df[key] = c
+    if not adata._isview:
+        from pandas.api.types import is_string_dtype
+        from pandas import Categorical
+        for df in [adata.obs, adata.var]:
+            string_cols = [key for key in df.columns if is_string_dtype(df[key])]
+            for key in string_cols:
+                c = df[key]
+                c = Categorical(c)
+                if len(c.categories) < len(c): df[key] = c
 
 
 def is_categorical(adata, c):
@@ -44,14 +45,22 @@ def n_categories(adata, c):
 
 def default_basis(adata):
     keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
+    if not keys:
+        raise ValueError('No basis specified.')
     return keys[-1] if len(keys) > 0 else None
 
 
 def check_basis(adata, basis):
     if basis in adata.obsm.keys() and 'X_' + basis not in adata.obsm.keys():
         adata.obsm['X_' + basis] = adata.obsm[basis]
-        del adata.obsm[basis]
         logg.info('Renamed', '\'' + basis + '\'', 'to convention', '\'X_' + basis + '\' (adata.obsm).')
+
+
+def get_basis(adata, basis):
+    if isinstance(basis, str) and basis.startswith('X_'):
+        basis = basis[2:]
+    check_basis(adata, basis)
+    return basis
 
 
 def make_unique_list(key, allow_array=False):
@@ -60,6 +69,23 @@ def make_unique_list(key, allow_array=False):
     is_list = isinstance(key, (list, tuple, np.record)) if allow_array else isinstance(key, (list, tuple, np.ndarray, np.record))
     is_list_of_str = is_list and all(isinstance(item, str) for item in key)
     return unique(key) if is_list_of_str else key if is_list and len(key) < 20 else [key]
+
+
+def make_unique_valid_list(adata, keys):
+    keys = make_unique_list(keys)
+    if all(isinstance(item, str) for item in keys):
+        for i, key in enumerate(keys):
+            if key.startswith('X_'):
+                keys[i] = key = key[2:]
+            check_basis(adata, key)
+        valid_keys = np.hstack([adata.obs.keys(), adata.var.keys(), adata.varm.keys(), adata.obsm.keys(),
+                                [key[2:] for key in adata.obsm.keys()], list(adata.layers.keys())])
+        keys_ = keys
+        keys = [key for key in keys if key in valid_keys or key in adata.var_names]
+        keys_ = [key for key in keys_ if key not in keys]
+        if len(keys_) > 0:
+            logg.warn(', '.join(keys_), 'not found.')
+    return keys
 
 
 def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, frameon=None):
@@ -128,8 +154,18 @@ def default_color(adata):
 
 
 def default_color_map(adata, c):
-    return 'viridis_r' if isinstance(c, str) and c in adata.obs.keys() and not is_categorical(adata, c)\
-                          and adata.obs[c].min() == 0 and adata.obs[c].max() == 1 else None
+    if isinstance(c, str) and c in adata.obs.keys() and not is_categorical(adata, c): c = adata.obs[c]
+    obs_unitint = len(np.array(c).flatten()) == adata.n_obs and \
+                  (np.min(c) == 0 or np.min(c) is False) and (np.max(c) == 1 or np.max(c) is True)
+    return 'viridis_r' if obs_unitint else None
+
+
+def default_legend_loc(adata, color, legend_loc):
+    if legend_loc is False:
+        legend_loc = 'none'
+    elif legend_loc is None:
+        legend_loc = 'upper right' if n_categories(adata, color) <= 4 else 'on data'
+    return legend_loc
 
 
 def clip(c, perc):
@@ -146,7 +182,7 @@ def get_colors(adata, c):
             palette = default_palette(None)
             palette = adjust_palette(palette, length=len(adata.obs[c].cat.categories))
             adata.uns[c + '_colors'] = palette[:len(adata.obs[c].cat.categories)].by_key()['color']
-        cluster_ix = adata.obs[c].cat.codes
+        cluster_ix = adata.obs[c].cat.codes.values
         return np.array([adata.uns[c + '_colors'][cluster_ix[i]] for i in range(adata.n_obs)])
 
 
@@ -263,7 +299,7 @@ def adjust_palette(palette, length):
         return palette
 
 
-def show_linear_fit(adata, basis, vkey, xkey, linewidth=1):
+def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1):
     xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
     vkeys = adata.layers.keys() if vkey is None else make_unique_list(vkey)
     fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
@@ -277,26 +313,38 @@ def show_linear_fit(adata, basis, vkey, xkey, linewidth=1):
     return fits
 
 
-def show_density(x, y, eval_pts=50, scale=10, alpha=.3):
+def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3):
     from scipy.stats import gaussian_kde as kde
 
-    offset = max(y) / scale
-    b_s = np.linspace(min(x), max(x), eval_pts)
-    dvals_s = kde(x)(b_s)
-    scale_s = offset / np.max(dvals_s)
-    offset *= 1.3  # offset = - np.max(y) * 1.1
-    pl.plot(b_s, dvals_s * scale_s - offset, color='grey')
-    pl.fill_between(b_s, -offset, dvals_s * scale_s - offset, alpha=alpha, color='grey')
+    # density plot along x-coordinate
+    xnew = np.linspace(min(x), max(x), eval_pts)
+    vals = kde(x)(xnew)
+
+    if y is not None:
+        offset = max(y) / scale
+        scale_s = offset / np.max(vals)
+        offset *= 1.3
+        vals = vals * scale_s - offset
+    else:
+        offset = 0
+
+    pl.plot(xnew, vals, color='grey')
+    pl.fill_between(xnew, -offset, vals, alpha=alpha, color='grey')
     pl.ylim(-offset)
 
-    offset = max(x) / scale
-    b_u = np.linspace(min(y), max(y), eval_pts)
-    dvals_u = kde(y)(b_u)
-    scale_u = offset / np.max(dvals_u)
-    offset *= 1.3  # offset = - np.max(x) * 1.1
-    pl.plot(dvals_u * scale_u - offset, b_u, color='grey')
-    pl.fill_between(dvals_u * scale_u - offset, 0, b_u, alpha=alpha, color='grey')
-    pl.xlim(-offset)
+    # density plot along y-coordinate
+    if y is not None:
+        ynew = np.linspace(min(y), max(y), eval_pts)
+        vals = kde(y)(ynew)
+
+        offset = max(x) / scale
+        scale_u = offset / np.max(vals)
+        offset *= 1.3
+        vals = vals * scale_u - offset
+
+        pl.plot(vals, ynew, color='grey')
+        pl.fill_betweenx(ynew, -offset, vals, alpha=alpha, color='grey')
+        pl.xlim(-offset)
 
 
 def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, xlabel=None, ylabel=None, cutoff=None,
@@ -314,7 +362,7 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, xlabel=None, ylabe
     bmin, bmax = masked_arrays.min(), masked_arrays.max()
     bins = np.arange(bmin, bmax + (bmax - bmin) / bins, (bmax - bmin) / bins)
     if cutoff is not None:
-        bins = bins[bins < cutoff]
+        bins = bins[(bins > cutoff[0]) & (bins < cutoff[1])] if isinstance(cutoff, list) else bins[bins < cutoff]
 
     for i, x in enumerate(arrays):
         pl.hist(x[np.isfinite(x)], bins=bins, alpha=alpha, color=colors[i],

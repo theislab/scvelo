@@ -154,7 +154,7 @@ def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_
         beta_i = beta[i] if isinstance(beta, (tuple, list, np.ndarray)) else beta
         gamma_i = gamma[i] if isinstance(gamma, (tuple, list, np.ndarray)) else gamma
         tau, alpha_vec, u0_vec, s0_vec = vectorize(t, t_[i], alpha_i, beta_i, gamma_i, alpha_=alpha_, u0=0, s0=0)
-        beta_i
+
         if noise_model is 'gillespie':
             U[:, i], S[:, i] = simulate_gillespie(alpha_vec, beta, gamma)
         else:

@@ -1,6 +1,7 @@
 from .. import settings
 from .. import logging as logg
 from ..preprocessing.moments import get_connectivities
+from ..preprocessing.neighbors import neighbors, neighbors_to_be_recomputed
 from .velocity_graph import VelocityGraph
 from .transition_matrix import transition_matrix
 from .utils import scale, groups_to_bool, strings_to_categoricals
@@ -183,6 +184,8 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
         sparse matrix with transition probabilities.
     """
     adata = data.copy() if copy else data
+    if neighbors_to_be_recomputed(adata): neighbors(adata)
+
     logg.info('computing terminal states', r=True)
 
     strings_to_categoricals(adata)

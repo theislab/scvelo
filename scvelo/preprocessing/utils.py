@@ -4,6 +4,23 @@ import numpy as np
 from scipy.sparse import issparse
 from sklearn.utils import sparsefuncs
 from anndata import AnnData
+import warnings
+
+
+def sum_obs(A):
+    """summation over axis 0 (obs) equivalent to np.sum(A, 0)
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return A.sum(0).A1 if issparse(A) else np.sum(A, axis=0)
+
+
+def sum_var(A):
+    """summation over axis 1 (var) equivalent to np.sum(A, 1)
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return A.sum(1).A1 if issparse(A) else np.sum(A, axis=1)
 
 
 def show_proportions(adata):
@@ -19,10 +36,13 @@ def show_proportions(adata):
     Prints the fractions of abundances.
     """
     layers_keys = [key for key in ['spliced', 'unspliced', 'ambiguous'] if key in adata.layers.keys()]
-    tot_mol_cell_layers = [adata.layers[key].sum(1) for key in layers_keys]
+    counts_per_cell_layers = [sum_var(adata.layers[key]) for key in layers_keys]
+
+    counts_per_cell_sum = np.sum(counts_per_cell_layers, 0)
+    counts_per_cell_sum += counts_per_cell_sum == 0
 
     mean_abundances = np.round(
-        [np.mean(tot_mol_cell / np.sum(tot_mol_cell_layers, 0)) for tot_mol_cell in tot_mol_cell_layers], 2)
+        [np.mean(counts_per_cell / counts_per_cell_sum) for counts_per_cell in counts_per_cell_layers], 2)
 
     print('Abundance of ' + str(layers_keys) + ': ' + str(mean_abundances))
 
@@ -65,7 +85,7 @@ def cleanup(data, clean='layers', keep=None, copy=False):
 
 def get_size(adata, layer=None):
     X = adata.X if layer is None else adata.layers[layer]
-    return X.sum(1).A1 if issparse(X) else X.sum(1)
+    return sum_var(X)
 
 
 def set_initial_size(adata, layers={'spliced', 'unspliced'}):
@@ -89,8 +109,7 @@ def get_initial_size(adata, layer=None, by_total_size=None):
 
 
 def filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
-    counts = X if (min_counts is not None or max_counts is not None) else X > 0
-    counts = counts.sum(0).A1 if issparse(counts) else counts.sum(0)
+    counts = sum_obs(X) if (min_counts is not None or max_counts is not None) else sum_obs(X > 0)
     lb = min_counts if min_counts is not None else min_cells if min_cells is not None else -np.inf
     ub = max_counts if max_counts is not None else max_cells if max_cells is not None else np.inf
     return (lb <= counts) & (counts <= ub), counts
@@ -253,14 +272,23 @@ def filter_genes_dispersion(data, flavor='seurat', min_disp=None, max_disp=None,
 
 def counts_per_cell_quantile(X, max_proportion_per_cell=.05, counts_per_cell=None):
     if counts_per_cell is None:
-        counts_per_cell = X.sum(1).A1 if issparse(X) else X.sum(1)
+        counts_per_cell = sum_var(X)
     gene_subset = np.all(X <= counts_per_cell[:, None] * max_proportion_per_cell, axis=0)
     if issparse(X): gene_subset = gene_subset.A1
-    return X[:, gene_subset].sum(1).A1 if issparse(X) else X[:, gene_subset].sum(1)
+    return sum_var(X[:, gene_subset])
 
 
 def not_yet_normalized(X):
     return np.allclose((X.data[:10] if issparse(X) else X[:, 0]) % 1, 0, atol=1e-3)
+
+
+def check_if_valid_dtype(adata, layer='X'):
+    X = adata.X if layer is 'X' else adata.layers[layer]
+    if 'int' in X.dtype.name:
+        if layer is 'X':
+            adata.X = adata.X.astype(np.float32)
+        elif layer in adata.layers.keys():
+            adata.layers[layer] = adata.layers[layer].astype(np.float32)
 
 
 def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, key_n_counts=None,
@@ -302,7 +330,9 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, k
     modified_layers = []
 
     for layer in layers:
+        check_if_valid_dtype(adata, layer)
         X = adata.X if layer is 'X' else adata.layers[layer]
+
         if not_yet_normalized(X) or enforce:
             counts = counts_per_cell if counts_per_cell is not None \
                 else get_initial_size(adata, layer) if use_initial_size else get_size(adata, layer)
@@ -310,8 +340,11 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, k
                 counts = counts_per_cell_quantile(X, max_proportion_per_cell, counts)
             # equivalent to scanpy.pp.normalize_per_cell(X, counts_per_cell_after, counts)
             counts_after = np.median(counts) if counts_per_cell_after is None else counts_per_cell_after
-            counts /= counts_after + (counts_after == 0)
+
+            counts_after += counts_after == 0
+            counts = counts / counts_after
             counts += counts == 0  # to avoid division by zero
+
             if issparse(X):
                 sparsefuncs.inplace_row_scale(X, 1 / counts)
             else:
@@ -404,12 +437,11 @@ def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=Non
         filter_genes_dispersion(adata, n_top_genes=n_top_genes, flavor=flavor)
 
     log_advised = np.allclose(adata.X[:10].sum(), adata.layers['spliced'][:10].sum())
-    if log and log_advised:
-        log1p(adata)
+    if log and log_advised: log1p(adata)
 
-    logg.info('Logarithmized X.' if log and log_advised else
-              'Did not modify X as it looks preprocessed already.' if log else
-              'Consider logarithmizing X with `scv.pp.log1p` for better results.' if log_advised else '')
+    if log and log_advised: logg.info('Logarithmized X.')
+    elif log and not log_advised: logg.warn('Did not modify X as it looks preprocessed already.')
+    elif log_advised and not log: logg.warn('Consider logarithmizing X with `scv.pp.log1p` for better results.')
 
     return adata if copy else None
 

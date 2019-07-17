@@ -6,9 +6,10 @@ from scanpy.api import Neighbors
 from scanpy.api.pp import pca
 from scipy.sparse import issparse
 import numpy as np
+import warnings
 
 
-def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_state=0, method='umap',
+def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_state=0, method='umap',
               metric='euclidean', metric_kwds={}, num_threads=-1, copy=False):
     """
     Compute a neighborhood graph of observations [McInnes18]_.
@@ -30,8 +31,9 @@ def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_st
         is `False`, a Gaussian kernel width is set to the distance of the
         `n_neighbors` neighbor.
     n_pcs : `int` or `None` (default: None)
-        Use this many PCs. If n_pcs==0 use .X if use_rep is None.
-
+        Number of principal components to use.
+        If not specified, the full space is used of a pre-computed PCA,
+        or 30 components are used when PCA is computed internally.
     use_rep : `None`, `'X'` or any key for `.obsm` (default: None)
         Use the indicated representation. If `None`, the representation is chosen automatically:
         for .n_vars < 50, .X is used, otherwise ‘X_pca’ is used.
@@ -61,32 +63,46 @@ def neighbors(adata, n_neighbors=30, n_pcs=30, use_rep=None, knn=True, random_st
         Instead of decaying weights, this stores distances for each pair of
         neighbors.
     """
-    logg.info('computing neighbors', r=True)
     adata = adata.copy() if copy else adata
     if adata.isview: adata._init_as_actual(adata.copy())
 
-    if (use_rep is None or use_rep is 'X_pca') \
-            and ('X_pca' not in adata.obsm.keys() or n_pcs > adata.obsm['X_pca'].shape[1]):
-        pca(adata, n_comps=n_pcs, svd_solver='arpack')
+    if use_rep is None:
+        use_rep = 'X' if adata.n_vars < 50 or n_pcs is 0 else 'X_pca'
+        n_pcs = None if use_rep is 'X' else n_pcs
+    elif use_rep not in adata.obsm.keys() and 'X_' + use_rep in adata.obsm.keys():
+        use_rep = 'X_' + use_rep
+
+    if use_rep is 'X_pca':
+        if 'X_pca' not in adata.obsm.keys() or n_pcs is not None and n_pcs > adata.obsm['X_pca'].shape[1]:
+            pca(adata, n_comps=30 if n_pcs is None else n_pcs, svd_solver='arpack')
+        elif n_pcs is None and adata.obsm['X_pca'].shape[1] < 10:
+            logg.warn('Neighbors are computed on ', adata.obsm['X_pca'].shape[1], ' principal components only.')
+
+    logg.info('computing neighbors', r=True)
 
     if method is 'sklearn':
         from sklearn.neighbors import NearestNeighbors
-        X = adata.obsm['X_pca'] if use_rep is None else adata.obsm[use_rep]
+        X = adata.X if use_rep is 'X' else adata.obsm[use_rep]
         neighbors = NearestNeighbors(n_neighbors=n_neighbors, metric=metric, metric_params=metric_kwds, n_jobs=num_threads)
-        neighbors.fit(X)
+        neighbors.fit(X if n_pcs is None else X[:, :n_pcs])
         knn_distances, neighbors.knn_indices = neighbors.kneighbors()
         neighbors.distances, neighbors.connectivities = \
             compute_connectivities_umap(neighbors.knn_indices, knn_distances, X.shape[0], n_neighbors=30)
 
     elif method is 'hnsw':
-        X = adata.obsm['X_pca'] if use_rep is None else adata.obsm[use_rep]
+        X = adata.X if use_rep is 'X' else adata.obsm[use_rep]
         neighbors = FastNeighbors(n_neighbors=n_neighbors, num_threads=num_threads)
-        neighbors.fit(X, metric=metric, random_state=random_state, **metric_kwds)
+        neighbors.fit(X if n_pcs is None else X[:, :n_pcs], metric=metric, random_state=random_state, **metric_kwds)
 
     else:
-        neighbors = Neighbors(adata)
-        neighbors.compute_neighbors(n_neighbors=n_neighbors, knn=knn, n_pcs=n_pcs, use_rep=use_rep, method=method,
-                                    metric=metric, metric_kwds=metric_kwds, random_state=random_state, write_knn_indices=True)
+        logg.switch_verbosity('off', module='scanpy')
+        with warnings.catch_warnings():  # ignore numba warning (reported in umap/issues/252)
+            warnings.simplefilter("ignore")
+            neighbors = Neighbors(adata)
+            neighbors.compute_neighbors(n_neighbors=n_neighbors, knn=knn, n_pcs=n_pcs, use_rep=use_rep, method=method,
+                                        metric=metric, metric_kwds=metric_kwds, random_state=random_state,
+                                        write_knn_indices=True)
+        logg.switch_verbosity('on', module='scanpy')
 
     adata.uns['neighbors'] = {}
     adata.uns['neighbors']['params'] = {'n_neighbors': n_neighbors, 'method': method}
@@ -121,10 +137,12 @@ class FastNeighbors:
 
         ef_c, ef = max(ef_construction, self.n_neighbors), max(self.n_neighbors, ef)
         metric = 'l2' if metric is 'euclidean' else metric
+
+        X = X.A if issparse(X) else X
         ns, dim = X.shape
 
         knn = hnswlib.Index(space=metric, dim=dim)
-        knn.init_index(max_elements=X.shape[0], ef_construction=ef_c, M=M, random_seed=random_state)
+        knn.init_index(max_elements=ns, ef_construction=ef_c, M=M, random_seed=random_state)
         knn.add_items(X)
         knn.set_ef(ef)
 
@@ -176,27 +194,31 @@ def select_connectivities(connectivities, n_neighbors=None):
 
 
 def neighbors_to_be_recomputed(adata, n_neighbors=None):
-    # check if neighbors graph is disrupted
-    if 'neighbors' not in adata.uns.keys() \
-            or 'distances' not in adata.uns['neighbors'] or 'params' not in adata.uns['neighbors']:
+    # check whether neighbors graph is disrupted or whether graph has insufficient number of neighbors
+    invalid_neighs = 'neighbors' not in adata.uns.keys() \
+                     or 'distances' not in adata.uns['neighbors'] \
+                     or 'params' not in adata.uns['neighbors'] \
+                     or (n_neighbors is not None and n_neighbors > adata.uns['neighbors']['params']['n_neighbors'] )
+    if invalid_neighs:
         return True
     else:
         n_neighs = (adata.uns['neighbors']['distances'] > 0).sum(1)
-        result = n_neighs.max() - n_neighs.min() >= 2
-        # check if neighbors graph has sufficient number of neighbors
-        if n_neighbors is not None:
-            result = result or n_neighbors > adata.uns['neighbors']['params']['n_neighbors']
-    return result
+        return n_neighs.max() * .1 > n_neighs.min()
 
 
 def get_connectivities(adata, mode='connectivities', n_neighbors=None, recurse_neighbors=False):
-    C = adata.uns['neighbors'][mode]
-    if n_neighbors is not None and n_neighbors < adata.uns['neighbors']['params']['n_neighbors']:
-        C = select_connectivities(C, n_neighbors) if mode == 'connectivities' else select_distances(C, n_neighbors)
-    connectivities = C > 0
-    connectivities.setdiag(1)
-    if recurse_neighbors:
-        connectivities += connectivities.dot(connectivities * .5)
-        connectivities.data = np.clip(connectivities.data, 0, 1)
-    connectivities = connectivities.multiply(1. / connectivities.sum(1))
-    return connectivities.tocsr().astype(np.float32)
+    if 'neighbors' in adata.uns.keys():
+        C = adata.uns['neighbors'][mode]
+        if n_neighbors is not None and n_neighbors < adata.uns['neighbors']['params']['n_neighbors']:
+            C = select_connectivities(C, n_neighbors) if mode == 'connectivities' else select_distances(C, n_neighbors)
+        connectivities = C > 0
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            connectivities.setdiag(1)
+            if recurse_neighbors:
+                connectivities += connectivities.dot(connectivities * .5)
+                connectivities.data = np.clip(connectivities.data, 0, 1)
+            connectivities = connectivities.multiply(1. / connectivities.sum(1))
+        return connectivities.tocsr().astype(np.float32)
+    else:
+        return None

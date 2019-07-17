@@ -2,9 +2,12 @@
 """
 
 from . import settings
+from sys import stdout
 from datetime import datetime
 from time import time as get_time
 from platform import python_version
+from anndata.logging import get_memory_usage
+from anndata.logging import print_memory_usage
 
 
 _VERBOSITY_LEVELS_FROM_STRINGS = {'error': 0, 'warn': 1, 'info': 2, 'hint': 3}
@@ -104,7 +107,7 @@ def _write_log(*msg, end='\n'):
             f.write(out + end)
 
 
-def _sec_to_str(t):
+def _sec_to_str(t, show_microseconds=False):
     """Format time in seconds.
     Parameters
     ----------
@@ -112,9 +115,8 @@ def _sec_to_str(t):
         Time in seconds.
     """
     from functools import reduce
-    return "%d:%02d:%02d.%02d" % \
-        reduce(lambda ll, b: divmod(ll[0], b) + ll[1:],
-               [(t*100,), 100, 60, 60])
+    t_str = "%d:%02d:%02d.%02d" % reduce(lambda ll, b: divmod(ll[0], b) + ll[1:], [(t*100,), 100, 60, 60])
+    return t_str if show_microseconds else t_str[:-3]
 
 
 def get_passed_time():
@@ -125,13 +127,7 @@ def get_passed_time():
 
 
 def print_passed_time():
-    now = get_time()
-    elapsed = now - settings._previous_time
-    settings._previous_time = now
-
-    from functools import reduce
-    elapsed = "%d:%02d:%02d.%02d" % reduce(lambda ll, b: divmod(ll[0], b) + ll[1:], [(elapsed*100,), 100, 60, 60])
-    return elapsed
+    return _sec_to_str(get_passed_time())
 
 
 def print_version():
@@ -152,11 +148,24 @@ def get_date_string():
     return datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
-from anndata.logging import print_memory_usage
-from anndata.logging import get_memory_usage
+def switch_verbosity(mode='on', module=None):
+    if module is None: from . import settings
+    elif module is 'scanpy': from scanpy import settings
+    else: exec('from ' + module + ' import settings')
+
+    if mode is 'on' and hasattr(settings, 'tmp_verbosity'):
+        settings.verbosity = settings.tmp_verbosity
+        del settings.tmp_verbosity
+
+    elif mode is 'off':
+        settings.tmp_verbosity = settings.verbosity
+        settings.verbosity = 0
+
+    elif not isinstance(mode, str):
+        settings.tmp_verbosity = settings.verbosity
+        settings.verbosity = mode
 
 
-from sys import stdout
 class ProgressReporter:
     def __init__(self, total, interval=3):
         self.count = 0
@@ -176,3 +185,6 @@ class ProgressReporter:
         if settings.verbosity > 1:
             stdout.write('\r')
             stdout.flush()
+
+
+

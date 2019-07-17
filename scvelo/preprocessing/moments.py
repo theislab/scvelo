@@ -7,8 +7,7 @@ from scipy.sparse import csr_matrix
 import numpy as np
 
 
-def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', method='umap', metric='euclidean', use_rep=None,
-            recurse_neighbors=False, renormalize=False, copy=False):
+def moments(data, n_neighbors=30, n_pcs=None, mode='connectivities', method='umap', use_rep=None, copy=False):
     """Computes moments for velocity estimation.
 
     Arguments
@@ -17,12 +16,18 @@ def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', method='umap'
         Annotated data matrix.
     n_neighbors: `int` (default: 30)
         Number of neighbors to use.
-    n_pcs: `int` (default: 30)
+    n_pcs: `int` (default: None)
         Number of principal components to use.
+        If not specified, the full space is used of a pre-computed PCA,
+        or 30 components are used when PCA is computed internally.
     mode: `'connectivities'` or `'distances'`  (default: `'connectivities'`)
         Distance metric to use for moment computation.
-    renormalize: `bool` (default: `False`)
-        Renormalize the moments by total counts per cell to its median.
+    method : {{'umap', 'gauss', 'hnsw', 'sklearn', `None`}}  (default: `'umap'`)
+        Use 'umap' [McInnes18]_ or 'gauss' (Gauss kernel following [Coifman05]_
+        with adaptive width [Haghverdi16]_) for computing connectivities.
+    use_rep : `None`, `'X'` or any key for `.obsm` (default: None)
+        Use the indicated representation. If `None`, the representation is chosen automatically:
+        for .n_vars < 50, .X is used, otherwise ‘X_pca’ is used.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to adata.
 
@@ -42,17 +47,17 @@ def moments(data, n_neighbors=30, n_pcs=30, mode='connectivities', method='umap'
         normalize_per_cell(adata)
     if neighbors_to_be_recomputed(adata, n_neighbors=n_neighbors):
         if use_rep is None: use_rep = 'X_pca'
-        neighbors(adata, n_neighbors=n_neighbors, use_rep=use_rep, n_pcs=n_pcs, method=method, metric=metric)
+        neighbors(adata, n_neighbors=n_neighbors, use_rep=use_rep, n_pcs=n_pcs, method=method)
     if mode not in adata.uns['neighbors']:
         raise ValueError('mode can only be \'connectivities\' or \'distances\'')
 
     logg.info('computing moments based on ' + str(mode), r=True)
 
-    connectivities = get_connectivities(adata, mode, n_neighbors=n_neighbors, recurse_neighbors=recurse_neighbors)
+    connectivities = get_connectivities(adata, mode, n_neighbors=n_neighbors, recurse_neighbors=False)
 
     adata.layers['Ms'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['spliced'])).astype(np.float32).A
     adata.layers['Mu'] = csr_matrix.dot(connectivities, csr_matrix(adata.layers['unspliced'])).astype(np.float32).A
-    if renormalize: normalize_per_cell(adata, layers={'Ms', 'Mu'}, enforce=True)
+    # if renormalize: normalize_per_cell(adata, layers={'Ms', 'Mu'}, enforce=True)
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(

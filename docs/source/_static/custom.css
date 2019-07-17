@@ -27,3 +27,8 @@
 .rst-content dl:not(.docutils) dl dt a.reference>code {
     text-decoration: underline;
 }
+
+/* Enlarge to max-width 900px (default: 800px) */
+.wy-nav-content {
+   max-width: 900px !important;
+}

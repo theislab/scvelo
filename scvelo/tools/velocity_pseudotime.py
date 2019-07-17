@@ -110,7 +110,7 @@ class VPT(DPT):
             self.pseudotime[:] = np.nan
 
 
-def velocity_pseudotime(adata, groupby=None, groups=None, root=None, end=None, n_dcs=10, n_branchings=0,
+def velocity_pseudotime(adata, vkey='velocity', groupby=None, groups=None, root=None, end=None, n_dcs=10, n_branchings=0,
                         min_group_size=0.01, allow_kendall_tau_shift=True, use_velocity_field=True,
                         save_diffmap=False, return_model=False):
     strings_to_categoricals(adata)
@@ -126,7 +126,7 @@ def velocity_pseudotime(adata, groupby=None, groups=None, root=None, end=None, n
                   n_branchings=n_branchings, allow_kendall_tau_shift=allow_kendall_tau_shift)
 
         if use_velocity_field:
-            T = data.uns['velocity_graph'] - data.uns['velocity_graph_neg']
+            T = data.uns[vkey + '_graph'] - data.uns[vkey + '_graph_neg']
             vpt._connectivities = T + T.T
 
         vpt.compute_transitions()
@@ -149,13 +149,13 @@ def velocity_pseudotime(adata, groupby=None, groups=None, root=None, end=None, n
         if n_branchings > 0: vpt.branchings_segments()
         else: vpt.indices = vpt.pseudotime.argsort()
 
-        if 'velocity_pseudotime' not in adata.obs.keys():
+        if vkey + '_pseudotime' not in adata.obs.keys():
             pseudotime = np.empty(adata.n_obs)
             pseudotime[:] = np.nan
         else:
-            pseudotime = adata.obs['velocity_pseudotime'].copy()
+            pseudotime = adata.obs[vkey + '_pseudotime'].copy()
         pseudotime[cell_subset] = vpt.pseudotime
-        adata.obs['velocity_pseudotime'] = pseudotime
+        adata.obs[vkey + '_pseudotime'] = pseudotime
 
         if save_diffmap:
             diffmap = np.empty(shape=(adata.n_obs, n_dcs))

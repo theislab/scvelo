@@ -6,7 +6,7 @@ del get_version
 
 from .read_load import AnnData, read, read_loom, load, read_csv
 from .preprocessing.neighbors import Neighbors
-from .tools.run import run_all
+from .tools.run import run_all, test
 from .tools.velocity import Velocity
 from .tools.velocity_graph import VelocityGraph
 
