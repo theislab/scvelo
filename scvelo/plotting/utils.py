@@ -260,10 +260,8 @@ def savefig_or_show(writekey, show=None, dpi=None, ext=None, save=None):
             else:
                 dpi = rcParams['savefig.dpi']
         if not os.path.exists(settings.figdir): os.makedirs(settings.figdir)
-        if settings.figdir[-1] != '/': settings.figdir += '/'
         if ext is None: ext = settings.file_format_figs
-        filename = settings.figdir + writekey + settings.plot_suffix + '.' + ext
-        # output the following msg at warning level; it's really important for the user
+        filename = settings.figdir + f'{writekey}{settings.plot_suffix}.{ext}'
         logg.msg('saving figure to file', filename, v=1)
         pl.savefig(filename, dpi=dpi, bbox_inches='tight')
 
@@ -347,8 +345,8 @@ def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3):
         pl.xlim(-offset)
 
 
-def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, xlabel=None, ylabel=None, cutoff=None,
-         fontsize=None, legend_fontsize=None, xlim=None, ylim=None, ax=None, figsize=None, dpi=None, show=True):
+def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, kde=False, xlabel=None, ylabel=None, xlim=None, ylim=None,
+         cutoff=None, xscale=None, yscale=None, fontsize=None, legend_fontsize=None, figsize=None, ax=None, dpi=None, show=True):
     fig = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
     ax = pl.subplot()
     update_axes(ax, xlim, ylim, fontsize, frameon=True)
@@ -361,17 +359,30 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, xlabel=None, ylabe
     masked_arrays = np.ma.masked_invalid(arrays)
     bmin, bmax = masked_arrays.min(), masked_arrays.max()
     bins = np.arange(bmin, bmax + (bmax - bmin) / bins, (bmax - bmin) / bins)
+    if xscale is 'log':
+        bins = bins[bins > 0]
+        bins = np.logspace(np.log10(bins[0]), np.log10(bins[-1]), len(bins))
+
     if cutoff is not None:
         bins = bins[(bins > cutoff[0]) & (bins < cutoff[1])] if isinstance(cutoff, list) else bins[bins < cutoff]
 
     for i, x in enumerate(arrays):
-        pl.hist(x[np.isfinite(x)], bins=bins, alpha=alpha, color=colors[i],
-                label=labels[i] if labels is not None else None)
+        if kde:
+            from scipy.stats import gaussian_kde
+            kde_bins = gaussian_kde(x)(bins)
+            pl.plot(bins, kde_bins, color='grey')
+            pl.fill_between(bins, 0, kde_bins, alpha=.4, color='grey')
+        else:
+            pl.hist(x[np.isfinite(x)], bins=bins, alpha=alpha, color=colors[i],
+                    label=labels[i] if labels is not None else None)
 
     set_label(xlabel if xlabel is not None else '', ylabel if xlabel is not None else '', fontsize=fontsize)
 
     if labels is not None:
         pl.legend(fontsize=legend_fontsize)
+
+    if xscale is not None: pl.xscale(xscale)
+    if yscale is not None: pl.yscale(yscale)
 
     if not show:
         return ax
