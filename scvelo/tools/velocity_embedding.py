@@ -16,7 +16,7 @@ def quiver_autoscale(X_emb, V_emb):
                   V_emb[:, 0], V_emb[:, 1], angles='xy', scale_units='xy', scale=None)
     Q._init()
     fig.clf()
-
+    pl.close(fig)
     return Q.scale / scale_factor
 
 
