@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 from matplotlib.colors import ColorConverter
-from pandas import unique
+from pandas import unique, isnull
 from scipy.sparse import issparse
 from .utils import is_categorical, interpret_colorkey, default_basis, default_size, get_components, savefig_or_show, \
     default_color, make_unique_list, set_colorbar, default_color_map, set_label, set_title
@@ -146,7 +146,7 @@ def heatmap(adata, var_names, groups=None, groupby=None, annotations=None, use_r
                     idx_group = np.array(idx_group[0].tolist())
                     idx_var = [vn in var_names for vn in adata.var_names]
                     idx_pt = np.array(adata.obs.velocity_pseudotime).argsort()
-                    idx_pt = idx_pt[np.array(np.isnan(np.array(dat.obs.velocity_pseudotime)[idx_pt]) == False)]
+                    idx_pt = idx_pt[np.array(isnull(np.array(dat.obs.velocity_pseudotime)[idx_pt]) == False)]
 
                     if layer == 'X':
                         laydat = dat.X
@@ -249,7 +249,8 @@ def heatmap(adata, var_names, groups=None, groupby=None, annotations=None, use_r
                 # Get data to fill
                 dat = adata[:, var]
                 idx = np.array(dat.obs.velocity_pseudotime).argsort()
-                idx = idx[np.array(np.isnan(np.array(dat.obs.velocity_pseudotime)[idx]) == False)]
+                idx = idx[np.array(isnull(np.array(dat.obs.velocity_pseudotime)[idx]) == False)]
+                print(idx)
 
                 if layer == 'X':
                     laydat = dat.X
