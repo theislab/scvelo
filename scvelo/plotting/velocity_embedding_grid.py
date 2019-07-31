@@ -167,7 +167,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
                          "color": 'grey' if arrow_color is None else arrow_color, "edgecolors": 'k',
                          "headlength": hl/2, "headwidth": hw/2, "headaxislength": hal/2, "linewidth": .2}
         quiver_kwargs.update(kwargs)
-        pl.quiver(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1], **quiver_kwargs, zorder=3)
+        ax.quiver(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1], **quiver_kwargs, zorder=3)
 
         if principal_curve:
             curve = adata.uns['principal_curve']['projections']
