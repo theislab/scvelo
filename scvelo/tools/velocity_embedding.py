@@ -11,11 +11,12 @@ import warnings
 def quiver_autoscale(X_emb, V_emb):
     import matplotlib.pyplot as pl
     scale_factor = np.abs(X_emb).max()  # just so that it handles very large values
-    Q = pl.quiver(X_emb[:, 0] / scale_factor, X_emb[:, 1] / scale_factor,
+    fig, ax = pl.subplots()
+    Q = ax.quiver(X_emb[:, 0] / scale_factor, X_emb[:, 1] / scale_factor,
                   V_emb[:, 0], V_emb[:, 1], angles='xy', scale_units='xy', scale=None)
     Q._init()
-    pl.clf()
-    pl.close()
+    fig.clf()
+    #fig.close()
     return Q.scale / scale_factor
 
 
