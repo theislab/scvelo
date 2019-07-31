@@ -250,7 +250,6 @@ def heatmap(adata, var_names, groups=None, groupby=None, annotations=None, use_r
                 dat = adata[:, var]
                 idx = np.array(dat.obs.velocity_pseudotime).argsort()
                 idx = idx[np.array(isnull(np.array(dat.obs.velocity_pseudotime)[idx]) == False)]
-                print(idx)
 
                 if layer == 'X':
                     laydat = dat.X
