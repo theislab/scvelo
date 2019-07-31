@@ -52,7 +52,10 @@ def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbor
         V_grid = V_grid.T.reshape(2, ns, ns)
 
         mass = np.sqrt((V_grid ** 2).sum(0))
-        V_grid[0][mass.reshape(V_grid[0].shape) < 1e-5] = np.nan
+        if min_mass is None: min_mass = 1
+        min_mass = 10 ** (min_mass - 6)  # default min_mass = 1e-5
+        min_mass = np.clip(min_mass, None, np.max(mass) * .9)
+        V_grid[0][mass.reshape(V_grid[0].shape) < min_mass] = np.nan
     else:
         if min_mass is None: min_mass = np.clip(np.percentile(p_mass, 99) / 100, 1e-2, 1)
         X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
@@ -92,7 +95,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
         Length of arrows.
     scale: `float` (default: 1)
         Length of velocities in the embedding.
-    min_mass: `float` (default: 0.5)
+    min_mass: `float` or `None` (default: `None`)
         Minimum threshold for mass to be shown.
     smooth: `float` (default: 0.5)
         Multiplication factor for scale in Gaussian kernel around grid point.
