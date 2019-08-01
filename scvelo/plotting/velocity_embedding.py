@@ -135,7 +135,8 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
             if is_color_like(c[0]): pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=c, zorder=3, **quiver_kwargs)
             else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=3, **quiver_kwargs)
 
-        ax = scatter(adata, x=x, y=y, layer=layer, color=color, size=size, title=title, ax=ax, zorder=0, **scatter_kwargs)
+        ax = scatter(adata, x=x, y=y, vkey=vkey, layer=layer, color=color, size=size, title=title, ax=ax, zorder=0,
+                     **scatter_kwargs)
 
         savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
         if not show: return ax
