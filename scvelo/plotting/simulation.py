@@ -6,6 +6,15 @@ import matplotlib.pyplot as pl
 from matplotlib import rcParams
 
 
+def get_vars(adata, key='fit'):
+    alpha = adata.var[key + '_alpha'].values if key + '_alpha' in adata.var.keys() else 1
+    beta = adata.var[key + '_beta'].values if key + '_beta' in adata.var.keys() else 1
+    gamma = adata.var[key + '_gamma'].values
+    t_ = adata.var[key + '_t_'].values
+    scaling = adata.var[key + '_scaling'].values if key + '_scaling' in adata.var.keys() else 1
+    return alpha, beta, gamma, t_, scaling
+
+
 def get_dynamics(adata, key='fit', extrapolate=False, sorted=False, t=None):
     alpha, beta, gamma, t_, scaling = get_vars(adata, key)
     if extrapolate:
@@ -31,7 +40,7 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
     t_ = adata.var[key + '_t_'][idx] if t_ is None else t_
     scaling = adata.var[key + '_scaling'][idx] if key + '_scaling' in adata.var.keys() else 1
 
-    if t is None or t is True:
+    if t is None or isinstance(t, bool) or len(t) < adata.n_obs:
         t = adata.obs[key + '_t'].values if key is 'true' else adata.layers[key + '_t'][:, idx]
 
     if extrapolate:
@@ -48,17 +57,19 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
     return alpha, ut, st, vt
 
 
-def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, show_assigments=None):
+def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, show_assignments=None):
     color = 'grey' if key is 'true' else 'purple'
     linewidth = .5 * linewidth if key is 'true' else linewidth
 
-    _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=True, t=show_assigments)
-    pl.plot(st, ut, color=color, linewidth=linewidth)
+    if show_assignments is not 'only':
+        _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=True, t=show_assignments)
+        pl.plot(st, ut, color=color, linewidth=linewidth)
 
     if key is not 'true':
-        _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=False, sort=False, t=show_assigments)
-        pl.scatter(st, ut, color=color, s=1)
-        if show_assigments is not None and show_assigments is not False:
+        _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=False, sort=False, t=show_assignments)
+        if show_assignments is not 'only':
+            pl.scatter(st, ut, color=color, s=1)
+        if show_assignments:
             skey, ukey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
             s, u = make_dense(adata[:, basis].layers[skey]).flatten(), make_dense(adata[:, basis].layers[ukey]).flatten()
             pl.plot(np.array([s, st]), np.array([u, ut]), color='grey', linewidth=.1 * linewidth)
@@ -69,11 +80,13 @@ def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, sho
 
     xnew = np.linspace(0, st.max())
     label = 'learned dynamics' if key is 'fit' else 'true dynamics'
-    pl.plot(xnew, gamma / beta * scaling * xnew, color=color, linestyle='--', linewidth=linewidth, label=label)
+    if show_assignments is not 'only':
+        pl.plot(xnew, gamma / beta * scaling * xnew, color=color, linestyle='--', linewidth=linewidth, label=label)
     return label
 
 
-def simulation(adata, var_names='all', legend_loc='upper right', linewidth=None, dpi=None, **kwargs):
+def simulation(adata, var_names='all', legend_loc='upper right', legend_fontsize=20, linewidth=None, dpi=None,
+               colors=['darkblue', 'darkgreen'],  **kwargs):
     from ..tools.utils import make_dense
     from .scatter import scatter
     var_names = adata.var_names if var_names is 'all' else [name for name in var_names if name in adata.var_names]
@@ -98,14 +111,15 @@ def simulation(adata, var_names='all', legend_loc='upper right', linewidth=None,
         _kwargs.update(kwargs)
 
         ax = scatter(x=t, y=u, color='darkblue', ax=ax, show=False, **_kwargs)
-        ax = scatter(x=t, y=s, color='red', ax=ax, show=False, **_kwargs)
+        ax = scatter(x=t, y=s, color='green', ax=ax, show=False, **_kwargs)
 
         linewidth = 1 if linewidth is None else linewidth
         ax.plot(t, alpha, label='alpha', linestyle='--', color='grey', linewidth=linewidth)
-        ax.plot(t, ut, label='unspliced', color='darkblue', linewidth=linewidth)
-        ax.plot(t, st, label='spliced', color='red', linewidth=linewidth)
+        ax.plot(t, ut, label='unspliced', color=colors[0], linewidth=linewidth)
+        ax.plot(t, st, label='spliced', color=colors[1], linewidth=linewidth)
 
         pl.xlim(0)
         pl.ylim(0)
-        if legend_loc is not 'none':
-            pl.legend(loc=legend_loc)
+        if legend_loc is not 'none' and i == ncols-1:
+            pl.legend(loc=legend_loc, fontsize=legend_fontsize)
+

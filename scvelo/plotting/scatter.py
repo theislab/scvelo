@@ -16,7 +16,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             colorbar=True, palette=None, size=None, alpha=None, linewidth=None, perc=None, sort_order=True, groups=None,
             components=None, projection='2d', legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
-            xlim=None, ylim=None, show_density=None, show_assigments=None, show_linear_fit=None, dpi=None, frameon=None,
+            xlim=None, ylim=None, show_density=None, show_assignments=None, show_linear_fit=None, dpi=None, frameon=None,
             show=True, save=None, ax=None, zorder=None, ncols=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
@@ -55,7 +55,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 ax.append(scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel, vkey=vkey,
                           color_map=color_map, colorbar=colorbar, perc=perc, frameon=frameon, zorder=zorder,
                           legend_loc=legend_loc, fontsize=fontsize, xlim=xlim, ylim=ylim, ax=pl.subplot(gs),
-                          show_density=show_density, show_assigments=show_assigments, show_linear_fit=show_linear_fit,
+                          show_density=show_density, show_assignments=show_assignments, show_linear_fit=show_linear_fit,
                           color=colors[i] if len(colors) > 1 else color,
                           layer=layers[i] if len(layers) > 1 else layer,
                           basis=bases[i] if len(bases) > 1 else basis,
@@ -142,11 +142,11 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if basis in adata.var_names:
                 fits = plot_linear_fit(adata, basis, vkey, xkey, linewidth)
                 from .simulation import show_full_dynamics
-                if 'true_alpha' in adata.var.keys():
+                if 'true_alpha' in adata.var.keys() and (vkey is None or 'true_dynamics' in vkey):
                     fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth)
                     fits.append(fit)
                 if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamic' in vkey):
-                    fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assigments=show_assigments)
+                    fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments)
                     fits.append(fit)
                 if len(fits) > 0 and legend_loc is not False and legend_loc is not 'none':
                     pl.legend(fits, fontsize=legend_fontsize, loc='lower right' if legend_loc is None else legend_loc)
