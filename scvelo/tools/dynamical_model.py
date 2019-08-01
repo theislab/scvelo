@@ -83,18 +83,23 @@ class DynamicsRecovery(BaseDynamics):
             self.update(scaling=z, beta=beta, u0_=u0_)
 
     def fit(self, assignment_mode=None):
-        # pre-train with explicit time assignment
-        self.fit_t_and_alpha()
-        self.fit_scaling_()
-        self.fit_rates()
-        self.fit_t_()
-        self.fit_t_and_rates()
+        if self.max_iter > 0:
 
-        # train with optimal time assignment (oth. projection)
-        self.assignment_mode = assignment_mode
-        self.update(adjust_t_=False)
-        self.fit_t_and_rates(refit_time=False)
+            # pre-train with explicit time assignment
+            self.fit_t_and_alpha()
+            self.fit_scaling_()
+            self.fit_rates()
+            self.fit_t_()
+            self.fit_t_and_rates()
 
+            # train with optimal time assignment (oth. projection)
+            self.assignment_mode = assignment_mode
+            self.update(adjust_t_=False)
+            self.fit_t_and_rates(refit_time=False)
+
+        # self.update(adjust_t_=False)
+        # self.t, self.tau, self.o = self.get_time_assignment()
+        self.update()
         self.tau, self.tau_ = self.get_divergence(mode='tau')
         self.likelihood = self.get_likelihood(refit_time=False)
 
@@ -158,7 +163,7 @@ class DynamicsRecovery(BaseDynamics):
                     t, tau, o, t_, loss, perform_update = alt_t, alt_tau, alt_o, alt_t_, alt_loss, True
 
             steady_states = t == t_
-            if False and perform_update and np.any(steady_states):
+            if perform_update and np.any(steady_states):
                 t_ += t.max() / len(t) * np.sum(steady_states)
                 t, tau, o = self.get_time_assignment(alpha, beta, gamma, scaling, t_)
                 loss = self.get_loss(t, t_, alpha, beta, gamma, scaling)
@@ -189,7 +194,7 @@ def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling
 
 
 def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_mode='projection', t_max=None,
-                     fit_scaling=True, fit_time=True, fit_steady_states=True, fit_connected_states=True, use_raw=False,
+                     fit_scaling=True, fit_time=True, fit_steady_states=True, fit_connected_states=False, use_raw=False,
                      load_pars=None, return_model=True, plot_results=False, add_key='fit', copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
@@ -227,8 +232,7 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
         dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars, max_iter=max_iter, fit_time=fit_time,
                               fit_scaling=fit_scaling, fit_steady_states=fit_steady_states,
                               fit_connected_states=fit_connected_states, **kwargs)
-        if max_iter > 0:
-            dm.fit(assignment_mode=assignment_mode)
+        dm.fit(assignment_mode=assignment_mode)
 
         ix = np.where(adata.var_names == gene)[0][0]
         idx.append(ix)
@@ -246,18 +250,21 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
     #with warnings.catch_warnings():
     #    warnings.simplefilter("ignore")
     #    T_max = np.nanpercentile(T, 95, axis=0) - np.nanpercentile(T, 5, axis=0)
-    dt = compute_dt(T[:, idx])
-    n_adj = 1 - np.sum(T[:, idx] == t_[idx], axis=0) / len(dt)  # np.sum(dt > 0, axis=0) / len(dt)
-    n_adj += n_adj == 0
+    if t_max is not False:
+        dt = compute_dt(T[:, idx])
+        n_adj = 1 - np.sum(T[:, idx] == t_[idx], axis=0) / len(dt)  # np.sum(dt > 0, axis=0) / len(dt)
+        n_adj += n_adj == 0
 
-    dt_sum = np.sum(dt, axis=0) / n_adj
-    dt_sum += dt_sum == 0
+        dt_sum = np.sum(dt, axis=0) / n_adj
+        dt_sum += dt_sum == 0
 
-    t_max = 100 if t_max is None else t_max
-    m = np.ones(T.shape[1])
-    m[idx] = t_max / dt_sum
+        t_max = 100 if t_max is None else t_max
+        m = np.ones(T.shape[1])
+        m[idx] = t_max / dt_sum
 
-    alpha, beta, gamma, T, t_, Tau, Tau_ = alpha / m, beta / m, gamma / m, T * m, t_ * m, Tau * m, Tau_ * m
+        alpha, beta, gamma, T, t_, Tau, Tau_ = alpha / m, beta / m, gamma / m, T * m, t_ * m, Tau * m, Tau_ * m
+    else:
+        m = np.ones(len(idx))
 
     write_pars(adata, [alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood])
     adata.layers['fit_t'] = T
