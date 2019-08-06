@@ -110,7 +110,7 @@ def adjust_increments(tau):
     m_dtau = np.max([np.mean(dtau), np.max(tau) / len(tau), 0])
 
     # Poisson with std = sqrt(mean) -> ~99.9% confidence
-    ub = m_dtau + 6 * np.sqrt(m_dtau)
+    ub = m_dtau + 3 * np.sqrt(m_dtau)
     idx = np.where(dtau > ub)[0]
 
     for i in idx:
@@ -184,12 +184,13 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
     if tau is None or tau_ is None or t_ is None:
         tau, tau_, t_ = assign_tau(u, s, alpha, beta, gamma, t_, u0_, s0_, assignment_mode)
 
+    std_u /= scaling
+
     # adjust increments of tau, tau_ to avoid meaningless jumps
     if constraint_time_increments:
         ut, st = mRNA(tau, 0, 0, alpha, beta, gamma)
         ut_, st_ = mRNA(tau_, u0_, s0_, 0, beta, gamma)
 
-        std_u /= scaling
         distu, distu_ = (u - ut) / std_u, (u - ut_) / std_u
         dists, dists_ = (s - st) / std_s, (s - st_) / std_s
 
@@ -209,21 +210,21 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
     distx = distu ** 2 + dists ** 2
     distx_ = distu_ ** 2 + dists_ ** 2
 
-    #distx_ *= 10
+    # ToDo: adjust distx, distx_ to match shared time
 
     if var_scale:
         o = np.argmin([distx_, distx], axis=0)
-        varu = np.nanvar(distu * o + distu_ + (1 - o))
-        vars = np.nanvar(dists * o + dists_ + (1 - o))
+        varu = np.nanvar(distu * o + distu_ + (1 - o), axis=0)
+        vars = np.nanvar(dists * o + dists_ + (1 - o), axis=0)
 
-        distx = distu ** 2 / varu  + dists ** 2 / vars
+        distx = distu ** 2 / varu + dists ** 2 / vars
         distx_ = distu_ ** 2 / varu + dists_ ** 2 / vars
     else:
         varu, vars = 1, 1
 
     if fit_steady_states:
-        distx_steady = (u - alpha / beta) ** 2 / varu + (s - alpha / gamma) ** 2 / vars
-        distx_steady_ = u ** 2 / varu + s ** 2 / vars
+        distx_steady = ((u - alpha / beta) / std_u) ** 2 / varu + ((s - alpha / gamma) / std_s) ** 2 / vars
+        distx_steady_ = (u / std_u) ** 2 / varu + (s / std_s) ** 2 / vars
         res = np.array([distx_, distx, distx_steady_, distx_steady])
     else:
         res = np.array([distx_, distx])
@@ -254,6 +255,13 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         o = np.argmin(res, axis=0)
         o_, o = o[0], o[1]
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
+
+    elif mode is 'soft_state':
+        res = normalize(1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res))
+        res = res[1] - res[0]
+
+    elif mode is 'hard_state':
+        res = np.argmin(res, axis=0)
 
     elif mode is 'assign_timepoints':
         o = np.argmin(res, axis=0)
@@ -388,11 +396,11 @@ class BaseDynamics:
             t_ = self.t_ if u0_ is None else tau_inv(u0_, s0_, 0, 0, alpha, beta, gamma)
         return alpha, beta, gamma, scaling, t_
 
-    def get_divergence(self, alpha=None, beta=None, gamma=None, scaling=None, t_=None, u0_=None, s0_=None, mode=None):
+    def get_divergence(self, alpha=None, beta=None, gamma=None, scaling=None, t_=None, u0_=None, s0_=None, mode=None, **kwargs):
         alpha, beta, gamma, scaling, t_ = self.get_vars(alpha, beta, gamma, scaling, t_, u0_, s0_)
         res = compute_divergence(self.u / scaling, self.s, alpha, beta, gamma, scaling, t_, u0_, s0_, mode=mode,
                                  std_u=self.std_u, std_s=self.std_s, assignment_mode=self.assignment_mode,
-                                 connectivities=self.connectivities, fit_steady_states=self.fit_steady_states)
+                                 connectivities=self.connectivities, fit_steady_states=self.fit_steady_states, **kwargs)
         return res
 
     def get_time_assignment(self, alpha=None, beta=None, gamma=None, scaling=None, t_=None, u0_=None, s0_=None,
@@ -442,9 +450,11 @@ class BaseDynamics:
 
         alpha, beta, gamma, scaling, t_ = self.get_vars(alpha, beta, gamma, scaling, t_, u0_, s0_)
         t, tau, o = self.get_time_assignment(alpha, beta, gamma, scaling, t_, u0_, s0_, t, refit_time, weighted=weighted)
+
         if weighted is 'dynamical':
             idx = (u > np.max(u) / 3) & (s > np.max(s) / 3)
-            u, s, t = u[idx], s[idx], t[idx]
+            if np.sum(idx) > 0: u, s, t = u[idx], s[idx], t[idx]
+
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
         ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
 
