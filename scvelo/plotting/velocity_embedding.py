@@ -77,7 +77,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
                                              vkey=vkeys[i] if len(vkeys) > 1 else vkey,
                                              title=title[i] if isinstance(title, (list, tuple)) else title,
                                              **scatter_kwargs, **kwargs))
-        savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
 
     else:
@@ -138,5 +138,5 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
         ax = scatter(adata, x=x, y=y, vkey=vkey, layer=layer, color=color, size=size, title=title, ax=ax, zorder=0,
                      **scatter_kwargs)
 
-        savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax

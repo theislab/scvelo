@@ -232,7 +232,7 @@ def default_arrow(size):
     return head_l, head_w, ax_l
 
 
-def savefig_or_show(writekey, show=None, dpi=None, ext=None, save=None):
+def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
     if isinstance(save, str):
         # check whether `save` contains a figure extension
         if ext is None:
@@ -242,7 +242,7 @@ def savefig_or_show(writekey, show=None, dpi=None, ext=None, save=None):
                     save = save.replace(try_ext, '')
                     break
         # append it
-        writekey = 'velocity_' + (writekey + '_' if len(writekey) > 0 else '') + save
+        writekey = 'scvelo_' + (writekey + '_' if writekey is not None and len(writekey) > 0 else '') + save
         save = True
     save = settings.autosave if save is None else save
     show = settings.autoshow if show is None else show

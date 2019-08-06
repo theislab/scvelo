@@ -86,7 +86,7 @@ def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, sho
 
 
 def simulation(adata, var_names='all', legend_loc='upper right', legend_fontsize=20, linewidth=None, dpi=None,
-               colors=['darkblue', 'darkgreen'],  **kwargs):
+               xkey='true_t', ykey=['unspliced', 'spliced', 'alpha'], colors=['darkblue', 'darkgreen', 'grey'], **kwargs):
     from ..tools.utils import make_dense
     from .scatter import scatter
     var_names = adata.var_names if var_names is 'all' else [name for name in var_names if name in adata.var_names]
@@ -98,25 +98,27 @@ def simulation(adata, var_names='all', legend_loc='upper right', legend_fontsize
 
         alpha, ut, st, _ = compute_dynamics(adata, idx)
 
-        t = adata.obs['true_t'] if 'true_t' in adata.obs.keys() else make_dense(adata.layers['fit_t'][:, idx])
+        t = adata.obs[xkey] if xkey in adata.obs.keys() else make_dense(adata.layers['fit_t'][:, idx])
         idx_sorted = np.argsort(t)
         t = t[idx_sorted]
 
-        u = make_dense(adata.layers['unspliced'][:, idx])[idx_sorted]
-        s = make_dense(adata.layers['spliced'][:, idx])[idx_sorted]
-
         ax = pl.subplot(gs)
-
         _kwargs = {'alpha': .3, 'title': '', 'xlabel': 'time', 'ylabel': 'counts'}
         _kwargs.update(kwargs)
-
-        ax = scatter(x=t, y=u, color='darkblue', ax=ax, show=False, **_kwargs)
-        ax = scatter(x=t, y=s, color='green', ax=ax, show=False, **_kwargs)
-
         linewidth = 1 if linewidth is None else linewidth
-        ax.plot(t, alpha, label='alpha', linestyle='--', color='grey', linewidth=linewidth)
-        ax.plot(t, ut, label='unspliced', color=colors[0], linewidth=linewidth)
-        ax.plot(t, st, label='spliced', color=colors[1], linewidth=linewidth)
+
+        ykey = [ykey] if isinstance(ykey, str) else ykey
+        for j, key in enumerate(ykey):
+            if key in adata.layers:
+                y = make_dense(adata.layers[key][:, idx])[idx_sorted]
+                ax = scatter(x=t, y=y, color=colors[j], ax=ax, show=False, **_kwargs)
+
+            if key is 'unspliced':
+                ax.plot(t, ut, label='unspliced', color=colors[j], linewidth=linewidth)
+            elif key is 'spliced':
+                ax.plot(t, st, label='spliced', color=colors[j], linewidth=linewidth)
+            elif key is 'alpha':
+                ax.plot(t, alpha, label='alpha', linestyle='--', color=colors[j], linewidth=linewidth)
 
         pl.xlim(0)
         pl.ylim(0)
