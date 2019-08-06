@@ -79,6 +79,22 @@ def forebrain():
     return adata
 
 
+def pancreatic_endocrinogenesis():
+    """Pancreatic endocrinogenesis.
+        Pancreatic epithelial and Ngn3-Venus fusion (NVF) cells during secondary transition / embryonic day 15.5.
+        https://dev.biologists.org/content/146/12/dev173849
+
+        Returns
+        -------
+        Returns `adata` object
+        """
+    filename = 'data/Pancreas/endocrinogenesis_day15.h5ad'
+    url = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/Pancreas/endocrinogenesis_day15.h5ad'
+    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata.var_names_make_unique()
+    return adata
+
+
 def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_=None, t_max=None,
                noise_model='normal', noise_level=1, switches=None):
     """Simulation of mRNA metabolism with transcription, splicing and degradation
