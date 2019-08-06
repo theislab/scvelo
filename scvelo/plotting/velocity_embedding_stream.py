@@ -104,7 +104,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         density = 1 if density is None else density
         stream_kwargs = {"linewidth": linewidth, "density": 2 * density}
         stream_kwargs.update(kwargs)
-        pl.streamplot(X_grid[0], X_grid[1], V_grid[0], V_grid[1], color='grey', zorder=3, **stream_kwargs)
+        ax.streamplot(X_grid[0], X_grid[1], V_grid[0], V_grid[1], color='grey', zorder=3, **stream_kwargs)
 
         size = 4 * default_size(adata) if size is None else size
         ax = scatter(adata, layer=layer, color=color, size=size, title=title, ax=ax, zorder=0, **scatter_kwargs)
