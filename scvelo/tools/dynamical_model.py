@@ -17,11 +17,35 @@ from scipy.stats import t
 class DynamicsRecovery(BaseDynamics):
     def __init__(self, adata=None, gene=None, load_pars=None, **kwargs):
         super(DynamicsRecovery, self).__init__(adata, gene, **kwargs)
-
         if load_pars and 'fit_alpha' in adata.var.keys():
             self.load_pars(adata, gene)
         else:
             self.initialize()
+        if self.high_pars_resolution:
+            self.fit_t_and_alpha()
+            self.fit_scaling_()
+            self.fit_rates()
+            self.fit_t_()
+            self.fit_t_and_rates()
+
+    # Callback functions for the Optimizer
+    def cb_fit_t_and_alpha(self, x):
+        self.update(t_=x[0], alpha=x[1])
+
+    def cb_fit_scaling_(self, x):
+        self.update(t_=x[0], beta=x[1], scaling=x[2])
+
+    def cb_fit_rates(self, x):
+        self.update(alpha=x[0], gamma=x[1])
+
+    def cb_fit_t_(self, x):
+        self.update(t_=x[0])
+
+    def cb_fit_t_and_rates(self, x):
+        self.update(t_=x[0], alpha=x[1], beta=x[2], gamma=x[3])
+
+    def cb_fit_rates_all(self, x):
+        self.update(alpha=x[0], beta=x[1], gamma=x[2])
 
     def initialize(self):
         # set weights
@@ -83,6 +107,15 @@ class DynamicsRecovery(BaseDynamics):
             self.update(scaling=z, beta=beta, u0_=u0_)
 
     def fit(self, assignment_mode=None):
+        # Overwrite callbacks
+        if not self.high_pars_resolution:
+            self.cb_fit_t_and_alpha = None
+            self.cb_fit_scaling_ = None
+            self.cb_fit_rates = None
+            self.cb_fit_t_ = None
+            self.cb_fit_t_and_rates = None
+            self.cb_fit_rates_all = None
+
         if self.max_iter > 0:
 
             # pre-train with explicit time assignment
@@ -109,37 +142,38 @@ class DynamicsRecovery(BaseDynamics):
 
         def mse(x):
             return self.get_mse(t_=x[0], alpha=x[1], **kwargs)
-        res = minimize(mse, np.array([self.t_, self.alpha]), **self.simplex_kwargs)# method='Nelder-Mead')
+        res = minimize(mse, np.array([self.t_, self.alpha]), callback=self.cb_fit_t_and_alpha, **self.simplex_kwargs)# method='Nelder-Mead')
         self.update(t_=res.x[0], alpha=res.x[1])
 
     def fit_rates(self, **kwargs):
         def mse(x):
             return self.get_mse(alpha=x[0], gamma=x[1], **kwargs)
-        res = minimize(mse, np.array([self.alpha, self.gamma]), tol=1e-2, **self.simplex_kwargs)
+        res = minimize(mse, np.array([self.alpha, self.gamma]), tol=1e-2, callback=self.cb_fit_rates, **self.simplex_kwargs)
         self.update(alpha=res.x[0], gamma=res.x[1])
 
     def fit_t_(self, **kwargs):
         def mse(x):
             return self.get_mse(t_=x[0], **kwargs)
-        res = minimize(mse, self.t_, **self.simplex_kwargs)
+        res = minimize(mse, self.t_, callback=self.cb_fit_t_, **self.simplex_kwargs)
         self.update(t_=res.x[0])
 
     def fit_rates_all(self, **kwargs):
         def mse(x):
             return self.get_mse(alpha=x[0], beta=x[1], gamma=x[2], **kwargs)
-        res = minimize(mse, np.array([self.alpha, self.beta, self.gamma]), tol=1e-2, **self.simplex_kwargs)
+        res = minimize(mse, np.array([self.alpha, self.beta, self.gamma]), tol=1e-2, callback=self.cb_fit_rates_all, **self.simplex_kwargs)
         self.update(alpha=res.x[0], beta=res.x[1], gamma=res.x[2])
 
     def fit_t_and_rates(self, **kwargs):
         def mse(x):
             return self.get_mse(t_=x[0], alpha=x[1], beta=x[2], gamma=x[3], **kwargs)
-        res = minimize(mse, np.array([self.t_, self.alpha, self.beta, self.gamma]), tol=1e-2, **self.simplex_kwargs)
+        res = minimize(mse, np.array([self.t_, self.alpha, self.beta, self.gamma]), tol=1e-2,
+                       callback=self.cb_fit_t_and_rates, **self.simplex_kwargs)
         self.update(t_=res.x[0], alpha=res.x[1], beta=res.x[2], gamma=res.x[3])
 
     def fit_scaling_(self, **kwargs):
         def mse(x):
             return self.get_mse(t_=x[0], beta=x[1], scaling=x[2], **kwargs)
-        res = minimize(mse, np.array([self.t_, self.beta, self.scaling]), **self.simplex_kwargs)
+        res = minimize(mse, np.array([self.t_, self.beta, self.scaling]), callback=self.cb_fit_scaling_, **self.simplex_kwargs)
         self.update(t_=res.x[0], beta=res.x[1], scaling=res.x[2])
 
     def update(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, u0_=None, s0_=None, adjust_t_=True):
@@ -156,7 +190,7 @@ class DynamicsRecovery(BaseDynamics):
             alt_t_ = t[on].max()
             if 0 < alt_t_ < t_:
                 # alt_u0_, alt_s0_ = mRNA(alt_t_, 0, 0, alpha, beta, gamma)
-                alt_t_ += np.max(t) / len(t) * np.sum(t == t_) #np.sum((self.u / self.scaling >= alt_u0_) | (self.s >= alt_s0_))
+                alt_t_ += np.max(t) / len(t) * np.sum(t == t_) # np.sum((self.u / self.scaling >= alt_u0_) | (self.s >= alt_s0_))
                 alt_t, alt_tau, alt_o = self.get_time_assignment(alpha, beta, gamma, scaling, alt_t_)
                 alt_loss = self.get_loss(alt_t, alt_t_, alpha, beta, gamma, scaling)
                 if alt_loss <= loss and alt_loss <= loss_prev:
@@ -263,6 +297,9 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
         m[idx] = t_max / dt_sum
 
         alpha, beta, gamma, T, t_, Tau, Tau_ = alpha / m, beta / m, gamma / m, T * m, t_ * m, Tau * m, Tau_ * m
+
+        dm.pars[:3] = dm.pars[:3] / m[-1]
+        dm.pars[4] = dm.pars[4] * m[-1]
     else:
         m = np.ones(len(idx))
 
@@ -300,5 +337,4 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
             if i == 0:
                 for j, name in enumerate(['alpha', 'beta', 'gamma', 't_', 'scaling', 'loss']):
                     ax[j].set_title(name, fontsize=fontsize)
-
     return dm if return_model else adata if copy else None
