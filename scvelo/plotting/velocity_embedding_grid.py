@@ -158,7 +158,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
                                                   V_grid=None if len(vkeys) > 1 else V_grid,
                                                   autoscale=False if len(vkeys) > 1 else autoscale,
                                                   **scatter_kwargs, **kwargs))
-        savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
 
     else:
@@ -180,5 +180,5 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
         size = 4 * default_size(adata) if size is None else size
         ax = scatter(adata, layer=layer, color=color, size=size, title=title, ax=ax, zorder=0, **scatter_kwargs)
 
-        savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax

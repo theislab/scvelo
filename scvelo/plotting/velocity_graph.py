@@ -60,5 +60,5 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n
         edges.set_zorder(-2)
         edges.set_rasterized(settings._vector_friendly)
 
-    savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+    savefig_or_show(dpi=dpi, save=save, show=show)
     if not show: return ax

@@ -136,5 +136,5 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
                 pl.plot(xnew, gamma / beta * xnew + offset2 / beta, c='k', linestyle='--')
             if v == len(var_names) - 1: pl.legend(fits, loc='lower right', prop={'size': 34/ncols})
 
-    savefig_or_show('', dpi=dpi, save=save, show=show)
+    savefig_or_show(dpi=dpi, save=save, show=show)
     if not show: return ax

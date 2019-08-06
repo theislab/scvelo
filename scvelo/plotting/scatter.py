@@ -60,7 +60,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                           layer=layers[i] if len(layers) > 1 else layer,
                           basis=bases[i] if len(bases) > 1 else basis,
                           title=title[i] if isinstance(title, (list, tuple)) else title, **scatter_kwargs, **kwargs))
-        savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
 
     else:
@@ -168,5 +168,5 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             ax = update_axes(ax, xlim, ylim, fontsize, is_embedding, frameon)
             if colorbar and not is_categorical(adata, color): set_colorbar(ax)
 
-        savefig_or_show('' if basis is None else basis, dpi=dpi, save=save, show=show)
+        savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
