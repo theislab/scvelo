@@ -3,6 +3,7 @@ from .utils import make_dense
 
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
+import matplotlib.gridspec as gridspec
 
 from scipy.sparse import issparse
 import warnings
@@ -310,7 +311,7 @@ def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0, sorted=False
 
 class BaseDynamics:
     def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, perc=99, max_iter=10, fit_time=True,
-                 fit_scaling=True, fit_steady_states=True, fit_connected_states=True):
+                 fit_scaling=True, fit_steady_states=True, fit_connected_states=True, high_pars_resolution=False):
         self.s, self.u, self.use_raw = None, None, None
 
         _layers = adata[:, gene].layers
@@ -342,6 +343,7 @@ class BaseDynamics:
         self.fit_steady_states = fit_steady_states
         self.fit_connected_states = fit_connected_states
         self.connectivities = get_connectivities(adata) if self.fit_connected_states is True else self.fit_connected_states
+        self.high_pars_resolution = high_pars_resolution
 
     def initialize_weights(self):
         nonzero = np.ravel(self.s > 0) & np.ravel(self.u > 0)
@@ -587,3 +589,135 @@ class BaseDynamics:
 
         self.assignment_mode = assignment_mode
         return x_opt, y_opt
+
+    def plot_profile_contour(self, xkey='gamma', ykey='alpha', x_sight=.5, y_sight=.5, num=20, levels=4, dpi=None,
+                             fontsize=8, refit_time=None, ax=None, color_map='RdGy_r', figsize=None,
+                             vmin=5, vmax=10, horizontal_ylabels=True, show_path=False, **kwargs):
+        from ..plotting.utils import update_axes
+        x_var = eval('self.' + xkey)
+        y_var = eval('self.' + ykey)
+
+        x = np.linspace(-x_sight, x_sight, num=num) * x_var + x_var
+        y = np.linspace(-y_sight, y_sight, num=num) * y_var + y_var
+
+        assignment_mode = self.assignment_mode
+        self.assignment_mode = None
+
+        fp = lambda x, y: self.get_loss(**{xkey: x, ykey: y}, refit_time=refit_time)
+
+        zp = np.zeros((len(x), len(x)))
+        for i, xi in enumerate(x):
+            for j, yi in enumerate(y):
+                zp[i, j] = fp(xi, yi)
+
+        x_label = r'$'+'\\'+xkey+'$' if xkey in ['gamma', 'alpha', 'beta'] else xkey
+        y_label = r'$' + '\\' + ykey + '$' if ykey in ['gamma', 'alpha', 'beta'] else ykey
+        figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        if ax is None:
+            fig = pl.figure(figsize=(figsize[0], figsize[1]), dpi=dpi)
+            ax = fig.gca()
+        ax.contourf(x, y, np.log1p(zp.T), levels=20, cmap=color_map, vmin=vmin, vmax=vmax)
+        if levels != 0:
+            contours = ax.contour(x, y, np.log1p(zp.T), levels=levels, colors='k', linewidths=.5)
+            fmt = '%1.1f' if np.isscalar(levels) else '%1.0f'
+            ax.clabel(contours, fmt=fmt, inline=True, fontsize=fontsize * .75)
+        ax.scatter(x=x_var, y=y_var, s=50, c='purple', zorder=3, **kwargs)
+        # ax1.quiver(self.gamma, self.alpha, 0, self.get_optimal_alpha() - self.alpha, color='k', zorder=3,
+        #            headlength=4, headwidth=3, headaxislength=3, alpha=.5)
+        ax.set_xlabel(x_label, fontsize=fontsize)
+        rotation = 0 if horizontal_ylabels else 90
+        ax.set_ylabel(y_label, fontsize=fontsize, rotation=rotation)
+        update_axes(ax, fontsize=fontsize, frameon=True)
+
+        if show_path:
+            print('hiho')
+            axis = ax.axis()
+            print(['alpha', 'beta', 'gamma', 't_', 'scaling'].index(xkey))
+            x_hist = self.pars[['alpha', 'beta', 'gamma', 't_', 'scaling'].index(xkey)]
+            print(x_hist)
+            y_hist = self.pars[['alpha', 'beta', 'gamma', 't_', 'scaling'].index(ykey)]
+            ax.plot(x_hist, y_hist)
+            ax.axis(axis)
+
+        return np.min(np.log1p(zp.T).flatten()), np.max(np.log1p(zp.T).flatten())
+
+    def plot_profile_hist(self, xkey='gamma', sight=.5, num=20, dpi=None,
+                      fontsize=8, ax=None, figsize=None, color_map='RdGy_r', vmin=5, vmax=10, horizontal_ylabels=True,
+                          **kwargs):
+        from ..plotting.utils import update_axes
+        x_var = eval('self.' + xkey)
+
+        x = np.linspace(-sight, sight, num=num) * x_var + x_var
+
+        assignment_mode = self.assignment_mode
+        self.assignment_mode = None
+
+        fp = lambda x: self.get_loss(**{xkey: x})
+
+        zp = np.zeros((len(x)))
+        for i, xi in enumerate(x):
+            zp[i] = fp(xi)
+
+        x_label = r'$'+'\\'+xkey+'$' if xkey in ['gamma', 'alpha', 'beta'] else xkey
+        figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        if ax is None:
+            fig = pl.figure(figsize=(figsize[0], figsize[1]), dpi=dpi)
+            ax = fig.gca()
+
+        y = np.log1p(zp.T)
+        xp = np.linspace(x.min(), x.max(), 1000)
+        yp = np.interp(xp, x, y)
+        ax.scatter(xp, yp, c=yp, cmap=color_map, edgecolor='none', vmin=vmin, vmax=vmax)
+        ax.set_xlabel(x_label, fontsize=fontsize)
+        rotation = 0 if horizontal_ylabels else 90
+        ax.set_ylabel(x_label, fontsize=fontsize, rotation=rotation)
+        ax = update_axes(ax, fontsize=fontsize, frameon=True)
+
+        ix = zp.argmin()
+        x_opt = x[ix].round(2)
+
+        self.assignment_mode = assignment_mode
+        return ax
+
+    def plot_contour_grid(self, params=['alpha', 'beta', 'gamma'], figsize=[6, 5], horizontal_ylabels=True,
+                          contour_levels=[6, 7, 8, 9], color_map='viridis_r', dpi=120, sight=.5, num=20,
+                          fontsize=8, vmin=None, vmax=None, **kwargs):
+        fig = pl.figure(constrained_layout=True, dpi=dpi, figsize=figsize)
+        n = len(params)
+        gs = gridspec.GridSpec(n, n, figure=fig)
+
+        for i in range(len(params)):
+            for j in range(n-1, i-1, -1):
+                xkey = params[j]
+                ykey = params[i]
+                ax = fig.add_subplot(gs[n - 1 - i, n - 1 - j])
+                if xkey == ykey:
+                    ax = self.plot_profile_hist(xkey, figsize=figsize, ax=ax, color_map=color_map, sight=sight, num=num,
+                                           fontsize=fontsize, vmin=vmin, vmax=vmax, horizontal_ylabels=horizontal_ylabels)
+                    if i == 0 & j == 0:
+                        from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+                        import matplotlib.colorbar as mplcb
+                        import matplotlib.colors as mplcls
+                        cax = inset_axes(ax, width="7%", height="100%", loc='lower left',
+                                           bbox_to_anchor=(1.05, 0., 1, 1),
+                                           bbox_transform=ax.transAxes,
+                                           borderpad=0,)
+                        norm = mplcls.Normalize(vmin=vmin, vmax=vmax)
+                        cb1 = mplcb.ColorbarBase(cax, cmap=color_map, norm=norm)
+                else:
+                    vmin_, vmax_ = self.plot_profile_contour(xkey, ykey, figsize=figsize, ax=ax, levels=contour_levels,
+                                              color_map=color_map, x_sight=sight, y_sight=sight, num=num,
+                                              fontsize=fontsize, vmin=vmin, vmax=vmax, horizontal_ylabels=horizontal_ylabels)
+                    if vmin is None or vmax is None:
+                        # Scale of the first loss plot for the colormap will
+                        # be the scale for all others if no scale (vmin, vmax) was specified
+                        vmin = vmin_
+                        vmax = vmax_
+                if i != 0:
+                    ax.set_xlabel('')
+                    ax.set_xticks([])
+                if j - n + 1 != 0:
+                    ax.set_ylabel('')
+                    ax.set_yticks([])
+
+

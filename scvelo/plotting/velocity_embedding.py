@@ -129,11 +129,11 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
             x0, x1, x2, v0, v1, v2 = X[:, 0], X[:, 1], X[:, 2], V[:, 0], V[:, 1], V[:, 2]
             quiver3d_kwargs = {"zorder": 3, "linewidth": .5, "arrow_length_ratio": .3}
             c = list(c) + [element for element in list(c) for _ in range(2)]
-            if is_color_like(c[0]): pl.quiver(x0, x1, x2, v0, v1, v2, color=c, **quiver3d_kwargs)
-            else: pl.quiver(x0, x1, x2, v0, v1, v2, c, **quiver3d_kwargs)
+            if is_color_like(c[0]): ax.quiver(x0, x1, x2, v0, v1, v2, color=c, **quiver3d_kwargs)
+            else: ax.quiver(x0, x1, x2, v0, v1, v2, c, **quiver3d_kwargs)
         else:
-            if is_color_like(c[0]): pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=c, zorder=3, **quiver_kwargs)
-            else: pl.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=3, **quiver_kwargs)
+            if is_color_like(c[0]): ax.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=c, zorder=3, **quiver_kwargs)
+            else: ax.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=3, **quiver_kwargs)
 
         ax = scatter(adata, x=x, y=y, vkey=vkey, layer=layer, color=color, size=size, title=title, ax=ax, zorder=0,
                      **scatter_kwargs)
