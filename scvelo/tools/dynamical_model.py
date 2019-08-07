@@ -58,6 +58,7 @@ class DynamicsRecovery(BaseDynamics):
         u, u_w = u / scaling, u_w / scaling
 
         # initialize beta and gamma from extreme quantiles of s
+        #print(self.gene)
         weights_s = s_w >= np.percentile(s_w, perc, axis=0)
         beta, gamma = 1, linreg(convolve(u_w, weights_s), convolve(s_w, weights_s))
 
@@ -228,7 +229,7 @@ def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling
 
 
 def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_mode='projection', t_max=None,
-                     fit_scaling=True, fit_time=True, fit_steady_states=True, fit_connected_states=False, use_raw=False,
+                     fit_scaling=True, fit_time=True, fit_steady_states=True, fit_connected_states=True, use_raw=False,
                      load_pars=None, return_model=True, plot_results=False, add_key='fit', copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
