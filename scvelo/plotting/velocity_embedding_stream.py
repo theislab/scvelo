@@ -11,13 +11,13 @@ import numpy as np
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, smooth=None, min_mass=None, linewidth=None,
-                              n_neighbors=None, X=None, V=None, X_grid=None, V_grid=None, color=None, use_raw=None,
+def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, smooth=None, min_mass=None,
+                              arrow_color=None, linewidth=None, n_neighbors=None, color=None, use_raw=None,
                               layer=None, color_map=None, colorbar=True, palette=None, size=None, alpha=.1, perc=None,
-                              sort_order=True, groups=None, components=None, legend_loc='on data',
-                              legend_fontsize=None, legend_fontweight=None, right_margin=None, left_margin=None,
-                              xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, dpi=None, frameon=None,
-                              show=True, save=None, ax=None, ncols=None, **kwargs):
+                              X=None, V=None, X_grid=None, V_grid=None, sort_order=True, groups=None, components=None,
+                              legend_loc='on data', legend_fontsize=None, legend_fontweight=None, right_margin=None,
+                              left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
+                              dpi=None, frameon=None, show=True, save=None, ax=None, ncols=None, **kwargs):
     """\
     Stream plot of velocities on the embedding.
 
@@ -102,9 +102,10 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
         density = 1 if density is None else density
-        stream_kwargs = {"linewidth": linewidth, "density": 2 * density}
+        stream_kwargs = {"linewidth": linewidth, "density": 2 * density, "zorder": 3,
+                         "color": 'grey' if arrow_color is None else arrow_color}
         stream_kwargs.update(kwargs)
-        ax.streamplot(X_grid[0], X_grid[1], V_grid[0], V_grid[1], color='grey', zorder=3, **stream_kwargs)
+        ax.streamplot(X_grid[0], X_grid[1], V_grid[0], V_grid[1], **stream_kwargs)
 
         size = 4 * default_size(adata) if size is None else size
         ax = scatter(adata, layer=layer, color=color, size=size, title=title, ax=ax, zorder=0, **scatter_kwargs)
