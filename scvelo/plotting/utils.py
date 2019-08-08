@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from matplotlib.colors import is_color_like
+from matplotlib.colors import is_color_like, ListedColormap, to_rgb, cnames
 from matplotlib import rcParams
 from scipy.sparse import issparse
 from cycler import Cycler, cycler
@@ -295,6 +295,40 @@ def adjust_palette(palette, length):
         return cycler(color=palette)
     else:
         return palette
+
+
+def rgba_custom_colormap(colors=['royalblue', 'white', 'forestgreen'], alpha=None, N=256):
+    """Creates a custom colormap with the given colors. Colors can be given as names or as rgb values.
+
+    Arguments
+    ---------
+    colors: : `list` or `array` (default `['royalblue', 'white', 'forestgreen']`)
+        List of colors, either as names or rgb values.
+    alpha: `list`, `np.ndarray` or `None` (default: `None`)
+        Alpha of the colors. Must be same length as colors.
+    N: `int` (default: `256`)
+        y coordinate
+
+    Returns
+    -------
+        A ListedColormap
+    """
+    c = []
+    for color in colors:
+        if type(color) is str:
+            c.append(to_rgb(cnames[color]))
+
+    vals = np.ones((N, 4))
+    ints = len(c) - 1
+    n = int(N / ints)
+
+    alpha = np.ones(len(c)) if alpha is None else alpha
+
+    for j in range(ints):
+        for i in range(3):
+            vals[n * j:n * (j + 1), i] = np.linspace(c[j][i], c[j + 1][i], n)
+        vals[n * j:n * (j + 1), -1] = np.linspace(alpha[j], alpha[j + 1], n)
+    return ListedColormap(vals)
 
 
 def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1):
