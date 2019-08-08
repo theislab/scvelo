@@ -258,15 +258,21 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
     elif mode is 'soft_state':
-        res = normalize(1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res))
+        res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+        if normalized: res = normalize(res)
         res = res[1] - res[0]
 
     elif mode is 'hard_state':
         res = np.argmin(res, axis=0)
 
+    elif mode is 'steady_state':
+        res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+        if normalized: res = normalize(res)
+        res = res[2] + res[3]
+
     elif mode is 'assign_timepoints':
         o = np.argmin(res, axis=0)
-        if fit_steady_states:
+        if False and fit_steady_states:
             idx_steady = (distx_steady < 1)
             tau_[idx_steady], o[idx_steady] = 0, 0
 
@@ -719,5 +725,81 @@ class BaseDynamics:
                 if j - n + 1 != 0:
                     ax.set_ylabel('')
                     ax.set_yticks([])
+
+    def plot_likelihood_contours(self, num=20, dpi=None, figsize=None, color_map='RdGy_r',
+                                 color_map_steady='viridis', alpha_=0.8,
+                      fontsize=8, refit_time=None, title=None, ax=None, transitions=[1/3, 1/3],
+                                 continuous=False, linewidths=3, vmin=None, vmax=None, **kwargs):
+        from ..plotting.utils import update_axes
+        alpha, beta, gamma, scaling, t_ = self.get_vars()
+        u, s = self.u / scaling, self.s
+        padding = 0.05 * (-np.min(u) + np.max(u))
+        uu = np.linspace(np.min(u) - padding, np.max(u) + padding, num=num)
+        ss = np.linspace(np.min(s) - padding, np.max(s) + padding, num=num)
+        grid_u, grid_s = np.meshgrid(uu, ss)
+        grid_u.reshape(num ** 2)
+        grid_s.reshape(num ** 2)
+        assignment_mode = self.assignment_mode
+        # self.assignment_mode = None
+        normalized = False
+        var_scaling = 1#.4
+        likelihoods_orig = compute_divergence(u, s, alpha, beta, gamma, scaling, t_,
+                                              mode='soft_state', normalized=normalized,
+                                              std_u=self.std_u, std_s=self.std_s, assignment_mode=self.assignment_mode,
+                                              connectivities=self.connectivities,
+                                              fit_steady_states=self.fit_steady_states)
+
+        likelihoods_orig_steady = compute_divergence(u, s, alpha, beta, gamma, scaling, t_,
+                                              mode='steady_state', normalized=normalized,
+                                              std_u=self.std_u, std_s=self.std_s, assignment_mode=self.assignment_mode,
+                                              connectivities=self.connectivities,
+                                              fit_steady_states=True)
+
+        likelihoods = compute_divergence(grid_u, grid_s, alpha, beta, gamma, scaling, t_,
+                                             mode='soft_state', var_scale=False, normalized=normalized,
+                                             std_u=self.std_u * var_scaling, std_s=self.std_s, assignment_mode=self.assignment_mode,
+                                             connectivities=self.connectivities,
+                                             fit_steady_states=self.fit_steady_states)
+        likelihoods = likelihoods.T
+        likelihoods_steady = compute_divergence(grid_u, grid_s, alpha, beta, gamma, scaling, t_,
+                                         mode='steady_state', var_scale=False, normalized=normalized,
+                                         std_u=self.std_u * var_scaling, std_s=self.std_s, assignment_mode=self.assignment_mode,
+                                         fit_steady_states=True)
+        likelihoods_steady = likelihoods_steady.T
+        #likelihoods.reshape(len(uu), len(ss))
+
+        figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        if ax is None:
+            fig = pl.figure(figsize=(figsize[0], figsize[1]), dpi=dpi)
+            ax = fig.gca()
+
+        # Contour lines
+        if transitions is not None:
+            trans_width = -np.min(likelihoods) + np.max(likelihoods)
+            transitions = np.multiply(np.array(transitions), [np.min(likelihoods), np.max(likelihoods)])# trans_width
+            ax.contour(ss, uu, likelihoods, transitions, linestyles='solid', colors='k', linewidths=linewidths)
+        ax.scatter(x=s, y=u, s=50, c=likelihoods_orig_steady, zorder=3, cmap=color_map_steady,
+                   edgecolors='black', vmin=vmin, vmax=vmax, **kwargs)
+        ax.scatter(x=s, y=u, s=50, c=likelihoods_orig, zorder=3, cmap=color_map,
+                   edgecolors='black', vmax=vmax, **kwargs)
+
+        ax.scatter(x=grid_s.flatten(), y=grid_u.flatten(), s=50, c=likelihoods.T.flatten(), zorder=3, cmap=color_map,
+                   edgecolors='black', vmax=vmax, **kwargs)
+
+        if continuous:
+            ax.imshow(likelihoods_steady, cmap=color_map_steady, alpha=alpha_, aspect='auto', origin='lower', extent=(min(ss), max(ss), min(uu), max(uu)))
+            ax.imshow(likelihoods, cmap=color_map, vmin=vmin, vmax=vmax, alpha=alpha_, aspect='auto', origin='lower', extent=(min(ss), max(ss), min(uu), max(uu)))
+        else:
+            ax.contourf(ss, uu, likelihoods_steady, vmin=vmin, vmax=vmax, levels=30, cmap=color_map_steady)
+            ax.contourf(ss, uu, likelihoods, vmin=vmin, vmax=vmax, levels=30, cmap=color_map)
+
+        ax.set_xlabel('spliced', fontsize=fontsize)
+        ax.set_ylabel('unspliced', fontsize=fontsize)
+        title = '' if title is None else title
+        ax.set_title(title, fontsize=fontsize)
+        ax = update_axes(ax, fontsize=fontsize, frameon=True)
+
+        self.assignment_mode = assignment_mode
+        return ax
 
 
