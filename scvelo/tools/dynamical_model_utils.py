@@ -212,8 +212,6 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
     distx = distu ** 2 + dists ** 2
     distx_ = distu_ ** 2 + dists_ ** 2
 
-    # ToDo: adjust distx, distx_ to match shared time
-
     if var_scale:
         o = np.argmin([distx_, distx], axis=0)
         varu = np.nanvar(distu * o + distu_ + (1 - o), axis=0)
@@ -230,6 +228,8 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         res = np.array([distx_, distx, distx_steady_, distx_steady])
     else:
         res = np.array([distx_, distx])
+
+    # ToDo: adjust distx, distx_ to match shared time
 
     if connectivities is not None and connectivities is not False:
         if res.ndim > 2:
@@ -249,7 +249,14 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         if normalized: res = normalize(res)
 
     elif mode is 'soft_eval':
-        res = normalize(1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res))
+        res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+
+        if fit_steady_states:
+            steady = np.max([res[2], res[3]], axis=0)
+            res = np.clip(res - steady, 0, None)
+        if normalized:
+            res = normalize(res)
+
         o_, o = res[0], res[1]
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
@@ -259,7 +266,8 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
     elif mode is 'soft_state':
-        res = normalize(1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res))
+        res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+        if normalized: res = normalize(res)
         res = res[1] - res[0]
 
     elif mode is 'hard_state':
