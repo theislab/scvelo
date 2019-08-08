@@ -273,6 +273,11 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
     elif mode is 'hard_state':
         res = np.argmin(res, axis=0)
 
+    elif mode is 'steady_state':
+        res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+        if normalized: res = normalize(res)
+        res = res[2] + res[3]
+
     elif mode is 'assign_timepoints':
         o = np.argmin(res, axis=0)
 
@@ -663,5 +668,109 @@ class BaseDynamics:
                 if j - n + 1 != 0:
                     ax.set_ylabel('')
                     ax.set_yticks([])
+
+    def plot_likelihood_contours(self, num=20, dpi=None, figsize=None, color_map='RdGy_r', color_map_steady='viridis',
+                                 alpha_=0.8, fontsize=8, title=None, ax=None, transitions=False,
+                                 force_common_color_scale=True, colorbar=False, continuous=False, linewidths=3,
+                                 vmin=None, vmax=None, **kwargs):
+        from ..plotting.utils import update_axes
+        alpha, beta, gamma, scaling, t_ = self.get_vars()
+        u, s = self.u / scaling, self.s
+        padding = 0.05 * (-np.min(u) + np.max(u))
+        if False:  # clip padding at zero
+            uu = np.linspace(np.max([np.min(u) - padding, 0]), np.max(u) + padding, num=num)
+            ss = np.linspace(np.max([np.min(s) - padding, 0]), np.max(s) + padding, num=num)
+        else:
+            uu = np.linspace(np.min(u) - padding, np.max(u) + padding, num=num)
+            ss = np.linspace(np.min(s) - padding, np.max(s) + padding, num=num)
+        grid_u, grid_s = np.meshgrid(uu, ss)
+        grid_u = grid_u.flatten()
+        grid_s = grid_s.flatten()
+
+        assignment_mode = self.assignment_mode
+        # self.assignment_mode = None
+
+        self.refit_time = True
+        self.connectivities = None
+        constraint_time_increments = False
+        self.fit_steady_states = True
+        var_scale = False
+        normalized = False
+        var_scaling = 1
+
+        likelihoods_orig = compute_divergence(u, s, alpha, beta, gamma, scaling, t_,
+                                              mode='soft_state', normalized=normalized,
+                                              std_u=self.std_u, std_s=self.std_s, assignment_mode=self.assignment_mode,
+                                              connectivities=self.connectivities, var_scale=var_scale,
+                                              constraint_time_increments=constraint_time_increments,
+                                              fit_steady_states=self.fit_steady_states)
+
+        likelihoods_orig_steady = compute_divergence(u, s, alpha, beta, gamma, scaling, t_,mode='steady_state',
+                                                     normalized=normalized, var_scale=var_scale, std_u=self.std_u,
+                                                     std_s=self.std_s, assignment_mode=self.assignment_mode,
+                                                     constraint_time_increments=constraint_time_increments,
+                                                     connectivities=self.connectivities,
+                                                     fit_steady_states=True)
+
+        likelihoods = compute_divergence(grid_u, grid_s, alpha, beta, gamma, scaling, t_,
+                                         mode='soft_state', normalized=normalized, var_scale=var_scale,
+                                         std_u=self.std_u * var_scaling, std_s=self.std_s,
+                                         assignment_mode=self.assignment_mode,
+                                         constraint_time_increments=constraint_time_increments,
+                                         connectivities=self.connectivities,
+                                         fit_steady_states=self.fit_steady_states)
+
+        likelihoods_steady = compute_divergence(grid_u, grid_s, alpha, beta, gamma, scaling, t_,
+                                                mode='steady_state', normalized=normalized, var_scale=var_scale,
+                                                std_u=self.std_u * var_scaling, std_s=self.std_s,
+                                                assignment_mode=self.assignment_mode,
+                                                constraint_time_increments=constraint_time_increments,
+                                                fit_steady_states=True)
+
+        figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        if ax is None:
+            fig = pl.figure(figsize=(figsize[0], figsize[1]), dpi=dpi)
+            ax = fig.gca()
+
+        # Contour lines
+        if transitions is not None:
+            trans_width = -np.min(likelihoods) + np.max(likelihoods)
+            transitions = np.multiply(np.array(transitions), [np.min(likelihoods), np.max(likelihoods)])# trans_width
+            ax.contour(ss, uu, likelihoods.reshape(num, num).T, transitions, linestyles='solid', colors='k', linewidths=linewidths)
+
+        ax.scatter(x=s, y=u, s=50, c=likelihoods_orig_steady, zorder=3, cmap=color_map_steady,
+                   edgecolors='black', vmin=vmin, vmax=vmax, **kwargs)
+        ax.scatter(x=s, y=u, s=50, c=likelihoods_orig, zorder=3, cmap=color_map,
+                   edgecolors='black', vmax=vmax, **kwargs)
+
+        # Grid scatter for test
+        # ax.scatter(x=grid_s, y=grid_u, s=50, c=likelihoods, zorder=3, cmap=color_map,
+        #            edgecolors='black', vmax=vmax, **kwargs)
+        # ax.scatter(x=grid_s, y=grid_u, s=50, c=likelihoods_steady, zorder=3, cmap=color_map_steady,
+        #            edgecolors='black', vmax=vmax, **kwargs)
+
+        # Force onto common color scale
+        if force_common_color_scale:
+            vmin, vmax = np.min([np.min(likelihoods), np.min(likelihoods_steady)]), np.max(
+                [np.max(likelihoods), np.max(likelihoods_steady)])
+
+        if continuous:
+            contf_steady = ax.imshow(likelihoods_steady.reshape(num, num).T, cmap=color_map_steady, alpha=alpha_, aspect='auto', origin='lower', extent=(min(ss), max(ss), min(uu), max(uu)))
+            contf = ax.imshow(likelihoods.reshape(num, num).T, cmap=color_map, vmin=vmin, vmax=vmax, alpha=alpha_, aspect='auto', origin='lower', extent=(min(ss), max(ss), min(uu), max(uu)))
+        else:
+            contf_steady = ax.contourf(ss, uu, likelihoods_steady.reshape(num, num).T, vmin=0, vmax=vmax, levels=30, cmap=color_map_steady)
+            contf = ax.contourf(ss, uu, likelihoods.reshape(num, num).T, vmin=vmin, vmax=vmax, levels=30, cmap=color_map)
+
+        if colorbar:
+            pl.colorbar(contf, ax=ax)
+            pl.colorbar(contf_steady, ax=ax)
+        ax.set_xlabel('spliced', fontsize=fontsize)
+        ax.set_ylabel('unspliced', fontsize=fontsize)
+        title = '' if title is None else title
+        ax.set_title(title, fontsize=fontsize)
+        ax = update_axes(ax, fontsize=fontsize, frameon=True)
+
+        self.assignment_mode = assignment_mode
+        return ax
 
 
