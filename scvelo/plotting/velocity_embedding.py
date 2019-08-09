@@ -1,7 +1,7 @@
 from ..tools.velocity_embedding import velocity_embedding as compute_velocity_embedding
 from ..tools.utils import groups_to_bool
 from .utils import interpret_colorkey, default_basis, default_size, get_components, savefig_or_show, \
-    default_color, default_arrow, make_unique_list, get_basis
+    default_color, default_arrow, make_unique_list, make_unique_valid_list, get_basis
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -45,21 +45,24 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
     -------
         `matplotlib.Axis` if `show==False`
     """
-    basis = default_basis(adata) if basis is None else get_basis(adata, basis)
     vkey = [key for key in adata.layers.keys() if 'velocity' in key and '_u' not in key] if vkey is 'all' else vkey
-    colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
-    for key in vkeys:
-        if key + '_' + basis not in adata.obsm_keys() and basis not in adata.var_names and V is None:
-            compute_velocity_embedding(adata, basis=basis, vkey=key)
+    layers, vkeys, colors = make_unique_list(layer), make_unique_list(vkey), make_unique_list(color, allow_array=True)
+    bases = [default_basis(adata) if basis is None else basis for basis in make_unique_valid_list(adata, basis)]
 
-    scatter_kwargs = {"basis": basis, "perc": perc, "use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
+    for key in vkeys:
+        for basis in bases:
+            if key + '_' + basis not in adata.obsm_keys() and basis not in adata.var_names and V is None:
+                compute_velocity_embedding(adata, basis=basis, vkey=key)
+
+    scatter_kwargs = {"perc": perc, "use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
                       "components": components, "projection": projection, "legend_loc": legend_loc, "groups": groups,
                       "legend_fontsize": legend_fontsize, "legend_fontweight": legend_fontweight, "palette": palette,
                       "color_map": color_map, "frameon": frameon, "xlabel": xlabel, "ylabel": ylabel,
                       "right_margin": right_margin, "left_margin": left_margin, "colorbar": colorbar, "dpi": dpi,
                       "fontsize": fontsize, "show": False, "save": None}
 
-    multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else vkeys if len(vkeys) > 1 else None
+    multikey = colors if len(colors) > 1 else layers if len(layers) > 1 \
+        else vkeys if len(vkeys) > 1 else bases if len(bases) > 1 else  None
     if multikey is not None:
         if title is None: title = list(multikey)
         elif isinstance(title, (list, tuple)): title *= int(np.ceil(len(multikey) / len(title)))
@@ -72,6 +75,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
             if i < len(multikey):
                 ax.append(velocity_embedding(adata, density=density, scale=scale, size=size, ax=pl.subplot(gs),
                                              arrow_size=arrow_size, arrow_length=arrow_length,
+                                             basis=bases[i] if len(bases) > 1 else basis,
                                              color=colors[i] if len(colors) > 1 else color,
                                              layer=layers[i] if len(layers) > 1 else layer,
                                              vkey=vkeys[i] if len(vkeys) > 1 else vkey,
@@ -87,7 +91,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
         else:
             ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
 
-        color, layer, vkey = colors[0], layers[0], vkeys[0]
+        color, layer, vkey, basis = colors[0], layers[0], vkeys[0], bases[0]
         color = default_color(adata) if color is None else color
         size = default_size(adata) / 2 if size is None else size
         _adata = adata[groups_to_bool(adata, groups, groupby=color)] if groups is not None and color in adata.obs.keys() else adata
@@ -135,8 +139,8 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
             if is_color_like(c[0]): ax.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=c, zorder=3, **quiver_kwargs)
             else: ax.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=3, **quiver_kwargs)
 
-        ax = scatter(adata, x=x, y=y, vkey=vkey, layer=layer, color=color, size=size, title=title, ax=ax, zorder=0,
-                     **scatter_kwargs)
+        ax = scatter(adata, basis=basis, x=x, y=y, vkey=vkey, layer=layer, color=color, size=size, title=title, ax=ax,
+                     zorder=0, **scatter_kwargs)
 
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax

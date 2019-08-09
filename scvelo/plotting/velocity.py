@@ -5,15 +5,14 @@ from .utils import savefig_or_show, default_basis, default_size, get_basis
 
 import numpy as np
 import pandas as pd
-from matplotlib import rcParams
-from matplotlib.ticker import MaxNLocator
 import matplotlib.pyplot as pl
+from matplotlib import rcParams
 from scipy.sparse import issparse
 
 
-def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=None, fits='all', layers='all',
-             color=None, color_map='RdBu_r', colorbar=False, perc=[2,98], use_raw=False, size=None, alpha=.5,
-             fontsize=None, figsize=None, dpi=None, show=True, save=None, ax=None, ncols=None, **kwargs):
+def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits='all', layers='all', color=None,
+             color_map='RdBu_r', colorbar=False, perc=[2,98], alpha=.5, size=None, groupby=None, groups=None,
+             use_raw=False, fontsize=None, figsize=None, dpi=None, show=True, save=None, ax=None, ncols=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
     The phase plot shows spliced against unspliced expressions with steady-state fit.
@@ -62,7 +61,7 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
 
     if isinstance(groupby, str) and groupby in adata.obs.keys():
         if 'rank_velocity_genes' not in adata.uns.keys() or adata.uns['rank_velocity_genes']['params']['groupby'] != groupby:
-            rank_velocity_genes(adata, vkey='velocity', n_genes=10, groupby=groupby)
+            rank_velocity_genes(adata, vkey=vkey, n_genes=10, groupby=groupby)
         names = np.array(adata.uns['rank_velocity_genes']['names'].tolist())
         if groups is None:
             var_names = names[:, 0]
@@ -77,11 +76,11 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
     var_names = pd.unique(var_names)
 
     (skey, ukey) = ('spliced', 'unspliced') if use_raw else ('Ms', 'Mu')
-    layers = ['velocity', skey, 'variance_velocity'] if layers == 'all' else layers
+    layers = [vkey, skey, 'variance_velocity'] if layers == 'all' else layers
     layers = [layer for layer in layers if layer in adata.layers.keys()]
 
     fits = adata.layers.keys() if fits == 'all' else fits
-    fits = [fit for fit in fits if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
+    fits = [fit for fit in fits if fit + '_gamma' in adata.var.keys()]
     stochastic_fits = [fit for fit in fits if 'variance_' + fit in adata.layers.keys()]
 
     nplts = (1 + len(layers) + (mode == 'stochastic') * 2)
@@ -109,8 +108,10 @@ def velocity(adata, var_names=None, basis=None, groupby=None, groups=None, mode=
         for l, layer in enumerate(layers):
             ax = pl.subplot(gs[v * nplts + l + 1])
             title = 'expression' if layer == skey else layer
+            _kwargs = {} if title is 'expression' else kwargs
             scatter(adata, basis=basis, color=var, layer=layer, color_map=color_map, colorbar=colorbar, title=title,
-                    perc=perc, use_raw=use_raw, fontsize=fontsize, size=size, alpha=alpha, frameon=False, show=False, ax=ax, save=False, **kwargs)
+                    perc=perc, use_raw=use_raw, fontsize=fontsize, size=size, alpha=alpha, frameon=False, show=False,
+                    ax=ax, save=False, **_kwargs)
 
         if mode == 'stochastic':
             ss, us = second_order_moments(_adata)
