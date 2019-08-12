@@ -108,21 +108,33 @@ def mRNA(tau, u0, s0, alpha, beta, gamma):
     return u, s
 
 
-def adjust_increments(tau):
+def adjust_increments(tau, tau_=None):
     tau_new = tau * 1.
     tau_ord = np.sort(tau_new)
     dtau = np.diff(tau_ord, prepend=0)
+
     m_dtau = np.max([np.mean(dtau), np.max(tau) / len(tau), 0])
+    ub = m_dtau + 3 * np.sqrt(m_dtau)  # Poisson with std = sqrt(mean) -> ~99.9% confidence
 
-    # Poisson with std = sqrt(mean) -> ~99.9% confidence
-    ub = m_dtau + 3 * np.sqrt(m_dtau)
+    if tau_ is not None:
+        tau_new_ = tau_
+        tau_ord_ = np.sort(tau_new_)
+        dtau_ = np.diff(tau_ord_, prepend=0)
+
+        m_dtau = np.min([m_dtau, np.max([np.mean(dtau_), np.max(tau_) / len(tau_), 0])])
+        ub = m_dtau + 3 * np.sqrt(m_dtau)
+
+        idx = np.where(dtau_ > ub)[0]
+        for i in idx:
+            ti, dti = tau_ord_[i], dtau_[i]  # - ub
+            tau_new_[tau_ >= ti] -= dti
+
     idx = np.where(dtau > ub)[0]
-
     for i in idx:
         ti, dti = tau_ord[i], dtau[i]  # - ub
         tau_new[tau >= ti] -= dti
 
-    return tau_new
+    return tau_new if tau_ is None else (tau_new, tau_new_)
 
 
 def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
@@ -160,7 +172,7 @@ def assign_tau(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, assignment
         # assign time points (oth. projection onto 'on' and 'off' curve)
         tau, tau_ = np.zeros(len(u)), np.zeros(len(u))
         for i, xi in enumerate(x_obs):
-            diffx, diffx_ = ((xt - xi)**2).sum(1), ((xt_ - xi)**2).sum(1)
+            diffx, diffx_ = np.sum((xt - xi)**2, 1), np.sum((xt_ - xi)**2, 1)
             tau[i] = tpoints[np.argmin(diffx)]
             tau_[i] = tpoints_[np.argmin(diffx_)]
     else:
@@ -202,10 +214,11 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         o = np.argmin(np.array([distu_ ** 2 + dists_ ** 2, distu ** 2 + dists ** 2]), axis=0)
 
         off, on = o == 0, o == 1
-        if np.any(on): tau[on] = adjust_increments(tau[on])
-        if np.any(off): tau_[off] = adjust_increments(tau_[off])
+        if np.any(on) and np.any(off): tau[on], tau_[off] = adjust_increments(tau[on], tau_[off])
+        elif np.any(on): tau[on] = adjust_increments(tau[on])
+        elif np.any(off): tau_[off] = adjust_increments(tau_[off])
 
-    # compute distances from states (induction state, repression state, steady state)
+    # compute induction/repression state distances
     ut, st = mRNA(tau, 0, 0, alpha, beta, gamma)
     ut_, st_ = mRNA(tau_, u0_, s0_, 0, beta, gamma)
 
@@ -215,22 +228,24 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
     distx = distu ** 2 + dists ** 2
     distx_ = distu_ ** 2 + dists_ ** 2
 
-    if var_scale:
-        o = np.argmin([distx_, distx], axis=0)
-        varu = np.nanvar(distu * o + distu_ + (1 - o), axis=0)
-        vars = np.nanvar(dists * o + dists_ + (1 - o), axis=0)
+    res, varx = np.array([distx_, distx]), 1  # default vals;
 
-        distx = distu ** 2 / varu + dists ** 2 / vars
-        distx_ = distu_ ** 2 / varu + dists_ ** 2 / vars
-    else:
-        varu, vars = 1, 1
-
+    # compute steady state distances
     if fit_steady_states:
-        distx_steady = ((u - alpha / beta) / std_u) ** 2 / varu + ((s - alpha / gamma) / std_s) ** 2 / vars
-        distx_steady_ = (u / std_u) ** 2 / varu + (s / std_s) ** 2 / vars
+        distx_steady = ((u - alpha / beta) / std_u) ** 2 + ((s - alpha / gamma) / std_s) ** 2
+        distx_steady_ = (u / std_u) ** 2 + (s / std_s) ** 2
         res = np.array([distx_, distx, distx_steady_, distx_steady])
-    else:
-        res = np.array([distx_, distx])
+
+    # compute variances
+    if var_scale:
+        if isinstance(var_scale, bool):
+            o = np.argmin([distx_, distx], axis=0)
+            dist = distx * o + distx_ * (1 - o)
+            sign = np.sign(dists * o + dists_ * (1-o))
+            varx = np.mean(dist, axis=0) - np.mean(sign * np.sqrt(dist), axis=0) ** 2
+        else:
+            varx = var_scale
+        res /= varx
 
     # ToDo: adjust distx, distx_ to match shared time
 
@@ -244,18 +259,19 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         res = [tau, tau_]
 
     elif mode is 'likelihood':
-        res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         if normalized: res = normalize(res)
 
     elif mode is 'nll':
-        res = np.log(2 * np.pi * np.sqrt(varu * vars)) + .5 * res
+        res = np.log(2 * np.pi * np.sqrt(varx)) + .5 * res
         if normalized: res = normalize(res)
 
     elif mode is 'soft_eval':
-        res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
 
-        if fit_steady_states:
-            steady = np.max([res[2], res[3]], axis=0)
+        # ToDo: adjust steady_state incorporation
+        if False and fit_steady_states:
+            steady = res[2] + res[3]  # np.max([res[2], res[3]], axis=0)
             res = np.clip(res - steady, 0, None)
         if normalized:
             res = normalize(res)
@@ -269,7 +285,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
     elif mode is 'soft_state':
-        res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         if normalized: res = normalize(res)
         res = res[1] - res[0]
 
@@ -277,7 +293,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         res = np.argmin(res, axis=0)
 
     elif mode is 'steady_state':
-        res = 1 / (2 * np.pi * np.sqrt(varu * vars)) * np.exp(-.5 * res)
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         if normalized: res = normalize(res)
         res = res[2] + res[3]
 
@@ -323,6 +339,31 @@ def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0, sorted=False
         idx = np.argsort(t)
         tau, alpha, u0, s0 = tau[idx], alpha[idx], u0[idx], s0[idx]
     return tau, alpha, u0, s0
+
+
+def curve_dists(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, std_u=1, std_s=1, scaling=1, num=None):
+    if u0_ is None or s0_ is None:
+        u0_, s0_ = mRNA(t_, 0, 0, alpha, beta, gamma)
+
+    x_obs = np.vstack([u, s]).T
+    std_x = np.vstack([std_u / scaling, std_s]).T
+    t0 = tau_inv(np.min(u[s > 0]), u0=u0_, alpha=0, beta=beta)
+
+    num = np.clip(int(len(u) / 10), 50, 200) if num is None else num
+    tpoints = np.linspace(0, t_, num=num)
+    tpoints_ = np.linspace(0, t0, num=num)[1:]
+
+    curve_t = np.vstack(mRNA(tpoints, 0, 0, alpha, beta, gamma)).T
+    curve_t_ = np.vstack(mRNA(tpoints_, u0_, s0_, 0, beta, gamma)).T
+
+    # match each curve point to nearest observation
+    dist, dist_ = np.zeros(len(curve_t)), np.zeros(len(curve_t_))
+    for i, ci in enumerate(curve_t):
+        dist[i] = np.min(np.sum((x_obs - ci)**2 / std_x**2, 1))
+    for i, ci in enumerate(curve_t_):
+        dist_[i] = np.min(np.sum((x_obs - ci)**2 / std_x**2, 1))
+
+    return dist, dist_
 
 
 """Base Class for Dynamics Recovery"""
@@ -396,7 +437,6 @@ class BaseDynamics:
             steady_states = t == self.t_
             if np.any(steady_states):
                 self.t_ = np.mean(self.t[steady_states])
-            print(self.t_)
             self.t, self.tau, self.o = self.get_time_assignment(t=self.t)
 
         self.loss = [self.get_loss()]
@@ -490,7 +530,7 @@ class BaseDynamics:
 
     def get_se(self, **kwargs):
         udiff, sdiff, reg = self.get_dists(**kwargs)
-        return np.sum(udiff ** 2) + np.sum(sdiff ** 2) + np.sum(reg ** 2)
+        return np.sum(udiff ** 2 + sdiff ** 2 + reg ** 2)
 
     def get_mse(self, **kwargs):
         return self.get_se(**kwargs) / np.sum(self.weights)
@@ -498,17 +538,36 @@ class BaseDynamics:
     def get_loss(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, u0_=None, s0_=None, refit_time=None):
         return self.get_se(t=t, t_=t_, alpha=alpha, beta=beta, gamma=gamma, scaling=scaling, u0_=u0_, s0_=s0_, refit_time=refit_time)
 
-    def get_loglikelihood(self, **kwargs):
+    def get_loglikelihood(self, varx=None, **kwargs):
         if 'weighted' not in kwargs: kwargs.update({'weighted': 'dynamical'})
         udiff, sdiff, reg = self.get_dists(**kwargs)
         distx = udiff ** 2 + sdiff ** 2 + reg ** 2
-        varx = np.mean(distx) - np.mean(np.sign(sdiff) * np.sqrt(distx))**2  # np.var(np.sign(sdiff) * np.sqrt(distx))
-        return - 1 / 2 / len(distx) * np.sum(distx) / varx - 1 / 2 * np.log(2 * np.pi * varx)
+        # compute variance / equivalent to np.var(np.sign(sdiff) * np.sqrt(distx))
+        varx = np.mean(distx) - np.mean(np.sign(sdiff) * np.sqrt(distx))**2 if varx is None else varx
+        n = np.clip(len(distx) - len(self.u) * .01, 2, None)
+        return - 1 / 2 / n * np.sum(distx) / varx - 1 / 2 * np.log(2 * np.pi * varx)
 
     def get_likelihood(self, **kwargs):
         if 'weighted' not in kwargs: kwargs.update({'weighted': 'dynamical'})
         likelihood = np.exp(self.get_loglikelihood(**kwargs))
         return likelihood
+
+    def get_curve_likelihood(self):
+        alpha, beta, gamma, scaling, t_ = self.get_vars()
+        u, s = self.get_reads(scaling, weighted=False)
+        varx = self.get_variance()
+
+        dist, dist_ = curve_dists(u, s, alpha, beta, gamma, t_, std_u=self.std_u, std_s=self.std_s, scaling=scaling)
+        l = - 1 / 2 / len(dist) * np.sum(dist) / varx - 1 / 2 * np.log(2 * np.pi * varx)
+        l_ = - 1 / 2 / len(dist_) * np.sum(dist_) / varx - 1 / 2 * np.log(2 * np.pi * varx)
+        likelihood = np.exp(np.max([l, l_]))
+        return likelihood
+
+    def get_variance(self, **kwargs):
+        if 'weighted' not in kwargs: kwargs.update({'weighted': 'dynamical'})
+        udiff, sdiff, reg = self.get_dists(**kwargs)
+        distx = udiff ** 2 + sdiff ** 2
+        return np.mean(distx) - np.mean(np.sign(sdiff) * np.sqrt(distx)) ** 2
 
     def get_ut(self, **kwargs):
         t, t_, alpha, beta, gamma, scaling = self.get_vals(**kwargs)
@@ -636,8 +695,8 @@ class BaseDynamics:
         self.assignment_mode = assignment_mode
         if not show: return ax
 
-    def plot_contour_grid(self, params=['alpha', 'beta', 'gamma'], contour_levels=0, sight=.5, num=20,
-                          color_map='RdGy', fontsize=12, vmin=None, vmax=None, figsize=None, dpi=None, **kwargs):
+    def plot_profiles(self, params=['alpha', 'beta', 'gamma'], contour_levels=0, sight=.5, num=20, fontsize=12,
+                      color_map='RdGy', vmin=None, vmax=None, figsize=None, dpi=None, **kwargs):
         from mpl_toolkits.axes_grid1.inset_locator import inset_axes
         fig = pl.figure(constrained_layout=True, dpi=dpi, figsize=figsize)
         n = len(params)
@@ -672,33 +731,38 @@ class BaseDynamics:
                     ax.set_ylabel('')
                     ax.set_yticks([])
 
-    def plot_likelihood_contours(self, num=20, dpi=None, figsize=None, color_map='RdGy_r', color_map_steady='viridis',
-                                 continuous=True, common_color_scale=True, var_scale=False, normalized=False,
-                                 transitions=None, colorbar=False,  alpha_=0.8, linewidths=3, padding_u=.1, padding_s=.1,
-                                 fontsize=8, title=None, ax=None, **kwargs):
+    def plot_state_likelihoods(self, num=100, dpi=None, figsize=None, color_map=None, color_map_steady=None,
+                               continuous=True, common_color_scale=True, var_scale=None, normalized=None,
+                               transitions=None, colorbar=False, alpha_=0.5, linewidths=3, padding_u=.1,
+                               padding_s=.1, fontsize=12, title=None, ax=None, **kwargs):
         from ..plotting.utils import update_axes
+        from ..plotting.utils import rgb_custom_colormap
+        if color_map is None:
+            color_map = rgb_custom_colormap(['royalblue', 'white', 'seagreen'], alpha=[1, .5, 1])
+        if color_map_steady is None:
+            color_map_steady = rgb_custom_colormap(colors=3*['sienna'], alpha=[0, .5, 1])
+
         alpha, beta, gamma, scaling, t_ = self.get_vars()
         u, s = self.u / scaling, self.s
         padding_u *= np.max(u) - np.min(u)
         padding_s *= np.max(s) - np.min(s)
-        if False:  # clip padding at zero
-            uu = np.linspace(np.max([np.min(u) - padding_u, 0]), np.max(u) + padding_u, num=num)
-            ss = np.linspace(np.max([np.min(s) - padding_s, 0]), np.max(s) + padding_s, num=num)
-        else:
-            uu = np.linspace(np.min(u) - padding_u, np.max(u) + padding_u, num=num)
-            ss = np.linspace(np.min(s) - padding_s, np.max(s) + padding_s, num=num)
+        uu = np.linspace(np.min(u) - padding_u, np.max(u) + padding_u, num=num)
+        ss = np.linspace(np.min(s) - padding_s, np.max(s) + padding_s, num=num)
+
         grid_u, grid_s = np.meshgrid(uu, ss)
         grid_u = grid_u.flatten()
         grid_s = grid_s.flatten()
 
+        var_scale = self.get_variance() if var_scale is None else self.get_variance() * var_scale
+
         dkwargs = {'alpha': alpha, 'beta': beta, 'gamma': gamma, 'scaling': scaling, 't_': t_,
                    'std_u': self.std_u, 'std_s': self.std_s, 'var_scale': var_scale, 'normalized': normalized,
-                   'fit_steady_states': True, 'constraint_time_increments': False, 'assignment_mode': self.assignment_mode}
+                   'fit_steady_states': True, 'constraint_time_increments': False, 'assignment_mode': 'projection'}
 
         likelihoods = compute_divergence(u, s, mode='soft_state', **dkwargs)
         likelihoods_steady = compute_divergence(u, s, mode='steady_state', **dkwargs)
 
-        likelihoods_grid = compute_divergence(grid_u, grid_s, mode='soft_state', **dkwargs) #* 1.2
+        likelihoods_grid = compute_divergence(grid_u, grid_s, mode='soft_state', **dkwargs)
         likelihoods_grid_steady = compute_divergence(grid_u, grid_s, mode='steady_state', **dkwargs)
 
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
