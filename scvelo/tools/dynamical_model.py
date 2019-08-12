@@ -4,7 +4,7 @@ from .. import settings
 from .. import logging as logg
 from ..preprocessing.moments import get_connectivities
 from .utils import make_unique_list, test_bimodality
-from .dynamical_model_utils import BaseDynamics, mRNA, linreg, convolve, tau_inv, compute_dt
+from .dynamical_model_utils import BaseDynamics, mRNA, linreg, convolve, tau_inv, compute_dt, unspliced, spliced
 
 import warnings
 import numpy as np
@@ -21,35 +21,10 @@ class DynamicsRecovery(BaseDynamics):
             self.load_pars(adata, gene)
         else:
             self.initialize()
-        if self.high_pars_resolution:
-            self.fit_t_and_alpha()
-            self.fit_scaling_()
-            self.fit_rates()
-            self.fit_t_()
-            self.fit_t_and_rates()
-
-    # Callback functions for the Optimizer
-    def cb_fit_t_and_alpha(self, x):
-        self.update(t_=x[0], alpha=x[1])
-
-    def cb_fit_scaling_(self, x):
-        self.update(t_=x[0], beta=x[1], scaling=x[2])
-
-    def cb_fit_rates(self, x):
-        self.update(alpha=x[0], gamma=x[1])
-
-    def cb_fit_t_(self, x):
-        self.update(t_=x[0])
-
-    def cb_fit_t_and_rates(self, x):
-        self.update(t_=x[0], alpha=x[1], beta=x[2], gamma=x[3])
-
-    def cb_fit_rates_all(self, x):
-        self.update(alpha=x[0], beta=x[1], gamma=x[2])
 
     def initialize(self):
         # set weights
-        u, s, w, perc = self.u, self.s, self.weights, self.perc
+        u, s, w, perc = self.u, self.s, self.weights, 98
         u_w, s_w,  = u[w], s[w]
 
         # initialize scaling
@@ -60,11 +35,12 @@ class DynamicsRecovery(BaseDynamics):
         # initialize beta and gamma from extreme quantiles of s
         #print(self.gene)
         weights_s = s_w >= np.percentile(s_w, perc, axis=0)
+        weights_u = u_w >= np.percentile(u_w, perc, axis=0)
         beta, gamma = 1, linreg(convolve(u_w, weights_s), convolve(s_w, weights_s))
 
-        u_inf, s_inf = u_w[weights_s].mean(), s_w[weights_s].mean()
+        u_inf, s_inf = u_w[weights_u | weights_s].mean(), s_w[weights_s].mean()
         u0_, s0_ = u_inf, s_inf
-        alpha = np.mean([s_inf * gamma, u_inf * beta])  # np.mean([s0_ * gamma, u0_ * beta])
+        alpha = u_inf * beta  # np.mean([s_inf * gamma, u_inf * beta])  # np.mean([s0_ * gamma, u0_ * beta])
 
         # initialize switching from u quantiles and alpha from s quantiles
         tstat_u, pval_u, means_u = test_bimodality(u_w, kde=True)
@@ -73,14 +49,15 @@ class DynamicsRecovery(BaseDynamics):
         self.u_steady = means_u[1]
         self.s_steady = means_s[1]
 
-        if self.pval_steady < .1:
+        if self.pval_steady < 1e-3:
             u_inf = np.mean([u_inf, self.u_steady])
-            s_inf = np.mean([s_inf, self.s_steady])
-            alpha = s_inf * gamma
+            #s_inf = self.s_steady # np.mean([s_inf, self.s_steady])
+            alpha = gamma * s_inf
             beta = alpha / u_inf
 
-            weights_u = u_w >= np.percentile(u_w, perc, axis=0)
-            u0_, s0_ = u_w[weights_u].mean(), s_w[weights_u].mean()
+            #weights_u = u_w >= np.percentile(u_w, perc, axis=0)
+            #u0_, s0_ = u_w[weights_u].mean(), s_w[weights_u].mean()
+            u0_, s0_ = u_inf, s_inf
 
         # alpha, beta, gamma = np.array([alpha, beta, gamma]) * scaling
         t_ = tau_inv(u0_, s0_, 0, 0, alpha, beta, gamma)
@@ -100,14 +77,13 @@ class DynamicsRecovery(BaseDynamics):
 
         self.steady_state_ratio = self.gamma / self.beta
 
-    def initialize_scaling(self, sight=.5):  # fit scaling and update if improved
-        z_vals = self.scaling + np.linspace(-1, 1, num=5) * self.scaling * sight
-        for z in z_vals:
-            u0_ = self.u0_ * self.scaling / z
-            beta = self.beta / self.scaling * z
-            self.update(scaling=z, beta=beta, u0_=u0_)
+        if self.high_pars_resolution:
+            self.fit_t_and_alpha()
+            self.fit_scaling_()
+            self.fit_rates()
+            self.fit_t_()
+            self.fit_t_and_rates()
 
-    def fit(self, assignment_mode=None):
         # Overwrite callbacks
         if not self.high_pars_resolution:
             self.cb_fit_t_and_alpha = None
@@ -117,6 +93,14 @@ class DynamicsRecovery(BaseDynamics):
             self.cb_fit_t_and_rates = None
             self.cb_fit_rates_all = None
 
+    def initialize_scaling(self, sight=.5):  # fit scaling and update if improved
+        z_vals = self.scaling + np.linspace(-1, 1, num=5) * self.scaling * sight
+        for z in z_vals:
+            u0_ = self.u0_ * self.scaling / z
+            beta = self.beta / self.scaling * z
+            self.update(scaling=z, beta=beta, u0_=u0_)
+
+    def fit(self, assignment_mode=None):
         if self.max_iter > 0:
 
             # pre-train with explicit time assignment
@@ -177,6 +161,25 @@ class DynamicsRecovery(BaseDynamics):
         res = minimize(mse, np.array([self.t_, self.beta, self.scaling]), callback=self.cb_fit_scaling_, **self.simplex_kwargs)
         self.update(t_=res.x[0], beta=res.x[1], scaling=res.x[2])
 
+    # Callback functions for the Optimizer
+    def cb_fit_t_and_alpha(self, x):
+        self.update(t_=x[0], alpha=x[1])
+
+    def cb_fit_scaling_(self, x):
+        self.update(t_=x[0], beta=x[1], scaling=x[2])
+
+    def cb_fit_rates(self, x):
+        self.update(alpha=x[0], gamma=x[1])
+
+    def cb_fit_t_(self, x):
+        self.update(t_=x[0])
+
+    def cb_fit_t_and_rates(self, x):
+        self.update(t_=x[0], alpha=x[1], beta=x[2], gamma=x[3])
+
+    def cb_fit_rates_all(self, x):
+        self.update(alpha=x[0], beta=x[1], gamma=x[2])
+
     def update(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, u0_=None, s0_=None, adjust_t_=True):
         loss_prev = self.loss[-1] if len(self.loss) > 0 else 1e6
 
@@ -187,6 +190,10 @@ class DynamicsRecovery(BaseDynamics):
 
         on = self.o == 1
         if adjust_t_ and np.any(on):
+            if not perform_update:
+                alpha, beta, gamma, scaling, t_ = self.get_vars()
+                t, tau, o = self.get_time_assignment()
+                loss = self.get_loss()
 
             alt_t_ = t[on].max()
             if 0 < alt_t_ < t_:
@@ -194,14 +201,18 @@ class DynamicsRecovery(BaseDynamics):
                 alt_t_ += np.max(t) / len(t) * np.sum(t == t_) # np.sum((self.u / self.scaling >= alt_u0_) | (self.s >= alt_s0_))
                 alt_t, alt_tau, alt_o = self.get_time_assignment(alpha, beta, gamma, scaling, alt_t_)
                 alt_loss = self.get_loss(alt_t, alt_t_, alpha, beta, gamma, scaling)
-                if alt_loss <= loss and alt_loss <= loss_prev:
+                ut_cur = unspliced(t_, 0, alpha, beta)
+                ut_alt = unspliced(alt_t_, 0, alpha, beta)
+
+                if alt_loss * .99 <= np.min([loss, loss_prev]) or ut_cur * .99 < ut_alt:
                     t, tau, o, t_, loss, perform_update = alt_t, alt_tau, alt_o, alt_t_, alt_loss, True
 
-            steady_states = t == t_
-            if perform_update and np.any(steady_states):
-                t_ += t.max() / len(t) * np.sum(steady_states)
-                t, tau, o = self.get_time_assignment(alpha, beta, gamma, scaling, t_)
-                loss = self.get_loss(t, t_, alpha, beta, gamma, scaling)
+            if False:
+                steady_states = t == t_
+                if perform_update and np.any(steady_states):
+                    t_ += t.max() / len(t) * np.sum(steady_states)
+                    t, tau, o = self.get_time_assignment(alpha, beta, gamma, scaling, t_)
+                    loss = self.get_loss(t, t_, alpha, beta, gamma, scaling)
 
         if perform_update:
             if u0_ is not None: self.u0_ = u0_
@@ -277,32 +288,10 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
         std_u[ix], std_s[ix], likelihood[ix] = dm.std_u, dm.std_s, dm.likelihood
         L.append(dm.loss)
         if plot_results and i < 4:
-            P.append(dm.pars)
+            P.append(np.array(dm.pars))
 
         progress.update()
     progress.finish()
-
-    #with warnings.catch_warnings():
-    #    warnings.simplefilter("ignore")
-    #    T_max = np.nanpercentile(T, 95, axis=0) - np.nanpercentile(T, 5, axis=0)
-    if t_max is not False:
-        dt = compute_dt(T[:, idx])
-        n_adj = 1 - np.sum(T[:, idx] == t_[idx], axis=0) / len(dt)  # np.sum(dt > 0, axis=0) / len(dt)
-        n_adj += n_adj == 0
-
-        dt_sum = np.sum(dt, axis=0) / n_adj
-        dt_sum += dt_sum == 0
-
-        t_max = 100 if t_max is None else t_max
-        m = np.ones(T.shape[1])
-        m[idx] = t_max / dt_sum
-
-        alpha, beta, gamma, T, t_, Tau, Tau_ = alpha / m, beta / m, gamma / m, T * m, t_ * m, Tau * m, Tau_ * m
-
-        dm.pars[:3] = dm.pars[:3] / m[-1]
-        dm.pars[4] = dm.pars[4] * m[-1]
-    else:
-        m = np.ones(len(idx))
 
     write_pars(adata, [alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood])
     adata.layers['fit_t'] = T
@@ -319,6 +308,9 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
     loss[idx] = np.vstack([np.concatenate([l, np.ones(max_len-len(l)) * np.nan]) for l in L])
     adata.varm['loss'] = loss
 
+    if t_max is not False:
+        dm, m = align_dynamics(adata, t_max=t_max, dm=dm, idx=idx)
+
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n' 
               '    \'' + add_key + '_pars' + '\', fitted parameters for splicing dynamics (adata.var)')
@@ -330,7 +322,7 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
         fig, axes = pl.subplots(nrows=n_rows, ncols=6, figsize=figsize)
         pl.subplots_adjust(wspace=0.7, hspace=0.5)
         for i, gene in enumerate(var_names[:4]):
-            P[i] *= np.array([1 / m[idx[i]], 1 / m[idx[i]], 1 / m[idx[i]], m[idx[i]], 1])[:, None]
+            if t_max is not False: P[i] *= np.array([1 / m[i], 1 / m[i], 1 / m[i], m[i], 1])[:, None]
             ax = axes[i] if n_rows > 1 else axes
             for j, pij in enumerate(P[i]):
                 ax[j].plot(pij)
@@ -339,3 +331,60 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
                 for j, name in enumerate(['alpha', 'beta', 'gamma', 't_', 'scaling', 'loss']):
                     ax[j].set_title(name, fontsize=fontsize)
     return dm if return_model else adata if copy else None
+
+
+def align_dynamics(data, t_max=None, dm=None, idx=None, copy=False):
+    adata = data.copy() if copy else data
+    alpha, beta, gamma, t_, m = read_pars(adata, pars_names=['alpha', 'beta', 'gamma', 't_', 'alignment_scaling'])
+    T = adata.layers['fit_t'] if 'fit_t' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
+    Tau = adata.layers['fit_tau'] if 'fit_tau' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
+    Tau_ = adata.layers['fit_tau_'] if 'fit_tau_' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
+    idx = ~ np.isnan(np.sum(T, axis=0)) if idx is None else idx
+
+    m = np.ones(adata.n_vars)
+    if t_max is not False:
+        dt = compute_dt(T[:, idx])
+
+        dt_min = t_[idx] / dt.shape[0] / 5
+        idx_bool = dt > dt_min
+        dt *= idx_bool / idx_bool
+
+        dt_mean = np.nanmean(dt, axis=0)
+        dt_mean += dt_mean == 0
+
+        t_max = 100 if t_max is None else t_max
+        m[idx] = t_max / (dt_mean * len(dt))
+
+    alpha, beta, gamma, T, t_, Tau, Tau_ = alpha / m, beta / m, gamma / m, T * m, t_ * m, Tau * m, Tau_ * m
+
+    write_pars(adata, [alpha, beta, gamma, t_, m], pars_names=['alpha', 'beta', 'gamma', 't_', 'alignment_scaling'])
+    adata.layers['fit_t'] = T
+    adata.layers['fit_tau'] = Tau
+    adata.layers['fit_tau_'] = Tau_
+
+    m = m[idx]
+    if dm is not None:
+        dm.alpha, dm.beta, dm.gamma, dm.pars[:3] = np.array([dm.alpha, dm.beta, dm.gamma, dm.pars[:3]]) / m[-1]
+        dm.t, dm.tau, dm.t_, dm.pars[4] = np.array([dm.t, dm.tau, dm.t_, dm.pars[4]]) * m[-1]
+
+    return adata if copy else (dm, m)
+
+
+def recover_latent_time(data, copy=False):
+    adata = data.copy() if copy else data
+
+    logg.info('computing shared time', r=True)
+    from .dynamical_model_utils import root_time, compute_shared_time
+    from .terminal_states import terminal_states
+    from ..utils import get_connectivities
+
+    if 'iroot' not in adata.uns.keys():
+        if 'root_cells' not in adata.obs.keys(): terminal_states(adata)
+        adata.uns['iroot'] = get_connectivities(adata, mode='distances').dot(adata.obs['root_cells']).argmax()
+    t, t_ = root_time(adata.layers['fit_t'], root=adata.uns['iroot'])
+    adata.obs['latent_time'] = compute_shared_time(t)
+
+    logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
+    logg.hint('added \n'
+              '    \'latent_time\', shared time (adata.obs)')
+    return adata if copy else None
