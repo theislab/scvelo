@@ -160,7 +160,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 plot_density(x, y)
 
             if show_linear_fit:
-                xnew = np.linspace(0, x.max() * 1.02)
+                xnew = np.linspace(np.min(x), np.max(x) * 1.02)
                 pl.plot(xnew, xnew * (x * y).sum() / (x ** 2).sum())
 
             set_label(xlabel, ylabel, fontsize, basis)
