@@ -63,9 +63,9 @@ class DynamicsRecovery(BaseDynamics):
         t_ = tau_inv(u0_, s0_, 0, 0, alpha, beta, gamma)
 
         # update object with initialized vars
-        alpha_, u0, s0, = 0, 0, 0
+        alpha_ = 0
         self.alpha, self.beta, self.gamma, self.alpha_, self.scaling = alpha, beta, gamma, alpha_, scaling
-        self.u0, self.s0, self.u0_, self.s0_, self.t_ = u0, s0, u0_, s0_, t_
+        self.u0_, self.s0_, self.t_ = u0_, s0_, t_
         self.pars = np.array([alpha, beta, gamma, self.t_, self.scaling])[:, None]
 
         # initialize time point assignment
@@ -225,7 +225,7 @@ class DynamicsRecovery(BaseDynamics):
         return perform_update
 
 
-def read_pars(adata, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling', 'std_u', 'std_s', 'likelihood'], key='fit'):
+def read_pars(adata, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling', 'std_u', 'std_s', 'likelihood', 'u0', 's0'], key='fit'):
     pars = []
     for name in pars_names:
         pkey = key + '_' + name
@@ -234,7 +234,7 @@ def read_pars(adata, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling', 'std
     return pars
 
 
-def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling', 'std_u', 'std_s', 'likelihood'], add_key='fit'):
+def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling', 'std_u', 'std_s', 'likelihood', 'u0', 's0'], add_key='fit'):
     for i, name in enumerate(pars_names):
         adata.var[add_key + '_' + name] = pars[i]
 
@@ -267,7 +267,7 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
     if fit_connected_states is True:
         fit_connected_states = get_connectivities(adata)
 
-    alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood = read_pars(adata)
+    alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0 = read_pars(adata)
     idx, L, P = [], [], []
     T = adata.layers['fit_t'] if 'fit_t' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
     Tau = adata.layers['fit_tau'] if 'fit_tau' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
@@ -285,6 +285,7 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
 
         T[:, ix], Tau[:, ix], Tau_[:, ix] = dm.t, dm.tau, dm.tau_
         alpha[ix], beta[ix], gamma[ix], t_[ix], scaling[ix] = dm.pars[:, -1]
+        u0[ix], s0[ix] = dm.u0, dm.s0
         std_u[ix], std_s[ix], likelihood[ix] = dm.std_u, dm.std_s, dm.likelihood
         L.append(dm.loss)
         if plot_results and i < 4:
@@ -293,7 +294,7 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
         progress.update()
     progress.finish()
 
-    write_pars(adata, [alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood])
+    write_pars(adata, [alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0])
     adata.layers['fit_t'] = T
     adata.layers['fit_tau'] = Tau
     adata.layers['fit_tau_'] = Tau_

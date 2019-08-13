@@ -40,6 +40,11 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
     t_ = adata.var[key + '_t_'][idx] if t_ is None else t_
     scaling = adata.var[key + '_scaling'][idx] if key + '_scaling' in adata.var.keys() else 1
 
+    if 'fit_u0' in adata.var.keys():
+        u0_offset, s0_offset = adata.var['fit_u0'][idx], adata.var['fit_s0'][idx]
+    else:
+        u0_offset, s0_offset = 0, 0
+
     if t is None or isinstance(t, bool) or len(t) < adata.n_obs:
         t = adata.obs[key + '_t'].values if key is 'true' else adata.layers[key + '_t'][:, idx]
 
@@ -54,7 +59,7 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
     ut *= scaling
 
     vt = ut * beta - st * gamma
-    return alpha, ut, st, vt
+    return alpha, ut + u0_offset, st + s0_offset, vt
 
 
 def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, show_assignments=None):
@@ -78,10 +83,10 @@ def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, sho
     beta, gamma = adata.var[key + '_beta'][idx], adata.var[key + '_gamma'][idx]
     scaling = adata.var[key + '_scaling'][idx] if key + '_scaling' in adata.var.keys() else 1
 
-    xnew = np.linspace(0, st.max())
+    xnew = np.linspace(0, st.max() - st.min())
     label = 'learned dynamics' if key is 'fit' else 'true dynamics'
     if show_assignments is not 'only':
-        pl.plot(xnew, gamma / beta * scaling * xnew, color=color, linestyle='--', linewidth=linewidth, label=label)
+        pl.plot(xnew + st.min(), (gamma / beta * scaling * xnew) + ut.min(), color=color, linestyle='--', linewidth=linewidth, label=label)
     return label
 
 

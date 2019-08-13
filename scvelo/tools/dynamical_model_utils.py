@@ -384,8 +384,13 @@ class BaseDynamics:
             s = _layers['spliced'] if self.use_raw else _layers['Ms']
         self.s, self.u = make_dense(s), make_dense(u)
 
+        # Account for basal transcription
+        self.u0, self.s0 = np.min(u), np.min(s)
+        self.u -= self.u0
+        self.s -= self.s0
+
         self.alpha, self.beta, self.gamma, self.scaling, self.t_, self.alpha_ = None, None, None, None, None, None
-        self.u0, self.s0, self.u0_, self.s0_, self.weights, self.pars = None, None, None, None, None, None
+        self.u0_, self.s0_, self.weights, self.pars = None, None, None, None
         self.t, self.tau, self.o, self.tau_, self.likelihood, self.loss = None, None, None, None, None, None
 
         self.max_iter = max_iter
@@ -423,7 +428,8 @@ class BaseDynamics:
         self.t_ = adata.var['fit_t_'][idx]
         self.steady_state_ratio = self.gamma / self.beta
 
-        self.u0, self.s0, self.alpha_ = 0, 0, 0
+
+        self.alpha_ = 0
         self.u0_, self.s0_ = mRNA(self.t_, self.u0, self.s0, self.alpha, self.beta, self.gamma)
         self.pars = np.array([self.alpha, self.beta, self.gamma, self.t_, self.scaling])[:, None]
 
@@ -443,7 +449,7 @@ class BaseDynamics:
 
     def get_reads(self, scaling=None, weighted=False):
         scaling = self.scaling if scaling is None else scaling
-        u, s = self.u / scaling, self.s
+        u, s = self.u / scaling + self.u0, self.s + self.s0
         if weighted:
             u, s = u[self.weights], s[self.weights]
         return u, s
