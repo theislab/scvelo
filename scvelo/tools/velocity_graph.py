@@ -32,10 +32,16 @@ class VelocityGraph:
 
         subset = np.array(adata.var[vkey + '_genes'].values, dtype=bool) \
             if vkey + '_genes' in adata.var.keys() else np.ones(adata.n_vars, bool)
+
         xkey = xkey if xkey in adata.layers.keys() else 'spliced'
 
         X = adata.layers[xkey].A[:, subset] if issparse(adata.layers[xkey]) else adata.layers[xkey][:, subset]
         V = adata.layers[vkey].A[:, subset] if issparse(adata.layers[vkey]) else adata.layers[vkey][:, subset]
+
+        nans = np.isnan(np.sum(V, axis=0))
+        if np.any(nans):
+            X = X[:, ~nans]
+            V = V[:, ~nans]
 
         if approx is True and X.shape[1] > 100:
             X_pca, PCs, _, _ = pca(X,  n_comps=30, svd_solver='arpack', return_info=True)
@@ -48,7 +54,7 @@ class VelocityGraph:
 
         self.sqrt_transform = sqrt_transform
         if sqrt_transform: self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
-        self.V -= self.V.mean(1)[:, None]
+        self.V -= np.nanmean(self.V, axis=1)[:, None]
 
         self.n_recurse_neighbors = 1 if n_neighbors is not None \
             else 2 if n_recurse_neighbors is None else n_recurse_neighbors

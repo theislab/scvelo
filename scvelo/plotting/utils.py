@@ -242,7 +242,7 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
                     save = save.replace(try_ext, '')
                     break
         # append it
-        writekey = 'scvelo_' + (writekey + '_' if writekey is not None and len(writekey) > 0 else '') + save
+        writekey = (writekey + '_' if writekey is not None and len(writekey) > 0 else '') + save
         save = True
     save = settings.autosave if save is None else save
     show = settings.autoshow if show is None else show
@@ -261,7 +261,7 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
                 dpi = rcParams['savefig.dpi']
         if not os.path.exists(settings.figdir): os.makedirs(settings.figdir)
         if ext is None: ext = settings.file_format_figs
-        filename = settings.figdir + f'{writekey}{settings.plot_suffix}.{ext}'
+        filename = settings.figdir + f'{settings.plot_prefix}{writekey}{settings.plot_suffix}.{ext}'
         logg.msg('saving figure to file', filename, v=1)
         pl.savefig(filename, dpi=dpi, bbox_inches='tight')
 
@@ -297,7 +297,7 @@ def adjust_palette(palette, length):
         return palette
 
 
-def rgba_custom_colormap(colors=['royalblue', 'white', 'forestgreen'], alpha=None, N=256):
+def rgb_custom_colormap(colors=['royalblue', 'white', 'forestgreen'], alpha=None, N=256):
     """Creates a custom colormap with the given colors. Colors can be given as names or as rgb values.
 
     Arguments

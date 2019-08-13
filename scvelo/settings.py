@@ -4,6 +4,9 @@
 # set global verbosity level to show errors(0), warnings(1), info(2) and hints(3)
 verbosity = 3
 
+plot_prefix = 'scvelo_'
+"""Global prefix that is appended to figure filenames.
+"""
 
 plot_suffix = ''
 """Global suffix that is appended to figure filenames.
