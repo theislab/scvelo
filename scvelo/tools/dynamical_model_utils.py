@@ -428,9 +428,8 @@ class BaseDynamics:
         self.t_ = adata.var['fit_t_'][idx]
         self.steady_state_ratio = self.gamma / self.beta
 
-
         self.alpha_ = 0
-        self.u0_, self.s0_ = mRNA(self.t_, self.u0, self.s0, self.alpha, self.beta, self.gamma)
+        self.u0_, self.s0_ = mRNA(self.t_, 0, 0, self.alpha, self.beta, self.gamma)
         self.pars = np.array([self.alpha, self.beta, self.gamma, self.t_, self.scaling])[:, None]
 
         t = adata.obs['shared_time'] if 'shared_time' in adata.obs.keys() else adata.layers['fit_t'][:, idx]
@@ -449,7 +448,7 @@ class BaseDynamics:
 
     def get_reads(self, scaling=None, weighted=False):
         scaling = self.scaling if scaling is None else scaling
-        u, s = self.u / scaling + self.u0, self.s + self.s0
+        u, s = self.u / scaling, self.s
         if weighted:
             u, s = u[self.weights], s[self.weights]
         return u, s
