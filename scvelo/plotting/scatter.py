@@ -16,8 +16,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             colorbar=True, palette=None, size=None, alpha=None, linewidth=None, perc=None, sort_order=True, groups=None,
             components=None, projection='2d', legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
-            xlim=None, ylim=None, show_density=None, show_assignments=None, show_linear_fit=None, dpi=None, frameon=None,
-            show=True, save=None, ax=None, zorder=None, ncols=None, **kwargs):
+            xlim=None, ylim=None, show_density=None, show_assignments=None, show_linear_fit=None, n_convolve=None,
+            dpi=None, frameon=None, show=True, save=None, ax=None, zorder=None, ncols=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -52,14 +52,16 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         for i, gs in enumerate(
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):
             if i < len(multikey):
-                ax.append(scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel, vkey=vkey,
-                          color_map=color_map, colorbar=colorbar, perc=perc, frameon=frameon, zorder=zorder,
-                          legend_loc=legend_loc, fontsize=fontsize, xlim=xlim, ylim=ylim, ax=pl.subplot(gs),
-                          show_density=show_density, show_assignments=show_assignments, show_linear_fit=show_linear_fit,
-                          color=colors[i] if len(colors) > 1 else color,
-                          layer=layers[i] if len(layers) > 1 else layer,
-                          basis=bases[i] if len(bases) > 1 else basis,
-                          title=title[i] if isinstance(title, (list, tuple)) else title, **scatter_kwargs, **kwargs))
+                ax.append(scatter(adata, x=x, y=y, size=size, linewidth=linewidth, xlabel=xlabel, ylabel=ylabel,
+                                  vkey=vkey, color_map=color_map, colorbar=colorbar, perc=perc, frameon=frameon,
+                                  zorder=zorder, legend_loc=legend_loc, fontsize=fontsize, xlim=xlim, ylim=ylim,
+                                  show_density=show_density, show_assignments=show_assignments,
+                                  show_linear_fit=show_linear_fit, n_convolve=n_convolve, ax=pl.subplot(gs),
+                                  color=colors[i] if len(colors) > 1 else color,
+                                  layer=layers[i] if len(layers) > 1 else layer,
+                                  basis=bases[i] if len(bases) > 1 else basis,
+                                  title=title[i] if isinstance(title, (list, tuple)) else title,
+                                  **scatter_kwargs, **kwargs))
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
 
@@ -103,13 +105,21 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             elif isinstance(x, str) and isinstance(y, str):
                 xlabel = x if xlabel is None else xlabel
                 ylabel = y if ylabel is None else ylabel
+                layer = 'Ms' if layer is None and 'Ms' in adata.layers.keys() else layer
                 if x in adata.var_names and y in adata.var_names:
                     x = adata[:, x].layers[layer] if layer in adata.layers.keys() else adata[:, x].X
                     y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
+                    x, y = make_dense(x).flatten(), make_dense(y).flatten()
                 elif x in adata.var.keys() and y in adata.var.keys():
                     x, y = adata.var[x], adata.var[y]
                 elif x in adata.obs.keys() and y in adata.obs.keys():
                     x, y = adata.obs[x], adata.obs[y]
+                elif x in adata.obs.keys() and y in adata.var_names:
+                    x, y = adata.obs[x], adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
+                    y = make_dense(y).flatten()
+                    idx_sort = np.argsort(x)
+                    if n_convolve is not None:
+                        y[idx_sort] = np.convolve(y[idx_sort], np.ones(n_convolve) / n_convolve, mode='same')
             else:
                 x = x.A1 if isinstance(x, np.matrix) else x.ravel()
                 y = y.A1 if isinstance(y, np.matrix) else y.ravel()

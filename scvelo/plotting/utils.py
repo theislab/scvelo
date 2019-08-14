@@ -14,7 +14,8 @@ from cycler import Cycler, cycler
 
 
 def make_dense(X):
-    return X.A if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) else X
+    XA = X.A if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) else X
+    return np.array(XA)
 
 
 def strings_to_categoricals(adata):
@@ -379,20 +380,27 @@ def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3):
         pl.xlim(-offset)
 
 
-def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, kde=False, xlabel=None, ylabel=None, xlim=None, ylim=None,
-         cutoff=None, xscale=None, yscale=None, fontsize=None, legend_fontsize=None, figsize=None, ax=None, dpi=None, show=True):
+def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=True, kde=False, bw_method=None, xlabel=None, ylabel=None,
+         xlim=None, ylim=None, cutoff=None, xscale=None, yscale=None, fontsize=None, legend_fontsize=None, figsize=None,
+         norm=None, perc=None, ax=None, dpi=None, show=True):
     fig = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
     ax = pl.subplot()
-    update_axes(ax, xlim, ylim, fontsize, frameon=True)
 
     arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
+    if norm is None: norm = kde
 
     palette = default_palette(None).by_key()['color'][::-1]
     colors = palette if colors is None or len(colors) < len(arrays) else colors
 
     masked_arrays = np.ma.masked_invalid(arrays)
     bmin, bmax = masked_arrays.min(), masked_arrays.max()
+    if xlim is not None:
+        bmin, bmax = max(bmin, xlim[0]), min(bmax, xlim[1])
+    elif perc is not None:
+        if np.size(perc) < 2: perc = [perc, 100] if perc < 50 else [0, perc]
+        bmin, bmax = np.nanpercentile(arrays, perc)
     bins = np.arange(bmin, bmax + (bmax - bmin) / bins, (bmax - bmin) / bins)
+
     if xscale is 'log':
         bins = bins[bins > 0]
         bins = np.logspace(np.log10(bins[0]), np.log10(bins[-1]), len(bins))
@@ -401,13 +409,19 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, kde=False, xlabel=
         bins = bins[(bins > cutoff[0]) & (bins < cutoff[1])] if isinstance(cutoff, list) else bins[bins < cutoff]
 
     for i, x in enumerate(arrays):
+        x_vals = np.array(x[np.isfinite(x)])
         if kde:
             from scipy.stats import gaussian_kde
-            kde_bins = gaussian_kde(x)(bins)
-            pl.plot(bins, kde_bins, color='grey')
-            pl.fill_between(bins, 0, kde_bins, alpha=.4, color='grey')
-        else:
-            pl.hist(x[np.isfinite(x)], bins=bins, alpha=alpha, color=colors[i],
+            kde_bins = gaussian_kde(x_vals, bw_method=bw_method)(bins)
+            if not norm:
+                kde_bins *= (bins[1] - bins[0]) * len(x_vals)
+            ax.plot(bins, kde_bins, color='grey')
+            ax.fill_between(bins, 0, kde_bins, alpha=.4, color='grey')
+            ylim = np.min(kde_bins) if ylim is None else ylim
+        if hist:
+            if norm:
+                x_vals /= (bins[1] - bins[0]) * len(x_vals)
+            ax.hist(x_vals, bins=bins, alpha=alpha, color=colors[i],
                     label=labels[i] if labels is not None else None)
 
     set_label(xlabel if xlabel is not None else '', ylabel if xlabel is not None else '', fontsize=fontsize)
@@ -417,6 +431,8 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, kde=False, xlabel=
 
     if xscale is not None: pl.xscale(xscale)
     if yscale is not None: pl.yscale(yscale)
+
+    update_axes(ax, xlim, ylim, fontsize, frameon=True)
 
     if not show:
         return ax
