@@ -382,9 +382,9 @@ def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3):
 
 def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=True, kde=False, bw_method=None, xlabel=None, ylabel=None,
          xlim=None, ylim=None, cutoff=None, xscale=None, yscale=None, fontsize=None, legend_fontsize=None, figsize=None,
-         norm=None, perc=None, ax=None, dpi=None, show=True):
-    fig = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
-    ax = pl.subplot()
+         norm=None, perc=None, axvline=None, axhline=None, ax=None, dpi=None, show=True):
+    if ax is None:
+        fig, ax = pl.subplots(figsize=figsize, dpi=dpi)
 
     arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
     if norm is None: norm = kde
@@ -415,8 +415,8 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=True, kde=Fal
             kde_bins = gaussian_kde(x_vals, bw_method=bw_method)(bins)
             if not norm:
                 kde_bins *= (bins[1] - bins[0]) * len(x_vals)
-            ax.plot(bins, kde_bins, color='grey')
-            ax.fill_between(bins, 0, kde_bins, alpha=.4, color='grey')
+            ax.plot(bins, kde_bins, color=colors[i])
+            ax.fill_between(bins, 0, kde_bins, alpha=.4, color=colors[i])
             ylim = np.min(kde_bins) if ylim is None else ylim
         if hist:
             if norm:
@@ -428,6 +428,9 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=True, kde=Fal
 
     if labels is not None:
         pl.legend(fontsize=legend_fontsize)
+
+    if axvline: ax.axvline(axvline)
+    if axhline: ax.axhline(axhline)
 
     if xscale is not None: pl.xscale(xscale)
     if yscale is not None: pl.yscale(yscale)

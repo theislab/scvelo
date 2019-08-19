@@ -2,15 +2,38 @@ import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 from matplotlib.colors import ColorConverter
+import pandas as pd
 from pandas import unique, isnull
 from scipy.sparse import issparse
-from .utils import is_categorical, interpret_colorkey, default_basis, default_size, get_components, savefig_or_show, \
-    default_color, make_unique_list, set_colorbar, default_color_map, set_label, set_title
+from .utils import is_categorical, interpret_colorkey, savefig_or_show
 
 
-def heatmap(adata, var_names, groups=None, groupby=None, annotations=None, use_raw=False, layers=['X'], color_map=None,
-            color_map_anno=None, colorbar=True, row_width=None, xlabel=None, title=None, figsize=None, dpi=None,
-            show=True, save=None, ax=None, **kwargs):
+def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', n_moving_average=10, sort=True):
+    import seaborn as sns
+    var_names = [name for name in var_names if name in adata.var_names]
+
+    time = adata.obs[tkey].values
+    time = time[np.isfinite(time)]
+
+    df = pd.DataFrame(adata[:, var_names].layers[xkey][np.argsort(time)], columns=var_names)
+
+    if n_moving_average is not None:
+        weights = np.ones(n_moving_average) / n_moving_average
+        for i, gene in enumerate(var_names):
+            df[gene] = np.convolve(df[gene].values, weights, mode='same')
+
+    if sort:
+        max_sort = np.argsort(np.argmax(df.values, axis=0))
+        df = pd.DataFrame(df.values[:, max_sort], columns=df.columns[max_sort])
+
+    sns.clustermap(df.T, col_cluster=False, row_cluster=False, xticklabels=False,
+                   cmap='viridis', standard_scale=0, figsize=(10, 5))
+    pl.show()
+
+
+def heatmap_deprecated(adata, var_names, groups=None, groupby=None, annotations=None, use_raw=False, layers=['X'],
+                       color_map=None, color_map_anno=None, colorbar=True, row_width=None, xlabel=None, title=None,
+                       figsize=None, dpi=None, show=True, save=None, ax=None, **kwargs):
 
     """\
     Plot pseudotimeseries for genes as heatmap.
