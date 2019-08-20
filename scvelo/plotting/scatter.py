@@ -143,6 +143,12 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                         y = make_dense(y).flatten()
                         if n_convolve is not None:
                             y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
+                    elif x in adata.layers.keys() and y in adata.var_names:
+                        x = make_dense(adata[:, y].layers[x]).flatten()
+                        y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
+                        y = make_dense(y).flatten()
+                        if n_convolve is not None:
+                            y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
                 else:
                     x = x.A1 if isinstance(x, np.matrix) else x.ravel()
                     y = y.A1 if isinstance(y, np.matrix) else y.ravel()

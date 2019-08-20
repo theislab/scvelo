@@ -380,14 +380,15 @@ def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3):
         pl.xlim(-offset)
 
 
-def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=True, kde=False, bw_method=None, xlabel=None, ylabel=None,
+def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=None, bw_method=None, xlabel=None, ylabel=None,
          xlim=None, ylim=None, cutoff=None, xscale=None, yscale=None, fontsize=None, legend_fontsize=None, figsize=None,
-         norm=None, perc=None, axvline=None, axhline=None, ax=None, dpi=None, show=True):
+         norm=None, perc=None, exclude_zeros=None, axvline=None, axhline=None, ax=None, dpi=None, show=True):
     if ax is None:
         fig, ax = pl.subplots(figsize=figsize, dpi=dpi)
 
     arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
     if norm is None: norm = kde
+    if hist is None: hist = not kde
 
     palette = default_palette(None).by_key()['color'][::-1]
     colors = palette if colors is None or len(colors) < len(arrays) else colors
@@ -410,6 +411,7 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=True, kde=Fal
 
     for i, x in enumerate(arrays):
         x_vals = np.array(x[np.isfinite(x)])
+        if exclude_zeros: x_vals = np.array(x_vals[x_vals != 0])
         if kde:
             from scipy.stats import gaussian_kde
             kde_bins = gaussian_kde(x_vals, bw_method=bw_method)(bins)
