@@ -38,7 +38,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     scatter_kwargs = {"use_raw": use_raw, "sort_order": sort_order, "alpha": alpha, "components": components,
                       "projection": projection, "groups": groups, "palette": palette, "legend_fontsize": legend_fontsize,
                       "legend_fontweight": legend_fontweight, "right_margin": right_margin, "left_margin": left_margin,
-                      "show": False, "save": None}
+                      "show": False, "save": False}
 
     ext_kwargs = {'size': size, 'linewidth': linewidth, 'xlabel': xlabel, 'vkey': vkey,
                   'color_map': color_map, 'colorbar': colorbar, 'perc': perc, 'frameon': frameon, 'zorder': zorder,

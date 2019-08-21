@@ -133,7 +133,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
                       "legend_fontsize": legend_fontsize, "legend_fontweight": legend_fontweight, "palette": palette,
                       "color_map": color_map, "frameon": frameon, "xlabel": xlabel, "ylabel": ylabel,
                       "right_margin": right_margin, "left_margin": left_margin, "colorbar": colorbar, "dpi": dpi,
-                      "fontsize": fontsize, "show": False, "save": None}
+                      "fontsize": fontsize, "show": False, "save": False}
 
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else vkeys if len(vkeys) > 1 else None
     if multikey is not None:
