@@ -56,8 +56,8 @@ def dentategyrus(adjusted=True):
         url_louvain = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_clusters.npy'
         url_umap = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/DentateGyrus/DG_umap.npy'
 
-        adata.obs['clusters'] = load('./data/DentateGyrus/DG_clusters.npy', url_louvain)
-        adata.obsm['X_umap'] = load('./data/DentateGyrus/DG_umap.npy', url_umap)
+        adata.obs['clusters'] = load('./data/DentateGyrus/DG_clusters.npy', url_louvain, allow_pickle=True)
+        adata.obsm['X_umap'] = load('./data/DentateGyrus/DG_umap.npy', url_umap, allow_pickle=True)
 
         adata.obs['clusters'] = pd.Categorical(adata.obs['clusters'])
 
@@ -162,9 +162,10 @@ def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_
 
     noise_level = cycle(noise_level, len(switches) if n_vars is None else n_vars)
 
-    n_vars = max(len(switches), len(noise_level))
+    n_vars = max(len(switches), len(noise_level)) if n_vars is None else n_vars
     U = np.zeros(shape=(len(t), n_vars))
     S = np.zeros(shape=(len(t), n_vars))
+
     for i in range(n_vars):
         alpha_i = alpha[i] if isinstance(alpha, (tuple, list, np.ndarray)) else alpha
         beta_i = beta[i] if isinstance(beta, (tuple, list, np.ndarray)) else beta

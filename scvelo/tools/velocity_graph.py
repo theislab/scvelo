@@ -69,7 +69,7 @@ class VelocityGraph:
             if isinstance(approx, str) and approx in adata.obsm.keys():
                 from sklearn.neighbors import NearestNeighbors
                 neighs = NearestNeighbors(n_neighbors=n_neighbors + 1)
-                neighs.fit(adata.obsm[approx][:, :2])
+                neighs.fit(adata.obsm[approx])
                 self.indices = neighs.kneighbors_graph(mode='connectivity').indices.reshape((-1, n_neighbors + 1))
             else:
                 from .. import Neighbors
@@ -161,6 +161,11 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
     vgraph = VelocityGraph(adata, vkey=vkey, xkey=xkey, tkey=tkey, basis=basis, n_neighbors=n_neighbors, approx=approx,
                            n_recurse_neighbors=n_recurse_neighbors, random_neighbors_at_max=random_neighbors_at_max,
                            sqrt_transform=sqrt_transform, report=True)
+
+    if isinstance(basis, str):
+        logg.warn(
+            'The velocity graph is computed on ' + basis + 'embedding coordinates. Consider computing \n'
+            '         the graph in an unbiased manner on full expression space by not specifying basis.\n')
 
     logg.info('computing velocity graph', r=True)
     vgraph.compute_cosines()

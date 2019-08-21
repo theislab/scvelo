@@ -102,8 +102,8 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
             dx = adata[:, basis].layers[vkey]
             dy = adata[:, basis].layers[vkey + '_u'] * adata[:, basis].var['fit_scaling'].values \
                 if vkey + '_u' in adata.layers.keys() else np.zeros(adata.n_obs)
-            X = np.stack([x, y]).T
-            V = np.stack([dx, dy]).T
+            X = np.stack([np.ravel(x), np.ravel(y)]).T
+            V = np.stack([np.ravel(dx), np.ravel(dy)]).T
             quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "edgecolors": 'k'}
         else:
             x = None if X is None else X[:, 0]
