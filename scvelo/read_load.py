@@ -128,11 +128,11 @@ def merge(adata, ldata, copy=True):
         common_obs = adata.obs_names.intersection(ldata.obs_names)
 
     if copy:
-        _adata = adata[common_obs].copy() if adata.shape[1] >= ldata.shape[1] else ldata[common_obs].copy()
-        _ldata = ldata[common_obs].copy() if adata.shape[1] >= ldata.shape[1] else adata[common_obs].copy()
+        _adata = adata[common_obs].copy()
+        _ldata = ldata[common_obs].copy()
     else:
         adata._inplace_subset_obs(common_obs)
-        _adata, _ldata = adata, ldata[common_obs]
+        _adata, _ldata = adata, ldata[common_obs].copy()
 
     _adata.var_names_make_unique()
     _ldata.var_names_make_unique()
