@@ -13,7 +13,7 @@ import numpy as np
 
 @doc_params(scatter=doc_scatter)
 def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_size=None, arrow_length=None, scale=None,
-                       X=None, V=None, color=None, use_raw=None, layer=None, color_map=None, colorbar=True,
+                       X=None, V=None, recompute=None, color=None, use_raw=None, layer=None, color_map=None, colorbar=True,
                        palette=None, size=None, alpha=.2, perc=None, sort_order=True, groups=None, components=None,
                        projection='2d', legend_loc='none', legend_fontsize=None, legend_fontweight=None,
                        right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None,
@@ -51,7 +51,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
 
     for key in vkeys:
         for basis in bases:
-            if key + '_' + basis not in adata.obsm_keys() and basis not in adata.var_names and V is None:
+            if recompute or (key + '_' + basis not in adata.obsm_keys() and basis not in adata.var_names and V is None):
                 compute_velocity_embedding(adata, basis=basis, vkey=key)
 
     scatter_kwargs = {"perc": perc, "use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,

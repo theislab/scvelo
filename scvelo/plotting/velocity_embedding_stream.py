@@ -12,7 +12,7 @@ import numpy as np
 
 @doc_params(scatter=doc_scatter)
 def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, smooth=None, min_mass=None,
-                              arrow_color=None, linewidth=None, n_neighbors=None, color=None, use_raw=None,
+                              arrow_color=None, linewidth=None, n_neighbors=None, recompute=None, color=None, use_raw=None,
                               layer=None, color_map=None, colorbar=True, palette=None, size=None, alpha=.1, perc=None,
                               X=None, V=None, X_grid=None, V_grid=None, sort_order=True, groups=None, components=None,
                               legend_loc='on data', legend_fontsize=None, legend_fontweight=None, right_margin=None,
@@ -53,7 +53,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
     vkey = [key for key in adata.layers.keys() if 'velocity' in key and '_u' not in key] if vkey is 'all' else vkey
     colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
     for key in vkeys:
-        if key + '_' + basis not in adata.obsm_keys() and V is None:
+        if recompute or (key + '_' + basis not in adata.obsm_keys() and V is None):
             velocity_embedding(adata, basis=basis, vkey=key)
     color, layer, vkey = colors[0], layers[0], vkeys[0]
     color = default_color(adata) if color is None else color
