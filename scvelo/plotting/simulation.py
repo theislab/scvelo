@@ -57,36 +57,35 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
 
     ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
     ut *= scaling
-
     vt = ut * beta - st * gamma
-    return alpha, ut + u0_offset, st + s0_offset, vt
+    ut, st = ut + u0_offset, st + s0_offset
+    return alpha, ut, st, vt
 
 
 def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, show_assignments=None):
     color = 'grey' if key is 'true' else 'purple'
     linewidth = .5 * linewidth if key is 'true' else linewidth
-
-    if show_assignments is not 'only':
-        _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=True, t=show_assignments)
-        pl.plot(st, ut, color=color, linewidth=linewidth)
+    label = 'learned dynamics' if key is 'fit' else 'true dynamics'
 
     if key is not 'true':
         _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=False, sort=False, t=show_assignments)
         if show_assignments is not 'only':
             pl.scatter(st, ut, color=color, s=1)
-        if show_assignments:
+        if show_assignments is not None and show_assignments is not False:
             skey, ukey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
             s, u = make_dense(adata[:, basis].layers[skey]).flatten(), make_dense(adata[:, basis].layers[ukey]).flatten()
             pl.plot(np.array([s, st]), np.array([u, ut]), color='grey', linewidth=.1 * linewidth)
 
-    idx = np.where(adata.var_names == basis)[0][0]
-    beta, gamma = adata.var[key + '_beta'][idx], adata.var[key + '_gamma'][idx]
-    scaling = adata.var[key + '_scaling'][idx] if key + '_scaling' in adata.var.keys() else 1
-
-    xnew = np.linspace(0, st.max() - st.min())
-    label = 'learned dynamics' if key is 'fit' else 'true dynamics'
     if show_assignments is not 'only':
-        pl.plot(xnew + st.min(), (gamma / beta * scaling * xnew) + ut.min(), color=color, linestyle='--', linewidth=linewidth, label=label)
+        _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=True, t=show_assignments)
+        pl.plot(st, ut, color=color, linewidth=linewidth)
+
+        idx = np.where(adata.var_names == basis)[0][0]
+        beta, gamma = adata.var[key + '_beta'][idx], adata.var[key + '_gamma'][idx]
+        scaling = adata.var[key + '_scaling'][idx] if key + '_scaling' in adata.var.keys() else 1
+        xnew = np.linspace(np.min(st), np.max(st))
+        ynew = gamma / beta * scaling * (xnew - np.min(xnew)) + np.min(ut)
+        pl.plot(xnew, ynew, color=color, linestyle='--', linewidth=linewidth, label=label)
     return label
 
 

@@ -26,8 +26,9 @@ def inv(x):
     return x_inv
 
 
-def normalize(X, axis=0):
+def normalize(X, axis=0, min_confidence=None):
     X_sum = np.sum(X, axis=axis)
+    if min_confidence: X_sum += min_confidence
     X_sum += X_sum == 0
     return X / X_sum
 
@@ -68,7 +69,7 @@ def root_time(t, root=0):
     return t_rooted, t_switch
 
 
-def compute_shared_time(t, perc=None):
+def compute_shared_time(t, perc=None, norm=True):
     tx_list = np.percentile(t, [15, 20, 25, 30, 35] if perc is None else perc, axis=1)
     tx_max = np.max(tx_list, axis=1)
     tx_max += tx_max == 0
@@ -82,7 +83,8 @@ def compute_shared_time(t, perc=None):
     idx_best = np.argsort(mse)[:2]
 
     t_shared = tx_list[idx_best].sum(0)
-    t_shared /= t_shared.max()
+    if norm:
+        t_shared /= t_shared.max()
 
     return t_shared
 
@@ -109,20 +111,22 @@ def mRNA(tau, u0, s0, alpha, beta, gamma):
 
 
 def adjust_increments(tau, tau_=None):
-    tau_new = tau * 1.
+    tau_new = np.array(tau)
     tau_ord = np.sort(tau_new)
     dtau = np.diff(tau_ord, prepend=0)
 
-    m_dtau = np.max([np.mean(dtau), np.max(tau) / len(tau), 0])
-    ub = m_dtau + 3 * np.sqrt(m_dtau)  # Poisson with std = sqrt(mean) -> ~99.9% confidence
-
-    if tau_ is not None:
-        tau_new_ = tau_
+    if tau_ is None:
+        #m_dtau = np.max([np.mean(dtau), np.max(tau) / len(tau), 0])
+        #ub = m_dtau + 3 * np.sqrt(m_dtau)  # Poisson with std = sqrt(mean) -> ~99.9% confidence
+        ub = 3 * np.percentile(dtau, 99.5, axis=0)
+    else:
+        tau_new_ = np.array(tau_)
         tau_ord_ = np.sort(tau_new_)
         dtau_ = np.diff(tau_ord_, prepend=0)
 
-        m_dtau = np.min([m_dtau, np.max([np.mean(dtau_), np.max(tau_) / len(tau_), 0])])
-        ub = m_dtau + 3 * np.sqrt(m_dtau)
+        #m_dtau = np.min([m_dtau, np.max([np.mean(dtau_), np.max(tau_) / len(tau_), 0])])
+        #ub = m_dtau + 3 * np.sqrt(m_dtau)
+        ub = 3 * np.percentile(np.hstack([dtau, dtau_]), 99.5, axis=0)
 
         idx = np.where(dtau_ > ub)[0]
         for i in idx:
@@ -187,7 +191,8 @@ def assign_tau(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, assignment
 
 def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s0_=None, tau=None, tau_=None,
                        std_u=1, std_s=1, normalized=False, mode='distance', assignment_mode=None, var_scale=False,
-                       fit_steady_states=True, connectivities=None, constraint_time_increments=True):
+                       kernel_width=None, fit_steady_states=True, connectivities=None, constraint_time_increments=True,
+                       min_confidence=None):
     """Estimates the divergence (avaiable metrics: distance, mse, likelihood, loglikelihood) of ODE to observations
 
     Arguments
@@ -211,7 +216,11 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         distu, distu_ = (u - ut) / std_u, (u - ut_) / std_u
         dists, dists_ = (s - st) / std_s, (s - st_) / std_s
 
-        o = np.argmin(np.array([distu_ ** 2 + dists_ ** 2, distu ** 2 + dists ** 2]), axis=0)
+        res = np.array([distu_ ** 2 + dists_ ** 2, distu ** 2 + dists ** 2])
+        if connectivities is not None and connectivities is not False:
+            res = np.array([connectivities.dot(r) for r in res]) if res.ndim > 2 else connectivities.dot(res.T).T
+
+        o = np.argmin(res, axis=0)
 
         off, on = o == 0, o == 1
         if np.any(on) and np.any(off): tau[on], tau_[off] = adjust_increments(tau[on], tau_[off])
@@ -234,47 +243,39 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
     if fit_steady_states:
         distx_steady = ((u - alpha / beta) / std_u) ** 2 + ((s - alpha / gamma) / std_s) ** 2
         distx_steady_ = (u / std_u) ** 2 + (s / std_s) ** 2
+
         res = np.array([distx_, distx, distx_steady_, distx_steady])
+
+    if connectivities is not None and connectivities is not False:
+        res = np.array([connectivities.dot(r) for r in res]) if res.ndim > 2 else connectivities.dot(res.T).T
 
     # compute variances
     if var_scale:
-        if isinstance(var_scale, bool):
-            o = np.argmin([distx_, distx], axis=0)
-            dist = distx * o + distx_ * (1 - o)
-            sign = np.sign(dists * o + dists_ * (1-o))
-            varx = np.mean(dist, axis=0) - np.mean(sign * np.sqrt(dist), axis=0) ** 2
-        else:
-            varx = var_scale
+        o = np.argmin([distx_, distx], axis=0)
+        dist = distx * o + distx_ * (1 - o)
+        sign = np.sign(dists * o + dists_ * (1 - o))
+        varx = np.mean(dist, axis=0) - np.mean(sign * np.sqrt(dist), axis=0) ** 2
+        if kernel_width is not None: varx *= kernel_width ** 2
         res /= varx
+    elif kernel_width is not None:
+        res /= kernel_width ** 2
 
     # ToDo: adjust distx, distx_ to match shared time
-
-    if connectivities is not None and connectivities is not False:
-        if res.ndim > 2:
-            res = np.array([connectivities.dot(r) for r in res])
-        else:
-            res = connectivities.dot(res.T).T
 
     if mode is 'tau':
         res = [tau, tau_]
 
     elif mode is 'likelihood':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        if normalized: res = normalize(res)
+        if normalized: res = normalize(res, min_confidence=min_confidence)
 
     elif mode is 'nll':
         res = np.log(2 * np.pi * np.sqrt(varx)) + .5 * res
-        if normalized: res = normalize(res)
+        if normalized: res = normalize(res, min_confidence=min_confidence)
 
     elif mode is 'soft_eval':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-
-        # ToDo: adjust steady_state incorporation
-        if False and fit_steady_states:
-            steady = res[2] + res[3]  # np.max([res[2], res[3]], axis=0)
-            res = np.clip(res - steady, 0, None)
-        if normalized:
-            res = normalize(res)
+        if normalized: res = normalize(res, min_confidence=min_confidence)
 
         o_, o = res[0], res[1]
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
@@ -286,7 +287,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
     elif mode is 'soft_state':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        if normalized: res = normalize(res)
+        if normalized: res = normalize(res, min_confidence=min_confidence)
         res = res[1] - res[0]
 
     elif mode is 'hard_state':
@@ -294,16 +295,11 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
     elif mode is 'steady_state':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        if normalized: res = normalize(res)
+        if normalized: res = normalize(res, min_confidence=min_confidence)
         res = res[2] + res[3]
 
     elif mode is 'assign_timepoints':
         o = np.argmin(res, axis=0)
-
-        # ToDo: adjust distx_steady to adjust likelihood
-        if False and fit_steady_states:
-            idx_steady = (distx_steady < 1)
-            tau_[idx_steady], o[idx_steady] = 0, 0
 
         tau_ *= (o == 0)
         tau  *= (o == 1)
@@ -371,7 +367,8 @@ def curve_dists(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, std_u=1, 
 
 class BaseDynamics:
     def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, perc=99, max_iter=10, fit_time=True,
-                 fit_scaling=True, fit_steady_states=True, fit_connected_states=True, high_pars_resolution=False):
+                 fit_scaling=True, fit_steady_states=True, fit_connected_states=True, fit_basal_transcription=None,
+                 high_pars_resolution=False):
         self.s, self.u, self.use_raw = None, None, None
 
         _layers = adata[:, gene].layers
@@ -384,19 +381,24 @@ class BaseDynamics:
             s = _layers['spliced'] if self.use_raw else _layers['Ms']
         self.s, self.u = make_dense(s), make_dense(u)
 
-        # Account for basal transcription
-        self.u0, self.s0 = np.min(u), np.min(s)
-        self.u -= self.u0
-        self.s -= self.s0
+        # Basal transcription
+        if fit_basal_transcription:
+            self.u0, self.s0 = np.min(u), np.min(s)
+            self.u -= self.u0
+            self.s -= self.s0
+        else:
+            self.u0, self.s0 = 0, 0
 
         self.alpha, self.beta, self.gamma, self.scaling, self.t_, self.alpha_ = None, None, None, None, None, None
         self.u0_, self.s0_, self.weights, self.pars = None, None, None, None
         self.t, self.tau, self.o, self.tau_, self.likelihood, self.loss = None, None, None, None, None, None
 
         self.max_iter = max_iter
-        self.simplex_kwargs = {'method': 'Nelder-Mead', 'options': {'maxiter': self.max_iter}}
+        # partition to total of 5 fitting procedures (t_ and alpha, scaling, rates, t_, all together)
+        self.simplex_kwargs = {'method': 'Nelder-Mead', 'options': {'maxiter': int(self.max_iter / 5)}}
 
         self.perc = perc
+        self.recoverable = True
         self.initialize_weights()
 
         self.refit_time = fit_time
@@ -411,13 +413,23 @@ class BaseDynamics:
         self.high_pars_resolution = high_pars_resolution
 
     def initialize_weights(self):
-        nonzero = np.ravel(self.s > 0) & np.ravel(self.u > 0)
-        s_filter = np.ravel(self.s < np.percentile(self.s[nonzero], self.perc))
-        u_filter = np.ravel(self.u < np.percentile(self.u[nonzero], self.perc))
+        nonzero_s = np.ravel(self.s > 0)
+        nonzero_u = np.ravel(self.u > 0)
+        filter_by_s = np.sum(nonzero_s) > .1 * len(self.s)
+        filter_by_u = np.sum(nonzero_u) > .1 * len(self.u)
 
-        self.weights = w = s_filter & u_filter & nonzero
-        self.std_u = np.std(self.u[w])
-        self.std_s = np.std(self.s[w])
+        nonzero = np.ones(len(self.s), dtype=bool)
+        if filter_by_s: nonzero &= nonzero_s
+        if filter_by_u: nonzero &= nonzero_u
+
+        weights = np.array(nonzero, dtype=bool)
+        if filter_by_s: weights &= np.ravel(self.s < np.percentile(self.s[nonzero], self.perc))
+        if filter_by_u: weights &= np.ravel(self.u < np.percentile(self.u[nonzero], self.perc))
+
+        self.weights = weights
+        self.std_u = np.std(self.u[weights])
+        self.std_s = np.std(self.s[weights])
+        self.recoverable = (np.sum(nonzero_s) > 0) & (np.sum(nonzero_u) > 0)
 
     def load_pars(self, adata, gene):
         idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
@@ -736,10 +748,10 @@ class BaseDynamics:
                     ax.set_ylabel('')
                     ax.set_yticks([])
 
-    def plot_state_likelihoods(self, num=100, dpi=None, figsize=None, color_map=None, color_map_steady=None,
-                               continuous=True, common_color_scale=True, var_scale=None, normalized=None,
-                               transitions=None, colorbar=False, alpha_=0.5, linewidths=3, padding_u=.1,
-                               padding_s=.1, fontsize=12, title=None, ax=None, **kwargs):
+    def plot_state_likelihoods(self, num=300, dpi=None, figsize=None, color_map=None, color_map_steady=None,
+                               continuous=True, common_color_scale=True, var_scale=None, kernel_width=None,
+                               normalized=None, transitions=None, colorbar=False, alpha_=0.5, linewidths=3,
+                               padding_u=.1, padding_s=.1, fontsize=12, title=None, ax=None, **kwargs):
         from ..plotting.utils import update_axes
         from ..plotting.utils import rgb_custom_colormap
         if color_map is None:
@@ -758,9 +770,9 @@ class BaseDynamics:
         grid_u = grid_u.flatten()
         grid_s = grid_s.flatten()
 
-        var_scale = self.get_variance() if var_scale is None else self.get_variance() * var_scale
+        if var_scale: var_scale = self.get_variance()
 
-        dkwargs = {'alpha': alpha, 'beta': beta, 'gamma': gamma, 'scaling': scaling, 't_': t_,
+        dkwargs = {'alpha': alpha, 'beta': beta, 'gamma': gamma, 'scaling': scaling, 't_': t_, 'kernel_width': kernel_width,
                    'std_u': self.std_u, 'std_s': self.std_s, 'var_scale': var_scale, 'normalized': normalized,
                    'fit_steady_states': True, 'constraint_time_increments': False, 'assignment_mode': 'projection'}
 
