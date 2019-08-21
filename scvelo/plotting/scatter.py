@@ -142,7 +142,28 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                         x, y = adata.obs[x], adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
                         y = make_dense(y).flatten()
                         if n_convolve is not None:
-                            y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
+                            from ..preprocessing.moments import get_connectivities
+                            from ..tools.velocity_graph import vals_to_csr
+                            from ..tools.utils import normalize
+                            from scipy.sparse import issparse, csr_matrix
+                            c = get_connectivities(adata, recurse_neighbors=True) != 0
+                            t_convolve = 100  # temporal window
+                            rows = []
+                            cols = []
+                            vals = []
+                            for i in range(len(y)):
+                                i_max = None if i + t_convolve >= len(y) else i + t_convolve
+                                i_min = np.max([0, i - t_convolve])
+
+                                t_window = np.argsort(x)[i_min: i_max]  # temporal neighbourhood
+
+                                rows.extend(np.ones(len(t_window), dtype=int) * np.argsort(x)[i])
+                                cols.extend(t_window)
+                                vals.extend(np.ones(len(t_window), dtype=int))
+                            t = vals_to_csr(vals, rows, cols, shape=(len(y), len(y)))
+                            ct = normalize(t.multiply(c))
+                            y = ct.dot(y)
+                            # y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
                     elif x in adata.layers.keys() and y in adata.var_names:
                         x = make_dense(adata[:, y].layers[x]).flatten()
                         y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
