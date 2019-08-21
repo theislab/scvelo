@@ -1,5 +1,6 @@
 from .. import settings
 from .. import logging as logg
+from ..tools.utils import strings_to_categoricals
 from . import palettes
 
 import os
@@ -14,22 +15,8 @@ from cycler import Cycler, cycler
 
 
 def make_dense(X):
-    XA = X.A if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) else X
+    XA = X.A if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) or isinstance(X, np.matrix) else X
     return np.array(XA)
-
-
-def strings_to_categoricals(adata):
-    """Transform string annotations to categoricals.
-    """
-    if not adata._isview:
-        from pandas.api.types import is_string_dtype
-        from pandas import Categorical
-        for df in [adata.obs, adata.var]:
-            string_cols = [key for key in df.columns if is_string_dtype(df[key])]
-            for key in string_cols:
-                c = df[key]
-                c = Categorical(c)
-                if len(c.categories) < len(c): df[key] = c
 
 
 def is_categorical(adata, c):
@@ -330,6 +317,29 @@ def rgb_custom_colormap(colors=['royalblue', 'white', 'forestgreen'], alpha=None
             vals[n * j:n * (j + 1), i] = np.linspace(c[j][i], c[j + 1][i], n)
         vals[n * j:n * (j + 1), -1] = np.linspace(alpha[j], alpha[j + 1], n)
     return ListedColormap(vals)
+
+
+def get_temporal_connectivities(adata, tkey, n_convolve=30):
+    from ..preprocessing.moments import get_connectivities
+    from ..tools.velocity_graph import vals_to_csr
+    from ..tools.utils import normalize, get_indices
+
+    #c_idx = get_indices(get_connectivities(adata, recurse_neighbors=True))[0]
+    #c_idx = np.hstack([c_idx, np.linspace(0, len(c_idx) - 1, len(c_idx), dtype=int)[:, None]])
+
+    rows, cols, vals, n_obs, n_convolve = [], [], [], len(tkey), int(n_convolve / 2)
+    for i in range(n_obs):
+        i_max = None if i + n_convolve >= n_obs else i + n_convolve
+        i_min = np.max([0, i - n_convolve])
+        t_idx = np.argsort(tkey)[i_min: i_max]  # temporal neighbourhood
+        #t_idx = np.intersect1d(t_idx, c_idx[i])
+        rows.extend(np.ones(len(t_idx), dtype=int) * np.argsort(tkey)[i])
+        cols.extend(t_idx)
+        vals.extend(np.ones(len(t_idx), dtype=int))
+
+    c_conn = get_connectivities(adata, recurse_neighbors=True)
+    t_conn = vals_to_csr(vals, rows, cols, shape=(n_obs, n_obs))
+    return normalize(t_conn)  # normalize(t_conn.multiply(c_conn))
 
 
 def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1):

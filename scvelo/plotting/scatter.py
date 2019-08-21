@@ -2,7 +2,7 @@ from .. import settings
 from .. import AnnData
 from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
     default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
-    plot_linear_fit, plot_density, default_legend_loc, make_unique_valid_list
+    plot_linear_fit, plot_density, default_legend_loc, make_unique_valid_list, get_temporal_connectivities
 from .docs import doc_scatter, doc_params
 
 from matplotlib import rcParams
@@ -133,25 +133,22 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     if x in adata.var_names and y in adata.var_names:
                         x = adata[:, x].layers[layer] if layer in adata.layers.keys() else adata[:, x].X
                         y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
-                        x, y = make_dense(x).flatten(), make_dense(y).flatten()
                     elif x in adata.var.keys() and y in adata.var.keys():
                         x, y = adata.var[x], adata.var[y]
+                        if colors[0] is None: color = 'grey'
+                    elif y in adata.var_names:
+                        y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
+                        if x in adata.obs.keys(): x = adata.obs[x]
+                        elif x in adata.layers.keys(): x = adata[:, y].layers[x]
                     elif x in adata.obs.keys() and y in adata.obs.keys():
                         x, y = adata.obs[x], adata.obs[y]
-                    elif x in adata.obs.keys() and y in adata.var_names:
-                        x, y = adata.obs[x], adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
-                        y = make_dense(y).flatten()
-                        if n_convolve is not None:
-                            y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
-                    elif x in adata.layers.keys() and y in adata.var_names:
-                        x = make_dense(adata[:, y].layers[x]).flatten()
-                        y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
-                        y = make_dense(y).flatten()
-                        if n_convolve is not None:
-                            y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
+                    x, y = make_dense(x).flatten(), make_dense(y).flatten()
                 else:
-                    x = x.A1 if isinstance(x, np.matrix) else x.ravel()
-                    y = y.A1 if isinstance(y, np.matrix) else y.ravel()
+                    x, y = make_dense(x).flatten(), make_dense(y).flatten()
+
+                if n_convolve is not None:
+                    y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
+                    #y = get_temporal_connectivities(adata, x, n_convolve=n_convolve).dot(y)
 
                 if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
                     c = interpret_colorkey(adata, basis, color, perc)

@@ -8,7 +8,7 @@ from scipy.sparse import issparse
 from .utils import is_categorical, interpret_colorkey, savefig_or_show
 
 
-def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', n_moving_average=10, sort=True):
+def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', n_convolve=30, sort=True):
     import seaborn as sns
     var_names = [name for name in var_names if name in adata.var_names]
 
@@ -17,8 +17,8 @@ def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', n_moving_average=10,
 
     df = pd.DataFrame(adata[:, var_names].layers[xkey][np.argsort(time)], columns=var_names)
 
-    if n_moving_average is not None:
-        weights = np.ones(n_moving_average) / n_moving_average
+    if n_convolve is not None:
+        weights = np.ones(n_convolve) / n_convolve
         for i, gene in enumerate(var_names):
             df[gene] = np.convolve(df[gene].values, weights, mode='same')
 
