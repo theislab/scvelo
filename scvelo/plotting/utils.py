@@ -9,6 +9,8 @@ import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.colors import is_color_like, ListedColormap, to_rgb, cnames
+from matplotlib.collections import LineCollection
+import matplotlib.transforms as tx
 from matplotlib import rcParams
 from scipy.sparse import issparse
 from cycler import Cycler, cycler
@@ -100,27 +102,32 @@ def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, fra
     return ax
 
 
-def set_label(xlabel, ylabel, fontsize=None, basis=None):
-    if isinstance(xlabel, str) and isinstance(ylabel, str):
-        pl.xlabel(xlabel, fontsize=fontsize)
-        pl.ylabel(ylabel, fontsize=fontsize)
+def set_label(xlabel, ylabel, fontsize=None, basis=None, ax=None):
+    if ax is None: ax = pl.gca()
+    if isinstance(xlabel, str):
+        ax.set_xlabel(xlabel.replace('_', ' '), fontsize=fontsize)
+    if isinstance(ylabel, str):
+        ax.set_ylabel(ylabel.replace('_', ' '), fontsize=fontsize, rotation=0 if ylabel.startswith('$') else 90)
     elif basis is not None:
         component_name = ('DC' if 'diffmap' in basis else 'tSNE' if basis == 'tsne' else 'UMAP' if basis == 'umap'
         else 'PC' if basis == 'pca' else basis.replace('draw_graph_', '').upper() if 'draw_graph' in basis else basis)
-        pl.xlabel(component_name + '1')
-        pl.ylabel(component_name + '2')
+        ax.set_xlabel(component_name + '1')
+        ax.set_ylabel(component_name + '2')
 
 
-def set_title(title, layer=None, color=None, fontsize=None):
+def set_title(title, layer=None, color=None, fontsize=None, ax=None):
+    if ax is None: ax = pl.gca()
+    color = color if isinstance(color, str) and not is_color_like(color) else None
+    title = title if isinstance(title, str) and not is_color_like(title) else None
     if isinstance(title, str):
         title = title.replace('_', ' ')
-        pl.title(title, fontsize=fontsize)
     elif isinstance(layer, str) and isinstance(color, str):
         title = (color + ' ' + layer).replace('_', ' ')
-        pl.title(title, fontsize=fontsize)
     elif isinstance(color, str):
         title = color.replace('_', ' ')
-        pl.title(title, fontsize=fontsize)
+    else:
+        title = ''
+    ax.set_title(title, fontsize=fontsize)
 
 
 def set_frame(ax, frameon):
@@ -183,10 +190,12 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
         elif c in adata.var_names:  # color by var in specific layer
             c = adata[:, c].layers[layer] if layer in adata.layers.keys() else adata[:, c].X
             c = c.A.flatten() if issparse(c) else c
+        elif c in adata.var.keys():  # color by observation key
+            c = adata.var[c]
         else:
             raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
         if perc is not None: c = clip(c, perc=perc)
-    elif len(np.array(c).flatten()) == adata.n_obs:  # continuous coloring
+    elif (len(np.array(c).flatten()) == adata.n_obs) or (len(np.array(c).flatten()) == adata.n_vars):  # continuous coloring
         c = np.array(c).flatten()
         if perc is not None: c = clip(c, perc=perc)
     else:
@@ -202,9 +211,10 @@ def get_components(components=None, basis=None, projection=None):
     return components
 
 
-def set_colorbar(ax, orientation='vertical'):
-    cb = pl.colorbar(orientation=orientation, cax=inset_axes(ax, width="2%", height="30%", loc=4, borderpad=0))
+def set_colorbar(smp, ax, orientation='vertical', labelsize=None):
+    cb = pl.colorbar(smp, orientation=orientation, cax=inset_axes(ax, width="2%", height="30%", loc=4, borderpad=0))
     cb.set_alpha(1)
+    cb.ax.tick_params(labelsize=labelsize)
     cb.draw_all()
     cb.locator = MaxNLocator(nbins=3, integer=True)
     cb.update_ticks()
@@ -353,11 +363,13 @@ def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1):
         offset = adata[:, basis].var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
         pl.plot(xnew, gamma / beta * xnew + offset / beta, linestyle=linestyle, linewidth=linewidth,
                 c='k' if i == 0 else None)
+        fits[i] = 'steady-state ratio ({})'.format(fit) if len(fits) > 1 else 'steady-state ratio'
     return fits
 
 
-def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3):
+def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3, color='grey', ax=None):
     from scipy.stats import gaussian_kde as kde
+    if ax is None: ax = pl.gca()
 
     # density plot along x-coordinate
     xnew = np.linspace(min(x), max(x), eval_pts)
@@ -371,9 +383,9 @@ def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3):
     else:
         offset = 0
 
-    pl.plot(xnew, vals, color='grey')
-    pl.fill_between(xnew, -offset, vals, alpha=alpha, color='grey')
-    pl.ylim(-offset)
+    ax.plot(xnew, vals, color=color)
+    ax.fill_between(xnew, -offset, vals, alpha=alpha, color=color)
+    ax.set_ylim(-offset)
 
     # density plot along y-coordinate
     if y is not None:
@@ -385,9 +397,20 @@ def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3):
         offset *= 1.3
         vals = vals * scale_u - offset
 
-        pl.plot(vals, ynew, color='grey')
-        pl.fill_betweenx(ynew, -offset, vals, alpha=alpha, color='grey')
-        pl.xlim(-offset)
+        ax.plot(vals, ynew, color=color)
+        ax.fill_betweenx(ynew, -offset, vals, alpha=alpha, color=color)
+        ax.set_xlim(-offset)
+
+
+def rugplot(x, height=.03, color=None, ax=None, **kwargs):
+    if ax is None: ax = pl.gca()
+    x = np.asarray(x)
+
+    transform = tx.blended_transform_factory(ax.transData, ax.transAxes)
+    line_segs = np.column_stack([np.repeat(x, 2), np.tile([0, height], len(x))]).reshape([len(x), 2, 2])
+    ax.add_collection(LineCollection(line_segs, transform=transform, color=color, **kwargs))
+    ax.autoscale_view(scalex=True, scaley=False)
+    return ax
 
 
 def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=None, bw_method=None, xlabel=None, ylabel=None,
@@ -428,7 +451,8 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
             if not norm:
                 kde_bins *= (bins[1] - bins[0]) * len(x_vals)
             ax.plot(bins, kde_bins, color=colors[i])
-            ax.fill_between(bins, 0, kde_bins, alpha=.4, color=colors[i])
+            ax.fill_between(bins, 0, kde_bins, alpha=.4, color=colors[i],
+                            label=labels[i] if labels is not None else None)
             ylim = np.min(kde_bins) if ylim is None else ylim
         if hist:
             if norm:
@@ -436,16 +460,16 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
             ax.hist(x_vals, bins=bins, alpha=alpha, color=colors[i],
                     label=labels[i] if labels is not None else None)
 
-    set_label(xlabel if xlabel is not None else '', ylabel if xlabel is not None else '', fontsize=fontsize)
+    set_label(xlabel if xlabel is not None else '', ylabel if xlabel is not None else '', fontsize=fontsize, ax=ax)
 
     if labels is not None:
-        pl.legend(fontsize=legend_fontsize)
+        ax.legend(fontsize=legend_fontsize)
 
     if axvline: ax.axvline(axvline)
     if axhline: ax.axhline(axhline)
 
-    if xscale is not None: pl.xscale(xscale)
-    if yscale is not None: pl.yscale(yscale)
+    if xscale is not None: ax.set_xscale(xscale)
+    if yscale is not None: ax.set_yscale(yscale)
 
     update_axes(ax, xlim, ylim, fontsize, frameon=True)
 
