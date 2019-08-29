@@ -30,6 +30,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         x coordinate
     y: `str`, `np.ndarray` or `None` (default: `None`)
         y coordinate
+    vkey: `str` or `None` (default: `None`)
+        Key for annotations of observations/cells or variables/genes.
     {scatter}
 
     Returns
