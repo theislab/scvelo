@@ -170,19 +170,20 @@ def strings_to_categoricals(adata):
     def is_valid_dtype(values):
         return is_string_dtype(values) or is_integer_dtype(values) or is_bool_dtype(values)
 
-    df = adata.obs
-    df_keys = [key for key in df.columns if is_valid_dtype(df[key])]
-    for key in df_keys:
-        c = df[key]
-        c = Categorical(c)
-        if len(c.categories) < min(len(c), 100): df[key] = c
+    if not adata._isview:
+        df = adata.obs
+        df_keys = [key for key in df.columns if is_valid_dtype(df[key])]
+        for key in df_keys:
+            c = df[key]
+            c = Categorical(c)
+            if len(c.categories) < min(len(c), 100): df[key] = c
 
-    df = adata.var
-    df_keys = [key for key in df.columns if is_string_dtype(df[key])]
-    for key in df_keys:
-        c = df[key]
-        c = Categorical(c)
-        if len(c.categories) < min(len(c), 100): df[key] = c
+        df = adata.var
+        df_keys = [key for key in df.columns if is_string_dtype(df[key])]
+        for key in df_keys:
+            c = df[key]
+            c = Categorical(c)
+            if len(c.categories) < min(len(c), 100): df[key] = c
 
 
 def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):
@@ -309,3 +310,15 @@ def random_subsample(adata, fraction=.1, return_subset=False, copy=False):
 def get_duplicates(array):
     from collections import Counter
     return np.array([item for (item, count) in Counter(array).items() if count > 1])
+
+
+def corrcoef(x, y, mode='pearsons'):
+    from scipy.stats import pearsonr, spearmanr
+    corr, _ = spearmanr(x, y) if mode is 'spearmans' else pearsonr(x, y)
+    return corr
+
+
+def vcorrcoef(X, y):
+    Xm, ym = X - np.reshape(np.mean(X, 1), (X.shape[0], 1)), y - np.mean(y)
+    corr = np.sum(Xm * ym, 1) / np.sqrt(np.sum(Xm ** 2, 1) * np.sum(ym ** 2))
+    return corr
