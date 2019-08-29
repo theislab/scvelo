@@ -29,7 +29,8 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
 
     mean = (X.sum(0) / n_counts).A1 if issparse(X) else X.sum(0) / n_counts
     mean_sq = (X.multiply(X).sum(0) / n_counts).A1 if issparse(X) else np.multiply(X, X).sum(0) / n_counts
-    var = (mean_sq - mean ** 2) * (X.shape[0] / (X.shape[0] - 1))
+    n_cells = np.clip(X.shape[0], 2, None)  # to avoid division by zero
+    var = (mean_sq - mean ** 2) * (n_cells / (n_cells - 1))
 
     mean = np.nan_to_num(mean)
     var = np.nan_to_num(var)
@@ -151,7 +152,7 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
 
     if groupby is None or groupby is 'velocity_clusters':
         velocity_clusters(adata, vkey=vkey, match_with=match_with, resolution=resolution)
-        groupby = 'velocity_clusters'
+        groupby = vkey + '_clusters'
 
     logg.info('ranking velocity genes', r=True)
 
