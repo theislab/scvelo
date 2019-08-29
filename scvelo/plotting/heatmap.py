@@ -10,7 +10,50 @@ from .utils import is_categorical, interpret_colorkey, savefig_or_show
 
 def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis', col_color=None, n_convolve=30,
             standard_scale=0, sort=True, colorbar=None, col_cluster=False, row_cluster=False,
-            figsize=(10,5), show=True, save=None, ax=None):
+            figsize=(10, 5), show=True, save=None, ax=None):
+    """\
+    Plot time series for genes as heatmap.
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    var_names: `str`,  list of `str`
+        Names of variables to use for the plot.
+    tkey: `str` (default: `'pseudotime'`)
+        Observation key to extract time data from.
+    xkey: `str` (default: `'Ms'`)
+        Layer key to extract count data from.
+    color_map: `str` (default: `'viridis'`)
+        String denoting matplotlib color map.
+    col_color: `str` or `None` (default: `None`)
+        String denoting matplotlib color map to use along the columns.
+    n_convolve: `int` or `None` (default: `30`)
+        If `int` is given, data is smoothed by convolution along the x-axis with kernel size n_convolve.
+    standard_scale : `int` or `None` (default: `0`)
+        Either 0 (rows) or 1 (columns). Whether or not to standardize that dimension, meaning for each row or column,
+        subtract the minimum and divide each by its maximum.
+    sort: `bool` (default: `True`)
+        Wether to sort the expression values given by xkey.
+    colorbar: `bool` or `None` (default: `None`)
+        Whether to show colorbar.
+    {row,col}_cluster : bool, optional
+        If True, cluster the {rows, columns}.
+    figsize: tuple (default: `(7,5)`)
+        Figure size.
+    show: `bool`, optional (default: `None`)
+        Show the plot, do not return axis.
+    save: `bool` or `str`, optional (default: `None`)
+        If `True` or a `str`, save the figure. A string is appended to the default filename.
+        Infer the filetype if ending on {'.pdf', '.png', '.svg'}.
+    ax: `matplotlib.Axes`, optional (default: `None`)
+        A matplotlib axes object. Only works if plotting a single component.
+
+    Returns
+    -------
+        If `show==False` a `matplotlib.Axis`
+    """
+
     import seaborn as sns
     var_names = [name for name in var_names if name in adata.var_names]
 

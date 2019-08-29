@@ -413,9 +413,82 @@ def rugplot(x, height=.03, color=None, ax=None, **kwargs):
     return ax
 
 
-def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=None, bw_method=None, xlabel=None, ylabel=None,
-         xlim=None, ylim=None, cutoff=None, xscale=None, yscale=None, fontsize=None, legend_fontsize=None, figsize=None,
-         norm=None, perc=None, exclude_zeros=None, axvline=None, axhline=None, ax=None, dpi=None, show=True):
+def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=None, bw_method=None, xlabel=None,
+         ylabel=None, xlim=None, ylim=None, cutoff=None, xscale=None, yscale=None, fontsize=None, legend_fontsize=None,
+         figsize=None, norm=None, perc=None, exclude_zeros=None, axvline=None, axhline=None, ax=None, dpi=None,
+         show=True):
+    """\
+    Plot a histogram.
+
+    Arguments
+    ---------
+    arrays: : `list` or `array` (default `['royalblue', 'white', 'forestgreen']`)
+        List of colors, either as names or rgb values.
+    alpha: `list`, `np.ndarray` or `None` (default: `None`)
+        Alpha of the colors. Must be same length as colors.
+    bins : `int` or `sequence` (default: `50`)
+        If an integer is given, ``bins + 1`` bin edges are calculated and
+        returned, consistent with `numpy.histogram`.
+        If `bins` is a sequence, gives bin edges, including left edge of
+        first bin and right edge of last bin.  In this case, `bins` is
+        returned unmodified.
+    colors: : `list` or `array` (default `['royalblue', 'white', 'forestgreen']`)
+        List of colors, either as names or rgb values.
+    labels : str or None (default: `None`)
+            String, or sequence of strings to label clusters.
+    hist: `bool` or `None` (default: `None`)
+        Whether to show histogram.
+    kde: `bool` or `None` (default: `None`)
+        Whether to use kernel density estimation on data.
+    bw_method : `str`, `scalar` or `callable`, (default: `None`)
+        The method used to calculate the estimator bandwidth.  This can be
+        'scott', 'silverman', a scalar constant or a callable.  If a
+        scalar, this will be used directly as `kde.factor`.  If a callable,
+        it should take a `gaussian_kde` instance as only parameter and
+        return a scalar.  If None (default), nothing happens; the current
+        `kde.covariance_factor` method is kept.
+    xlabel: `str` (default: `None`)
+        Label of x-axis.
+    ylabel: `str` (default: `None`)
+        Label of y-axis.
+    xlim: tuple, e.g. [0,1] or `None` (default: `None`)
+        Restrict x-limits of the axis.
+    ylim: tuple, e.g. [0,1] or `None` (default: `None`)
+        Restrict y-limits of the axis.
+    cutoff: tuple, e.g. [0,1] or `float` or `None` (default: `None`)
+        Bins will be cut off below and above the cutoff values.
+    xscale: `log` or `None` (default: `None`)
+        Scale of the x-axis.
+    yscale: `log` or `None` (default: `None`)
+        Scale of the y-axis.
+    fontsize: `float` (default: `None`)
+        Label font size.
+    legend_fontsize: `int` (default: `None`)
+        Legend font size.
+    figsize: tuple (default: `(7,5)`)
+        Figure size.
+    norm: `bool` or `None` (default: `None`)
+        Whether to normalize data.
+    perc: tuple, e.g. [2,98] (default: `None`)
+        Specify percentile for continuous coloring.
+    exclude_zeros: `bool` or `None` (default: `None`)
+        Whether to exclude zeros in data for the kde and hist plot.
+    axvline: `float` or `None` (default: `None`)
+        Plot a vertical line at the specified x-value.
+    axhline `float` or `None` (default: `None`)
+        Plot a horizontal line at the specified y-value.
+    ax: `matplotlib.Axes`, optional (default: `None`)
+        A matplotlib axes object. Only works if plotting a single component.
+    dpi: `int` (default: 80)
+        Figure dpi.
+    show: `bool`, optional (default: `None`)
+        Show the plot, do not return axis.
+
+    Returns
+    -------
+        If `show==False` a `matplotlib.Axis`
+    """
+
     if ax is None:
         fig, ax = pl.subplots(figsize=figsize, dpi=dpi)
 
