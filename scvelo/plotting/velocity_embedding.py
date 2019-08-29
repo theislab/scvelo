@@ -1,7 +1,7 @@
 from ..tools.velocity_embedding import velocity_embedding as compute_velocity_embedding
 from ..tools.utils import groups_to_bool
 from .utils import interpret_colorkey, default_basis, default_size, get_components, savefig_or_show, \
-    default_color, default_arrow, make_unique_list, make_unique_valid_list, get_basis
+    default_color, default_arrow, make_unique_list, make_unique_valid_list, get_basis, default_color_map
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -93,18 +93,19 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
 
         color, layer, vkey, basis = colors[0], layers[0], vkeys[0], bases[0]
         color = default_color(adata) if color is None else color
+        color_map = default_color_map(adata, color) if color_map is None else color_map
         size = default_size(adata) / 2 if size is None else size
+        if use_raw is None and 'Ms' not in adata.layers.keys(): use_raw = True
         _adata = adata[groups_to_bool(adata, groups, groupby=color)] if groups is not None and color in adata.obs.keys() else adata
 
+        quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "edgecolors": 'k'}
         if basis in adata.var_names:
             x = adata[:, basis].layers['spliced'] if use_raw else adata[:, basis].layers['Ms']
             y = adata[:, basis].layers['unspliced'] if use_raw else adata[:, basis].layers['Mu']
             dx = adata[:, basis].layers[vkey]
-            dy = adata[:, basis].layers[vkey + '_u'] * adata[:, basis].var['fit_scaling'].values \
-                if vkey + '_u' in adata.layers.keys() else np.zeros(adata.n_obs)
+            dy = adata[:, basis].layers[vkey + '_u'] if vkey + '_u' in adata.layers.keys() else np.zeros(adata.n_obs)
             X = np.stack([np.ravel(x), np.ravel(y)]).T
             V = np.stack([np.ravel(dx), np.ravel(dy)]).T
-            quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "edgecolors": 'k'}
         else:
             x = None if X is None else X[:, 0]
             y = None if X is None else X[:, 1]
@@ -113,8 +114,8 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
 
             hl, hw, hal = default_arrow(arrow_size)
             scale = 1 / arrow_length if arrow_length is not None else scale if scale is not None else 1
-            quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy', "scale_units": 'xy', "width": .0005,
-                             "edgecolors": 'k', "headlength": hl, "headwidth": hw, "headaxislength": hal, "linewidth": .1}
+            quiver_kwargs.update({"scale": scale, "width": .0005, "linewidth": .1,
+                                  "headlength": hl, "headwidth": hw, "headaxislength": hal})
         quiver_kwargs.update(kwargs)
 
         if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
