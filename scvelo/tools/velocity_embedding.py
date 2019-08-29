@@ -74,18 +74,16 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
 
     logg.info('computing velocity embedding', r=True)
 
-    if direct_pca_projection and 'pca' in basis:
-        V = adata.layers[vkey]
-        PCs = adata.varm['PCs'] if all_comps else adata.varm['PCs'][:, :2]
+    V = np.array(adata.layers[vkey])
+    vgenes = np.ones(adata.n_vars, dtype=bool)
+    if vkey + '_genes' in adata.var.keys():
+        vgenes &= np.array(adata.var[vkey + '_genes'], dtype=bool)
+    vgenes &= ~ np.isnan(V.sum(0))
+    V = V[:, vgenes]
 
-        if vkey + '_genes' in adata.var.keys():
-            vgenes = np.array(adata.var[vkey + '_genes'], dtype=bool)
-            V = V[:, vgenes]
-            PCs = PCs[vgenes]
-        nans = np.isnan(V.sum(0))
-        if np.any(nans):
-            V = V[:, ~nans]
-            PCs = PCs[~nans]
+    if direct_pca_projection and 'pca' in basis:
+        PCs = adata.varm['PCs'] if all_comps else adata.varm['PCs'][:, :2]
+        PCs = PCs[vgenes]
 
         X_emb = adata.obsm['X_' + basis]
         V_emb = (V - V.mean(0)).dot(PCs)
@@ -113,9 +111,10 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
                 V_emb[i] = probs.dot(dX) - probs.mean() * dX.sum(0)  # probs.sum() / len(indices)
 
         if retain_scale:
-            delta = T.dot(adata.X) - adata.X
+            X = adata.layers['Ms'] if 'Ms' in adata.layers.keys() else adata.layers['spliced']
+            delta = T.dot(X[:, vgenes]) - X[:, vgenes]
             if issparse(delta): delta = delta.A
-            cos_proj = (adata.layers[vkey] * delta).sum(1) / norm(delta)
+            cos_proj = (V * delta).sum(1) / norm(delta)
             V_emb *= np.clip(cos_proj[:, None] * 10, 0, 1)
 
     if autoscale: V_emb /= (3 * quiver_autoscale(X_emb, V_emb))
