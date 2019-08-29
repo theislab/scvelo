@@ -154,9 +154,9 @@ def velocity_pseudotime(adata, vkey='velocity', groupby=None, groups=None, root=
             pseudotime = np.empty(adata.n_obs)
             pseudotime[:] = np.nan
         else:
-            pseudotime = adata.obs[vkey + '_pseudotime'].copy()
+            pseudotime = adata.obs[vkey + '_pseudotime'].values
         pseudotime[cell_subset] = vpt.pseudotime
-        adata.obs[vkey + '_pseudotime'] = pseudotime
+        adata.obs[vkey + '_pseudotime'] = np.array(pseudotime, dtype=np.float64)
 
         if save_diffmap:
             diffmap = np.empty(shape=(adata.n_obs, n_dcs))
