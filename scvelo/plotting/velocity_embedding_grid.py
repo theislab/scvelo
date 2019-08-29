@@ -45,6 +45,7 @@ def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbor
     p_mass = weight.sum(1)
 
     V_grid = (V_emb[neighs] * weight[:, :, None]).sum(1) / np.maximum(1, p_mass)[:, None]
+    if min_mass is None: min_mass = 1
 
     if adjust_for_stream:
         X_grid = np.stack([np.unique(X_grid[:, 0]), np.unique(X_grid[:, 1])])
@@ -52,12 +53,11 @@ def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbor
         V_grid = V_grid.T.reshape(2, ns, ns)
 
         mass = np.sqrt((V_grid ** 2).sum(0))
-        if min_mass is None: min_mass = 1
         min_mass = 10 ** (min_mass - 6)  # default min_mass = 1e-5
         min_mass = np.clip(min_mass, None, np.max(mass) * .9)
         V_grid[0][mass.reshape(V_grid[0].shape) < min_mass] = np.nan
     else:
-        if min_mass is None: min_mass = np.clip(np.percentile(p_mass, 99) / 100, 1e-2, 1)
+        min_mass *= np.percentile(p_mass, 99) / 100
         X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
 
         if autoscale: V_grid /= 3 * quiver_autoscale(X_grid, V_grid)

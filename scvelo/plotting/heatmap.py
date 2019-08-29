@@ -8,7 +8,9 @@ from scipy.sparse import issparse
 from .utils import is_categorical, interpret_colorkey, savefig_or_show
 
 
-def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', n_moving_average=10, sort=True):
+def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis', col_color=None, n_convolve=30,
+            standard_scale=0, sort=True, colorbar=None, col_cluster=False, row_cluster=False,
+            figsize=(10,5), show=True, save=None, ax=None):
     import seaborn as sns
     var_names = [name for name in var_names if name in adata.var_names]
 
@@ -17,17 +19,20 @@ def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', n_moving_average=10,
 
     df = pd.DataFrame(adata[:, var_names].layers[xkey][np.argsort(time)], columns=var_names)
 
-    if n_moving_average is not None:
-        weights = np.ones(n_moving_average) / n_moving_average
+    if n_convolve is not None:
+        weights = np.ones(n_convolve) / n_convolve
         for i, gene in enumerate(var_names):
             df[gene] = np.convolve(df[gene].values, weights, mode='same')
 
     if sort:
         max_sort = np.argsort(np.argmax(df.values, axis=0))
         df = pd.DataFrame(df.values[:, max_sort], columns=df.columns[max_sort])
-
-    sns.clustermap(df.T, col_cluster=False, row_cluster=False, xticklabels=False,
-                   cmap='viridis', standard_scale=0, figsize=(10, 5))
+    if col_color is not None: col_color = interpret_colorkey(adata, col_color)[np.argsort(time)]
+    cm = sns.clustermap(df.T, col_colors=col_color, col_cluster=col_cluster, row_cluster=row_cluster, cmap=color_map,
+                        xticklabels=False, standard_scale=standard_scale, figsize=figsize)
+    if not colorbar: cm.cax.set_visible(False)
+    savefig_or_show('heatmap', save=save, show=show)
+    if not show: return ax
     pl.show()
 
 
