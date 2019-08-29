@@ -41,10 +41,11 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                       "legend_fontweight": legend_fontweight, "right_margin": right_margin, "left_margin": left_margin,
                       "show": False, "save": False}
 
-    ext_kwargs = {'size': size, 'linewidth': linewidth, 'xlabel': xlabel, 'vkey': vkey, 'show_rug': show_rug,
-                  'color_map': color_map, 'colorbar': colorbar, 'perc': perc, 'frameon': frameon, 'zorder': zorder,
-                  'legend_loc': legend_loc, 'fontsize': fontsize, 'xlim': xlim, 'ylim': ylim, 'n_convolve': n_convolve,
-                  'show_density': show_density, 'show_assignments': show_assignments, 'show_linear_fit': show_linear_fit}
+    ext_kwargs = {'size': size, 'linewidth': linewidth, 'xlabel': xlabel, 'vkey': vkey, 'color_map': color_map,
+                  'colorbar': colorbar, 'perc': perc, 'frameon': frameon, 'zorder': zorder, 'legend_loc': legend_loc,
+                  'fontsize': fontsize, 'xlim': xlim, 'ylim': ylim, 'n_convolve': n_convolve,
+                  'show_density': show_density, 'show_assignments': show_assignments, 'show_rug': show_rug,
+                  'show_linear_fit': show_linear_fit, 'show_polyfit': show_polyfit}
 
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
 
