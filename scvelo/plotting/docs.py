@@ -66,6 +66,24 @@ fontsize: `float` (default: `None`)
     Label font size.
 figsize: tuple (default: `(7,5)`)
     Figure size.
+xlim: tuple, e.g. [0,1] or `None` (default: `None`)
+    Restrict x-limits of the axis.
+ylim: tuple, e.g. [0,1] or `None` (default: `None`)
+    Restrict y-limits of the axis.
+show_density: `bool` or `str` or `None` (default: `None`)
+    Whether to show density of counts attached to the x and y axes. Color of the plot can also be given as `str`.
+show_assignments: `bool` or `str` or `None` (default: `None`)
+    Whether to show assignments to the model curve. Color of the assignments can also be given as `str`.
+show_linear_fit: `bool` or `str` or `None` (default: `None`)
+    Whether to show linear fit to the data. Color of the plot can also be given as `str`.
+show_polyfit: `bool` or `str` or `int` or `None` (default: `None`)
+    Whether to show polynomial fit to ???. Color of the polyfit plot can also be given as `str`. If `int` is given,
+    determines the degree of the polynomial fit (else the degree defaults to 2).
+show_rug: list of `str` or `None` (default: `None`)
+    If list of categorical observation annotation (e.g. from obs or layer) is given, a rugplot is attached to the
+    x-axis showing the distribution of data membership to each of the categories.
+n_convolve: `int` or `None` (default: `None`)
+    If `int` is given, data is smoothed by convolution along the x-axis with kernel size n_convolve.
 dpi: `int` (default: 80)
     Figure dpi.
 frameon: `bool` (default: `True`)
