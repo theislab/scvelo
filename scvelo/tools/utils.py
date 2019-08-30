@@ -183,7 +183,7 @@ def strings_to_categoricals(adata):
         for key in df_keys:
             c = df[key]
             c = Categorical(c)
-            if len(c.categories) < min(len(c), 100): df[key] = c
+            if 1 < len(c.categories) < min(len(c), 100): df[key] = c
 
 
 def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):
