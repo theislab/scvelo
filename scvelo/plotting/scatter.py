@@ -196,6 +196,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                         ax.set_xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
                         ax.set_ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
 
+                if not isinstance(c, str) and len(c) != len(x): c = 'grey'
                 smp = ax.scatter(np.ravel(x), np.ravel(y), c=np.ravel(c), cmap=color_map, s=size, alpha=alpha,
                                  edgecolors='none', marker='.', zorder=zorder, **kwargs)
 
@@ -203,14 +204,18 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     plot_density(x, y, color=show_density if isinstance(show_density, str) else 'grey', ax=ax)
 
                 if show_linear_fit:
+                    idx_valid = ~np.isnan(x + y)
+                    x, y = x[idx_valid], y[idx_valid]
                     xnew = np.linspace(np.min(x), np.max(x) * 1.02)
                     ax.plot(xnew, xnew * (x * y).sum() / (x ** 2).sum(),
                             color=show_linear_fit if isinstance(show_linear_fit, str) else 'grey')
                     corr, _ = pearsonr(x, y)
-                    ax.text(.05, .95, r'$\rho = $' + str(np.round(corr, 2)),
-                            ha='left', va='top', transform=ax.transAxes, fontsize=fontsize,
-                            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
+                    if legend_loc is not 'none':
+                        ax.text(.05, .95, r'$\rho = $' + str(np.round(corr, 2)), ha='left', va='top', fontsize=fontsize,
+                                transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
                 if show_polyfit:
+                    idx_valid = ~np.isnan(x + y)
+                    x, y = x[idx_valid], y[idx_valid]
                     fit = np.polyfit(x, y, deg=2 if isinstance(show_polyfit, (str, bool)) else show_polyfit)
                     f = np.poly1d(fit)
                     xnew = np.linspace(np.min(x), np.max(x), num=100)

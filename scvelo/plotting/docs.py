@@ -79,9 +79,9 @@ show_linear_fit: `bool` or `str` or `None` (default: `None`)
 show_polyfit: `bool` or `str` or `int` or `None` (default: `None`)
     Whether to show polynomial fit to ???. Color of the polyfit plot can also be given as `str`. If `int` is given,
     determines the degree of the polynomial fit (else the degree defaults to 2).
-show_rug: list of `str` or `None` (default: `None`)
-    If list of categorical observation annotation (e.g. from obs or layer) is given, a rugplot is attached to the
-    x-axis showing the distribution of data membership to each of the categories.
+show_rug: `str` or `None` (default: `None`)
+    If categorical observation annotation (e.g. 'clusters') is given, a rugplot is attached to the x-axis showing the 
+    distribution of data membership to each of the categories.
 n_convolve: `int` or `None` (default: `None`)
     If `int` is given, data is smoothed by convolution along the x-axis with kernel size n_convolve.
 dpi: `int` (default: 80)

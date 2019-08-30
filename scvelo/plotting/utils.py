@@ -195,11 +195,9 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
         else:
             raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
         if perc is not None: c = clip(c, perc=perc)
-    elif (len(np.array(c).flatten()) == adata.n_obs) or (len(np.array(c).flatten()) == adata.n_vars):  # continuous coloring
+    else:  #if (len(np.array(c).flatten()) == adata.n_obs) or (len(np.array(c).flatten()) == adata.n_vars):
         c = np.array(c).flatten()
         if perc is not None: c = clip(c, perc=perc)
-    else:
-        raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
     return c
 
 
