@@ -322,3 +322,11 @@ def vcorrcoef(X, y):
     Xm, ym = X - np.reshape(np.mean(X, 1), (X.shape[0], 1)), y - np.mean(y)
     corr = np.sum(Xm * ym, 1) / np.sqrt(np.sum(Xm ** 2, 1) * np.sum(ym ** 2))
     return corr
+
+
+def isin(x, y):
+    return np.array(pd.DataFrame(x).isin(y)).flatten()
+
+
+def indices_to_bool(indices, n):
+    return isin(np.arange(n), indices)
