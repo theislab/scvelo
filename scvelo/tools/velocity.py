@@ -10,7 +10,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class Velocity:
-    def __init__(self, adata=None, Ms=None, Mu=None, groups_for_fit=None, groupby=None, residual=None, use_raw=False,):
+    def __init__(self, adata=None, Ms=None, Mu=None, groups_for_fit=None, groupby=None, residual=None,
+                 constrain_ratio=None, use_raw=False):
         self._adata = adata
         self._Ms = adata.layers['spliced'] if use_raw else adata.layers['Ms'] if Ms is None else Ms
         self._Mu = adata.layers['unspliced'] if use_raw else adata.layers['Mu'] if Mu is None else Mu
@@ -22,17 +23,23 @@ class Velocity:
         self._gamma, self._r2 = np.zeros(n_vars, dtype=np.float32), np.zeros(n_vars, dtype=np.float32)
         self._beta, self._velocity_genes = np.ones(n_vars, dtype=np.float32), np.ones(n_vars, dtype=bool)
         self._groups_for_fit = groups_to_bool(adata, groups_for_fit, groupby)
+        self._constrain_ratio = constrain_ratio
 
     def compute_deterministic(self, fit_offset=False, perc=None):
         Ms = self._Ms if self._groups_for_fit is None else self._Ms[self._groups_for_fit]
         Mu = self._Mu if self._groups_for_fit is None else self._Mu[self._groups_for_fit]
 
         self._offset, self._gamma = leastsq_NxN(Ms, Mu, fit_offset, perc)
+
+        if self._constrain_ratio is not None:
+            if np.size(self._constrain_ratio) < 2: self._constrain_ratio = [None, self._constrain_ratio]
+            self._gamma = np.clip(self._gamma, self._constrain_ratio[0], self._constrain_ratio[1])
+
         self._residual = self._Mu - self._gamma * self._Ms
         if fit_offset: self._residual -= self._offset
 
         self._r2 = R_squared(self._residual, total=self._Mu - self._Mu.mean(0))
-        self._velocity_genes = (self._r2 > .01) & (self._gamma > .01)
+        self._velocity_genes = (self._r2 > .01) & (self._gamma > .01) & (np.sum((self._Ms > 0) & (self._Mu > 0), 0) > 0)
 
     def compute_stochastic(self, fit_offset=False, fit_offset2=False, mode=None, perc=None):
         if self._residual is None: self.compute_deterministic(fit_offset=fit_offset, perc=perc)
@@ -101,8 +108,8 @@ def write_pars(adata, vkey, pars, pars_names, add_key=None):
         elif key in adata.var.keys(): del adata.var[key]
 
 
-def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False,
-             groups=None, groupby=None, groups_for_fit=None, use_raw=False, perc=[5, 95], copy=False):
+def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False, groups=None,
+             groupby=None, groups_for_fit=None, constrain_ratio=None, use_raw=False, perc=[5, 95], copy=False):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -158,7 +165,7 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
         cell_subset = groups_to_bool(adata, groups, groupby)
         _adata = adata if groups is None else adata[cell_subset]
 
-        velo = Velocity(_adata, groups_for_fit=groups_for_fit, groupby=groupby, use_raw=use_raw)
+        velo = Velocity(_adata, groups_for_fit=groups_for_fit, groupby=groupby, constrain_ratio=constrain_ratio, use_raw=use_raw)
         velo.compute_deterministic(fit_offset, perc=perc)
 
         if any([mode is not None and mode in item for item in ['stochastic', 'bayes', 'alpha']]):
@@ -166,7 +173,7 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
                 adata._inplace_subset_var(velo._velocity_genes)
                 residual = velo._residual[:, velo._velocity_genes]
                 _adata = adata if groups is None else adata[cell_subset]
-                velo = Velocity(_adata, residual=residual, groups_for_fit=groups_for_fit, groupby=groupby)
+                velo = Velocity(_adata, residual=residual, groups_for_fit=groups_for_fit, groupby=groupby, constrain_ratio=constrain_ratio)
             velo.compute_stochastic(fit_offset, fit_offset2, mode, perc=perc)
 
         write_residuals(adata, vkey, velo._residual, cell_subset)
@@ -183,7 +190,7 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
     return adata if copy else None
 
 
-def velocity_genes(data, vkey='velocity', min_r2=0.01, highly_variable=None, copy=False):
+def velocity_genes(data, vkey='velocity', min_r2=0.01, constrain_gamma=None, highly_variable=None, copy=False):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -207,10 +214,15 @@ def velocity_genes(data, vkey='velocity', min_r2=0.01, highly_variable=None, cop
     """
     adata = data.copy() if copy else data
     if vkey + '_genes' not in adata.var.keys(): velocity(data, vkey)
+    vgenes = np.ones(adata.n_vars, dtype=bool)
 
-    adata.var[vkey + '_genes'] = np.array(adata.var[vkey + '_genes'], dtype=bool) & (adata.var[vkey + '_r2'] > min_r2)
+    if min_r2 is not None:
+        vgenes &= (adata.var[vkey + '_r2'] > min_r2)
+
     if highly_variable and 'highly_variable' in adata.var.keys():
-        adata.var[vkey + '_genes'] &= adata.var['highly_variable']
+        vgenes &= adata.var['highly_variable'].values
+
+    adata.var[vkey + '_genes'] = vgenes
 
     logg.info('Number of obtained velocity_genes:', np.sum(adata.var[vkey + '_genes']))
 
