@@ -52,10 +52,11 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
 
     # multiple colors, layers and bases (string)
-    colors, ys = make_unique_list(color, allow_array=True), make_unique_list(y, allow_array=True)
+    colors = make_unique_list(color, allow_array=True)
+    xs, ys = make_unique_list(x, allow_array=True), make_unique_list(y, allow_array=True)
     layers, bases = make_unique_list(layer), make_unique_valid_list(adata, basis)
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 \
-        else bases if len(bases) > 1 else ys if len(ys) > 1 else None
+        else bases if len(bases) > 1 else xs if len(xs) > 1 else ys if len(ys) > 1 else None
     if multikey is not None:
         if isinstance(title, (list, tuple)): title *= int(np.ceil(len(multikey) / len(title)))
         ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
@@ -65,7 +66,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         for i, gs in enumerate(
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):
             if i < len(multikey):
-                ax.append(scatter(adata, x=x, ax=pl.subplot(gs), ylabel=ylabel, y=ys[i] if len(ys) > 1 else y,
+                ax.append(scatter(adata, ax=pl.subplot(gs), ylabel=ylabel,
+                                  x=xs[i] if len(xs) > 1 else x, y=ys[i] if len(ys) > 1 else y,
                                   color=colors[i] if len(colors) > 1 else color,
                                   layer=layers[i] if len(layers) > 1 else layer,
                                   basis=bases[i] if len(bases) > 1 else basis,
@@ -148,6 +150,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                         y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
                     elif x in adata.obs.keys() and y in adata.obs.keys():
                         x, y = adata.obs[x], adata.obs[y]
+                    else:
+                        raise ValueError('x or y key is invalid! pass valid observation annotation or a gene name')
 
                 x, y = make_dense(x).flatten(), make_dense(y).flatten()
 
@@ -155,7 +159,13 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
                     #y = get_temporal_connectivities(adata, x, n_convolve=n_convolve).dot(y)
 
-                if isinstance(color, int): color = pd.Categorical(np.array(np.arange(len(x)) == color, dtype=bool))
+                if isinstance(color, int):
+                    color = np.array(np.arange(len(x)) == color, dtype=bool)
+                    if color_map is None: color_map = 'viridis_r'
+                    if zorder is None: zorder = 10
+                    ax.scatter(np.ravel(x[color]), np.ravel(y[color]), color='darkblue', s=size * 2, zorder=zorder)
+                    zorder -= 1
+
                 if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
                     c = interpret_colorkey(adata, basis, color, perc)
                 else:
