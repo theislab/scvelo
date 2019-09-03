@@ -1,4 +1,4 @@
-from ..tools.dynamical_model_utils import unspliced, mRNA, vectorize, tau_inv
+from ..tools.dynamical_model_utils import unspliced, mRNA, vectorize, tau_inv, get_vars
 from .utils import make_dense
 
 import numpy as np
@@ -6,17 +6,8 @@ import matplotlib.pyplot as pl
 from matplotlib import rcParams
 
 
-def get_vars(adata, key='fit'):
-    alpha = adata.var[key + '_alpha'].values if key + '_alpha' in adata.var.keys() else 1
-    beta = adata.var[key + '_beta'].values if key + '_beta' in adata.var.keys() else 1
-    gamma = adata.var[key + '_gamma'].values
-    t_ = adata.var[key + '_t_'].values
-    scaling = adata.var[key + '_scaling'].values if key + '_scaling' in adata.var.keys() else 1
-    return alpha, beta, gamma, t_, scaling
-
-
 def get_dynamics(adata, key='fit', extrapolate=False, sorted=False, t=None):
-    alpha, beta, gamma, t_, scaling = get_vars(adata, key)
+    alpha, beta, gamma, scaling, t_ = get_vars(adata, key=key)
     if extrapolate:
         u0_ = unspliced(t_, 0, alpha, beta)
         tmax = t_ + tau_inv(u0_ * 1e-4, u0=u0_, alpha=0, beta=beta)
@@ -33,12 +24,7 @@ def get_dynamics(adata, key='fit', extrapolate=False, sorted=False, t=None):
 def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=None, t=None):
     idx = np.where(adata.var_names == basis)[0][0] if isinstance(basis, str) else basis
     key = 'fit' if key + '_gamma' not in adata.var_keys() else key
-
-    alpha = adata.var[key + '_alpha'][idx] if key + '_alpha' in adata.var.keys() else 1
-    beta = adata.var[key + '_beta'][idx] if key + '_beta' in adata.var.keys() else 1
-    gamma = adata.var[key + '_gamma'][idx]
-    t_ = adata.var[key + '_t_'][idx] if t_ is None else t_
-    scaling = adata.var[key + '_scaling'][idx] if key + '_scaling' in adata.var.keys() else 1
+    alpha, beta, gamma, scaling, t_ = get_vars(adata[:, idx], key=key)
 
     if 'fit_u0' in adata.var.keys():
         u0_offset, s0_offset = adata.var['fit_u0'][idx], adata.var['fit_s0'][idx]
@@ -56,10 +42,8 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
     tau, alpha, u0, s0 = vectorize(np.sort(t) if sort else t, t_, alpha, beta, gamma)
 
     ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
-    ut *= scaling
-    vt = ut * beta - st * gamma
-    ut, st = ut + u0_offset, st + s0_offset
-    return alpha, ut, st, vt
+    ut, st = ut * scaling + u0_offset, st + s0_offset
+    return alpha, ut, st
 
 
 def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, show_assignments=None):
@@ -68,7 +52,7 @@ def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, sho
     label = 'learned dynamics' if key is 'fit' else 'true dynamics'
 
     if key is not 'true':
-        _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=False, sort=False, t=show_assignments)
+        _, ut, st = compute_dynamics(adata, basis, key, extrapolate=False, sort=False, t=show_assignments)
         if show_assignments is not 'only':
             pl.scatter(st, ut, color=color, s=1)
         if show_assignments is not None and show_assignments is not False:
@@ -77,14 +61,13 @@ def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, sho
             pl.plot(np.array([s, st]), np.array([u, ut]), color='grey', linewidth=.1 * linewidth)
 
     if show_assignments is not 'only':
-        _, ut, st, _ = compute_dynamics(adata, basis, key, extrapolate=True, t=show_assignments)
+        _, ut, st = compute_dynamics(adata, basis, key, extrapolate=True, t=show_assignments)
         pl.plot(st, ut, color=color, linewidth=linewidth)
 
         idx = np.where(adata.var_names == basis)[0][0]
         beta, gamma = adata.var[key + '_beta'][idx], adata.var[key + '_gamma'][idx]
-        scaling = adata.var[key + '_scaling'][idx] if key + '_scaling' in adata.var.keys() else 1
         xnew = np.linspace(np.min(st), np.max(st))
-        ynew = gamma / beta * scaling * (xnew - np.min(xnew)) + np.min(ut)
+        ynew = gamma / beta * (xnew - np.min(xnew)) + np.min(ut)
         pl.plot(xnew, ynew, color=color, linestyle='--', linewidth=linewidth, label=label)
     return label
 
@@ -100,7 +83,7 @@ def simulation(adata, var_names='all', legend_loc='upper right', legend_fontsize
     for i, gs in enumerate(pl.GridSpec(1, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1]), dpi=dpi))):
         idx = np.where(adata.var_names == var_names[i])[0][0]
 
-        alpha, ut, st, _ = compute_dynamics(adata, idx)
+        alpha, ut, st = compute_dynamics(adata, idx)
 
         t = adata.obs[xkey] if xkey in adata.obs.keys() else make_dense(adata.layers['fit_t'][:, idx])
         idx_sorted = np.argsort(t)

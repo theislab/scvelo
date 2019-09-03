@@ -151,7 +151,7 @@ def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_
     t_max = np.max(t)
 
     def cycle(array, n_vars=None):
-        if isinstance(array, (list, tuple)):
+        if isinstance(array, (np.ndarray, list, tuple)):
             return array if n_vars is None else array * int(np.ceil(n_vars / len(array)))
         else:
             return [array] if n_vars is None else [array] * n_vars

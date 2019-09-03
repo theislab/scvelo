@@ -35,9 +35,11 @@ class DynamicsRecovery(BaseDynamics):
         # initialize beta and gamma from extreme quantiles of s
         weights_s = s_w >= np.percentile(s_w, perc, axis=0)
         weights_u = u_w >= np.percentile(u_w, perc, axis=0)
-        beta, gamma = 1, linreg(convolve(u_w, weights_s), convolve(s_w, weights_s))
+
+        weights_g = weights_s if self.steady_state_prior is None else weights_s | self.steady_state_prior[w]
+        beta, gamma = 1, linreg(convolve(u_w, weights_g), convolve(s_w, weights_g))
         # initialize gamma / beta * scaling clipped to adapt faster to extreme ratios
-        gamma = gamma * 1.5 if gamma < .05 / scaling else gamma / 1.5 if gamma > 3 / scaling else gamma
+        gamma = gamma * 1.2 if gamma < .05 / scaling else gamma / 1.2 if gamma > 1.5 / scaling else gamma
         u_inf, s_inf = u_w[weights_u | weights_s].mean(), s_w[weights_s].mean()
         u0_, s0_ = u_inf, s_inf
         alpha = u_inf * beta  # np.mean([s_inf * gamma, u_inf * beta])  # np.mean([s0_ * gamma, u0_ * beta])
@@ -46,19 +48,13 @@ class DynamicsRecovery(BaseDynamics):
         tstat_u, pval_u, means_u = test_bimodality(u_w, kde=True)
         tstat_s, pval_s, means_s = test_bimodality(s_w, kde=True)
         self.pval_steady = max(pval_u, pval_s)
-        self.u_steady = means_u[1]
-        self.s_steady = means_s[1]
+        self.steady_u = means_u[1]
+        self.steady_s = means_s[1]
 
         if self.pval_steady < 1e-3:
-            u_inf = np.mean([u_inf, self.u_steady])
-            # s_inf = self.s_steady # np.mean([s_inf, self.s_steady])
-
+            u_inf = np.mean([u_inf, self.steady_u])
             alpha = gamma * s_inf
             beta = alpha / u_inf
-
-            # weights_u = u_w >= np.percentile(u_w, perc, axis=0)
-            # u0_, s0_ = u_w[weights_u].mean(), s_w[weights_u].mean()
-
             u0_, s0_ = u_inf, s_inf
 
         # alpha, beta, gamma = np.array([alpha, beta, gamma]) * scaling
@@ -81,11 +77,9 @@ class DynamicsRecovery(BaseDynamics):
         self.set_callbacks()
 
     def initialize_scaling(self, sight=.5):  # fit scaling and update if improved
-        z_vals = self.scaling + np.linspace(-1, 1, num=5) * self.scaling * sight
+        z_vals = self.scaling + np.linspace(-1, 1, num=4) * self.scaling * sight
         for z in z_vals:
-            u0_ = self.u0_ * self.scaling / z
-            beta = self.beta / self.scaling * z
-            self.update(scaling=z, beta=beta, u0_=u0_)
+            self.update(scaling=z, beta=self.beta / self.scaling * z)
 
     def fit(self, assignment_mode=None):
         if self.max_iter > 0:
@@ -211,8 +205,12 @@ class DynamicsRecovery(BaseDynamics):
                     loss = self.get_loss(t, t_, alpha, beta, gamma, scaling)
 
         if perform_update:
+            if scaling is not None:
+                self.steady_u *= self.scaling / scaling
+                self.u0_ *= self.scaling / scaling
             if u0_ is not None: self.u0_ = u0_
             if s0_ is not None: self.s0_ = s0_
+
             self.t, self.tau, self.o = t, tau, o
             self.alpha, self.beta, self.gamma, self.scaling, self.t_ = alpha, beta, gamma, scaling, t_
             self.pars = np.c_[self.pars, np.array([alpha, beta, gamma, t_, scaling])[:, None]]
@@ -221,7 +219,8 @@ class DynamicsRecovery(BaseDynamics):
         return perform_update
 
 
-default_pars_names = ['alpha', 'beta', 'gamma', 't_', 'scaling', 'std_u', 'std_s', 'likelihood', 'u0', 's0']
+default_pars_names = ['alpha', 'beta', 'gamma', 't_', 'scaling', 'std_u', 'std_s', 'likelihood', 'u0', 's0',
+                      'pval_steady', 'steady_u', 'steady_s']
 
 
 def read_pars(adata, pars_names=None, key='fit'):
@@ -241,7 +240,7 @@ def write_pars(adata, pars, pars_names=None, add_key='fit'):
 def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_mode='projection', t_max=None,
                      fit_scaling=True, fit_time=True, fit_steady_states=True, fit_connected_states=None,
                      fit_basal_transcription=None, use_raw=False, load_pars=None, return_model=True, plot_results=False,
-                     add_key='fit', copy=False, **kwargs):
+                     steady_state_prior=None, add_key='fit', copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -265,13 +264,13 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
     if isinstance(var_names, str) and var_names not in adata.var_names:
         if var_names in adata.var.keys():
             var_names = adata.var_names[adata.var[var_names].values]
+        elif use_raw or var_names is 'all':
+            var_names = adata.var_names
         elif '_genes' in var_names:
             from .velocity import Velocity
             velo = Velocity(adata, use_raw=use_raw)
             velo.compute_deterministic(perc=[5, 95])
             var_names = adata.var_names[velo._velocity_genes]
-        elif var_names is 'all':
-            var_names = adata.var_names
         else:
             raise ValueError('Variable name not found in var keys.')
 
@@ -279,19 +278,20 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
     if len(var_names) == 0:
         raise ValueError('Variable name not found in var keys.')
 
-    alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0 = read_pars(adata)
+    alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0, pval, steady_u, steady_s = read_pars(adata)
     likelihood[np.isnan(likelihood)] = 0
     idx, L, P = [], [], []
     T = adata.layers['fit_t'] if 'fit_t' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
     Tau = adata.layers['fit_tau'] if 'fit_tau' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
     Tau_ = adata.layers['fit_tau_'] if 'fit_tau_' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
 
+    if fit_connected_states: fit_connected_states = get_connectivities(adata)
     progress = logg.ProgressReporter(len(var_names))
     for i, gene in enumerate(var_names):
         dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars, max_iter=max_iter, fit_time=fit_time,
-                              fit_steady_states=fit_steady_states,
-                              fit_connected_states=get_connectivities(adata) if fit_connected_states else fit_connected_states,
-                              fit_scaling=fit_scaling, fit_basal_transcription=fit_basal_transcription, **kwargs)
+                              fit_steady_states=fit_steady_states, fit_connected_states=fit_connected_states,
+                              fit_scaling=fit_scaling, fit_basal_transcription=fit_basal_transcription,
+                              steady_state_prior=steady_state_prior, **kwargs)
         if dm.recoverable:
             dm.fit(assignment_mode=assignment_mode)
 
@@ -300,7 +300,10 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
 
             T[:, ix], Tau[:, ix], Tau_[:, ix] = dm.t, dm.tau, dm.tau_
             alpha[ix], beta[ix], gamma[ix], t_[ix], scaling[ix] = dm.pars[:, -1]
-            u0[ix], s0[ix] = dm.u0, dm.s0
+            u0[ix], s0[ix], pval[ix], steady_u[ix], steady_s[ix] = dm.u0, dm.s0, dm.pval_steady, dm.steady_u, dm.steady_s
+            beta[ix] /= scaling[ix]
+            steady_u[ix] *= scaling[ix]
+
             std_u[ix], std_s[ix], likelihood[ix] = dm.std_u, dm.std_s, dm.likelihood
             L.append(dm.loss)
             if plot_results and i < 4:
@@ -312,7 +315,7 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
             dm = None
     progress.finish()
 
-    write_pars(adata, [alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0])
+    write_pars(adata, [alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0, pval, steady_u, steady_s])
     adata.layers['fit_t'] = T
     adata.layers['fit_tau'] = Tau
     adata.layers['fit_tau_'] = Tau_
@@ -363,7 +366,7 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
     Tau_ = adata.layers['fit_tau_'] if 'fit_tau_' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
     idx = ~ np.isnan(np.sum(T, axis=0)) if idx is None else idx
     if 'fit_alignment_scaling' not in adata.var.keys(): mz = np.ones(adata.n_vars)
-    if mode is None: mode = 'align_increments' if adata.uns['recover_dynamics']['use_raw'] else 'align_total_time'
+    if mode is None: mode = 'align_total_time'
 
     m = np.ones(adata.n_vars)
     mz_prev = np.array(mz)
@@ -372,7 +375,7 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
         mz[idx] = 1
 
     if mode is 'common_splicing_rate':
-        m[idx] = beta[idx] / scaling[idx]
+        m[idx] = beta[idx]
         mz *= m
     elif mode is 'common_scaling':
         m[idx] = scaling[idx]
@@ -381,7 +384,7 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
         dt = compute_dt(T[:, idx])
         n_obs = dt.shape[0]
 
-        idx_bool = dt > t_[idx] / n_obs
+        idx_bool = dt > t_[idx] / n_obs / 2
         dt *= idx_bool / idx_bool
         mdt = np.nanmedian(dt, axis=0)
 
@@ -429,19 +432,94 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
     return adata if copy else dm
 
 
-def recover_latent_time(data, copy=False):
+def recover_latent_time(data, root_key=None, min_likelihood=.1, min_confidence=.75, min_corr=None, t_max=None,
+                        use_graph=None, weight_diffusion=None, weight_root=None, weight_fate=None, copy=False):
     adata = data.copy() if copy else data
 
-    logg.info('computing shared time', r=True)
+    from .utils import vcorrcoef
     from .dynamical_model_utils import root_time, compute_shared_time
     from .terminal_states import terminal_states
-    from ..utils import get_connectivities
+    from .velocity_graph import velocity_graph
+    from .velocity_pseudotime import velocity_pseudotime
 
-    if 'iroot' not in adata.uns.keys():
-        if 'root_cells' not in adata.obs.keys(): terminal_states(adata)
-        adata.uns['iroot'] = get_connectivities(adata, mode='distances').dot(adata.obs['root_cells']).argmax()
-    t, t_ = root_time(adata.layers['fit_t'], root=adata.uns['iroot'])
-    adata.obs['latent_time'] = compute_shared_time(t)
+    if 'velocity_graph' not in adata.uns.keys():
+        velocity_graph(adata, approx=True)
+    if 'root_cells' not in adata.obs.keys():
+        terminal_states(adata)
+
+    t = np.array(adata.layers['fit_t'])
+    idx_valid = ~np.isnan(t.sum(0))
+    if min_likelihood is not None:
+        idx_valid &= np.array(adata.var['fit_likelihood'].values >= min_likelihood, dtype=bool)
+
+    t = t[:, idx_valid]
+    t_sum = np.sum(t, 1)
+    conn = get_connectivities(adata)
+
+    logg.info('computing latent time', r=True)
+
+    roots = np.argsort(t_sum)
+    idx_roots = adata.obs['root_cells'] > 1 - 1e-3
+    if np.sum(idx_roots) > 0: roots = roots[idx_roots]
+
+    fates = np.argsort(t_sum)[::-1]
+    idx_fates = adata.obs['end_points'] > 1 - 1e-3
+    if np.sum(idx_fates) > 0: fates = fates[idx_fates]
+
+    vpt = velocity_pseudotime(adata, root=roots[0], end=fates[0] if weight_fate else None, return_model=True).pseudotime
+
+    if min_corr is not None:
+        corr = vcorrcoef(t.T, vpt)
+        t = t[:, np.array(corr >= min_corr, dtype=bool)]
+
+    if root_key in adata.uns.keys():
+        root = adata.uns[root_key]
+        t, t_ = root_time(t, root=root)
+        latent_time = compute_shared_time(t)
+    else:
+        roots = roots[:4]
+        latent_time = np.ones(shape=(len(roots), adata.n_obs))
+        for i, root in enumerate(roots):
+            t, t_ = root_time(t, root=root)
+            latent_time[i] = compute_shared_time(t)
+        latent_time = np.mean(latent_time, axis=0)
+        latent_time /= np.max(latent_time)
+
+        fates = fates[:4]
+        latent_time_ = np.ones(shape=(len(fates), adata.n_obs))
+        for i, fate in enumerate(fates):
+            t, t_ = root_time(t, root=fate)
+            latent_time_[i] = 1 - compute_shared_time(t)
+        latent_time_ = np.mean(latent_time_, axis=0)
+        latent_time_ /= np.max(latent_time_)
+
+        if weight_root is not None:
+            w = weight_root
+            latent_time = (1 - w) * latent_time + w * conn.dot(t_sum / np.max(t_sum))
+
+    tl = latent_time
+    tc = conn.dot(latent_time)
+
+    z = tl.dot(tc) / tc.dot(tc)
+    tl_conf = (1 - np.abs(tl / np.max(tl) - tc * z / np.max(tl))) ** 2
+    idx_low_confidence = tl_conf < min_confidence
+
+    if weight_diffusion is not None or use_graph:
+        w = 1 if use_graph else weight_diffusion
+        latent_time = (1 - w) * latent_time + w * vpt
+        latent_time[idx_low_confidence] = vpt[idx_low_confidence]
+    else:
+        conn_new = conn.copy()
+        conn_new[:, idx_low_confidence] = 0
+        conn_new.eliminate_zeros()
+        latent_time = conn_new.dot(latent_time)
+
+    latent_time -= np.min(latent_time)
+    latent_time /= np.max(latent_time)
+    if t_max is not None:
+        latent_time *= t_max
+
+    adata.obs['latent_time'] = latent_time
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n'

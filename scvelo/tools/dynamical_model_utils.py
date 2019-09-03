@@ -54,12 +54,12 @@ def compute_dt(t, clipped=True, axis=0):
     return dt
 
 
-def root_time(t, root=0):
+def root_time(t, root=None):
     nans = np.isnan(np.sum(t, axis=0))
     if np.any(nans): t = t[:, ~nans]
 
-    t_root = t[root]
-    o = t >= t_root  # True if after 'root'
+    t_root = 0 if root is None else t[root]
+    o = np.array(t >= t_root, dtype=int)
     t_after = (t - t_root) * o
     t_origin = np.max(t_after, axis=0)
     t_before = (t + t_origin) * (1 - o)
@@ -70,6 +70,10 @@ def root_time(t, root=0):
 
 
 def compute_shared_time(t, perc=None, norm=True):
+    nans = np.isnan(np.sum(t, axis=0))
+    if np.any(nans): t = np.array(t[:, ~nans])
+    t -= np.min(t)
+
     tx_list = np.percentile(t, [15, 20, 25, 30, 35] if perc is None else perc, axis=1)
     tx_max = np.max(tx_list, axis=1)
     tx_max += tx_max == 0
@@ -83,8 +87,7 @@ def compute_shared_time(t, perc=None, norm=True):
     idx_best = np.argsort(mse)[:2]
 
     t_shared = tx_list[idx_best].sum(0)
-    if norm:
-        t_shared /= t_shared.max()
+    if norm: t_shared /= t_shared.max()
 
     return t_shared
 
@@ -192,7 +195,8 @@ def assign_tau(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, assignment
 def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s0_=None, tau=None, tau_=None,
                        std_u=1, std_s=1, normalized=False, mode='distance', assignment_mode=None, var_scale=False,
                        kernel_width=None, fit_steady_states=True, connectivities=None, constraint_time_increments=True,
-                       min_confidence=None):
+                       reg_time=None, reg_par=None, min_confidence=None, pval_steady=None, steady_u=None, steady_s=None,
+                       noise_model='chi', **kwargs):
     """Estimates the divergence (avaiable metrics: distance, mse, likelihood, loglikelihood) of ODE to observations
 
     Arguments
@@ -239,6 +243,20 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
     res, varx = np.array([distx_, distx]), 1  # default vals;
 
+    if noise_model is 'normal':
+        if var_scale:
+            o = np.argmin([distx_, distx], axis=0)
+            varu = np.nanvar(distu * o + distu_ + (1 - o), axis=0)
+            vars = np.nanvar(dists * o + dists_ + (1 - o), axis=0)
+
+            distx = distu ** 2 / varu + dists ** 2 / vars
+            distx_ = distu_ ** 2 / varu + dists_ ** 2 / vars
+
+            varx = varu * vars
+
+            std_u *= np.sqrt(varu)
+            std_s *= np.sqrt(vars)
+
     # compute steady state distances
     if fit_steady_states:
         distx_steady = ((u - alpha / beta) / std_u) ** 2 + ((s - alpha / gamma) / std_s) ** 2
@@ -250,17 +268,33 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         res = np.array([connectivities.dot(r) for r in res]) if res.ndim > 2 else connectivities.dot(res.T).T
 
     # compute variances
-    if var_scale:
-        o = np.argmin([distx_, distx], axis=0)
-        dist = distx * o + distx_ * (1 - o)
-        sign = np.sign(dists * o + dists_ * (1 - o))
-        varx = np.mean(dist, axis=0) - np.mean(sign * np.sqrt(dist), axis=0) ** 2
-        if kernel_width is not None: varx *= kernel_width ** 2
-        res /= varx
-    elif kernel_width is not None:
-        res /= kernel_width ** 2
+    if noise_model is 'chi':
+        if var_scale:
+            o = np.argmin([distx_, distx], axis=0)
+            dist = distx * o + distx_ * (1 - o)
+            sign = np.sign(dists * o + dists_ * (1 - o))
+            varx = np.mean(dist, axis=0) - np.mean(sign * np.sqrt(dist), axis=0) ** 2
+            if kernel_width is not None: varx *= kernel_width ** 2
+            res /= varx
+        elif kernel_width is not None:
+            res /= kernel_width ** 2
 
-    # ToDo: adjust distx, distx_ to match shared time
+    if reg_time is not None and len(reg_time) == len(distu_):
+        o = np.argmin(res, axis=0)
+        t_max = (t_ + tau_) * (o == 0)
+        t_max /= np.max(t_max, axis=0)
+        reg_time /= np.max(reg_time)
+
+        dist_tau = (tau - reg_time[:, None]) ** 2
+        dist_tau_ = (tau_ + t_ - reg_time[:, None]) ** 2
+        mu_res = np.mean(res, axis=1)
+        if reg_par is not None: mu_res *= reg_par
+
+        res[0] += dist_tau_ * mu_res[0]
+        res[1] += dist_tau * mu_res[1]
+        if fit_steady_states:
+            res[2] += dist_tau * mu_res[1]
+            res[3] += dist_tau_ * mu_res[0]
 
     if mode is 'tau':
         res = [tau, tau_]
@@ -273,16 +307,31 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         res = np.log(2 * np.pi * np.sqrt(varx)) + .5 * res
         if normalized: res = normalize(res, min_confidence=min_confidence)
 
-    elif mode is 'soft_eval':
+    elif mode is 'confidence':
+        res = np.array([res[0], res[1]])
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
+        if normalized: res = normalize(res, min_confidence=min_confidence)
+        res = np.median(np.max(res, axis=0) - (np.sum(res, axis=0) - np.max(res, axis=0)), axis=1)
+
+    elif mode is 'soft_eval' or mode is 'soft':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         if normalized: res = normalize(res, min_confidence=min_confidence)
 
         o_, o = res[0], res[1]
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
-    elif mode is 'hard_eval':
-        o = np.argmin(res, axis=0)
-        o_, o = o[0], o[1]
+    elif mode is 'hardsoft_eval' or mode is 'hardsoft':
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
+        if normalized: res = normalize(res, min_confidence=min_confidence)
+        o = np.argmax(res, axis=0)
+        o_, o = (o == 0) * res[0], (o == 1) * res[1]
+        res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
+
+    elif mode is 'hard_eval' or mode is 'hard':
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
+        if normalized: res = normalize(res, min_confidence=min_confidence)
+        o = np.argmax(res, axis=0)
+        o_, o = o == 0, o == 1
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
     elif mode is 'soft_state':
@@ -368,7 +417,7 @@ def curve_dists(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, std_u=1, 
 class BaseDynamics:
     def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, perc=99, max_iter=10, fit_time=True,
                  fit_scaling=True, fit_steady_states=True, fit_connected_states=True, fit_basal_transcription=None,
-                 high_pars_resolution=False):
+                 high_pars_resolution=False, steady_state_prior=None):
         self.s, self.u, self.use_raw = None, None, None
 
         _layers = adata[:, gene].layers
@@ -405,6 +454,7 @@ class BaseDynamics:
 
         self.assignment_mode = None
         self.steady_state_ratio = None
+        self.steady_state_prior = steady_state_prior
 
         self.fit_scaling = fit_scaling
         self.fit_steady_states = fit_steady_states
@@ -434,7 +484,7 @@ class BaseDynamics:
     def load_pars(self, adata, gene):
         idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
         self.alpha = adata.var['fit_alpha'][idx]
-        self.beta = adata.var['fit_beta'][idx]
+        self.beta = adata.var['fit_beta'][idx] * adata.var['fit_scaling'][idx]
         self.gamma = adata.var['fit_gamma'][idx]
         self.scaling = adata.var['fit_scaling'][idx]
         self.t_ = adata.var['fit_t_'][idx]
@@ -749,7 +799,7 @@ class BaseDynamics:
                     ax.set_yticks([])
 
     def plot_state_likelihoods(self, num=300, dpi=None, figsize=None, color_map=None, color_map_steady=None,
-                               continuous=True, common_color_scale=True, var_scale=None, kernel_width=None,
+                               continuous=True, common_color_scale=True, var_scale=True, kernel_width=None,
                                normalized=None, transitions=None, colorbar=False, alpha_=0.5, linewidths=3,
                                padding_u=.1, padding_s=.1, fontsize=12, title=None, ax=None, **kwargs):
         from ..plotting.utils import update_axes
@@ -830,3 +880,56 @@ class BaseDynamics:
         return ax
 
 
+def get_reads(adata, key='fit', scaled=True, use_raw=False):
+    if 'Ms' not in adata.layers.keys(): use_raw=True
+    u = np.array(adata.layers['unspliced'] if use_raw else adata.layers['Mu'])
+    if scaled: u /= adata.var[key + '_scaling'].values
+    s = np.array(adata.layers['spliced'] if use_raw else adata.layers['Ms'])
+    return u, s
+
+
+def get_vars(adata, scaled=True, key='fit'):
+    alpha = adata.var[key + '_alpha'].values if key + '_alpha' in adata.var.keys() else 1
+    beta = adata.var[key + '_beta'].values if key + '_beta' in adata.var.keys() else 1
+    gamma = adata.var[key + '_gamma'].values
+    scaling = adata.var[key + '_scaling'].values if key + '_scaling' in adata.var.keys() else 1
+    t_ = adata.var[key + '_t_'].values
+    return alpha, beta * scaling if scaled else beta, gamma, scaling, t_
+
+
+def get_latent_vars(adata, scaled=True, key='fit'):
+    scaling = adata.var[key + '_scaling'].values
+    std_u = adata.var[key + '_std_u'].values
+    std_s = adata.var[key + '_std_s'].values
+    u0 = adata.var[key + '_u0'].values
+    s0 = adata.var[key + '_s0'].values
+    pval_steady = adata.var[key + '_pval_steady'].values if key + '_pval_steady' in adata.var.keys() else None
+    steady_u = adata.var[key + '_steady_u'].values if key + '_steady_u' in adata.var.keys() else None
+    steady_s = adata.var[key + '_steady_s'].values if key + '_steady_s' in adata.var.keys() else None
+    return std_u, std_s, u0 / scaling if scaled else u0, s0, pval_steady, steady_u, steady_s
+
+
+def get_divergence(adata, mode='soft', use_latent_time=None, use_connectivities=None, **kwargs):
+    vdata = adata[:, ~np.isnan(adata.var['fit_alpha'].values)]
+    alpha, beta, gamma, scaling, t_ = get_vars(vdata)
+    std_u, std_s, u0, s0, pval_steady, steady_u, steady_s = get_latent_vars(vdata)
+
+    kwargs_ = {'kernel_width': None, 'normalized': True, 'var_scale': True, 'reg_par': None,
+               'min_confidence': 1e-2, 'constraint_time_increments': False, 'fit_steady_states': True,
+               'std_u': std_u, 'std_s': std_s, 'pval_steady': pval_steady, 'steady_u': steady_u, 'steady_s': steady_s}
+    kwargs_.update(adata.uns['recover_dynamics'])
+    kwargs_.update(**kwargs)
+
+    reg_time = None
+    if use_latent_time is True: use_latent_time = 'latent_time'
+    if isinstance(use_latent_time, str) and use_latent_time in adata.obs.keys():
+        reg_time = adata.obs[use_latent_time].values
+
+    u, s = get_reads(vdata, use_raw=kwargs_['use_raw'])
+    if kwargs_['fit_basal_transcription']: u, s = u - u0, s - s0
+    tau = np.array(vdata.layers['fit_tau']) if 'fit_tau' in vdata.layers.keys() else None
+    tau_ = np.array(vdata.layers['fit_tau_']) if 'fit_tau_' in vdata.layers.keys() else None
+
+    res = compute_divergence(u, s, alpha, beta, gamma, scaling, t_, tau=tau, tau_=tau_, reg_time=reg_time, mode=mode,
+                             connectivities=get_connectivities(adata) if use_connectivities else None, **kwargs_)
+    return res
