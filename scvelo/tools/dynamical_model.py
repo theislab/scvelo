@@ -29,7 +29,7 @@ class DynamicsRecovery(BaseDynamics):
 
         # initialize scaling
         self.std_u, self.std_s = np.std(u_w), np.std(s_w)
-        scaling = self.std_u / self.std_s if isinstance(self.fit_scaling, bool) else self.fit_scaling
+        scaling = self.std_u / self.std_s if isinstance(self.fix_scaling, bool) else self.fix_scaling
         u, u_w = u / scaling, u_w / scaling
 
         # initialize beta and gamma from extreme quantiles of s
@@ -273,7 +273,7 @@ def write_pars(adata, pars, pars_names=None, add_key='fit'):
 
 
 def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_mode='projection', t_max=None,
-                     fit_scaling=True, fit_time=True, fit_steady_states=True, fit_connected_states=None,
+                     fix_scaling=False, fix_time=False, fit_steady_states=True, fit_connected_states=None,
                      fit_basal_transcription=None, use_raw=False, load_pars=None, return_model=True, plot_results=False,
                      add_key='fit', copy=False, **kwargs):
     """\
@@ -283,7 +283,7 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
-    var_names: `str`,  list of `str`
+    var_names: `str`,  list of `str` (default: `'velocity_genes`)
         Names of variables to use for the fitting.
     max_iter:`int` (default: `10`)
         Maximal iterations in the EM-Algorithm.
@@ -293,11 +293,11 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
         Else uses an inverse approximating formula.
     t_max: `float` or `None` (default: `None`)
         Upper bound for time assignments.
-    fit_scaling: `bool` or `None` (default: `None`)
+    fix_scaling: `bool` or `float` or `None` (default: `None`)
         Whether to fit scaling between unspliced and spliced or keep initially given scaling fixed.
-    fit_time: `bool` or `None` (default: `None`)
+    fix_time: `bool` or `float` or `None` (default: `None`)
         Whether to fit time or keep initially given time fixed.
-    fit_steady_states: `bool` or `None` (default: `None`)
+    fit_steady_states: `bool` or `None` (default: `True`)
         Allows fitting of observations to steady states next to repression and induction.
     fit_connected_states: `bool` or `None` (default: `None`)
         Restricts fitting to neighbors given by connectivities.
@@ -307,9 +307,9 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
         If True, remove outliers.
     load_pars: `bool` or `None` (default: `None`)
         Load parameters from past fits.
-    return_model: `bool` or `None` (default: `None`)
+    return_model: `bool` or `None` (default: `True`)
         Whether to return the model as :DynamicsRecovery: object.
-    plot_results: `bool` or `None` (default: `None`)
+    plot_results: `bool` or `None` (default: `False`)
         Plot results after finishing recovery.
     add_key: `str` (default: `'fit'`)
         Key to add to parameter names, e.g. 'fit_t' for fitted time.
@@ -355,10 +355,10 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
 
     progress = logg.ProgressReporter(len(var_names))
     for i, gene in enumerate(var_names):
-        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars, max_iter=max_iter, fit_time=fit_time,
+        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars, max_iter=max_iter, fix_time=fix_time,
                               fit_steady_states=fit_steady_states,
                               fit_connected_states=get_connectivities(adata) if fit_connected_states else fit_connected_states,
-                              fit_scaling=fit_scaling, fit_basal_transcription=fit_basal_transcription, **kwargs)
+                              fix_scaling=fix_scaling, fit_basal_transcription=fit_basal_transcription, **kwargs)
         if dm.recoverable:
             dm.fit(assignment_mode=assignment_mode)
 

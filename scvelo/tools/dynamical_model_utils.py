@@ -366,8 +366,8 @@ def curve_dists(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, std_u=1, 
 
 
 class BaseDynamics:
-    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, perc=99, max_iter=10, fit_time=True,
-                 fit_scaling=True, fit_steady_states=True, fit_connected_states=True, fit_basal_transcription=None,
+    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, perc=99, max_iter=10, fix_time=False,
+                 fix_scaling=False, fit_steady_states=True, fit_connected_states=True, fit_basal_transcription=None,
                  high_pars_resolution=False):
         self.s, self.u, self.use_raw = None, None, None
 
@@ -401,12 +401,12 @@ class BaseDynamics:
         self.recoverable = True
         self.initialize_weights()
 
-        self.refit_time = fit_time
+        self.refit_time = not fix_time if isinstance(fix_time, bool) else fix_time
 
         self.assignment_mode = None
         self.steady_state_ratio = None
 
-        self.fit_scaling = fit_scaling
+        self.fix_scaling = fix_scaling
         self.fit_steady_states = fit_steady_states
         self.fit_connected_states = fit_connected_states
         self.connectivities = get_connectivities(adata) if self.fit_connected_states is True else self.fit_connected_states
