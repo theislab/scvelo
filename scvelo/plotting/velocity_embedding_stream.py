@@ -68,8 +68,6 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         lengths = np.sqrt((V_grid ** 2).sum(0))
         linewidth = 1 if linewidth is None else linewidth
         linewidth *= 2 * lengths / lengths[~np.isnan(lengths)].max()
-        #linewidth = info#.reshape(X_grid.shape)
-        print(info.shape, V_grid[0].shape)
 
     scatter_kwargs = {"basis": basis, "perc": perc, "use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
                       "components": components, "legend_loc": legend_loc, "groups": groups,
