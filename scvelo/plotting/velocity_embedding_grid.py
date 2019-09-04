@@ -12,7 +12,7 @@ import matplotlib.pyplot as pl
 import numpy as np
 
 
-def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbors=None, min_mass=None, autoscale=True, adjust_for_stream=False):
+def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbors=None, min_mass=None, autoscale=True, adjust_for_stream=False, cutoff=0.1):
     # remove invalid cells
     idx_valid = np.isfinite(X_emb.sum(1) + V_emb.sum(1))
     X_emb = X_emb[idx_valid]
@@ -52,10 +52,17 @@ def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbor
         ns = int(np.sqrt(len(V_grid[:, 0])))
         V_grid = V_grid.T.reshape(2, ns, ns)
 
+        info = np.sum(np.var(V_emb[neighs], axis=1), axis=1)
+        info = info / info.max()
+        info = info.T.reshape(ns, ns)
+
         mass = np.sqrt((V_grid ** 2).sum(0))
         min_mass = 10 ** (min_mass - 6)  # default min_mass = 1e-5
         min_mass = np.clip(min_mass, None, np.max(mass) * .9)
         V_grid[0][mass.reshape(V_grid[0].shape) < min_mass] = np.nan
+        V_grid[0][info < cutoff] = np.nan
+
+        return X_grid, V_grid, info
     else:
         min_mass *= np.percentile(p_mass, 99) / 100
         X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]

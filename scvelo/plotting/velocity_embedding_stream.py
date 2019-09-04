@@ -11,7 +11,7 @@ import numpy as np
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, smooth=None, min_mass=None,
+def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, smooth=None, min_mass=None, cutoff=0.1,
                               arrow_color=None, linewidth=None, n_neighbors=None, recompute=None, color=None, use_raw=None,
                               layer=None, color_map=None, colorbar=True, palette=None, size=None, alpha=.1, perc=None,
                               X=None, V=None, X_grid=None, V_grid=None, sort_order=True, groups=None, components=None,
@@ -63,11 +63,13 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
             if groups is not None and color in adata.obs.keys() else adata
         X_emb = np.array(_adata.obsm['X_' + basis][:, get_components(components, basis)]) if X is None else X[:, :2]
         V_emb = np.array(_adata.obsm[vkey + '_' + basis][:, get_components(components, basis)]) if V is None else V[:, :2]
-        X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=1, smooth=smooth, min_mass=min_mass,
-                                                  n_neighbors=n_neighbors, autoscale=False, adjust_for_stream=True)
+        X_grid, V_grid, info = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=1, smooth=smooth, min_mass=min_mass,
+                                                  n_neighbors=n_neighbors, autoscale=False, adjust_for_stream=True, cutoff=cutoff)
         lengths = np.sqrt((V_grid ** 2).sum(0))
         linewidth = 1 if linewidth is None else linewidth
         linewidth *= 2 * lengths / lengths[~np.isnan(lengths)].max()
+        #linewidth = info#.reshape(X_grid.shape)
+        print(info.shape, V_grid[0].shape)
 
     scatter_kwargs = {"basis": basis, "perc": perc, "use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
                       "components": components, "legend_loc": legend_loc, "groups": groups,
