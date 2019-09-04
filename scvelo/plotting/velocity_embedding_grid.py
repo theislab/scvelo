@@ -12,7 +12,7 @@ import matplotlib.pyplot as pl
 import numpy as np
 
 
-def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbors=None, min_mass=None, autoscale=True, adjust_for_stream=False, cutoff=0.1):
+def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbors=None, min_mass=None, autoscale=True, adjust_for_stream=False, cutoff=None):
     # remove invalid cells
     idx_valid = np.isfinite(X_emb.sum(1) + V_emb.sum(1))
     X_emb = X_emb[idx_valid]
@@ -60,7 +60,7 @@ def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbor
         min_mass = 10 ** (min_mass - 6)  # default min_mass = 1e-5
         min_mass = np.clip(min_mass, None, np.max(mass) * .9)
         V_grid[0][mass.reshape(V_grid[0].shape) < min_mass] = np.nan
-        V_grid[0][info < cutoff] = np.nan
+        if cutoff is not None: V_grid[0][info < np.percentile(info, cutoff)] = np.nan
 
         return X_grid, V_grid, info
     else:

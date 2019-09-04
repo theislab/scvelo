@@ -11,7 +11,7 @@ import numpy as np
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, smooth=None, min_mass=None, cutoff=0.1,
+def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, smooth=None, min_mass=None, cutoff=None,
                               arrow_color=None, linewidth=None, n_neighbors=None, recompute=None, color=None, use_raw=None,
                               layer=None, color_map=None, colorbar=True, palette=None, size=None, alpha=.1, perc=None,
                               X=None, V=None, X_grid=None, V_grid=None, sort_order=True, groups=None, components=None,
