@@ -64,14 +64,16 @@ def convert_to_loom(adata, basis=None):
 
     class VelocytoLoom(velocyto.VelocytoLoom):
         def __init__(self, adata, basis=None):
+            kwargs = {'dtype': np.float64, 'order': 'C'}
+
             self.S = adata.layers['spliced'].T
             self.U = adata.layers['unspliced'].T
-            self.S = self.S.A if issparse(self.S) else self.S
-            self.U = self.U.A if issparse(self.U) else self.U
+            self.S = np.array(self.S.A, **kwargs) if issparse(self.S) else np.array(self.S, **kwargs)
+            self.U = np.array(self.U.A, **kwargs) if issparse(self.U) else np.array(self.U, **kwargs)
 
             if 'initial_size_spliced' in adata.obs.keys():
-                self.initial_cell_size = adata.obs['initial_size_spliced']
-                self.initial_Ucell_size = adata.obs['initial_size_unspliced']
+                self.initial_cell_size = adata.obs['initial_size_spliced'].values
+                self.initial_Ucell_size = adata.obs['initial_size_unspliced'].values
             else:
                 self.initial_cell_size = self.S.sum(0)
                 self.initial_Ucell_size = self.U.sum(0)
@@ -83,17 +85,17 @@ def convert_to_loom(adata, basis=None):
                 self.S_norm = np.log1p(self.S_sz)
 
             if 'Ms' in adata.layers.keys():
-                self.Sx_sz = self.Sx = adata.layers['Ms'].T
-                self.Ux_sz = self.Ux = adata.layers['Mu'].T
+                self.Sx_sz = self.Sx = np.array(adata.layers['Ms'].T, **kwargs)
+                self.Ux_sz = self.Ux = np.array(adata.layers['Mu'].T, **kwargs)
 
             if 'X_pca' in adata.obsm.keys():
-                self.pcs = adata.obsm['X_pca']
+                self.pcs = np.array(adata.obsm['X_pca'])
 
             if 'velocity' in adata.layers.keys():
-                self.velocity = adata.layers['velocity']
+                self.velocity = np.array(adata.layers['velocity'].T, **kwargs)
 
             if 'ambiguous' in adata.layers.keys():
-                self.A = adata.layers['ambiguous'].T
+                self.A = np.array(adata.layers['ambiguous'].T)
                 if issparse(self.A): self.A = self.A.A
 
             self.ca = dict()
@@ -143,8 +145,8 @@ def convert_to_loom(adata, basis=None):
             self.knn_imputation(n_pca_dims=n_pcs, k=k, balanced=balanced, b_sight=k * 8, b_maxl=k * 4)
             if renormalize: self.normalize_median()
 
-        def velocity_estimation(self, fit_offset=False, perc=[5, 95], filter_genes=False):
-            self.fit_gammas(limit_gamma=False, fit_offset=fit_offset, weighted=(perc is not None), maxmin_perc=perc)
+        def velocity_estimation(self, fit_offset=False, perc=[5, 95], filter_genes=False, limit_gamma=False):
+            self.fit_gammas(limit_gamma=limit_gamma, fit_offset=fit_offset, weighted=(perc is not None), maxmin_perc=perc)
             if filter_genes: self.filter_genes_good_fit()
 
             self.predict_U()
@@ -168,7 +170,7 @@ def convert_to_loom(adata, basis=None):
         def velocity_embedding(self, smooth=0.5, steps=(50, 50), n_neighbors=100):
             self.calculate_grid_arrows(smooth=smooth, steps=steps, n_neighbors=n_neighbors)
 
-        def run_all(self, min_counts=3, min_counts_u=3, n_pcs=30, n_neighbors=30, n_neighbors_graph=100,
+        def run_all(self, min_counts=30, min_counts_u=30, n_pcs=30, n_neighbors=30, n_neighbors_graph=100,
                     n_top_genes=None, fit_offset=False, limit_gamma=False, transform='linear', expression_scaling=False,):
             from time import time
             start = time()

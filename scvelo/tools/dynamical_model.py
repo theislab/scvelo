@@ -237,9 +237,9 @@ def write_pars(adata, pars, pars_names=None, add_key='fit'):
         adata.var[add_key + '_' + name] = pars[i]
 
 
-def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_mode='projection', t_max=None,
-                     fit_scaling=True, fit_time=True, fit_steady_states=True, fit_connected_states=None,
-                     fit_basal_transcription=None, use_raw=False, load_pars=None, return_model=True, plot_results=False,
+def recover_dynamics(data, var_names='velocity_genes', n_top_genes=200, max_iter=10, assignment_mode='projection',
+                     t_max=None, fit_time=True, fit_scaling=True, fit_steady_states=True, fit_connected_states=None,
+                     fit_basal_transcription=None, use_raw=False, load_pars=None, return_model=None, plot_results=False,
                      steady_state_prior=None, add_key='fit', copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
@@ -274,9 +274,14 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
         else:
             raise ValueError('Variable name not found in var keys.')
 
-    var_names = [name for name in make_unique_list(var_names, allow_array=True) if name in adata.var_names]
+    var_names = np.array([name for name in make_unique_list(var_names, allow_array=True) if name in adata.var_names])
     if len(var_names) == 0:
         raise ValueError('Variable name not found in var keys.')
+    if n_top_genes is not None and len(var_names) > n_top_genes:
+        X = adata[:, var_names].layers[('spliced' if use_raw else 'Ms')]
+        var_names = var_names[np.argsort(np.sum(X, 0))[::-1][:n_top_genes]]
+    if return_model is None:
+        return_model = len(var_names) < 5
 
     alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0, pval, steady_u, steady_s = read_pars(adata)
     likelihood[np.isnan(likelihood)] = 0
@@ -285,13 +290,12 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
     Tau = adata.layers['fit_tau'] if 'fit_tau' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
     Tau_ = adata.layers['fit_tau_'] if 'fit_tau_' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
 
-    if fit_connected_states: fit_connected_states = get_connectivities(adata)
+    conn = get_connectivities(adata) if fit_connected_states else None
     progress = logg.ProgressReporter(len(var_names))
     for i, gene in enumerate(var_names):
         dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars, max_iter=max_iter, fit_time=fit_time,
-                              fit_steady_states=fit_steady_states, fit_connected_states=fit_connected_states,
-                              fit_scaling=fit_scaling, fit_basal_transcription=fit_basal_transcription,
-                              steady_state_prior=steady_state_prior, **kwargs)
+                              fit_steady_states=fit_steady_states, fit_connected_states=conn, fit_scaling=fit_scaling,
+                              fit_basal_transcription=fit_basal_transcription, steady_state_prior=steady_state_prior, **kwargs)
         if dm.recoverable:
             dm.fit(assignment_mode=assignment_mode)
 
@@ -316,7 +320,7 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
     progress.finish()
 
     write_pars(adata, [alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0, pval, steady_u, steady_s])
-    adata.layers['fit_t'] = T
+    adata.layers['fit_t'] = T if conn is None else conn.dot(T)
     adata.layers['fit_tau'] = Tau
     adata.layers['fit_tau_'] = Tau_
 
@@ -355,6 +359,10 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
             if i == 0:
                 for j, name in enumerate(['alpha', 'beta', 'gamma', 't_', 'scaling', 'loss']):
                     ax[j].set_title(name, fontsize=fontsize)
+
+    if return_model:
+        logg.info('\noutputs model fit of gene:', dm.gene)
+
     return dm if return_model else adata if copy else None
 
 
