@@ -84,6 +84,8 @@ show_rug: `str` or `None` (default: `None`)
     distribution of data membership to each of the categories.
 n_convolve: `int` or `None` (default: `None`)
     If `int` is given, data is smoothed by convolution along the x-axis with kernel size n_convolve.
+smooth: `bool` or `int` (default: `None`)
+    Whether to convolve/average the color values over the nearest neighbors. If `int`, it specifies number of neighbors.
 dpi: `int` (default: 80)
     Figure dpi.
 frameon: `bool` (default: `True`)

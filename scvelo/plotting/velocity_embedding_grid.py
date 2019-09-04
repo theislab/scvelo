@@ -1,7 +1,7 @@
 from ..tools.velocity_embedding import quiver_autoscale, velocity_embedding
 from ..tools.utils import groups_to_bool
 from .utils import default_basis, default_size, default_color, get_components, savefig_or_show, default_arrow, \
-    make_unique_list, get_basis
+    make_unique_list, get_basis, velocity_embedding_changed
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -12,7 +12,8 @@ import matplotlib.pyplot as pl
 import numpy as np
 
 
-def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbors=None, min_mass=None, autoscale=True, adjust_for_stream=False):
+def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbors=None, min_mass=None, autoscale=True,
+                             adjust_for_stream=False, cutoff_perc=None):
     # remove invalid cells
     idx_valid = np.isfinite(X_emb.sum(1) + V_emb.sum(1))
     X_emb = X_emb[idx_valid]
@@ -55,7 +56,13 @@ def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbor
         mass = np.sqrt((V_grid ** 2).sum(0))
         min_mass = 10 ** (min_mass - 6)  # default min_mass = 1e-5
         min_mass = np.clip(min_mass, None, np.max(mass) * .9)
-        V_grid[0][mass.reshape(V_grid[0].shape) < min_mass] = np.nan
+        cutoff = mass.reshape(V_grid[0].shape) < min_mass
+
+        if cutoff_perc is not None:
+            length = np.sum(np.mean(np.abs(V_emb[neighs]), axis=1), axis=1).T.reshape(ns, ns)
+            cutoff |= length < np.percentile(length, cutoff_perc)
+
+        V_grid[0][cutoff] = np.nan
     else:
         min_mass *= np.percentile(p_mass, 99) / 100
         X_grid, V_grid = X_grid[p_mass > min_mass], V_grid[p_mass > min_mass]
@@ -81,10 +88,6 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    x: `str`, `np.ndarray` or `None` (default: `None`)
-        x coordinate
-    y: `str`, `np.ndarray` or `None` (default: `None`)
-        y coordinate
     vkey: `str` or `None` (default: `None`)
         Key for annotations of observations/cells or variables/genes.
     density: `float` (default: 1)
@@ -96,7 +99,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
     scale: `float` (default: 1)
         Length of velocities in the embedding.
     min_mass: `float` or `None` (default: `None`)
-        Minimum threshold for mass to be shown.
+        Minimum threshold for mass to be shown. It can range between 0 (all velocities) and 100 (large velocities).
     smooth: `float` (default: 0.5)
         Multiplication factor for scale in Gaussian kernel around grid point.
     n_neighbors: `int` (default: None)
@@ -114,9 +117,12 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
     basis = default_basis(adata) if basis is None else get_basis(adata, basis)
     vkey = [key for key in adata.layers.keys() if 'velocity' in key and '_u' not in key] if vkey is 'all' else vkey
     colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
-    for key in vkeys:
-        if recompute or (key + '_' + basis not in adata.obsm_keys() and V is None):
-            velocity_embedding(adata, basis=basis, vkey=key)
+
+    if V is None:
+        for key in vkeys:
+            if recompute or velocity_embedding_changed(adata, basis=basis, vkey=key):
+                velocity_embedding(adata, basis=basis, vkey=key)
+
     color, layer, vkey = colors[0], layers[0], vkeys[0]
     color = default_color(adata) if color is None else color
 

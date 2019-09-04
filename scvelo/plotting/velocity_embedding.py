@@ -1,7 +1,7 @@
 from ..tools.velocity_embedding import velocity_embedding as compute_velocity_embedding
 from ..tools.utils import groups_to_bool
-from .utils import interpret_colorkey, default_basis, default_size, get_components, savefig_or_show, \
-    default_color, default_arrow, make_unique_list, make_unique_valid_list, get_basis, default_color_map
+from .utils import interpret_colorkey, default_basis, default_size, get_components, savefig_or_show, default_color, \
+    default_arrow, make_unique_list, make_unique_valid_list, get_basis, default_color_map, velocity_embedding_changed
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -25,10 +25,6 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    x: `str`, `np.ndarray` or `None` (default: `None`)
-        x coordinate
-    y: `str`, `np.ndarray` or `None` (default: `None`)
-        y coordinate
     vkey: `str` or `None` (default: `None`)
         Key for annotations of observations/cells or variables/genes.
     density: `float` (default: 1)
@@ -49,10 +45,11 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
     layers, vkeys, colors = make_unique_list(layer), make_unique_list(vkey), make_unique_list(color, allow_array=True)
     bases = [default_basis(adata) if basis is None else basis for basis in make_unique_valid_list(adata, basis)]
 
-    for key in vkeys:
-        for basis in bases:
-            if recompute or (key + '_' + basis not in adata.obsm_keys() and basis not in adata.var_names and V is None):
-                compute_velocity_embedding(adata, basis=basis, vkey=key)
+    if V is None:
+        for key in vkeys:
+            for basis in bases:
+                if recompute or velocity_embedding_changed(adata, basis=basis, vkey=key):
+                    compute_velocity_embedding(adata, basis=basis, vkey=key)
 
     scatter_kwargs = {"perc": perc, "use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
                       "components": components, "projection": projection, "legend_loc": legend_loc, "groups": groups,

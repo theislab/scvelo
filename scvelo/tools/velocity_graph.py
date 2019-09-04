@@ -28,15 +28,18 @@ def vals_to_csr(vals, rows, cols, shape, split_negative=False):
 
 class VelocityGraph:
     def __init__(self, adata, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, sqrt_transform=False,
-                 n_recurse_neighbors=None, random_neighbors_at_max=None, approx=False, report=False):
+                 n_recurse_neighbors=None, random_neighbors_at_max=None, gene_subset=None, approx=False, report=False):
 
-        subset = np.array(adata.var[vkey + '_genes'].values, dtype=bool) \
-            if vkey + '_genes' in adata.var.keys() else np.ones(adata.n_vars, bool)
+        subset = np.ones(adata.n_vars, bool)
+        if gene_subset is not None:
+            subset &= adata.var_names.isin(gene_subset) if len(adata.var_names.isin(gene_subset)) > 0 else gene_subset
+        elif vkey + '_genes' in adata.var.keys():
+            subset &= np.array(adata.var[vkey + '_genes'].values, dtype=bool)
 
         xkey = xkey if xkey in adata.layers.keys() else 'spliced'
 
-        X = adata.layers[xkey].A[:, subset] if issparse(adata.layers[xkey]) else adata.layers[xkey][:, subset]
-        V = adata.layers[vkey].A[:, subset] if issparse(adata.layers[vkey]) else adata.layers[vkey][:, subset]
+        X = np.array(adata.layers[xkey].A[:, subset] if issparse(adata.layers[xkey]) else adata.layers[xkey][:, subset])
+        V = np.array(adata.layers[vkey].A[:, subset] if issparse(adata.layers[vkey]) else adata.layers[vkey][:, subset])
 
         nans = np.isnan(np.sum(V, axis=0))
         if np.any(nans):
@@ -91,6 +94,7 @@ class VelocityGraph:
         else: self.t0 = None
 
         self.report = report
+        self.self_prob = None
 
     def compute_cosines(self):
         vals, rows, cols, n_obs = [], [], [], self.X.shape[0]
@@ -123,9 +127,12 @@ class VelocityGraph:
 
         self.graph, self.graph_neg = vals_to_csr(vals, rows, cols, shape=(n_obs, n_obs), split_negative=True)
 
+        confidence = self.graph.max(1).A.flatten()
+        self.self_prob = np.clip(np.percentile(confidence, 98) - confidence, 0, 1)
+
 
 def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, n_recurse_neighbors=None,
-                   random_neighbors_at_max=None, sqrt_transform=False, approx=False, copy=False):
+                   random_neighbors_at_max=None, sqrt_transform=False, gene_subset=None, approx=False, copy=False):
     """Computes velocity graph based on cosine similarities.
 
     The cosine similarities are computed between velocities and potential cell state transitions.
@@ -160,7 +167,7 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
 
     vgraph = VelocityGraph(adata, vkey=vkey, xkey=xkey, tkey=tkey, basis=basis, n_neighbors=n_neighbors, approx=approx,
                            n_recurse_neighbors=n_recurse_neighbors, random_neighbors_at_max=random_neighbors_at_max,
-                           sqrt_transform=sqrt_transform, report=True)
+                           sqrt_transform=sqrt_transform, gene_subset=gene_subset, report=True)
 
     if isinstance(basis, str):
         logg.warn(
@@ -172,6 +179,11 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
 
     adata.uns[vkey+'_graph'] = vgraph.graph
     adata.uns[vkey+'_graph_neg'] = vgraph.graph_neg
+
+    adata.obs[vkey+'_self_transition'] = vgraph.self_prob
+
+    if vkey + '_settings' in adata.uns.keys() and 'embeddings' in adata.uns[vkey + '_settings']:
+        del adata.uns[vkey + '_settings']['embeddings']
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(

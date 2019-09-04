@@ -1,6 +1,7 @@
 from ..tools.velocity_embedding import velocity_embedding
 from ..tools.utils import groups_to_bool
-from .utils import default_basis, default_size, default_color, get_components, savefig_or_show, make_unique_list, get_basis
+from .utils import default_basis, default_size, default_color, get_components, savefig_or_show, make_unique_list, \
+    get_basis, velocity_embedding_changed
 from .velocity_embedding_grid import compute_velocity_on_grid
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
@@ -11,7 +12,7 @@ import numpy as np
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, smooth=None, min_mass=None,
+def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, smooth=None, min_mass=None, cutoff_perc=None,
                               arrow_color=None, linewidth=None, n_neighbors=None, recompute=None, color=None, use_raw=None,
                               layer=None, color_map=None, colorbar=True, palette=None, size=None, alpha=.1, perc=None,
                               X=None, V=None, X_grid=None, V_grid=None, sort_order=True, groups=None, components=None,
@@ -25,16 +26,16 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    x: `str`, `np.ndarray` or `None` (default: `None`)
-        x coordinate
-    y: `str`, `np.ndarray` or `None` (default: `None`)
-        y coordinate
     vkey: `str` or `None` (default: `None`)
         Key for annotations of observations/cells or variables/genes.
     density: `float` (default: 1)
         Amount of velocities to show - 0 none to 1 all
     smooth: `float` (default: 0.5)
         Multiplication factor for scale in Gaussian kernel around grid point.
+    min_mass: `float` (default: 1)
+        Minimum threshold for mass to be shown. It can range between 0 (all velocities) and 5 (large velocities only).
+    cutoff_perc: `float` (default: `None`)
+        If set, mask small velocities below a percentile threshold (range between 0 and 100).
     linewidth: `float` (default: 1)
         Line width for streamplot.
     n_neighbors: `int` (default: None)
@@ -52,9 +53,12 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
     basis = default_basis(adata) if basis is None else get_basis(adata, basis)
     vkey = [key for key in adata.layers.keys() if 'velocity' in key and '_u' not in key] if vkey is 'all' else vkey
     colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
-    for key in vkeys:
-        if recompute or (key + '_' + basis not in adata.obsm_keys() and V is None):
-            velocity_embedding(adata, basis=basis, vkey=key)
+
+    if V is None:
+        for key in vkeys:
+            if recompute or velocity_embedding_changed(adata, basis=basis, vkey=key):
+                velocity_embedding(adata, basis=basis, vkey=key)
+
     color, layer, vkey = colors[0], layers[0], vkeys[0]
     color = default_color(adata) if color is None else color
 
@@ -64,7 +68,8 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         X_emb = np.array(_adata.obsm['X_' + basis][:, get_components(components, basis)]) if X is None else X[:, :2]
         V_emb = np.array(_adata.obsm[vkey + '_' + basis][:, get_components(components, basis)]) if V is None else V[:, :2]
         X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=1, smooth=smooth, min_mass=min_mass,
-                                                  n_neighbors=n_neighbors, autoscale=False, adjust_for_stream=True)
+                                                  n_neighbors=n_neighbors, autoscale=False, adjust_for_stream=True,
+                                                  cutoff_perc=cutoff_perc)
         lengths = np.sqrt((V_grid ** 2).sum(0))
         linewidth = 1 if linewidth is None else linewidth
         linewidth *= 2 * lengths / lengths[~np.isnan(lengths)].max()

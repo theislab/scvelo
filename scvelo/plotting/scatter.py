@@ -1,5 +1,6 @@
 from .. import settings
 from .. import AnnData
+from ..preprocessing.neighbors import get_connectivities
 from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
     default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
     plot_linear_fit, plot_density, default_legend_loc, make_unique_valid_list, rugplot
@@ -18,7 +19,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             components=None, projection='2d', legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
             xlim=None, ylim=None, show_density=None, show_assignments=None, show_linear_fit=None, show_polyfit=None,
-            show_rug=None, n_convolve=None, dpi=None, frameon=None, show=True, save=None, ax=None, zorder=None, ncols=None, **kwargs):
+            show_rug=None, n_convolve=None, smooth=None, dpi=None, frameon=None, show=True, save=None, ax=None,
+            zorder=None, ncols=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -45,7 +47,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
     ext_kwargs = {'size': size, 'linewidth': linewidth, 'xlabel': xlabel, 'vkey': vkey, 'color_map': color_map,
                   'colorbar': colorbar, 'perc': perc, 'frameon': frameon, 'zorder': zorder, 'legend_loc': legend_loc,
-                  'fontsize': fontsize, 'xlim': xlim, 'ylim': ylim, 'n_convolve': n_convolve,
+                  'fontsize': fontsize, 'xlim': xlim, 'ylim': ylim, 'n_convolve': n_convolve, 'smooth': smooth,
                   'show_density': show_density, 'show_assignments': show_assignments, 'show_rug': show_rug,
                   'show_linear_fit': show_linear_fit, 'show_polyfit': show_polyfit}
 
@@ -157,7 +159,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
                 if n_convolve is not None:
                     y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
-                    #y = get_temporal_connectivities(adata, x, n_convolve=n_convolve).dot(y)
 
                 if isinstance(color, int):
                     color = np.array(np.arange(len(x)) == color, dtype=bool)
@@ -170,6 +171,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     c = interpret_colorkey(adata, basis, color, perc)
                 else:
                     c = interpret_colorkey(adata, color, layer, perc)
+
+                if smooth and len(c) == adata.n_obs:
+                    c = get_connectivities(adata, n_neighbors=(None if isinstance(smooth, bool) else smooth)).dot(c)
 
                 if layer is not None and any(l in layer for l in ['spliced', 'Ms', 'Mu', 'velocity']) \
                         and isinstance(color, str) and color in adata.var_names:

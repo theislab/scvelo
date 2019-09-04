@@ -149,10 +149,11 @@ def default_color(adata):
 
 
 def default_color_map(adata, c):
+    cmap = None
     if isinstance(c, str) and c in adata.obs.keys() and not is_categorical(adata, c): c = adata.obs[c]
-    obs_unitint = len(np.array(c).flatten()) == adata.n_obs and \
-                  (np.min(c) == 0 or np.min(c) is False) and (np.max(c) == 1 or np.max(c) is True)
-    return 'viridis_r' if obs_unitint else None
+    if len(np.array(c).flatten()) == adata.n_obs:
+        if np.min(c) in [-1, 0, False] and np.max(c) in [1, True]: cmap = 'viridis_r'
+    return cmap
 
 
 def default_legend_loc(adata, color, legend_loc):
@@ -183,6 +184,7 @@ def get_colors(adata, c):
 
 def interpret_colorkey(adata, c=None, layer=None, perc=None):
     if c is None: c = default_color(adata)
+    if issparse(c): c = make_dense(c).flatten()
     if is_categorical(adata, c): c = get_colors(adata, c)
     elif isinstance(c, str):
         if c in adata.obs.keys():  # color by observation key
@@ -195,7 +197,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
         else:
             raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
         if perc is not None: c = clip(c, perc=perc)
-    else:  #if (len(np.array(c).flatten()) == adata.n_obs) or (len(np.array(c).flatten()) == adata.n_vars):
+    else:
         c = np.array(c).flatten()
         if perc is not None: c = clip(c, perc=perc)
     return c
@@ -226,6 +228,16 @@ def default_arrow(size):
     else:
         head_l, head_w, ax_l = 12, 10, 8
     return head_l, head_w, ax_l
+
+
+def velocity_embedding_changed(adata, basis, vkey):
+    if 'X_' + basis not in adata.obsm.keys(): changed = False
+    else:
+        changed = vkey + '_' + basis not in adata.obsm_keys()
+        if vkey + '_settings' in adata.uns.keys():
+            sett = adata.uns[vkey + '_settings']
+            changed |= 'embeddings' not in sett or basis not in sett['embeddings']
+    return changed
 
 
 def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
