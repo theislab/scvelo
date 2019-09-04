@@ -225,6 +225,22 @@ default_pars_names = ['alpha', 'beta', 'gamma', 't_', 'scaling', 'std_u', 'std_s
 
 
 def read_pars(adata, pars_names=None, key='fit'):
+    """\
+    Read parameters from the model.
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    pars_names: `str`,  list of `str`
+        Names of pars to load.
+    key: `str` (default: `'fit'`)
+        Key to append to parameter names, e.g. 'fit_t' for fitted time.
+
+    Returns
+    -------
+    List of parameters.
+    """
     pars = []
     for name in (default_pars_names if pars_names is None else pars_names):
         pkey = key + '_' + name
@@ -234,6 +250,24 @@ def read_pars(adata, pars_names=None, key='fit'):
 
 
 def write_pars(adata, pars, pars_names=None, add_key='fit'):
+    """\
+    Overwrites parameters.
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    pars:`float` or list of `float`
+        New values of the pars.
+    pars_names: `str`,  list of `str`
+        Names of pars to write.
+    add_key: `str` (default: `'fit'`)
+        Key to add to parameter names, e.g. 'fit_t' for fitted time.
+
+    Returns
+    -------
+    `None`
+    """
     for i, name in enumerate(default_pars_names if pars_names is None else pars_names):
         adata.var[add_key + '_' + name] = pars[i]
 
@@ -242,16 +276,49 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
                      fit_scaling=True, fit_time=True, fit_steady_states=True, fit_connected_states=None,
                      fit_basal_transcription=None, use_raw=False, load_pars=None, return_model=True, plot_results=False,
                      add_key='fit', copy=False, **kwargs):
-    """Estimates velocities in a gene-specific manner
+    """\
+    Estimates velocities in a gene-specific manner by learning dynamics of data
 
     Arguments
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
+    var_names: `str`,  list of `str`
+        Names of variables to use for the fitting.
+    max_iter:`int` (default: `10`)
+        Maximal iterations in the EM-Algorithm.
+    assignment_mode: `str` (default: `projection`)
+        Determined how times are assigned to observations.
+        If `projection`, observations are projected onto the model trajectory.
+        Else uses an inverse approximating formula.
+    t_max: `float` or `None` (default: `None`)
+        Upper bound for time assignments.
+    fit_scaling: `bool` or `None` (default: `None`)
+        Whether to fit scaling between unspliced and spliced or keep initially given scaling fixed.
+    fit_time: `bool` or `None` (default: `None`)
+        Whether to fit time or keep initially given time fixed.
+    fit_steady_states: `bool` or `None` (default: `None`)
+        Allows fitting of observations to steady states next to repression and induction.
+    fit_connected_states: `bool` or `None` (default: `None`)
+        Restricts fitting to neighbors given by connectivities.
+    fit_basal_transcription: `bool` or `None` (default: `None`)
+        Enables model to incorporate basal transcriptions.
+    use_raw: `bool` or `None` (default: `None`)
+        If True, remove outliers.
+    load_pars: `bool` or `None` (default: `None`)
+        Load parameters from past fits.
+    return_model: `bool` or `None` (default: `None`)
+        Whether to return the model as :DynamicsRecovery: object.
+    plot_results: `bool` or `None` (default: `None`)
+        Plot results after finishing recovery.
+    add_key: `str` (default: `'fit'`)
+        Key to add to parameter names, e.g. 'fit_t' for fitted time.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to `adata`.
 
     Returns
     -------
-    Returns or updates `adata`
+    Returns copy of `adata` or :DynamicsRecovery: object or None
     """
     adata = data.copy() if copy else data
     logg.info('recovering dynamics', r=True)
@@ -356,6 +423,35 @@ def recover_dynamics(data, var_names='velocity_genes', max_iter=10, assignment_m
 
 
 def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outliers=None, copy=False):
+    """\
+    Align dynamics to a common set of parameters
+
+    Arguments
+    ---------
+    data: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    t_max: `float` or `None` (default: `None`)
+        Upper bound for time assignments.
+    dm: :class:`~DynamicsRecovery`
+        DynamicsRecovery object to perform alignment on.
+    idx: list of `bool` or `None` (default: `None`)
+        Mask for indices used for alignment.
+    mode: `str` or None (default: `None`)
+        What to align. Takes the following arguments:
+        common_splicing_rate, common_scaling, align_increments, align_total_time
+    remove_outliers: `bool` or `None` (default: `None`)
+        Whether to remove outliers.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to `adata`.
+
+    Returns
+    -------
+    Returns or updates `adata` with the attributes
+    alpha, beta, gamma, t_, alignment_scaling: `.var`
+        aligned parameters
+    fit_t, fit_tau, fit_tau_: `.layer`
+        aligned time
+    """
     adata = data.copy() if copy else data
     alpha, beta, gamma, t_, scaling, mz = read_pars(adata, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling', 'alignment_scaling'])
     T = adata.layers['fit_t'] if 'fit_t' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
@@ -430,6 +526,22 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
 
 
 def recover_latent_time(data, copy=False):
+    """\
+    Computes the latent time from learned time assignments
+
+    Arguments
+    ---------
+    data: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to `adata`.
+
+    Returns
+    -------
+    Returns or updates `adata` with the attributes
+    latent_time: `.obs`
+        latent time from learned dynamics for each cell
+    """
     adata = data.copy() if copy else data
 
     logg.info('computing shared time', r=True)
