@@ -319,8 +319,9 @@ def corrcoef(x, y, mode='pearsons'):
 
 
 def vcorrcoef(X, y):
-    Xm, ym = X - np.reshape(np.mean(X, 1), (X.shape[0], 1)), y - np.mean(y)
-    corr = np.sum(Xm * ym, 1) / np.sqrt(np.sum(Xm ** 2, 1) * np.sum(ym ** 2))
+    Xm = np.array(X - (np.mean(X, -1)[:, None] if X.ndim > 1 else np.mean(X, -1)))
+    ym = np.array(y - (np.mean(y, -1)[:, None] if y.ndim > 1 else np.mean(y, -1)))
+    corr = np.sum(Xm * ym, -1) / np.sqrt(np.sum(Xm ** 2, -1) * np.sum(ym ** 2, -1))
     return corr
 
 
@@ -330,3 +331,14 @@ def isin(x, y):
 
 def indices_to_bool(indices, n):
     return isin(np.arange(n), indices)
+
+
+def convolve(adata, x):
+    from ..preprocessing.neighbors import get_connectivities
+    conn = get_connectivities(adata)
+    if isinstance(x, str) and x in adata.layers.keys():
+        x = adata.layers[x]
+    idx_valid = ~np.isnan(x.sum(0))
+    Y = np.ones(x.shape) * np.nan
+    Y[:, idx_valid] = conn.dot(x[:, idx_valid])
+    return Y

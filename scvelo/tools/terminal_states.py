@@ -214,7 +214,10 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
 
         n_roots, n_ends = eigvecs_roots.shape[1], eigvecs_ends.shape[1]
         groups_str = ' (' + groups + ')' if isinstance(groups, str) else ''
-        logg.info('    identified ' + str(n_roots) + ' root cells and ' + str(n_ends) + ' end points' + groups_str)
+        roots_str = str(n_roots) + ' region' + ('s' if n_roots > 1 else '')
+        ends_str = str(n_ends) + ' region' + ('s' if n_ends > 1 else '')
+
+        logg.info('    identified', roots_str, 'of root cells and', ends_str, 'of end points', groups_str)
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
