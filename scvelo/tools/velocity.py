@@ -1,6 +1,6 @@
 from .. import settings
 from .. import logging as logg
-from ..preprocessing.moments import moments, second_order_moments
+from ..preprocessing.moments import moments, second_order_moments, get_connectivities
 from .optimization import leastsq_NxN, leastsq_generalized, maximum_likelihood
 from .utils import R_squared, groups_to_bool, make_dense, strings_to_categoricals
 
@@ -11,7 +11,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 class Velocity:
     def __init__(self, adata=None, Ms=None, Mu=None, groups_for_fit=None, groupby=None, residual=None,
-                 constrain_ratio=None, use_raw=False):
+                 constrain_ratio=None, min_r2=.01, r2_adjusted=True, use_raw=False):
         self._adata = adata
         self._Ms = adata.layers['spliced'] if use_raw else adata.layers['Ms'] if Ms is None else Ms
         self._Mu = adata.layers['unspliced'] if use_raw else adata.layers['Mu'] if Mu is None else Mu
@@ -24,6 +24,8 @@ class Velocity:
         self._beta, self._velocity_genes = np.ones(n_vars, dtype=np.float32), np.ones(n_vars, dtype=bool)
         self._groups_for_fit = groups_to_bool(adata, groups_for_fit, groupby)
         self._constrain_ratio = constrain_ratio
+        self._r2_adjusted = r2_adjusted
+        self._min_r2 = min_r2
 
     def compute_deterministic(self, fit_offset=False, perc=None):
         Ms = self._Ms if self._groups_for_fit is None else self._Ms[self._groups_for_fit]
@@ -37,9 +39,17 @@ class Velocity:
 
         self._residual = self._Mu - self._gamma * self._Ms
         if fit_offset: self._residual -= self._offset
+        _residual = self._residual
 
-        self._r2 = R_squared(self._residual, total=self._Mu - self._Mu.mean(0))
-        self._velocity_genes = (self._r2 > .01) & (self._gamma > .01) & (np.sum((self._Ms > 0) & (self._Mu > 0), 0) > 0)
+        # velocity genes
+        if self._r2_adjusted:
+            _offset, _gamma = leastsq_NxN(Ms, Mu, fit_offset)
+            _residual = self._Mu - _gamma * self._Ms
+            if fit_offset: _residual -= _offset
+
+        self._r2 = R_squared(_residual, total=self._Mu - self._Mu.mean(0))
+        self._velocity_genes = (self._r2 > self._min_r2) & (self._gamma > .01) & \
+                               (np.max(self._Ms > 0, 0) > 0) & (np.max(self._Mu > 0, 0) > 0)
 
     def compute_stochastic(self, fit_offset=False, fit_offset2=False, mode=None, perc=None):
         if self._residual is None: self.compute_deterministic(fit_offset=fit_offset, perc=perc)
@@ -79,12 +89,6 @@ class Velocity:
         else:
             self._residual2 = _residual2
 
-        # if mode == 'alpha':
-        #     Muu = second_order_moments_u(adata)
-        #     offset2u, alpha = leastsq_NxN(np.ones(Mu.shape) + 2 * Mu, 2 * Muu - Mu)
-        #     pars.extend([offset2u, alpha])
-        #     pars_str.extend(['_offset2u', '_alpha'])
-
     def get_pars(self):
         return self._offset, self._offset2, self._beta, self._gamma, self._r2, self._velocity_genes
 
@@ -109,7 +113,8 @@ def write_pars(adata, vkey, pars, pars_names, add_key=None):
 
 
 def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False, groups=None,
-             groupby=None, groups_for_fit=None, constrain_ratio=None, use_raw=False, perc=[5, 95], copy=False):
+             groupby=None, groups_for_fit=None, constrain_ratio=None, use_raw=False, perc=[5, 95], min_r2=.01,
+             r2_adjusted=None, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -118,9 +123,10 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
         Annotated data matrix.
     vkey: `str` (default: `'velocity'`)
         Name under which to refer to the computed velocities for `velocity_graph` and `velocity_embedding`.
-    mode: `'deterministic'`, `'stochastic'` or `'bayes'` (default: `'stochastic'`)
+    mode: `'steady_state'`, `'deterministic'`, `'stochastic'` or `'dynamical'` (default: `'steady_state'`)
         Whether to run the estimation using the deterministic or stochastic model of transcriptional dynamics.
-        `'bayes'` solves the stochastic model and accounts for heteroscedasticity, but is slower than `'stochastic'`.
+        The `'steady_state'` model is default and refers to the deterministic model.
+        The dynamical model requires to run `tl.recover_dynamics` first; it is yet under development.
     fit_offset: `bool` (default: `False`)
         Whether to fit with offset for first order moment dynamics.
     fit_offset2: `bool`, (default: `False`)
@@ -137,6 +143,10 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
         Whether to use raw data for estimation.
     perc: `float` (default: `None`)
         Percentile, e.g. 98, upon for extreme quantile fit (to better capture steady states for velocity estimation).
+    min_r2: `float` (default: 0.01)
+        Minimum threshold for coefficient of determination
+    r2_adjusted: `bool` (default: `None`)
+        Whether to compute coefficient of determination on full data fit (adjusted) or extreme quantile fit (None)
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
 
@@ -156,32 +166,79 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
     logg.info('computing velocities', r=True)
 
     strings_to_categoricals(adata)
-    categories = adata.obs[groupby].cat.categories \
-        if groupby is not None and groups is None and groups_for_fit is None else [None]
 
-    for cat in categories:
-        groups = cat if cat is not None else groups
+    if mode is 'dynamical':
+        logg.warn('The dynamical model is yet under development, thus to be interpreted with caution.')
+        from .dynamical_model_utils import mRNA, vectorize, get_reads, get_vars, get_divergence
 
-        cell_subset = groups_to_bool(adata, groups, groupby)
-        _adata = adata if groups is None else adata[cell_subset]
+        if 'fit_alpha' not in adata.var.keys():
+            raise ValueError('Run tl.recover_dynamics first.')
 
-        velo = Velocity(_adata, groups_for_fit=groups_for_fit, groupby=groupby, constrain_ratio=constrain_ratio, use_raw=use_raw)
-        velo.compute_deterministic(fit_offset, perc=perc)
+        gene_subset = ~np.isnan(adata.var['fit_alpha'].values)
+        vdata = adata[:, gene_subset]
+        alpha, beta, gamma, scaling, t_ = get_vars(vdata)
 
-        if any([mode is not None and mode in item for item in ['stochastic', 'bayes', 'alpha']]):
+        kwargs_ = {'kernel_width': None, 'normalized': True, 'var_scale': True, 'reg_par': None, 'min_confidence': 1e-2,
+                   'constraint_time_increments': False, 'fit_steady_states': True, 'fit_basal_transcription': None,
+                   'use_connectivities': not adata.uns['recover_dynamics']['use_raw'], 'use_latent_time': None,
+                   'time_connectivities': True}
+        kwargs_.update(adata.uns['recover_dynamics'])
+        kwargs_.update(**kwargs)
+
+        t, _, _ = get_divergence(vdata, mode='assign_timepoints', **kwargs_)
+
+        if kwargs_['time_connectivities']: t = get_connectivities(vdata).dot(t)
+        tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
+        ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
+
+        vt = ut * beta - st * gamma
+        wt = (alpha - beta * ut) * scaling
+
+        if kwargs_['time_connectivities']:
+            u, s = get_reads(vdata, scaled=False, use_raw=kwargs_['use_raw'])
+            vt, wt = np.clip(vt, -s, None), np.clip(wt, -u, None)
+
+        adata.layers[vkey] = np.ones(adata.shape) * np.nan
+        adata.layers[vkey][:, gene_subset] = vt
+
+        adata.layers[vkey + '_u'] = np.ones(adata.shape) * np.nan
+        adata.layers[vkey + '_u'][:, gene_subset] = wt
+
+
+    elif mode is None or mode in ['steady_state', 'deterministic', 'stochastic']:
+        categories = adata.obs[groupby].cat.categories \
+            if groupby is not None and groups is None and groups_for_fit is None else [None]
+
+        for cat in categories:
+            groups = cat if cat is not None else groups
+
+            cell_subset = groups_to_bool(adata, groups, groupby)
+            _adata = adata if groups is None else adata[cell_subset]
+
+            velo = Velocity(_adata, groups_for_fit=groups_for_fit, groupby=groupby, constrain_ratio=constrain_ratio,
+                            min_r2=min_r2, r2_adjusted=r2_adjusted, use_raw=use_raw)
+            velo.compute_deterministic(fit_offset=fit_offset, perc=perc)
+
+            if mode is 'stochastic':
+                if filter_genes and len(set(velo._velocity_genes)) > 1:
+                    adata._inplace_subset_var(velo._velocity_genes)
+                    residual = velo._residual[:, velo._velocity_genes]
+                    _adata = adata if groups is None else adata[cell_subset]
+                    velo = Velocity(_adata, residual=residual, groups_for_fit=groups_for_fit, groupby=groupby, constrain_ratio=constrain_ratio)
+                velo.compute_stochastic(fit_offset, fit_offset2, mode, perc=perc)
+
+            write_residuals(adata, vkey, velo._residual, cell_subset)
+            write_residuals(adata, 'variance_' + vkey, velo._residual2, cell_subset)
+            write_pars(adata, vkey, velo.get_pars(), velo.get_pars_names(), add_key=cat)
+
             if filter_genes and len(set(velo._velocity_genes)) > 1:
                 adata._inplace_subset_var(velo._velocity_genes)
-                residual = velo._residual[:, velo._velocity_genes]
-                _adata = adata if groups is None else adata[cell_subset]
-                velo = Velocity(_adata, residual=residual, groups_for_fit=groups_for_fit, groupby=groupby, constrain_ratio=constrain_ratio)
-            velo.compute_stochastic(fit_offset, fit_offset2, mode, perc=perc)
 
-        write_residuals(adata, vkey, velo._residual, cell_subset)
-        write_residuals(adata, 'variance_' + vkey, velo._residual2, cell_subset)
-        write_pars(adata, vkey, velo.get_pars(), velo.get_pars_names(), add_key=cat)
+    else:
+        raise ValueError('Mode can only be one of these: steady_state, deterministic, stochastic or dynamical.')
 
-        if filter_genes and len(set(velo._velocity_genes)) > 1:
-            adata._inplace_subset_var(velo._velocity_genes)
+
+    adata.uns[vkey + '_settings'] = {'mode': mode, 'fit_offset': fit_offset, 'perc': perc}
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n' 
@@ -190,7 +247,7 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
     return adata if copy else None
 
 
-def velocity_genes(data, vkey='velocity', min_r2=0.01, constrain_gamma=None, highly_variable=None, copy=False):
+def velocity_genes(data, vkey='velocity', min_r2=0.01, highly_variable=None, copy=False):
     """Estimates velocities in a gene-specific manner
 
     Arguments
