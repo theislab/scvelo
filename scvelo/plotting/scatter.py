@@ -19,7 +19,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             components=None, projection='2d', legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
             xlim=None, ylim=None, show_density=None, show_assignments=None, show_linear_fit=None, show_polyfit=None,
-            show_rug=None, n_convolve=None, smooth=None, dpi=None, frameon=None, show=True, save=None, ax=None,
+            rug=None, n_convolve=None, smooth=None, dpi=None, frameon=None, show=True, save=None, ax=None,
             zorder=None, ncols=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
@@ -48,7 +48,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     ext_kwargs = {'size': size, 'linewidth': linewidth, 'xlabel': xlabel, 'vkey': vkey, 'color_map': color_map,
                   'colorbar': colorbar, 'perc': perc, 'frameon': frameon, 'zorder': zorder, 'legend_loc': legend_loc,
                   'fontsize': fontsize, 'xlim': xlim, 'ylim': ylim, 'n_convolve': n_convolve, 'smooth': smooth,
-                  'show_density': show_density, 'show_assignments': show_assignments, 'show_rug': show_rug,
+                  'show_density': show_density, 'show_assignments': show_assignments, 'rug': rug,
                   'show_linear_fit': show_linear_fit, 'show_polyfit': show_polyfit}
 
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
@@ -236,8 +236,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     color = show_polyfit if isinstance(show_polyfit, str) else c if isinstance(c, str) else 'grey'
                     ax.plot(xnew, f(xnew), color=color, linewidth=linewidth)
 
-                if show_rug:
-                    ax = rugplot(np.ravel(x), color=np.ravel(interpret_colorkey(adata, show_rug)), ax=ax)
+                if rug:
+                    ax = rugplot(np.ravel(x), color=np.ravel(interpret_colorkey(adata, rug)), ax=ax)
 
                 set_label(xlabel, ylabel, fontsize, basis, ax=ax)
                 set_title(title, layer, color, fontsize, ax=ax)
