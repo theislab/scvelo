@@ -192,7 +192,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
                 if groups is not None or np.any(pd.isnull(c)):
                     zorder = 0 if zorder is None else zorder
-                    ax = scatter(adata, basis=basis, color='lightgrey', ax=ax, zorder=zorder, **scatter_kwargs)
+                    scatter_kwargs_all = scatter_kwargs
+                    scatter_kwargs_all['groups'] = None
+                    ax = scatter(adata, x=x, y=y, basis=basis, layer=layer,
+                                 color='lightgrey', ax=ax, zorder=zorder, **scatter_kwargs_all)
                     zorder += 1
 
                 if basis in adata.var_names:
