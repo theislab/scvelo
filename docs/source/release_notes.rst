@@ -4,6 +4,23 @@
 Release Notes
 =============
 
+Version 0.1.20 :small:`Sep 5, 2019`
+-----------------------------------
+Tools:
+
+- `tl.recover_dynamics`: introduced a dynamical model inferring the full splicing kinetics, thereby identifying all kinetic rates of transcription, splicing and degradation.
+- `tl.recover_latent_time`: infers a shared latent time across all genes based on the learned splicing dynamics.
+
+Plotting:
+
+- enhancements in `pl.scatter`: multiplots, rugplot, linear and polynomical fits, densityplots, etc.
+- `pl.heatmap`: heatmap / clsutermap of genes along time coordinate sorted by expression along dynamics.
+
+Preprocessing:
+
+- New attributes in pp.filter_genes: `min_shared_counts` and `min_shared_genes`.
+- Added fast neighbor search method: Hierarchical Navigable Small World graphs (HNSW)
+
 
 Version 0.1.14 :small:`Dec 7, 2018`
 -----------------------------------
