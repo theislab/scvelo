@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 from urllib.request import urlretrieve
 from pathlib import Path
-from scanpy.api import AnnData, read, read_loom
+from anndata import AnnData
+from scanpy import read, read_loom
 
 
 def load(filename, backup_url=None, **kwargs):

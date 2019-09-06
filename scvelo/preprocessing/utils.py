@@ -264,7 +264,7 @@ def filter_genes_dispersion(data, flavor='seurat', min_disp=None, max_disp=None,
             nth_score = np.sort(score)[::-1][n_top_genes]
             adata._inplace_subset_var(score >= nth_score)
         else:
-            from scanpy.api.pp import filter_genes_dispersion
+            from scanpy.preprocessing import filter_genes_dispersion
             filter_genes_dispersion(adata, flavor=flavor, min_disp=min_disp, max_disp=max_disp, min_mean=min_mean,
                                     max_mean=max_mean, n_bins=n_bins, n_top_genes=n_top_genes, log=log)
     return adata if copy else None

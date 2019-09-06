@@ -1,12 +1,12 @@
 from .. import settings
 from .. import logging as logg
 
-from scanpy.neighbors import compute_connectivities_umap
-from scanpy.api import Neighbors
-from scanpy.api.pp import pca
 from scipy.sparse import issparse
 import numpy as np
 import warnings
+from scanpy.neighbors import compute_connectivities_umap
+from scanpy.preprocessing import pca
+from scanpy import Neighbors
 
 
 def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_state=0, method='umap',

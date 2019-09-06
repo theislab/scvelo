@@ -53,47 +53,58 @@ def select_groups(adata, groups='all', key='louvain'):
     return groups, groups_masks
 
 
-def velocity_clusters(data, vkey='velocity', match_with='clusters', resolution=None, copy=False):
+def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='dpt_pseudotime', resolution=None,
+                      min_likelihood=None, copy=False):
     adata = data.copy() if copy else data
 
     logg.info('computing velocity clusters', r=True)
 
-    from .. import AnnData
-    vdata = AnnData(adata.layers[vkey])
-    vdata.obs = adata.obs.copy()
-    vdata.var = adata.var.copy()
+    tmp_filter = ~np.isnan(adata.layers[vkey].sum(0))
+    if vkey + '_genes' in adata.var.keys():
+        tmp_filter &= np.array(adata.var[vkey + '_genes'].values, dtype=bool)
 
-    tmp_filter = np.ones(vdata.n_vars, dtype=bool)
-    if vkey + '_genes' in vdata.var.keys():
-        tmp_filter &= np.array(vdata.var[vkey + '_genes'].values, dtype=bool)
-
-    if 'unspliced' in vdata.layers.keys():
-        n_counts = (vdata.layers['unspliced'] > 0).sum(0)
-        n_counts = n_counts.A1 if issparse(vdata.layers['unspliced']) else n_counts
+    if 'unspliced' in adata.layers.keys():
+        n_counts = (adata.layers['unspliced'] > 0).sum(0)
+        n_counts = n_counts.A1 if issparse(adata.layers['unspliced']) else n_counts
         min_counts = min(50, np.percentile(n_counts, 50))
         tmp_filter &= (n_counts > min_counts)
 
-    if 'r2' in vdata.var.keys():
-        r2 = vdata.var.velocity_r2
+    if 'r2' in adata.var.keys():
+        r2 = adata.var.velocity_r2
         min_r2 = np.percentile(r2[r2 > 0], 50)
         tmp_filter &= (r2 > min_r2)
 
-    if 'dispersions_norm' in vdata.var.keys():
-        dispersions = vdata.var.dispersions_norm
+    if 'dispersions_norm' in adata.var.keys():
+        dispersions = adata.var.dispersions_norm
         min_dispersion = np.percentile(dispersions, 20)
         tmp_filter &= (dispersions > min_dispersion)
 
-    vdata._inplace_subset_var(tmp_filter)
+    if 'fit_likelihood' in adata.var.keys():
+        l = adata.var['fit_likelihood']
+        min_likelihood = .1 if min_likelihood is None else min_likelihood
+        tmp_filter &= (l > min_likelihood)
+
+    from .. import AnnData
+    vdata = AnnData(adata.layers[vkey][:, tmp_filter])
+    vdata.obs = adata.obs.copy()
+    vdata.var = adata.var[tmp_filter].copy()
 
     if 'highly_variable' in vdata.var.keys():
         vdata.var['highly_variable'] = np.array(vdata.var['highly_variable'], dtype=bool)
 
-    import scanpy.api as sc
+    import scanpy as sc
     logg.switch_verbosity('off', module='scanpy')
     sc.pp.pca(vdata, n_comps=20, svd_solver='arpack')
     sc.pp.neighbors(vdata, n_pcs=20)
     sc.tl.louvain(vdata, resolution=resolution)
     logg.switch_verbosity('on', module='scanpy')
+
+    if sort_by in vdata.obs.keys():
+        vc = vdata.obs['louvain']
+        vc_cats = vc.cat.categories
+        mean_times = [np.mean(vdata.obs[sort_by][vc == cat]) for cat in vc_cats]
+        vdata.obs['louvain'].cat.reorder_categories(vc_cats[np.argsort(mean_times)], inplace=True)
+        vdata.obs['louvain'].cat.categories = np.arange(len(vc_cats))
 
     if isinstance(match_with, str) and match_with in adata.obs.keys():
         from .utils import most_common_in_list
@@ -117,7 +128,7 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', resolution=N
 
 
 def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_with=None, resolution=None,
-                        min_counts=None, min_r2=None, min_dispersion=None, copy=False):
+                        min_counts=None, min_r2=None, min_dispersion=None, min_likelihood=None, copy=False):
     """Rank genes for velocity characterizing groups.
 
     Arguments
@@ -151,12 +162,12 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
     adata = data.copy() if copy else data
 
     if groupby is None or groupby is 'velocity_clusters':
-        velocity_clusters(adata, vkey=vkey, match_with=match_with, resolution=resolution)
+        velocity_clusters(adata, vkey=vkey, match_with=match_with, resolution=resolution, min_likelihood=min_likelihood)
         groupby = vkey + '_clusters'
 
     logg.info('ranking velocity genes', r=True)
 
-    tmp_filter = np.ones(adata.n_vars, dtype=bool)
+    tmp_filter = ~np.isnan(adata.layers[vkey].sum(0))
     if vkey + '_genes' in adata.var.keys():
         tmp_filter &= np.array(adata.var[vkey + '_genes'].values, dtype=bool)
 
@@ -175,6 +186,11 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
         dispersions = adata.var.dispersions_norm
         min_dispersion = 0 if min_dispersion is None else min_dispersion  # np.percentile(dispersions, 20)
         tmp_filter &= (dispersions > min_dispersion)
+
+    if 'fit_likelihood' in adata.var.keys():
+        l = adata.var['fit_likelihood']
+        min_likelihood = .1 if min_likelihood is None else min_likelihood
+        tmp_filter &= (l > min_likelihood)
 
     X = adata[:, tmp_filter].layers[vkey]
     groups, groups_masks = select_groups(adata, key=groupby)
