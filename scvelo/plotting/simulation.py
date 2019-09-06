@@ -46,30 +46,32 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
     return alpha, ut, st
 
 
-def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, show_assignments=None):
+def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, show_assignments=None, ax=None):
+    if ax is None: ax = pl.gca()
     color = 'grey' if key is 'true' else 'purple'
     linewidth = .5 * linewidth if key is 'true' else linewidth
     label = 'learned dynamics' if key is 'fit' else 'true dynamics'
+    line = None
 
     if key is not 'true':
         _, ut, st = compute_dynamics(adata, basis, key, extrapolate=False, sort=False, t=show_assignments)
         if show_assignments is not 'only':
-            pl.scatter(st, ut, color=color, s=1)
+            ax.scatter(st, ut, color=color, s=1)
         if show_assignments is not None and show_assignments is not False:
             skey, ukey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
             s, u = make_dense(adata[:, basis].layers[skey]).flatten(), make_dense(adata[:, basis].layers[ukey]).flatten()
-            pl.plot(np.array([s, st]), np.array([u, ut]), color='grey', linewidth=.1 * linewidth)
+            ax.plot(np.array([s, st]), np.array([u, ut]), color='grey', linewidth=.1 * linewidth)
 
     if show_assignments is not 'only':
         _, ut, st = compute_dynamics(adata, basis, key, extrapolate=True, t=show_assignments)
-        pl.plot(st, ut, color=color, linewidth=linewidth)
+        line, = ax.plot(st, ut, color=color, linewidth=linewidth, label=label)
 
         idx = np.where(adata.var_names == basis)[0][0]
         beta, gamma = adata.var[key + '_beta'][idx], adata.var[key + '_gamma'][idx]
         xnew = np.linspace(np.min(st), np.max(st))
         ynew = gamma / beta * (xnew - np.min(xnew)) + np.min(ut)
-        pl.plot(xnew, ynew, color=color, linestyle='--', linewidth=linewidth, label=label)
-    return label
+        ax.plot(xnew, ynew, color=color, linestyle='--', linewidth=linewidth)
+    return line, label
 
 
 def simulation(adata, var_names='all', legend_loc='upper right', legend_fontsize=20, linewidth=None, dpi=None,

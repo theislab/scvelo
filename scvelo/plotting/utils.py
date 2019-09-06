@@ -362,19 +362,22 @@ def get_temporal_connectivities(adata, tkey, n_convolve=30):
     return normalize(t_conn)  # normalize(t_conn.multiply(c_conn))
 
 
-def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1):
+def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1, ax=None):
+    if ax is None: ax = pl.gca()
     xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
     vkeys = adata.layers.keys() if vkey is None else make_unique_list(vkey)
     fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
+    lines = []
     for i, fit in enumerate(fits):
         linestyle = '--' if 'variance_' + fit in adata.layers.keys() else '-'
         gamma = adata[:, basis].var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
         beta = adata[:, basis].var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
         offset = adata[:, basis].var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
-        pl.plot(xnew, gamma / beta * xnew + offset / beta, linestyle=linestyle, linewidth=linewidth,
-                c='k' if i == 0 else None)
+        line, = ax.plot(xnew, gamma / beta * xnew + offset / beta, linestyle=linestyle, linewidth=linewidth,
+                        c='k' if i == 0 else None)
+        lines.append(line)
         fits[i] = 'steady-state ratio ({})'.format(fit) if len(fits) > 1 else 'steady-state ratio'
-    return fits
+    return lines, fits
 
 
 def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3, color='grey', ax=None):

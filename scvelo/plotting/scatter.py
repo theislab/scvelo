@@ -19,8 +19,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             components=None, projection='2d', legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
             xlim=None, ylim=None, show_density=None, show_assignments=None, show_linear_fit=None, show_polyfit=None,
-            rug=None, n_convolve=None, smooth=None, dpi=None, frameon=None, show=True, save=None, ax=None,
-            zorder=None, ncols=None, **kwargs):
+            rug=None, n_convolve=None, smooth=None, rescale_color=None, dpi=None, frameon=None, show=True, save=None,
+            ax=None, zorder=None, ncols=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -117,10 +117,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
 
             if is_categorical(adata, color) and is_embedding:
-                from scanpy.api.pl import scatter as scatter_
+                from scanpy.plotting import scatter as scatter_
                 legend_loc = default_legend_loc(adata, color, legend_loc)
                 ax = scatter_(adata, basis=basis, color=color, color_map=color_map, size=size, frameon=frameon, ax=ax,
-                              title=title, legend_loc=legend_loc, **scatter_kwargs, **kwargs)
+                              title=title, legend_loc=legend_loc, legend_fontoutline=True, **scatter_kwargs, **kwargs)
 
             else:
                 if basis in adata.var_names:
@@ -175,6 +175,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if smooth and len(c) == adata.n_obs:
                     c = get_connectivities(adata, n_neighbors=(None if isinstance(smooth, bool) else smooth)).dot(c)
 
+                if rescale_color is not None:
+                    c += rescale_color[0] - np.min(c)
+                    c *= rescale_color[1] / np.max(c)
+
                 if layer is not None and any(l in layer for l in ['spliced', 'Ms', 'Mu', 'velocity']) \
                         and isinstance(color, str) and color in adata.var_names:
                     ub = np.percentile(np.abs(c), 98)
@@ -199,16 +203,19 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     zorder += 1
 
                 if basis in adata.var_names:
-                    fits = plot_linear_fit(adata, basis, vkey, xkey, linewidth)
+                    lines, fits = plot_linear_fit(adata, basis, vkey, xkey, linewidth, ax=ax)
                     from .simulation import show_full_dynamics
-                    if 'true_alpha' in adata.var.keys() and (vkey is None or 'true_dynamics' in vkey):
-                        fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth)
+                    if 'true_alpha' in adata.var.keys() and (vkey is not None and 'true_dynamics' in vkey):
+                        line, fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth, ax=ax)
                         fits.append(fit)
-                    if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamic' in vkey):
-                        fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments)
+                        lines.append(line)
+                    if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
+                        line, fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments, ax=ax)
                         fits.append(fit)
+                        lines.append(line)
                     if len(fits) > 0 and legend_loc is not False and legend_loc is not 'none':
-                        ax.legend(fits, fontsize=legend_fontsize, loc='lower right' if legend_loc is None else legend_loc)
+                        ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize,
+                                  loc='lower right' if legend_loc is None else legend_loc)
                     if use_raw and perc is not None:
                         ax.set_xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
                         ax.set_ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
@@ -224,7 +231,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     idx_valid = ~np.isnan(x + y)
                     x, y = x[idx_valid], y[idx_valid]
                     xnew = np.linspace(np.min(x), np.max(x) * 1.02)
-                    ax.plot(xnew, xnew * (x * y).sum() / (x ** 2).sum(),
+                    ax.plot(xnew, xnew * (x * y).sum() / (x ** 2).sum(), linewidth=linewidth,
                             color=show_linear_fit if isinstance(show_linear_fit, str) else 'grey')
                     corr, _ = pearsonr(x, y)
                     if legend_loc is not 'none':
