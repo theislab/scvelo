@@ -237,7 +237,7 @@ def write_pars(adata, pars, pars_names=None, add_key='fit'):
         adata.var[add_key + '_' + name] = pars[i]
 
 
-def recover_dynamics(data, var_names='velocity_genes', n_top_genes=200, max_iter=10, assignment_mode='projection',
+def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_iter=10, assignment_mode='projection',
                      t_max=None, fit_time=True, fit_scaling=True, fit_steady_states=True, fit_connected_states=None,
                      fit_basal_transcription=None, use_raw=False, load_pars=None, return_model=None, plot_results=False,
                      steady_state_prior=None, add_key='fit', copy=False, **kwargs):
@@ -501,7 +501,7 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
     return adata if copy else dm
 
 
-def recover_latent_time(data, min_likelihood=.1, min_confidence=.75, min_corr=None, t_max=None, root_key=None,
+def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, min_corr=None, t_max=None, root_key=None,
                         use_graph=None, weight_diffusion=None, weight_root=None, weight_fate=None, copy=False):
     """Computes the latent time from learned time assignments.
 
@@ -526,7 +526,7 @@ def recover_latent_time(data, min_likelihood=.1, min_confidence=.75, min_corr=No
     from .velocity_graph import velocity_graph
     from .velocity_pseudotime import velocity_pseudotime
 
-    if 'velocity_graph' not in adata.uns.keys():
+    if vkey + '_graph' not in adata.uns.keys():
         velocity_graph(adata, approx=True)
     if 'root_cells' not in adata.obs.keys():
         terminal_states(adata)

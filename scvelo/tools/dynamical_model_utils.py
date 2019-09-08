@@ -347,7 +347,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         if normalized: res = normalize(res, min_confidence=min_confidence)
         res = res[2] + res[3]
 
-    elif mode is 'assign_timepoints':
+    elif mode is 'assign_timepoints' or mode is 'time':
         o = np.argmin(res, axis=0)
 
         tau_ *= (o == 0)
@@ -357,7 +357,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         if 3 in o: o[o == 3] = 0
 
         t = tau * (o == 1) + (tau_ + t_) * (o == 0)
-        res = [t, tau, o]
+        res = [t, tau, o] if mode is 'assign_timepoints' else t
 
     return res
 
