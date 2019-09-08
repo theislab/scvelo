@@ -113,8 +113,8 @@ def write_pars(adata, vkey, pars, pars_names, add_key=None):
 
 
 def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False, groups=None,
-             groupby=None, groups_for_fit=None, constrain_ratio=None, use_raw=False, perc=[5, 95], min_r2=.01,
-             r2_adjusted=None, copy=False, **kwargs):
+             groupby=None, groups_for_fit=None, constrain_ratio=None, use_raw=False, use_latent_time=None,
+             perc=[5, 95], min_r2=.01, r2_adjusted=None, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -178,14 +178,14 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
         vdata = adata[:, gene_subset]
         alpha, beta, gamma, scaling, t_ = get_vars(vdata)
 
+        connect = not adata.uns['recover_dynamics']['use_raw']
         kwargs_ = {'kernel_width': None, 'normalized': True, 'var_scale': True, 'reg_par': None, 'min_confidence': 1e-2,
                    'constraint_time_increments': False, 'fit_steady_states': True, 'fit_basal_transcription': None,
-                   'use_connectivities': not adata.uns['recover_dynamics']['use_raw'], 'use_latent_time': None,
-                   'time_connectivities': True}
+                   'use_connectivities': connect, 'time_connectivities': connect, 'use_latent_time': use_latent_time}
         kwargs_.update(adata.uns['recover_dynamics'])
         kwargs_.update(**kwargs)
 
-        t, _, _ = get_divergence(vdata, mode='assign_timepoints', **kwargs_)
+        t = get_divergence(vdata, mode='time', **kwargs_)
 
         if kwargs_['time_connectivities']: t = get_connectivities(vdata).dot(t)
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
@@ -203,7 +203,6 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
 
         adata.layers[vkey + '_u'] = np.ones(adata.shape) * np.nan
         adata.layers[vkey + '_u'][:, gene_subset] = wt
-
 
     elif mode is None or mode in ['steady_state', 'deterministic', 'stochastic']:
         categories = adata.obs[groupby].cat.categories \

@@ -6,10 +6,10 @@ import warnings
 
 
 def get_weight(x, y=None, perc=95):
-    if issparse(x): x = x.A
-    xy_norm = x / np.clip(np.max(x, axis=0), 1e-3, None)
+    xy_norm = np.array(x.A if issparse(x) else x)
     if y is not None:
         if issparse(y): y = y.A
+        xy_norm = xy_norm / np.clip(np.max(xy_norm, axis=0), 1e-3, None)
         xy_norm += y / np.clip(np.max(y, axis=0), 1e-3, None)
     if isinstance(perc, int):
         weights = xy_norm >= np.percentile(xy_norm, perc, axis=0)
@@ -24,7 +24,7 @@ def leastsq_NxN(x, y, fit_offset=False, perc=None):
     """
     if perc is not None:
         if not fit_offset and isinstance(perc, (list, tuple)): perc = perc[1]
-        weights = csr_matrix(get_weight(x, y, perc)).astype(bool)
+        weights = csr_matrix(get_weight(x, y, perc=perc)).astype(bool)
         x, y = weights.multiply(x).tocsr(), weights.multiply(y).tocsr()
     else:
         weights = None
@@ -85,7 +85,7 @@ def leastsq_generalized(x, y, x2, y2, res_std=None, res2_std=None, fit_offset=Fa
     """
     if perc is not None:
         if not fit_offset and isinstance(perc, (list, tuple)): perc = perc[1]
-        weights = csr_matrix(get_weight(x, y, perc)).astype(bool)
+        weights = csr_matrix(get_weight(x, y, perc=perc) | get_weight(x, perc=perc)).astype(bool)
         x, y = weights.multiply(x).tocsr(), weights.multiply(y).tocsr()
 
     n_obs, n_var = x.shape

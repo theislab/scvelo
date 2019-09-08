@@ -94,7 +94,7 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
     size = default_size(adata) / 2 if size is None else size  # since fontsize is halved in width and height
     fontsize = rcParams['font.size'] if fontsize is None else fontsize
     for v, var in enumerate(var_names):
-        _adata = adata[:, var]
+        _adata = adata[:, var].copy()
         s, u = _adata.layers[skey], _adata.layers[ukey]
         if issparse(s): s, u = s.A, u.A
 
@@ -115,7 +115,7 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
 
         if mode == 'stochastic':
             ss, us = second_order_moments(_adata)
-            ss, us = ss.flatten(), us.flatten()
+            s, u, ss, us = s.flatten(), u.flatten(), ss.flatten(), us.flatten()
             fit = stochastic_fits[0]
 
             ax = pl.subplot(gs[v * nplts + len(layers) + 1])
@@ -123,7 +123,6 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
             beta = _adata.var[fit + '_beta'] if fit + '_beta' in adata.var.keys() else 1
             x = 2 * (ss - s**2) - s
             y = 2 * (us - u * s) + u + 2 * s * offset / beta
-
             scatter(adata, x=x, y=y, color=color, colorbar=colorbar, title=var, fontsize=40/ncols, size=size, perc=perc,
                     xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$',
                     use_raw=use_raw, frameon=True, ax=ax, save=False, show=False, **kwargs)
