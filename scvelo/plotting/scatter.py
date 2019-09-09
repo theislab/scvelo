@@ -6,6 +6,7 @@ from .utils import make_dense, is_categorical, update_axes, set_label, set_title
     plot_linear_fit, plot_density, default_legend_loc, make_unique_valid_list, rugplot
 from .docs import doc_scatter, doc_params
 
+from scanpy.plotting import scatter as scatter_
 from matplotlib import rcParams
 import matplotlib.pyplot as pl
 from scipy.stats import pearsonr
@@ -44,6 +45,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                       "projection": projection, "groups": groups, "palette": palette, "legend_fontsize": legend_fontsize,
                       "legend_fontweight": legend_fontweight, "right_margin": right_margin, "left_margin": left_margin,
                       "show": False, "save": False}
+    if hasattr(scatter_, 'legend_fontoutline'): scatter_kwargs.update({'legend_fontoutline': True})
 
     ext_kwargs = {'size': size, 'linewidth': linewidth, 'xlabel': xlabel, 'vkey': vkey, 'color_map': color_map,
                   'colorbar': colorbar, 'perc': perc, 'frameon': frameon, 'zorder': zorder, 'legend_loc': legend_loc,
@@ -117,10 +119,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
 
             if is_categorical(adata, color) and is_embedding:
-                from scanpy.plotting import scatter as scatter_
                 legend_loc = default_legend_loc(adata, color, legend_loc)
                 ax = scatter_(adata, basis=basis, color=color, color_map=color_map, size=size, frameon=frameon, ax=ax,
-                              title=title, legend_loc=legend_loc, legend_fontoutline=True, **scatter_kwargs, **kwargs)
+                              title=title, legend_loc=legend_loc, **scatter_kwargs, **kwargs)
 
             else:
                 if basis in adata.var_names:

@@ -512,13 +512,13 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
     palette = default_palette(None).by_key()['color'][::-1]
     colors = palette if colors is None or len(colors) < len(arrays) else colors
 
-    masked_arrays = np.ma.masked_invalid(arrays)
+    masked_arrays = np.ma.masked_invalid(np.hstack(arrays))
     bmin, bmax = masked_arrays.min(), masked_arrays.max()
     if xlim is not None:
         bmin, bmax = max(bmin, xlim[0]), min(bmax, xlim[1])
     elif perc is not None:
         if np.size(perc) < 2: perc = [perc, 100] if perc < 50 else [0, perc]
-        bmin, bmax = np.nanpercentile(arrays, perc)
+        bmin, bmax = np.nanpercentile(masked_arrays, perc)
     bins = np.arange(bmin, bmax + (bmax - bmin) / bins, (bmax - bmin) / bins)
 
     if xscale is 'log':
