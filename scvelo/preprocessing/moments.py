@@ -84,6 +84,7 @@ def second_order_moments(adata, adjusted=False):
 
     connectivities = get_connectivities(adata)
     s, u = csr_matrix(adata.layers['spliced']), csr_matrix(adata.layers['unspliced'])
+    if s.shape[0] == 1: s, u = s.T, u.T
     Mss = csr_matrix.dot(connectivities, s.multiply(s)).astype(np.float32).A
     Mus = csr_matrix.dot(connectivities, s.multiply(u)).astype(np.float32).A
     if adjusted:
