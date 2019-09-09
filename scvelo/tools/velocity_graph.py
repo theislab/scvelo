@@ -63,7 +63,7 @@ class VelocityGraph:
             else 2 if n_recurse_neighbors is None else n_recurse_neighbors
 
         if 'neighbors' not in adata.uns.keys(): neighbors(adata)
-        if n_neighbors is None or n_neighbors < adata.uns['neighbors']['params']['n_neighbors']:
+        if n_neighbors is None or n_neighbors <= adata.uns['neighbors']['params']['n_neighbors']:
             self.indices = get_indices(dist=adata.uns['neighbors']['distances'], n_neighbors=n_neighbors)[0]
         else:
             if basis is None: basis = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()][-1]
