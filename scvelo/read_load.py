@@ -139,27 +139,30 @@ def merge(adata, ldata, copy=True):
     _ldata.var_names_make_unique()
 
     same_vars = (len(_adata.var_names) == len(_ldata.var_names) and np.all(_adata.var_names == _ldata.var_names))
-    if len(common_vars) > 0 and not same_vars:
+    join_vars = len(common_vars) > 0
+
+    if join_vars and not same_vars:
         _adata._inplace_subset_var(common_vars)
         _ldata._inplace_subset_var(common_vars)
 
     for attr in _ldata.obs.keys():
-        _adata.obs[attr] = _ldata.obs[attr]
+        if attr not in _adata.obs.keys(): _adata.obs[attr] = _ldata.obs[attr]
     for attr in _ldata.obsm.keys():
-        _adata.obsm[attr] = _ldata.obsm[attr]
+        if attr not in _adata.obsm.keys(): _adata.obsm[attr] = _ldata.obsm[attr]
     for attr in _ldata.uns.keys():
-        _adata.uns[attr] = _ldata.uns[attr]
-    for attr in _ldata.layers.keys():
-        _adata.layers[attr] = _ldata.layers[attr]
+        if attr not in _adata.uns.keys(): _adata.uns[attr] = _ldata.uns[attr]
+    if join_vars:
+        for attr in _ldata.layers.keys():
+            if attr not in _adata.layers.keys(): _adata.layers[attr] = _ldata.layers[attr]
 
-    if _adata.shape[1] == _ldata.shape[1]:
-        same_vars = (len(_adata.var_names) == len(_ldata.var_names) and np.all(_adata.var_names == _ldata.var_names))
-        if same_vars:
-            for attr in _ldata.var.keys():
-                _adata.var[attr] = _ldata.var[attr]
-            for attr in _ldata.varm.keys():
-                _adata.varm[attr] = _ldata.varm[attr]
-        else:
-            raise ValueError('Variable names are not identical.')
+        if _adata.shape[1] == _ldata.shape[1]:
+            same_vars = (len(_adata.var_names) == len(_ldata.var_names) and np.all(_adata.var_names == _ldata.var_names))
+            if same_vars:
+                for attr in _ldata.var.keys():
+                    if attr not in _adata.var.keys(): _adata.var[attr] = _ldata.var[attr]
+                for attr in _ldata.varm.keys():
+                    if attr not in _adata.varm.keys(): _adata.varm[attr] = _ldata.varm[attr]
+            else:
+                raise ValueError('Variable names are not identical.')
 
     return _adata if copy else None
