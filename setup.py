@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-import numpy as np
 from version import __version__
 
 setup(
@@ -9,7 +8,6 @@ setup(
                       'scipy>=1.0', 'scikit-learn>=0.19.1, != 0.21.0, != 0.21.1',  # exclude buggy versions
                       'joblib', 'umap-learn>=0.3.0', 'loompy>=2.0.12'],
     packages=find_packages(),
-    include_dirs=[np.get_include()],
     author="Volker Bergen",
     author_email="volker.bergen@helmholtz-muenchen.de",
     description='Stochastic RNA velocity for inferring single cell dynamics',
