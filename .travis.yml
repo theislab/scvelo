@@ -5,10 +5,11 @@ python:
   - 3.7
 
 install:
+  - pip install docutils
   - pip install -e .
 
 env: MPLBACKEND=Agg
 
 script:
   - pytest
-  - rst2html.py --strict README.rst >/dev/null
+  - rst2html.py --halt=2 README.rst >/dev/null
