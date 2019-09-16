@@ -1,10 +1,9 @@
 from .. import settings
 from .. import logging as logg
 
-from scipy.sparse import issparse
+from scipy.sparse import issparse, coo_matrix
 import numpy as np
 import warnings
-from scanpy.neighbors import compute_connectivities_umap
 from scanpy.preprocessing import pca
 from scanpy import Neighbors
 
@@ -131,9 +130,8 @@ class FastNeighbors:
         try:
             import hnswlib
         except ImportError:
-            print("In order to use fast approx neighbor search, you need to install hnswlib via \n \n"
-                  "pip install -U pybind11 \n"
-                  "pip install -U git+https://github.com/nmslib/hnswlib#subdirectory=python_bindings")
+            print("In order to use fast approx neighbor search, you need to `pip install hnswlib`\n")
+
 
         ef_c, ef = max(ef_construction, self.n_neighbors), max(self.n_neighbors, ef)
         metric = 'l2' if metric is 'euclidean' else metric
@@ -222,3 +220,52 @@ def get_connectivities(adata, mode='connectivities', n_neighbors=None, recurse_n
         return connectivities.tocsr().astype(np.float32)
     else:
         return None
+
+
+def get_csr_from_indices(knn_indices, knn_dists, n_obs, n_neighbors):
+    rows = np.zeros((n_obs * n_neighbors), dtype=np.int64)
+    cols = np.zeros((n_obs * n_neighbors), dtype=np.int64)
+    vals = np.zeros((n_obs * n_neighbors), dtype=np.float64)
+
+    for i in range(knn_indices.shape[0]):
+        for j in range(n_neighbors):
+            if knn_indices[i, j] == -1:
+                continue  # We didn't get the full knn for i
+            if knn_indices[i, j] == i:
+                val = 0.0
+            else:
+                val = knn_dists[i, j]
+
+            rows[i * n_neighbors + j] = i
+            cols[i * n_neighbors + j] = knn_indices[i, j]
+            vals[i * n_neighbors + j] = val
+
+    result = coo_matrix((vals, (rows, cols)), shape=(n_obs, n_obs))
+    result.eliminate_zeros()
+    return result.tocsr()
+
+
+def compute_connectivities_umap(knn_indices, knn_dists, n_obs, n_neighbors, set_op_mix_ratio=1.0,local_connectivity=1.0):
+    """\
+    This is from umap.fuzzy_simplicial_set [McInnes18]_.
+    Given a set of data X, a neighborhood size, and a measure of distance
+    compute the fuzzy simplicial set (here represented as a fuzzy graph in
+    the form of a sparse matrix) associated to the data. This is done by
+    locally approximating geodesic distance at each point, creating a fuzzy
+    simplicial set for each such point, and then combining all the local
+    fuzzy simplicial sets into a global one via a fuzzy union.
+    """
+    from umap.umap_ import fuzzy_simplicial_set
+
+    X = coo_matrix(([], ([], [])), shape=(n_obs, 1))
+    connectivities = fuzzy_simplicial_set(X, n_neighbors, None, None,
+                                          knn_indices=knn_indices, knn_dists=knn_dists,
+                                          set_op_mix_ratio=set_op_mix_ratio,
+                                          local_connectivity=local_connectivity)
+
+    if isinstance(connectivities, tuple):  # returns (result, sigmas, rhos) in umap-learn 0.4
+        connectivities = connectivities[0]
+
+    distances = get_csr_from_indices(knn_indices, knn_dists, n_obs, n_neighbors)
+
+    return distances, connectivities.tocsr()

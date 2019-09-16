@@ -319,9 +319,9 @@ def corrcoef(x, y, mode='pearsons'):
 
 
 def vcorrcoef(X, y):
-    Xm = np.array(X - (np.mean(X, -1)[:, None] if X.ndim > 1 else np.mean(X, -1)))
-    ym = np.array(y - (np.mean(y, -1)[:, None] if y.ndim > 1 else np.mean(y, -1)))
-    corr = np.sum(Xm * ym, -1) / np.sqrt(np.sum(Xm ** 2, -1) * np.sum(ym ** 2, -1))
+    Xm = np.array(X - (np.nanmean(X, -1)[:, None] if X.ndim > 1 else np.nanmean(X, -1)))
+    ym = np.array(y - (np.nanmean(y, -1)[:, None] if y.ndim > 1 else np.nanmean(y, -1)))
+    corr = np.nansum(Xm * ym, -1) / np.sqrt(np.nansum(Xm ** 2, -1) * np.nansum(ym ** 2, -1))
     return corr
 
 
