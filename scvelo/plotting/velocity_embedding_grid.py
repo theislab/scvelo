@@ -29,7 +29,7 @@ def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbor
         m, M = np.min(X_emb[:, dim_i]), np.max(X_emb[:, dim_i])
         m = m - .01 * np.abs(M - m)
         M = M + .01 * np.abs(M - m)
-        gr = np.linspace(m, M, 50 * density)
+        gr = np.linspace(m, M, int(50 * density))
         grs.append(gr)
 
     meshes_tuple = np.meshgrid(*grs)
