@@ -914,8 +914,8 @@ def get_divergence(adata, mode='soft', use_latent_time=None, use_connectivities=
     alpha, beta, gamma, scaling, t_ = get_vars(vdata)
     std_u, std_s, u0, s0, pval_steady, steady_u, steady_s = get_latent_vars(vdata)
 
-    kwargs_ = {'kernel_width': None, 'normalized': True, 'var_scale': True, 'reg_par': None,
-               'min_confidence': 1e-2, 'constraint_time_increments': False, 'fit_steady_states': True,
+    kwargs_ = {'kernel_width': None, 'normalized': True, 'var_scale': True, 'reg_par': None, 'min_confidence': 1e-2,
+               'constraint_time_increments': False, 'fit_steady_states': True, 'fit_basal_transcription': None,
                'std_u': std_u, 'std_s': std_s, 'pval_steady': pval_steady, 'steady_u': steady_u, 'steady_s': steady_s}
     kwargs_.update(adata.uns['recover_dynamics'])
     kwargs_.update(**kwargs)
