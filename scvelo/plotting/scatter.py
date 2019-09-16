@@ -45,7 +45,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                       "projection": projection, "groups": groups, "palette": palette, "legend_fontsize": legend_fontsize,
                       "legend_fontweight": legend_fontweight, "right_margin": right_margin, "left_margin": left_margin,
                       "show": False, "save": False}
-    if hasattr(scatter_, 'legend_fontoutline'): scatter_kwargs.update({'legend_fontoutline': True})
 
     ext_kwargs = {'size': size, 'linewidth': linewidth, 'xlabel': xlabel, 'vkey': vkey, 'color_map': color_map,
                   'colorbar': colorbar, 'perc': perc, 'frameon': frameon, 'zorder': zorder, 'legend_loc': legend_loc,
@@ -120,8 +119,13 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
             if is_categorical(adata, color) and is_embedding:
                 legend_loc = default_legend_loc(adata, color, legend_loc)
+                add_kwargs = {}
+                try:
+                    from inspect import signature
+                    if 'legend_fontoutline' in signature(scatter_).parameters: add_kwargs = {'legend_fontoutline': True}
+                except: pass
                 ax = scatter_(adata, basis=basis, color=color, color_map=color_map, size=size, frameon=frameon, ax=ax,
-                              title=title, legend_loc=legend_loc, **scatter_kwargs, **kwargs)
+                              title=title, legend_loc=legend_loc, **scatter_kwargs, **kwargs, **add_kwargs)
 
             else:
                 if basis in adata.var_names:
