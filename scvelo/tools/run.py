@@ -198,6 +198,8 @@ def convert_to_loom(adata, basis=None):
 def test():
     from ..datasets import simulation
     from .velocity_graph import velocity_graph
-    adata = simulation(n_obs=100)
+    from ..logging import print_version
+    print_version()
+    adata = simulation(n_obs=300, n_vars=30)
     velocity_graph(adata)
     print('Test run successfully.')
