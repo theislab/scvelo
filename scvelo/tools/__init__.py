@@ -6,5 +6,6 @@ from .velocity_confidence import velocity_confidence, velocity_confidence_transi
 from .terminal_states import eigs, terminal_states
 from .rank_velocity_genes import velocity_clusters, rank_velocity_genes
 from .velocity_pseudotime import velocity_map, velocity_pseudotime
-from .dynamical_model import DynamicsRecovery, recover_dynamics, align_dynamics, recover_latent_time
-from scanpy.tools import tsne, umap, diffmap, dpt, louvain, paga
+from .dynamical_model import DynamicsRecovery, recover_dynamics
+from .paga import paga
+from scanpy.api.tl import tsne, umap, diffmap, dpt, louvain
