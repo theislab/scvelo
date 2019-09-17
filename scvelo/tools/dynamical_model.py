@@ -29,7 +29,7 @@ class DynamicsRecovery(BaseDynamics):
 
         # initialize scaling
         self.std_u, self.std_s = np.std(u_w), np.std(s_w)
-        scaling = self.std_u / self.std_s if isinstance(self.fit_scaling, bool) else self.fit_scaling
+        scaling = self.std_u / self.std_s if isinstance(self.fix_scaling, bool) else self.fix_scaling
         u, u_w = u / scaling, u_w / scaling
 
         # initialize beta and gamma from extreme quantiles of s
@@ -224,6 +224,23 @@ default_pars_names = ['alpha', 'beta', 'gamma', 't_', 'scaling', 'std_u', 'std_s
 
 
 def read_pars(adata, pars_names=None, key='fit'):
+    """\
+    Read parameters from the model.
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    pars_names: `str`,  list of `str`
+        Names of pars to load.
+    key: `str` (default: `'fit'`)
+        Key to append to parameter names, e.g. 'fit_t' for
+        fitted time.
+
+    Returns
+    -------
+    List of parameters.
+    """
     pars = []
     for name in (default_pars_names if pars_names is None else pars_names):
         pkey = key + '_' + name
@@ -233,12 +250,30 @@ def read_pars(adata, pars_names=None, key='fit'):
 
 
 def write_pars(adata, pars, pars_names=None, add_key='fit'):
+    """\
+    Overwrites parameters.
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    pars:`float` or list of `float`
+        New values of the pars.
+    pars_names: `str`,  list of `str`
+        Names of pars to write.
+    add_key: `str` (default: `'fit'`)
+        Key to add to parameter names, e.g. 'fit_t' for fitted
+        time.
+    Returns
+    -------
+    `None`
+    """
     for i, name in enumerate(default_pars_names if pars_names is None else pars_names):
         adata.var[add_key + '_' + name] = pars[i]
 
 
 def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_iter=10, assignment_mode='projection',
-                     t_max=None, fit_time=True, fit_scaling=True, fit_steady_states=True, fit_connected_states=None,
+                     t_max=None, fix_scaling=False, fix_time=False, fit_steady_states=True, fit_connected_states=None,
                      fit_basal_transcription=None, use_raw=False, load_pars=None, return_model=None, plot_results=False,
                      steady_state_prior=None, add_key='fit', copy=False, **kwargs):
     """Recovers the full splicing kinetics of specified genes, which includes inferring transcription rate,
@@ -283,7 +318,8 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
 
     Returns
     -------
-    Returns or updates `adata`
+    Returns copy of `adata` or :DynamicsRecovery: object or
+    `None`
     """
     adata = data.copy() if copy else data
     logg.info('recovering dynamics', r=True)
@@ -326,8 +362,8 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
     conn = get_connectivities(adata) if fit_connected_states else None
     progress = logg.ProgressReporter(len(var_names))
     for i, gene in enumerate(var_names):
-        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars, max_iter=max_iter, fit_time=fit_time,
-                              fit_steady_states=fit_steady_states, fit_connected_states=conn, fit_scaling=fit_scaling,
+        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars, max_iter=max_iter, fix_time=fix_time,
+                              fit_steady_states=fit_steady_states, fit_connected_states=conn, fix_scaling=fix_scaling,
                               fit_basal_transcription=fit_basal_transcription, steady_state_prior=steady_state_prior, **kwargs)
         if dm.recoverable:
             dm.fit(assignment_mode=assignment_mode)
