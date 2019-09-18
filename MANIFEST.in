@@ -1,0 +1,9 @@
+# Exclude everything not needed for importing, building, and tests
+exclude .coveragerc .editorconfig .gitattributes .gitignore .readthedocs.yml .travis.yml
+global-exclude *.pyc *.ipynb
+prune docs
+prune data
+prune cache
+prune figures
+prune notebooks
+prune benchmarking

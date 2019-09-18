@@ -35,3 +35,4 @@ docs/source/scvelo*
 /dist/
 
 .coverage
+.eggs
