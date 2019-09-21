@@ -1,8 +1,7 @@
 # Just until rtd.org understands pyproject.toml
 scanpy
 setuptools
+setuptools_scm
+importlib_metadata
 sphinx_rtd_theme>=0.3
 sphinx_autodoc_typehints<=1.6
-
-
-
