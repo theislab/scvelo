@@ -40,11 +40,10 @@ Tools (tl)
    tl.velocity
    tl.velocity_graph
    tl.velocity_embedding
-
+   tl.recover_dynamics
    tl.transition_matrix
    tl.terminal_states
    tl.rank_velocity_genes
-
    tl.velocity_confidence
 
 

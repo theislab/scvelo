@@ -1,9 +1,9 @@
 |PyPI| |Docs| |travis|
 
-scVelo - stochastic single cell RNA velocity
-==========================================================
+scVelo - RNA velocity using dynamical modeling
+==============================================
 
-.. image:: https://drive.google.com/uc?export=view&id=1rcgHou-YFTJCKDR-Vd37zQ_AvLiaHLut
+.. image:: https://user-images.githubusercontent.com/31883718/65906280-8cfc0d00-e3c2-11e9-94ee-bb74d3da15e2.png
    :width: 600px
    :align: center
 
@@ -13,8 +13,9 @@ RNA velocity, the time derivative of mRNA abundance, enables you to infer direct
 splicing information. The main principles have been presented in
 `La Manno et al. (2018) <https://doi.org/10.1038/s41586-018-0414-6>`_,
 and are based on a deterministic steady-state model of transcriptional dynamics.
-scVelo uses a stochastic dynamical model that captures the complete molecular kinetics, thereby recovering the systematic
-relationship of unspliced to spliced mRNA. That enables you to estimate velocities even in non-stationary populations.
+scVelo provides two extensions: A stochastic model that incorporates second-order moments,
+and a dynamical model that captures the full splicing kinetics. It thereby adapts RNA velocity to widely varying
+specifications such as non-stationary populations.
 
 It is compatible with scanpy_ (`Wolf et al., 2018 <https://doi.org/10.1186/s13059-017-1382-0>`_).
 Making use of sparse implementation, iterative neighbors search and other techniques, it is remarkably efficient in
@@ -40,6 +41,7 @@ Report issues and see the code on `GitHub <https://github.com/theislab/scvelo>`_
    :maxdepth: 1
    :hidden:
 
+   about
    getting_started
    Example <https://scvelo-notebooks.readthedocs.io/en/latest/DentateGyrus.html>
    api
