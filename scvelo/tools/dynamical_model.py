@@ -241,8 +241,10 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
                      t_max=None, fit_time=True, fit_scaling=True, fit_steady_states=True, fit_connected_states=None,
                      fit_basal_transcription=None, use_raw=False, load_pars=None, return_model=None, plot_results=False,
                      steady_state_prior=None, add_key='fit', copy=False, **kwargs):
-    """Recovers the full splicing kinetics of specified genes, which includes inferring transcription rate,
-    splicing rate, degradation rate, cell-specific latent time and transcriptional states.
+    """Recovers the full splicing kinetics of specified genes
+
+    The model infers transcription rates, splicing rates, degradation rates,
+    as well as cell-specific latent time and transcriptional states.
 
     Arguments
     ---------
