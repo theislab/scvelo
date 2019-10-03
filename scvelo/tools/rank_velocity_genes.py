@@ -233,8 +233,8 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
     if key not in adata.uns.keys(): adata.uns[key] = {}
 
     adata.uns[key] = \
-        {'names': np.rec.fromarrays([n for n in rankings_gene_names], dtype=[(rn, 'U50') for rn in groups]),
-         'scores': np.rec.fromarrays([n.round(2) for n in rankings_gene_scores], dtype=[(rn, 'float32') for rn in groups]),
+        {'names': np.rec.fromarrays([n for n in rankings_gene_names], dtype=[(str(rn), 'U50') for rn in groups]),
+         'scores': np.rec.fromarrays([n.round(2) for n in rankings_gene_scores], dtype=[(str(rn), 'float32') for rn in groups]),
          'params': {'groupby': groupby, 'reference': 'rest', 'method': 't-test_overestim_var', 'use_raw': True}}
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
