@@ -30,9 +30,7 @@ terms of memory and runtime without loss in accuracy and runs easily on your loc
 .. |travis| image:: https://travis-ci.org/theislab/scvelo.svg?branch=master
    :target: https://travis-ci.org/theislab/scvelo
 
-.. _velocyto: http://velocyto.org/
 .. _scanpy: https://github.com/theislab/scanpy
-.. _notebooks: https://nbviewer.jupyter.org/github/theislab/scvelo_notebooks/tree/master/
 
 Report issues and see the code on `GitHub <https://github.com/theislab/scvelo>`__.
 
@@ -43,7 +41,7 @@ Report issues and see the code on `GitHub <https://github.com/theislab/scvelo>`_
 
    about
    getting_started
-   Example <https://scvelo-notebooks.readthedocs.io/en/latest/DentateGyrus.html>
+   Example <https://scvelo-notebooks.readthedocs.io/DentateGyrus.html>
    api
    release_notes
    references
