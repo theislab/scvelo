@@ -27,9 +27,9 @@ Install from PyPI::
 
 See the the documentation at `<https://scvelo.org>`_ for details, which includes:
 
-- How scVelo estimates RNA velocity: `<scvelo.org/about.html>`_
-- How to install and getting started: `<scvelo.org/getting_started.html>`_
-- About the API: `<scvelo.org/latest/api.html>`_
+- How scVelo estimates RNA velocity: `<https://scvelo.org/about.html>`_
+- How to install and getting started: `<https://scvelo.org/getting_started.html>`_
+- About the API: `<https://scvelo.org/latest/api.html>`_
 
 Your feedback, in particular any issue you stumble upon, is highly appreciated and addressed to `feedback@scvelo.org <mailto:feedback@scvelo.org>`_.
 
