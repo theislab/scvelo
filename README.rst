@@ -25,13 +25,13 @@ Install from PyPI::
 
     pip install -U scvelo
 
-See the documentation_ for details, which includes:
+See the the documentation at `<https://scvelo.org>`_ for details, which includes:
 
-- `How scVelo estimates RNA velocity <https://scvelo.readthedocs.io/en/latest/about.html>`_
-- `How to install and getting started <https://scvelo.readthedocs.io/en/latest/getting_started.html>`_
-- `About the API <https://scvelo.readthedocs.io/en/latest/api.html>`_
+- How scVelo estimates RNA velocity: `<scvelo.org/about.html>`_
+- How to install and getting started: `<scvelo.org/getting_started.html>`_
+- About the API: `<scvelo.org/latest/api.html>`_
 
-Your feedback, in particular any issue you stumble upon, is highly appreciated and addressed to `feedback@scvelo.de <mailto:feedback@scvelo.de>`_.
+Your feedback, in particular any issue you stumble upon, is highly appreciated and addressed to `feedback@scvelo.org <mailto:feedback@scvelo.org>`_.
 
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
@@ -44,7 +44,4 @@ Your feedback, in particular any issue you stumble upon, is highly appreciated a
    :target: https://travis-ci.org/theislab/scvelo
 
 .. _scanpy: https://github.com/theislab/scanpy
-.. _Miniconda: http://conda.pydata.org/miniconda.html
-.. _documentation: https://scvelo.readthedocs.io
-.. _`velocyto pipeline`: http://velocyto.org/velocyto.py/tutorial/cli.html
-.. _`kallisto pipeline`: https://pachterlab.github.io/kallisto/about
+.. _documentation: https://scvelo.org
