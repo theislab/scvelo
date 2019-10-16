@@ -275,7 +275,7 @@ def test_bimodality(x, bins=30, kde=True, plot=False):
     kde_peak = kde_grid[idx:][peak_1]  # min(kde_grid[:idx][peak_0], kde_grid[idx:][peak_1])
     kde_mid = kde_grid[idx:].mean()  # kde_grid[idx]
 
-    t_stat = (kde_peak - kde_mid) / (np.std(kde_grid) / np.sqrt(bins))
+    t_stat = (kde_peak - kde_mid) / np.clip(np.std(kde_grid) / np.sqrt(bins), 1, None)
     p_val = norm.sf(t_stat)
 
     grid_0 = grid[:idx]
