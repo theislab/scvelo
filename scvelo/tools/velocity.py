@@ -185,20 +185,7 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
         kwargs_.update(adata.uns['recover_dynamics'])
         kwargs_.update(**kwargs)
 
-        t = get_divergence(vdata, mode='time', **kwargs_)
-
-        if kwargs_['time_connectivities']: t = get_connectivities(vdata).dot(t)
-        tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
-        ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
-
-        vt = ut * beta - st * gamma
-        wt = (alpha - beta * ut) * scaling
-
-        if kwargs_['time_connectivities']:
-            u, s = get_reads(vdata, scaled=False, use_raw=kwargs_['use_raw'])
-            vt, wt = np.clip(vt, -s, None), np.clip(wt, -u, None)
-
-        # vt, wt = get_divergence(vdata, mode='velocity', **kwargs_)
+        vt, wt = get_divergence(vdata, mode='velocity', **kwargs_)
 
         vgenes = adata.var.fit_likelihood > min_likelihood
         lb, ub = np.nanpercentile(adata.var.fit_scaling, [10, 90])

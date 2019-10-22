@@ -384,17 +384,17 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
     elif mode is 'velocity':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        #if res.ndim > 2:
-        #    res = np.array([res[0], res[1], res[2], res[3], 1e-6 * np.ones(res[0].shape)])
-        #else:
-        #    res = np.array([res[0], res[1], min_confidence * np.ones(res[0].shape)])
+        res = np.array([res[0], res[1], res[2], res[3], 1e-6 * np.ones(res[0].shape)]) if res.ndim > 2 \
+            else np.array([res[0], res[1], min_confidence * np.ones(res[0].shape)])
         if normalized: res = normalize(res, min_confidence=min_confidence)
-        o = np.argmax(res, axis=0)
-        o_, o = o == 0, o == 1
+        res = np.argmax(res, axis=0)
+        o_, o = res == 0, res == 1
         t = tau * o + (tau_ + t_) * o_
         if time_connectivities:
             if time_connectivities is True: time_connectivities = connectivities
             t = time_connectivities.dot(t)
+            o = (res < 2) * (t < t_)
+            o_ = (res < 2) * (t >= t_)
             tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
             ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
             ut_, st_ = ut, st
