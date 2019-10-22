@@ -67,7 +67,7 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='dpt
         n_counts = (adata.layers['unspliced'] > 0).sum(0)
         n_counts = n_counts.A1 if issparse(adata.layers['unspliced']) else n_counts
         min_counts = min(50, np.percentile(n_counts, 50))
-        tmp_filter &= (n_counts > min_counts)
+        tmp_filter &= np.ravel(n_counts > min_counts)
 
     if 'r2' in adata.var.keys():
         r2 = adata.var.velocity_r2
