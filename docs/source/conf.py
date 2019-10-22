@@ -97,7 +97,7 @@ htmlhelp_basename = 'scvelodoc'
 latex_documents = [(master_doc, 'scvelo.tex', 'scvelo documentation', 'Volker Bergen', 'manual')]
 man_pages = [(master_doc, 'scvelo', 'scvelo documentation', [author], 1)]
 texinfo_documents = [(master_doc, 'scvelo', 'scvelo documentation', author,
-                      'scvelo', 'Stochastic RNA Velocity in Single Cells.', 'Miscellaneous')]
+                      'scvelo', 'RNA Velocity using dynamical modeling', 'Miscellaneous')]
 
 
 # -- generate_options override ------------------------------------------
