@@ -43,9 +43,9 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
         `n_neighbors` nearest neighbor.
     random_state
         A numpy random seed.
-    method : {{'umap', 'gauss', 'hnsw', 'sklearn', `None`}}  (default: `'umap'`)
-        Use 'umap' [McInnes18]_ or 'gauss' (Gauss kernel following [Coifman05]_
-        with adaptive width [Haghverdi16]_) for computing connectivities.
+    method : {{'umap', 'hnsw', 'sklearn'}}  (default: `'umap'`)
+        The methods only differ in runtime. Connectivities are computed with adaptive width [Haghverdi16]_).
+        The 'hnsw' method is most efficient and requires to `pip install hnswlib`.
     metric
         A known metric’s name or a callable that returns a distance.
     metric_kwds
@@ -131,7 +131,6 @@ class FastNeighbors:
             import hnswlib
         except ImportError:
             print("In order to use fast approx neighbor search, you need to `pip install hnswlib`\n")
-
 
         ef_c, ef = max(ef_construction, self.n_neighbors), max(self.n_neighbors, ef)
         metric = 'l2' if metric is 'euclidean' else metric
