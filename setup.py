@@ -11,7 +11,7 @@ setup(
     packages=find_packages(),
     author="Volker Bergen",
     author_email="volker.bergen@helmholtz-muenchen.de",
-    description='Stochastic RNA velocity for inferring single cell dynamics',
+    description='RNA velocity using dynamical modeling',
     long_description=Path('README.rst').read_text('utf-8'),
     license='BSD',
     url="https://github.com/theislab/scvelo",
