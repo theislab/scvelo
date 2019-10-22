@@ -112,9 +112,9 @@ def write_pars(adata, vkey, pars, pars_names, add_key=None):
         elif key in adata.var.keys(): del adata.var[key]
 
 
-def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=False, filter_genes=False, groups=None,
+def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_offset2=False, filter_genes=False, groups=None,
              groupby=None, groups_for_fit=None, constrain_ratio=None, use_raw=False, use_latent_time=None,
-             perc=[5, 95], min_r2=.01, r2_adjusted=None, copy=False, **kwargs):
+             perc=[5, 95], min_r2=1e-2, min_likelihood=1e-3, r2_adjusted=None, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner
 
     Arguments
@@ -123,7 +123,7 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
         Annotated data matrix.
     vkey: `str` (default: `'velocity'`)
         Name under which to refer to the computed velocities for `velocity_graph` and `velocity_embedding`.
-    mode: `'steady_state'`, `'deterministic'`, `'stochastic'` or `'dynamical'` (default: `'steady_state'`)
+    mode: `'steady_state'`, `'deterministic'`, `'stochastic'` or `'dynamical'` (default: `'stochastic'`)
         Whether to run the estimation using the deterministic or stochastic model of transcriptional dynamics.
         The `'steady_state'` model is default and refers to the deterministic model.
         The dynamical model requires to run `tl.recover_dynamics` first; it is yet under development.
@@ -198,8 +198,17 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
             u, s = get_reads(vdata, scaled=False, use_raw=kwargs_['use_raw'])
             vt, wt = np.clip(vt, -s, None), np.clip(wt, -u, None)
 
+        # vt, wt = get_divergence(vdata, mode='velocity', **kwargs_)
+
+        vgenes = adata.var.fit_likelihood > min_likelihood
+        lb, ub = np.nanpercentile(adata.var.fit_scaling, [10, 90])
+        vgenes = vgenes & (adata.var.fit_scaling > np.min([lb, .03])) & (adata.var.fit_scaling < np.max([ub, 3]))
+
+        adata.var[vkey + '_genes'] = vgenes
+
         adata.layers[vkey] = np.ones(adata.shape) * np.nan
         adata.layers[vkey][:, gene_subset] = vt
+
 
         adata.layers[vkey + '_u'] = np.ones(adata.shape) * np.nan
         adata.layers[vkey + '_u'][:, gene_subset] = wt
@@ -213,7 +222,6 @@ def velocity(data, vkey='velocity', mode=None, fit_offset=False, fit_offset2=Fal
 
             cell_subset = groups_to_bool(adata, groups, groupby)
             _adata = adata if groups is None else adata[cell_subset]
-
             velo = Velocity(_adata, groups_for_fit=groups_for_fit, groupby=groupby, constrain_ratio=constrain_ratio,
                             min_r2=min_r2, r2_adjusted=r2_adjusted, use_raw=use_raw)
             velo.compute_deterministic(fit_offset=fit_offset, perc=perc)

@@ -27,8 +27,8 @@ def vals_to_csr(vals, rows, cols, shape, split_negative=False):
 
 
 class VelocityGraph:
-    def __init__(self, adata, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, sqrt_transform=False,
-                 n_recurse_neighbors=None, random_neighbors_at_max=None, gene_subset=None, approx=False, report=False):
+    def __init__(self, adata, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, sqrt_transform=None,
+                 n_recurse_neighbors=None, random_neighbors_at_max=None, gene_subset=None, approx=None, report=False):
 
         subset = np.ones(adata.n_vars, bool)
         if gene_subset is not None:
@@ -55,8 +55,8 @@ class VelocityGraph:
             self.X = np.array(X, dtype=np.float32)
             self.V = np.array(V, dtype=np.float32)
 
-        self.sqrt_transform = sqrt_transform
-        if sqrt_transform: self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
+        self.sqrt_transform = (adata.uns[vkey + '_settings']['mode'] is 'stochastic') if sqrt_transform is None else sqrt_transform
+        if self.sqrt_transform: self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
         self.V -= np.nanmean(self.V, axis=1)[:, None]
 
         self.n_recurse_neighbors = 1 if n_neighbors is not None \
@@ -132,7 +132,7 @@ class VelocityGraph:
 
 
 def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, n_recurse_neighbors=None,
-                   random_neighbors_at_max=None, sqrt_transform=False, gene_subset=None, approx=False, copy=False):
+                   random_neighbors_at_max=None, sqrt_transform=None, gene_subset=None, approx=None, copy=False):
     """Computes velocity graph based on cosine similarities.
 
     The cosine similarities are computed between velocities and potential cell state transitions.

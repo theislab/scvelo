@@ -196,7 +196,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
                        std_u=1, std_s=1, normalized=False, mode='distance', assignment_mode=None, var_scale=False,
                        kernel_width=None, fit_steady_states=True, connectivities=None, constraint_time_increments=True,
                        reg_time=None, reg_par=None, min_confidence=None, pval_steady=None, steady_u=None, steady_s=None,
-                       noise_model='chi', **kwargs):
+                       noise_model='chi', time_connectivities=None, **kwargs):
     """Estimates the divergence (avaiable metrics: distance, mse, likelihood, loglikelihood) of ODE to observations
 
     Arguments
@@ -358,6 +358,68 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
         t = tau * (o == 1) + (tau_ + t_) * (o == 0)
         res = [t, tau, o] if mode is 'assign_timepoints' else t
+
+    elif mode is 'gene_likelihood':
+        o = np.argmin(res, axis=0)
+
+        tau_ *= (o == 0)
+        tau *= (o == 1)
+
+        if 2 in o: o[o == 2] = 1
+        if 3 in o: o[o == 3] = 0
+
+        distu = distu * (o == 1) + distu_ * (o == 0)
+        dists = dists * (o == 1) + dists_ * (o == 0)
+
+        if True:
+            idx = (u > np.max(u) / 3) & (s > np.max(s) / 3)
+            if np.sum(idx) > 0: distu, dists = distu[idx], dists[idx]
+
+        distx = distu ** 2 + dists ** 2
+        # compute variance / equivalent to np.var(np.sign(sdiff) * np.sqrt(distx))
+        varx = np.mean(distx) - np.mean(np.sign(dists) * np.sqrt(distx)) ** 2
+        n = np.clip(len(distu) - len(distu) * .01, 2, None)
+        ll = - 1 / 2 / n * np.sum(distx) / varx - 1 / 2 * np.log(2 * np.pi * varx)
+        res = np.exp(ll)
+
+    elif mode is 'velocity':
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
+        #if res.ndim > 2:
+        #    res = np.array([res[0], res[1], res[2], res[3], 1e-6 * np.ones(res[0].shape)])
+        #else:
+        #    res = np.array([res[0], res[1], min_confidence * np.ones(res[0].shape)])
+        if normalized: res = normalize(res, min_confidence=min_confidence)
+        o = np.argmax(res, axis=0)
+        o_, o = o == 0, o == 1
+        t = tau * o + (tau_ + t_) * o_
+        if time_connectivities:
+            if time_connectivities is True: time_connectivities = connectivities
+            t = time_connectivities.dot(t)
+            tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
+            ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
+            ut_, st_ = ut, st
+
+        ut = ut * o + ut_ * o_
+        st = st * o + st_ * o_
+        alpha = alpha * o
+
+        vt = (ut * beta - st * gamma)  # ds/dt
+        wt = (alpha - beta * ut) * scaling  # du/dt
+
+        vt, wt = np.clip(vt, -s, None), np.clip(wt, -u * scaling, None)
+
+        res = [vt, wt]
+
+    elif mode is 'soft_velocity':
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
+        if normalized: res = normalize(res, min_confidence=min_confidence)
+        o_, o = res[0], res[1]
+        ut = ut * o + ut_ * o_
+        st = st * o + st_ * o_
+        alpha = alpha * o
+        vt = (ut * beta - st * gamma)  # ds/dt
+        wt = (alpha - beta * ut) * scaling  # du/dt
+        res = [vt, wt]
 
     return res
 
@@ -910,7 +972,7 @@ def get_latent_vars(adata, scaled=True, key='fit'):
 
 
 def get_divergence(adata, mode='soft', use_latent_time=None, use_connectivities=None, **kwargs):
-    vdata = adata[:, ~np.isnan(adata.var['fit_alpha'].values)]
+    vdata = adata[:, ~np.isnan(adata.var['fit_alpha'].values)].copy()
     alpha, beta, gamma, scaling, t_ = get_vars(vdata)
     std_u, std_s, u0, s0, pval_steady, steady_u, steady_s = get_latent_vars(vdata)
 
@@ -924,7 +986,6 @@ def get_divergence(adata, mode='soft', use_latent_time=None, use_connectivities=
     if use_latent_time is True: use_latent_time = 'latent_time'
     if isinstance(use_latent_time, str) and use_latent_time in adata.obs.keys():
         reg_time = adata.obs[use_latent_time].values
-
     u, s = get_reads(vdata, use_raw=kwargs_['use_raw'])
     if kwargs_['fit_basal_transcription']: u, s = u - u0, s - s0
     tau = np.array(vdata.layers['fit_tau']) if 'fit_tau' in vdata.layers.keys() else None
