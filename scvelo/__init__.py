@@ -1,4 +1,4 @@
-"""scvelo - stochastic single cell RNA velocity"""
+"""scvelo - RNA velocity using dynamical modeling"""
 
 try:
     from setuptools_scm import get_version
