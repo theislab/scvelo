@@ -445,27 +445,7 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
     if dm is not None:  # newly fitted
         mz[idx] = 1
 
-    if mode is 'common_splicing_rate':
-        m[idx] = beta[idx]
-        mz *= m
-    elif mode is 'common_scaling':
-        m[idx] = scaling[idx]
-        mz *= m
-    elif mode is 'align_increments' and t_max is not False:
-        dt = compute_dt(T[:, idx])
-        n_obs = dt.shape[0]
-
-        idx_bool = dt > t_[idx] / n_obs / 2
-        dt *= idx_bool / idx_bool
-        mdt = np.nanmedian(dt, axis=0)
-
-        mdt += mdt == 0
-
-        t_max = 100 if t_max is None else t_max
-        m[idx] = t_max / (mdt * n_obs)
-        mz *= m
-
-    elif mode is 'align_total_time' and t_max is not False:
+    if mode is 'align_total_time' and t_max is not False:
         T_max = np.max(T[:, idx] * (T[:, idx] < t_[idx]), axis=0) \
                 + np.max((T[:, idx] - t_[idx]) * (T[:, idx] > t_[idx]), axis=0)
 
@@ -475,7 +455,7 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
         T_max = T_max / denom
         T_max += T_max == 0
 
-        t_max = 100 if t_max is None else t_max
+        t_max = 20 if t_max is None else t_max
         m[idx] = t_max / T_max
         mz *= m
 
@@ -531,7 +511,7 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
     if vkey + '_graph' not in adata.uns.keys():
         velocity_graph(adata, approx=True)
     if 'root_cells' not in adata.obs.keys():
-        terminal_states(adata)
+        terminal_states(adata, vkey=vkey)
 
     t = np.array(adata.layers['fit_t'])
     idx_valid = ~np.isnan(t.sum(0))
@@ -552,7 +532,8 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
     idx_fates = adata.obs['end_points'] > 1 - 1e-3
     if np.sum(idx_fates) > 0: fates = fates[idx_fates]
 
-    vpt = velocity_pseudotime(adata, root=roots[0], end=fates[0] if weight_fate else None, return_model=True).pseudotime
+    VPT = velocity_pseudotime(adata, vkey, root=roots[0], end=fates[0] if weight_fate else None, return_model=True)
+    vpt = VPT.pseudotime
 
     if min_corr is not None:
         corr = vcorrcoef(t.T, vpt)
