@@ -53,8 +53,8 @@ class Velocity:
 
     def compute_stochastic(self, fit_offset=False, fit_offset2=False, mode=None, perc=None):
         if self._residual is None: self.compute_deterministic(fit_offset=fit_offset, perc=perc)
-        idx = self._velocity_genes
-        is_subset = True if len(set(idx)) > 1 else False
+        idx = self._velocity_genes if np.any(self._velocity_genes) else np.ones(self._velocity_genes.shape, dtype=bool)
+        is_subset = (len(set(idx)) > 1)
 
         _adata = self._adata[:, idx] if is_subset else self._adata
         _Ms = self._Ms[:, idx] if is_subset else self._Ms
