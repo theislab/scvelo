@@ -58,9 +58,9 @@ def compute_velocity_on_grid(X_emb, V_emb, density=None, smooth=None, n_neighbor
         min_mass = np.clip(min_mass, None, np.max(mass) * .9)
         cutoff = mass.reshape(V_grid[0].shape) < min_mass
 
-        if cutoff_perc is not None:
-            length = np.sum(np.mean(np.abs(V_emb[neighs]), axis=1), axis=1).T.reshape(ns, ns)
-            cutoff |= length < np.percentile(length, cutoff_perc)
+        if cutoff_perc is None: cutoff_perc = 5
+        length = np.sum(np.mean(np.abs(V_emb[neighs]), axis=1), axis=1).T.reshape(ns, ns)
+        cutoff |= length < np.percentile(length, cutoff_perc)
 
         V_grid[0][cutoff] = np.nan
     else:
@@ -175,7 +175,10 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
         quiver_kwargs = {"scale": scale, "angles": 'xy', "scale_units": 'xy', "width": .001,
                          "color": 'grey' if arrow_color is None else arrow_color, "edgecolors": 'k',
                          "headlength": hl/2, "headwidth": hw/2, "headaxislength": hal/2, "linewidth": .2}
-        quiver_kwargs.update(kwargs)
+        for arg in list(kwargs):
+            if arg in quiver_kwargs: quiver_kwargs.update({arg: kwargs[arg]})
+            else: scatter_kwargs.update({arg: kwargs[arg]})
+
         ax.quiver(X_grid[:, 0], X_grid[:, 1], V_grid[:, 0], V_grid[:, 1], **quiver_kwargs, zorder=3)
 
         if principal_curve:

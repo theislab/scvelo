@@ -113,7 +113,10 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
             hl, hw, hal = default_arrow(arrow_size)
             scale = 1 / arrow_length if arrow_length is not None else scale if scale is not None else 1
             quiver_kwargs.update({"scale": scale, "width": .0005, "headlength": hl, "headwidth": hw, "headaxislength": hal})
-        quiver_kwargs.update(kwargs)
+
+        for arg in list(kwargs):
+            if arg in quiver_kwargs: quiver_kwargs.update({arg: kwargs[arg]})
+            else: scatter_kwargs.update({arg: kwargs[arg]})
 
         if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
             c = interpret_colorkey(_adata, basis, color, perc)
