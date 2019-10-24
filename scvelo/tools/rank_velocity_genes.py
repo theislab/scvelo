@@ -175,7 +175,7 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
         n_counts = (adata.layers['unspliced'] > 0).sum(0)
         n_counts = n_counts.A1 if issparse(adata.layers['unspliced']) else n_counts
         min_counts = min(50, np.percentile(n_counts, 50)) if min_counts is None else min_counts
-        tmp_filter &= (n_counts > min_counts)
+        tmp_filter &= np.ravel(n_counts > min_counts)
 
     if vkey + '_r2' in adata.var.keys():
         r2 = adata.var[vkey + '_r2']
