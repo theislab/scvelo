@@ -76,7 +76,7 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
     var_names = pd.unique(var_names)
 
     (skey, ukey) = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
-    layers = [vkey, skey, 'variance_velocity'] if layers == 'all' else layers
+    layers = [vkey, skey] if layers == 'all' else layers
     layers = [layer for layer in layers if layer in adata.layers.keys()]
 
     fits = adata.layers.keys() if fits == 'all' else fits

@@ -167,12 +167,12 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
 
     strings_to_categoricals(adata)
 
-    if mode is 'dynamical':
-        logg.warn('The dynamical model is yet under development, thus to be interpreted with caution.')
-        from .dynamical_model_utils import mRNA, vectorize, get_reads, get_vars, get_divergence
+    if mode is 'dynamical' and 'fit_alpha' not in adata.var.keys():
+        mode = 'stochastic'
+        logg.warn('Falling back to stochastic model. For the dynamical model run tl.recover_dynamics first.')
 
-        if 'fit_alpha' not in adata.var.keys():
-            raise ValueError('Run tl.recover_dynamics first.')
+    if mode is 'dynamical':
+        from .dynamical_model_utils import mRNA, vectorize, get_reads, get_vars, get_divergence
 
         gene_subset = ~np.isnan(adata.var['fit_alpha'].values)
         vdata = adata[:, gene_subset]

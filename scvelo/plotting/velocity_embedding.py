@@ -96,7 +96,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
         _adata = adata[groups_to_bool(adata, groups, groupby=color)] if groups is not None and color in adata.obs.keys() else adata
 
         quiver_kwargs = {"scale": scale, "cmap": color_map, "angles": 'xy',
-                         "scale_units": 'xy', "edgecolors": 'k', "linewidth": .1}
+                         "scale_units": 'xy', "edgecolors": 'k', "linewidth": .1, "width": None}
         if basis in adata.var_names:
             x = adata[:, basis].layers['spliced'] if use_raw else adata[:, basis].layers['Ms']
             y = adata[:, basis].layers['unspliced'] if use_raw else adata[:, basis].layers['Mu']
