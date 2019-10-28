@@ -51,4 +51,4 @@ Report issues and see the code on `GitHub <https://github.com/theislab/scvelo>`_
    :hidden:
 
    Dentate Gyrus <https://scvelo-notebooks.readthedocs.io/DentateGyrus.html>
-   Pancreas <https://scvelo-notebooks.readthedocs.io/Pancreas.html>
+   Pancreatic endocrinogenesis <https://scvelo-notebooks.readthedocs.io/Pancreas.html>
