@@ -38,6 +38,10 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
         String denoting matplotlib color map.
     perc: tuple, e.g. [2,98] (default: `None`)
         Specify percentile for continuous coloring.
+    groups: `str`, `list` (default: `None`)
+        Subset of groups, e.g. [‘g1’, ‘g2’, ‘g3’], to which the plot shall be restricted.
+    groupby: `str`, `list` or `np.ndarray` (default: `None`)
+        Key of observations grouping to consider.
     size: `float` (default: 5)
         Point size.
     alpha: `float` (default: 1)
@@ -55,6 +59,8 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
         Infer the filetype if ending on {'.pdf', '.png', '.svg'}.
     ax: `matplotlib.Axes`, optional (default: `None`)
         A matplotlib axes object. Only works if plotting a single component.
+    ncols: `int` or `None` (default: `None`)
+        Number of columns to arange multiplots into.
 
     """
     basis = default_basis(adata) if basis is None else get_basis(adata, basis)

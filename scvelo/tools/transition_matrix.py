@@ -24,12 +24,24 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
         Restrict transition to embedding if specified
     backward: `bool` (default: `False`)
         Whether to use the transition matrix to push forward (`False`) or to pull backward (`True`)
+    self_transitions: `bool` (default: `False`)
+        Allow transitions from one node to itself.
     scale: `float` (default: 10)
         Scale parameter of gaussian kernel.
+    perc: `float` between `0` and `100` or `None` (default: `None`)
+        Determines threshold of transitions to include.
+    use_negative_cosines: `bool` (default: `False`)
+        If True, negatively similar transitions are taken into account.
     weight_diffusion: `float` (default: 0)
         Relative weight to be given to diffusion kernel (Brownian motion)
     scale_diffusion: `float` (default: 1)
-        Scale of diffusion kernel. 
+        Scale of diffusion kernel.
+    weight_indirect_neighbors: `float` between `0` and `1` or `None` (default: `None`)
+        Weight to be assigned to indirect neighbors (i.e. neighbors of higher degrees).
+    n_neighbors:`int` (default: None)
+        Number of nearest neighbors to consider around each cell.
+    vgraph: csr matrix or `None` (default: `None`)
+        Sparse velocity graph representation to use instead of adata.uns[vkey + '_graph'].
 
     Returns
     -------

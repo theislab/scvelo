@@ -21,6 +21,8 @@ def cell_fate(data, groupby='clusters', disconnected_groups=None, self_transitio
         Key to which to assign the fates.
     disconnected_groups: list of `str` (default: `None`)
         Which groups to treat as disconnected for fate assignment.
+    self_transitions: `bool` (default: `False`)
+        Whether to include self-transitions.
     n_neighbors: `int` (default: `None`)
         Number of neighbors to restrict transitions to.
     copy: `bool` (default: `False`)
@@ -78,6 +80,8 @@ def cell_origin(data, groupby='clusters', disconnected_groups=None, self_transit
             Which groups to treat as disconnected for fate assignment.
         n_neighbors: `int` (default: `None`)
             Number of neighbors to restrict transitions to.
+        self_transitions: `bool` (default: `False`)
+            Whether to include self-transitions.
         copy: `bool` (default: `False`)
             Return a copy instead of writing to `adata`.
 
@@ -162,6 +166,10 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
         Annotated data matrix.
     vkey: `str` (default: `'velocity'`)
         Name of velocity estimates to be used.
+    groupby: `str`, `list` or `np.ndarray` (default: `None`)
+        Key of observations grouping to consider.
+    groups: `str`, `list` or `np.ndarray` (default: `None`)
+        Groups selected to find terminal states on. Must be an element of adata.obs[groupby].
     self_transitions: `bool` (default: `False`)
         Allow transitions from one node to itself.
     basis: `str` (default: `None`)

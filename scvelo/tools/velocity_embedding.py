@@ -49,6 +49,8 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
         Whether to compute the velocities on all embedding components or just the first two.
     T: `csr_matrix` (default: `None`)
         Allows the user to directly pass a transition matrix.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to `adata`.
 
     Returns
     -------

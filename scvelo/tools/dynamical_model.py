@@ -252,6 +252,8 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
         Annotated data matrix.
     var_names: `str`,  list of `str` (default: `'velocity_genes`)
         Names of variables/genes to use for the fitting.
+    n_top_genes: `int` or `None` (default: `None`)
+        Number of top velocity genes to use for the dynamical model.
     max_iter:`int` (default: `10`)
         Maximal iterations in the EM-Algorithm.
     assignment_mode: `str` (default: `projection`)
@@ -278,6 +280,8 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
         Whether to return the model as :DynamicsRecovery: object.
     plot_results: `bool` or `None` (default: `False`)
         Plot results after parameter inference.
+    steady_state_prior: list of `bool` or `None` (default: `None`)
+        Mask for indices used for steady state regression.
     add_key: `str` (default: `'fit'`)
         Key to add to parameter names, e.g. 'fit_t' for fitted time.
     copy: `bool` (default: `False`)
@@ -490,7 +494,27 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
      Arguments
     ---------
     data: :class:`~anndata.AnnData`
-        Annotated data matrix.
+        Annotated data matrix
+    vkey: `str` (default: `'velocity'`)
+        Name of velocity estimates to be used.
+    min_likelihood: `float` between `0` and `1` or `None` (default: `.1`)
+        Minimal likelihood fitness for genes to be included to the weighting.
+    min_confidence: `float` between `0` and `1` (default: `.75`)
+        Parameter for local coherence selection.
+    min_corr: `float` between `0` and `1` or `None` (default: `None`)
+        Condition on correlation with VPT.
+    t_max: `float` or `None` (default: `None`)
+        Define the upper bound of the time scale.
+    root_key: `str` or `None` (default: `None`)
+        Name of roots to be used.
+    use_graph: `bool` or `None` (default: `True`)
+        Whether to instead compute VPT.
+    weight_diffusion: `float` or `None` (default: `None`)
+        Diffusive parameter mixes latent time with VPT.
+    weight_root: `float` between `0` and `1` or `None` (default: `None`)
+        Weighting given to the root time in comparison to connectivities.
+    weight_fate: `float` between `0` and `1` or `None` (default: `None`)
+        Same as weight_root, but w.r.t. terminal states.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
      Returns

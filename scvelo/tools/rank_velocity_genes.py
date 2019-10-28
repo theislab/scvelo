@@ -141,12 +141,18 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
         The number of genes that appear in the returned tables.
     groupby: `str`, `list` or `np.ndarray` (default: `None`)
         Key of observations grouping to consider.
+    match_with: `str` or `None` (default: `None`)
+        adata.obs key to separatively rank velocities on.
+    resolution: `str` or `None` (default: `None`)
+        Resolution for louvain modularity.
     min_counts: `float` (default: None)
         Minimum count of genes for consideration.
     min_r2: `float` (default: None)
         Minimum r2 value of genes for consideration.
     min_dispersion: `float` (default: None)
         Minimum dispersion norm value of genes for consideration.
+    min_likelihood: `float` between `0` and `1` or `None` (default: `None`)
+        Only rank velocity of genes with a likelihood higher than min_likelihood.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to data.
 

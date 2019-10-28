@@ -144,6 +144,12 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
         Annotated data matrix.
     vkey: `str` (default: `'velocity'`)
         Name of velocity estimates to be used.
+    xkey: `str` (default: `'Ms'`)
+        Layer key to extract count data from.
+    tkey: `str` (default: `None`)
+        Observation key to extract time data from.
+    basis: `str` (default: `None`)
+        Basis / Embedding to use.
     n_neighbors: `int` or `None` (default: None)
         Use fixed number of neighbors or do recursive neighbor search (if `None`).
     n_recurse_neighbors: `int` (default: 2)
@@ -153,6 +159,10 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
         a random selection of such are chosen as reference neighbors.
     sqrt_transform: `bool` (default: `False`)
         Whether to variance-transform the cell states changes and velocities before computing cosine similarities.
+    gene_subset: `list` of `str`, subset of adata.var_names or `None`(default: `None`)
+        Subset of genes to compute velocity graph on exclusively.
+    approx: `bool` or `None` (default: `None`)
+        If True, first 30 pc's are used instead of the full count matrix
     copy: `bool` (default: `False`)
         Return a copy instead of writing to adata.
 

@@ -139,12 +139,18 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
         Key of observations grouping to consider.
     groups_for_fit: `str`, `list` or `np.ndarray` (default: `None`)
         Subset of groups, e.g. [‘g1’, ‘g2’, ‘g3’], to which steady-state fitting shall be restricted.
+    constrain_ratio: `float` or tuple of type `float` or None: (default: `None`)
+        Bounds for the steady-state ratio gamma'.
     use_raw: `bool` (default: `False`)
         Whether to use raw data for estimation.
+    use_latent_time: `bool`or `None` (default: `None)
+        Whether to use latent time as a regularization for velocity when using dynamical mode.
     perc: `float` (default: `None`)
         Percentile, e.g. 98, upon for extreme quantile fit (to better capture steady states for velocity estimation).
     min_r2: `float` (default: 0.01)
         Minimum threshold for coefficient of determination
+    min_likelihood: `float` (default: `None`)
+        Minimal likelihood for velocity genes to fit the model on.
     r2_adjusted: `bool` (default: `None`)
         Whether to compute coefficient of determination on full data fit (adjusted) or extreme quantile fit (None)
     copy: `bool` (default: `False`)
