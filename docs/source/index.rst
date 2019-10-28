@@ -41,7 +41,13 @@ Report issues and see the code on `GitHub <https://github.com/theislab/scvelo>`_
 
    about
    getting_started
-   Example <https://scvelo-notebooks.readthedocs.io/DentateGyrus.html>
    api
    release_notes
    references
+
+.. toctree::
+   :caption: Tutorials
+   :maxdepth: 1
+   :hidden:
+
+   Dentate Gyrus <https://scvelo-notebooks.readthedocs.io/DentateGyrus.html>
