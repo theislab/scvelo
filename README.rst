@@ -1,7 +1,7 @@
 |PyPI| |Docs| |travis|
 
-scVelo - RNA velocity using dynamical modeling
-==============================================
+scVelo - single-cell RNA velocity generalized to transient cell states
+======================================================================
 
 .. image:: https://user-images.githubusercontent.com/31883718/65906280-8cfc0d00-e3c2-11e9-94ee-bb74d3da15e2.png
    :width: 90px
