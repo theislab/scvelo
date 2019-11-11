@@ -9,7 +9,7 @@ scVelo - single-cell RNA velocity generalized to transient cell states
 
 **scVelo** is a scalable toolkit for estimating and analyzing RNA velocities in single cells using dynamical modeling.
 
-Our preprint is out! https://doi.org/10.1101/820936
+Our preprint is is available at https://doi.org/10.1101/820936.
 
 RNA velocity, the time derivative of mRNA abundance, enables you to infer directionality in your data by superimposing
 splicing information. The main principles have been presented in
@@ -32,6 +32,7 @@ See the the documentation at `<https://scvelo.org>`_ for details, which includes
 - **How scVelo estimates RNA velocity:** `<https://scvelo.org/about.html>`_
 - **How to install and getting started:** `<https://scvelo.org/getting_started.html>`_
 - **About the API:** `<https://scvelo.org/api.html>`_
+- **Tutorials:** `<http://tutorials.scvelo.org/Pancreas.html>`_
 
 Your feedback, in particular any issue you stumble upon, is highly appreciated and addressed to `feedback@scvelo.org <mailto:feedback@scvelo.org>`_.
 
