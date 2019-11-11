@@ -237,6 +237,9 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
     else:
         raise ValueError('Mode can only be one of these: steady_state, deterministic, stochastic or dynamical.')
 
+    if vkey + '_genes' in adata.var.keys() and np.sum(adata.var[vkey + '_genes']) < 10:
+        logg.warn('Too few genes are selected as velocity genes. '
+                  'Consider setting a lower threshold for min_r2 or min_likelihood.')
 
     adata.uns[vkey + '_settings'] = {'mode': mode, 'fit_offset': fit_offset, 'perc': perc}
 

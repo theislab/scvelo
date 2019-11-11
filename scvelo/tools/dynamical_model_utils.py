@@ -535,8 +535,8 @@ class BaseDynamics:
         if filter_by_u: nonzero &= nonzero_u
 
         weights = np.array(nonzero, dtype=bool)
-        if filter_by_s: weights &= np.ravel(self.s < np.percentile(self.s[nonzero], self.perc))
-        if filter_by_u: weights &= np.ravel(self.u < np.percentile(self.u[nonzero], self.perc))
+        if filter_by_s: weights &= np.ravel(self.s <= np.percentile(self.s[nonzero], self.perc))
+        if filter_by_u: weights &= np.ravel(self.u <= np.percentile(self.u[nonzero], self.perc))
 
         self.weights = weights
         self.std_u = np.std(self.u[weights])
@@ -673,6 +673,7 @@ class BaseDynamics:
         distx = udiff ** 2 + sdiff ** 2 + reg ** 2
         # compute variance / equivalent to np.var(np.sign(sdiff) * np.sqrt(distx))
         varx = np.mean(distx) - np.mean(np.sign(sdiff) * np.sqrt(distx))**2 if varx is None else varx
+        varx += varx == 0  # edge case of mRNAs levels to be the same across all cells
         n = np.clip(len(distx) - len(self.u) * .01, 2, None)
         return - 1 / 2 / n * np.sum(distx) / varx - 1 / 2 * np.log(2 * np.pi * varx)
 
