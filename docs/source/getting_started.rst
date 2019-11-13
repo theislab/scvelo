@@ -28,7 +28,15 @@ Parts of scVelo require (optional)::
 
     conda install -c conda-forge numba pytables louvain
 
-The splicing data can be obtained using the `velocyto pipeline`_ or the `kallisto pipeline`_.
+
+
+Alignment
+^^^^^^^^^
+The splicing data can be obtained using one of the following read counting pipelines:
+
+- `velocyto pipeline`_
+- `kallisto pipeline via loompy`_
+- `kallisto pipeline via kb`_
 
 scVelo in action
 ^^^^^^^^^^^^^^^^
@@ -115,4 +123,5 @@ For every tool module there is a plotting counterpart, which allows you to exami
 .. _scanpy: https://scanpy.readthedocs.io/en/latest/api
 .. _`velocyto command line interface`: http://velocyto.org/velocyto.py/tutorial/cli.html
 .. _`velocyto pipeline`: http://velocyto.org/velocyto.py/tutorial/cli.html
-.. _`kallisto pipeline`: https://pachterlab.github.io/kallisto/about
+.. _`kallisto pipeline via loompy`: https://linnarssonlab.org/loompy/kallisto/index.html
+.. _`kallisto pipeline via kb`: https://www.kallistobus.tools/kb_velocity_tutorial.html
