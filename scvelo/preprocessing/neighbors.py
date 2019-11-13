@@ -280,6 +280,6 @@ def remove_duplicate_cells(adata):
     n_unique_obs = len(set(l))
     if n_unique_obs < adata.n_obs:
         idx = [l.index(x) for x in set(l)]
-        print(len(idx))
         logg.info('Removed ', adata.n_obs - n_unique_obs, ' duplicate cells.')
         adata._inplace_subset_obs(idx)
+    neighbors(adata)

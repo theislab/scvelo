@@ -63,6 +63,8 @@ class VelocityGraph:
             else 2 if n_recurse_neighbors is None else n_recurse_neighbors
 
         if 'neighbors' not in adata.uns.keys(): neighbors(adata)
+        if np.min((adata.uns['neighbors']['distances'] > 0).sum(1).A1) == 0:
+            raise ValueError('Your neighbor graph seems to be corrupted. Consider recomputing via pp.neighbors.')
         if n_neighbors is None or n_neighbors <= adata.uns['neighbors']['params']['n_neighbors']:
             self.indices = get_indices(dist=adata.uns['neighbors']['distances'], n_neighbors=n_neighbors)[0]
         else:
