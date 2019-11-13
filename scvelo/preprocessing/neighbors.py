@@ -77,6 +77,10 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
         elif n_pcs is None and adata.obsm['X_pca'].shape[1] < 10:
             logg.warn('Neighbors are computed on ', adata.obsm['X_pca'].shape[1], ' principal components only.')
 
+        if len(set(np.sum(adata.obsm['X_pca'], 1))) < adata.n_obs:
+            logg.warn('You seem to have duplicate cells in your data. '
+                      'Consider removing these via pp.remove_duplicate_cells.')
+
     logg.info('computing neighbors', r=True)
 
     if method is 'sklearn':
@@ -268,3 +272,14 @@ def compute_connectivities_umap(knn_indices, knn_dists, n_obs, n_neighbors, set_
     distances = get_csr_from_indices(knn_indices, knn_dists, n_obs, n_neighbors)
 
     return distances, connectivities.tocsr()
+
+
+def remove_duplicate_cells(adata):
+    if 'X_pca' not in adata.obsm.keys(): pca(adata)
+    l = list(np.sum(adata.obsm['X_pca'], 1) + adata.obs['n_counts'])
+    n_unique_obs = len(set(l))
+    if n_unique_obs < adata.n_obs:
+        idx = [l.index(x) for x in set(l)]
+        print(len(idx))
+        logg.info('Removed ', adata.n_obs - n_unique_obs, ' duplicate cells.')
+        adata._inplace_subset_obs(idx)
