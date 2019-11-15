@@ -24,7 +24,7 @@ def get_dynamics(adata, key='fit', extrapolate=False, sorted=False, t=None):
 def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=None, t=None):
     idx = np.where(adata.var_names == basis)[0][0] if isinstance(basis, str) else basis
     key = 'fit' if key + '_gamma' not in adata.var_keys() else key
-    alpha, beta, gamma, scaling, t_ = get_vars(adata[:, idx], key=key)
+    alpha, beta, gamma, scaling, t_ = get_vars(adata[:, basis], key=key)
 
     if 'fit_u0' in adata.var.keys():
         u0_offset, s0_offset = adata.var['fit_u0'][idx], adata.var['fit_s0'][idx]
