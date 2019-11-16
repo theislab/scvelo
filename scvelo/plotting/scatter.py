@@ -267,8 +267,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             set_title(title, layer, color, fontsize, ax=ax)
             ax = update_axes(ax, xlim, ylim, fontsize, is_embedding, frameon)
 
-            if colorbar is None and not isinstance(c, str): colorbar = True
-            if colorbar and not is_categorical(adata, color):
+            if colorbar is not False and not isinstance(c, str) and not is_categorical(adata, color):
                 set_colorbar(smp, ax=ax, labelsize=fontsize * .75 if fontsize is not None else None)
 
             savefig_or_show(dpi=dpi, save=save, show=show)

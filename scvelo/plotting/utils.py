@@ -27,7 +27,7 @@ def is_categorical(adata, c):
     from pandas.api.types import is_categorical as cat
     strings_to_categoricals(adata)
     str_not_var = isinstance(c, str) and c not in adata.var_names
-    return str_not_var and (c in adata.obs.keys() and cat(adata.obs[c]) or is_color_like(c))
+    return str_not_var and (c in adata.obs.keys() and cat(adata.obs[c]))
 
 
 def n_categories(adata, c):
@@ -197,9 +197,9 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
             c = c.A.flatten() if issparse(c) else c
         elif c in adata.var.keys():  # color by observation key
             c = adata.var[c]
-        else:
+        elif not is_color_like(c):
             raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
-        if perc is not None: c = clip(c, perc=perc)
+        if not isinstance(c, str) and perc is not None: c = clip(c, perc=perc)
     else:
         c = np.array(c).flatten()
         if perc is not None: c = clip(c, perc=perc)
