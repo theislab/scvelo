@@ -14,8 +14,6 @@ def doc_params(**kwds):
 
 
 doc_scatter = """\
-basis: `str` (default='umap')
-    Key for embedding.
 color: `str`,  list of `str` or `None` (default: `None`)
     Key for annotations of observations/cells or variables/genes
 use_raw : `bool` (default: `None`)

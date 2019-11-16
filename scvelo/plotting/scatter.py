@@ -4,6 +4,7 @@ from ..preprocessing.neighbors import get_connectivities
 from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
     default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
     plot_linear_fit, plot_density, default_legend_loc, make_unique_valid_list, rugplot
+from ..tools.utils import groups_to_bool
 from .docs import doc_scatter, doc_params
 
 from scanpy.plotting import scatter as scatter_
@@ -18,10 +19,10 @@ import pandas as pd
 def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
             colorbar=None, palette=None, size=None, alpha=None, linewidth=None, perc=None, sort_order=True, groups=None,
             components=None, projection='2d', legend_loc=None, legend_fontsize=None, legend_fontweight=None,
-            right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None,
-            xlim=None, ylim=None, show_density=None, show_assignments=None, show_linear_fit=None, show_polyfit=None,
-            rug=None, n_convolve=None, smooth=None, rescale_color=None, dpi=None, frameon=None, show=True, save=None,
-            ax=None, zorder=None, ncols=None, **kwargs):
+            xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, xlim=None, ylim=None, show_density=None,
+            show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, n_convolve=None, smooth=None,
+            rescale_color=None, dpi=None, frameon=None, show=True, save=None,ax=None, zorder=None, ncols=None,
+            **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -33,6 +34,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         x coordinate
     y: `str`, `np.ndarray` or `None` (default: `None`)
         y coordinate
+    basis: `str` (default='umap')
+        Key for embedding.
     vkey: `str` or `None` (default: `None`)
         Key for annotations of observations/cells or variables/genes.
     {scatter}
@@ -43,8 +46,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     """
     scatter_kwargs = {"use_raw": use_raw, "sort_order": sort_order, "alpha": alpha, "components": components,
                       "projection": projection, "groups": groups, "palette": palette, "legend_fontsize": legend_fontsize,
-                      "legend_fontweight": legend_fontweight, "right_margin": right_margin, "left_margin": left_margin,
-                      "show": False, "save": False}
+                      "legend_fontweight": legend_fontweight, "show": False, "save": False}  # discuss sort_order
 
     ext_kwargs = {'size': size, 'linewidth': linewidth, 'xlabel': xlabel, 'vkey': vkey, 'color_map': color_map,
                   'colorbar': colorbar, 'perc': perc, 'frameon': frameon, 'zorder': zorder, 'legend_loc': legend_loc,
@@ -114,153 +116,167 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if projection == '3d':
                 from mpl_toolkits.mplot3d import Axes3D
                 if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca(projection=projection)
+                dim = 3
             else:
                 if ax is None: ax = pl.figure(None, figsize, dpi=dpi).gca()
+                dim = 2
 
             if is_categorical(adata, color) and is_embedding:
+                from .utils import _set_colors_for_categorical_obs, _add_legend
+                _set_colors_for_categorical_obs(adata, color, palette)
+
                 legend_loc = default_legend_loc(adata, color, legend_loc)
-                add_kwargs = {}
-                try:
-                    from inspect import signature
-                    if 'legend_fontoutline' in signature(scatter_).parameters: add_kwargs = {'legend_fontoutline': True}
-                except: pass
-                ax = scatter_(adata, basis=basis, color=color, color_map=color_map, size=size, frameon=frameon, ax=ax,
-                              title=title, legend_loc=legend_loc, **scatter_kwargs, **kwargs, **add_kwargs)
+                from matplotlib import patheffects
 
-            else:
-                if basis in adata.var_names:
-                    xkey, ykey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
-                    x, y = adata[:, basis].layers[xkey], adata[:, basis].layers[ykey]
-                    if xlabel is None: xlabel = 'spliced'
-                    if ylabel is None: ylabel = 'unspliced'
-                    if title is None: title = basis
+                legend_fontweight = 'bold' if legend_fontweight is None else legend_fontweight
 
-                elif is_embedding:
-                    X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
-                    x, y = X_emb[:, 0], X_emb[:, 1]
+                dim = 3 if '3' in projection else 2
+                _add_legend(
+                    adata, ax, color, legend_loc,
+                    adata.obsm['X_' + basis][:, 0:dim], legend_fontweight, legend_fontsize,
+                    [patheffects.withStroke(
+                        linewidth=True,  # legend_fontoutline always True
+                        foreground='w',
+                    )], groups, False
+                )
 
-                elif isinstance(x, str) and isinstance(y, str):
-                    if xlabel is None: xlabel = x
-                    if ylabel is None: ylabel = 'expression' if y in adata.var_names and x not in adata.var_names else y
-                    if title is None: title = y if y in adata.var_names and x not in adata.var_names else color
-                    if layer is None: layer = 'spliced' if use_raw else 'Ms'
+            if basis in adata.var_names:
+                xkey, ykey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
+                x, y = adata[:, basis].layers[xkey], adata[:, basis].layers[ykey]
+                if xlabel is None: xlabel = 'spliced'
+                if ylabel is None: ylabel = 'unspliced'
+                if title is None: title = basis
 
-                    if x in adata.var_names and y in adata.var_names:
-                        x = adata[:, x].layers[layer] if layer in adata.layers.keys() else adata[:, x].X
-                        y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
-                    elif x in adata.var.keys() and y in adata.var.keys():
-                        x, y = adata.var[x], adata.var[y]
-                        if colors[0] is None: color = 'grey'
-                    elif y in adata.var_names:
-                        if x in adata.obs.keys(): x = adata.obs[x]
-                        elif x in adata.layers.keys(): x = adata[:, y].layers[x]
-                        y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
-                    elif x in adata.obs.keys() and y in adata.obs.keys():
-                        x, y = adata.obs[x], adata.obs[y]
-                    else:
-                        raise ValueError('x or y key is invalid! pass valid observation annotation or a gene name')
+            elif is_embedding:
+                X_emb = adata.obsm['X_' + basis][:, get_components(components, basis, projection)]
+                x, y = X_emb[:, 0], X_emb[:, 1]
+                z = X_emb[:, 3] if dim == 3 and X_emb.shape[1] > 2 else None
 
-                x, y = make_dense(x).flatten(), make_dense(y).flatten()
+            elif isinstance(x, str) and isinstance(y, str):
+                if xlabel is None: xlabel = x
+                if ylabel is None: ylabel = 'expression' if y in adata.var_names and x not in adata.var_names else y
+                if title is None: title = y if y in adata.var_names and x not in adata.var_names else color
+                if layer is None: layer = 'spliced' if use_raw else 'Ms'
 
-                if n_convolve is not None:
-                    y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
-
-                if isinstance(color, int):
-                    color = np.array(np.arange(len(x)) == color, dtype=bool)
-                    if color_map is None: color_map = 'viridis_r'
-                    if zorder is None: zorder = 10
-                    ax.scatter(np.ravel(x[color]), np.ravel(y[color]), color='darkblue', s=size * 2, zorder=zorder)
-                    zorder -= 1
-
-                if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
-                    c = interpret_colorkey(adata, basis, color, perc)
+                if x in adata.var_names and y in adata.var_names:
+                    x = adata[:, x].layers[layer] if layer in adata.layers.keys() else adata[:, x].X
+                    y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
+                elif x in adata.var.keys() and y in adata.var.keys():
+                    x, y = adata.var[x], adata.var[y]
+                    if colors[0] is None: color = 'grey'
+                elif y in adata.var_names:
+                    if x in adata.obs.keys(): x = adata.obs[x]
+                    elif x in adata.layers.keys(): x = adata[:, y].layers[x]
+                    y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
+                elif x in adata.obs.keys() and y in adata.obs.keys():
+                    x, y = adata.obs[x], adata.obs[y]
                 else:
-                    c = interpret_colorkey(adata, color, layer, perc)
+                    raise ValueError('x or y key is invalid! pass valid observation annotation or a gene name')
 
-                if smooth and len(c) == adata.n_obs:
-                    c = get_connectivities(adata, n_neighbors=(None if isinstance(smooth, bool) else smooth)).dot(c)
+            x, y = make_dense(x).flatten(), make_dense(y).flatten()
 
-                if rescale_color is not None:
-                    c += rescale_color[0] - np.min(c)
-                    c *= rescale_color[1] / np.max(c)
+            if n_convolve is not None:
+                y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
 
-                if layer is not None and any(l in layer for l in ['spliced', 'Ms', 'Mu', 'velocity']) \
-                        and isinstance(color, str) and color in adata.var_names:
-                    ub = np.percentile(np.abs(c), 98)
-                    if "vmax" not in kwargs:
-                        kwargs.update({"vmax": ub})
-                    if "vmin" not in kwargs and 'velocity' in layer:
-                        kwargs.update({"vmin": -ub})
+            if isinstance(color, int):
+                color = np.array(np.arange(len(x)) == color, dtype=bool)
+                if color_map is None: color_map = 'viridis_r'
+                if zorder is None: zorder = 10
+                ax.scatter(np.ravel(x[color]), np.ravel(y[color]), color='darkblue', s=size * 2, zorder=zorder)
+                zorder -= 1
 
-                if "vmid" in kwargs:
-                    if not isinstance(c, str) and not isinstance(c[0], str):
-                        vmid, lb, ub = kwargs["vmid"], np.min(c), np.max(c)
-                        crange = min(np.abs(vmid - lb), np.abs(ub - vmid))
-                        kwargs.update({"vmin": vmid - crange, "vmax": vmid + crange})
-                    kwargs.pop("vmid")
+            if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
+                c = interpret_colorkey(adata, basis, color, perc)
+            else:
+                c = interpret_colorkey(adata, color, layer, perc)
 
-                if groups is not None or np.any(pd.isnull(c)):
-                    zorder = 0 if zorder is None else zorder
-                    scatter_kwargs_all = scatter_kwargs
-                    scatter_kwargs_all['groups'] = None
-                    ax = scatter(adata, x=x, y=y, basis=basis, layer=layer,
-                                 color='lightgrey', ax=ax, zorder=zorder, **scatter_kwargs_all)
-                    zorder += 1
+            if smooth and len(c) == adata.n_obs:
+                c = get_connectivities(adata, n_neighbors=(None if isinstance(smooth, bool) else smooth)).dot(c)
 
-                if basis in adata.var_names:
-                    lines, fits = plot_linear_fit(adata, basis, vkey, xkey, linewidth, ax=ax)
-                    from .simulation import show_full_dynamics
-                    if 'true_alpha' in adata.var.keys() and (vkey is not None and 'true_dynamics' in vkey):
-                        line, fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth, ax=ax)
-                        fits.append(fit)
-                        lines.append(line)
-                    if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
-                        line, fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments, ax=ax)
-                        fits.append(fit)
-                        lines.append(line)
-                    if len(fits) > 0 and legend_loc is not False and legend_loc is not 'none':
-                        ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize,
-                                  loc='lower right' if legend_loc is None else legend_loc)
-                    if use_raw and perc is not None:
-                        ax.set_xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
-                        ax.set_ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
+            if rescale_color is not None:
+                c += rescale_color[0] - np.min(c)
+                c *= rescale_color[1] / np.max(c)
 
-                if not isinstance(c, str) and len(c) != len(x): c = 'grey'
-                smp = ax.scatter(np.ravel(x), np.ravel(y), c=np.ravel(c), cmap=color_map, s=size, alpha=alpha,
-                                 edgecolors='none', marker='.', zorder=zorder, **kwargs)
+            if layer is not None and any(l in layer for l in ['spliced', 'Ms', 'Mu', 'velocity']) \
+                    and isinstance(color, str) and color in adata.var_names:
+                ub = np.percentile(np.abs(c), 98)
+                if "vmax" not in kwargs:
+                    kwargs.update({"vmax": ub})
+                if "vmin" not in kwargs and 'velocity' in layer:
+                    kwargs.update({"vmin": -ub})
 
-                if show_density:
-                    plot_density(x, y, color=show_density if isinstance(show_density, str) else 'grey', ax=ax)
+            if "vmid" in kwargs:
+                if not isinstance(c, str) and not isinstance(c[0], str):
+                    vmid, lb, ub = kwargs["vmid"], np.min(c), np.max(c)
+                    crange = min(np.abs(vmid - lb), np.abs(ub - vmid))
+                    kwargs.update({"vmin": vmid - crange, "vmax": vmid + crange})
+                kwargs.pop("vmid")
 
-                if show_linear_fit:
-                    idx_valid = ~np.isnan(x + y)
-                    x, y = x[idx_valid], y[idx_valid]
-                    xnew = np.linspace(np.min(x), np.max(x) * 1.02)
-                    ax.plot(xnew, xnew * (x * y).sum() / (x ** 2).sum(), linewidth=linewidth,
-                            color=show_linear_fit if isinstance(show_linear_fit, str) else 'grey')
-                    corr, _ = pearsonr(x, y)
-                    if legend_loc is not 'none':
-                        ax.text(.05, .95, r'$\rho = $' + str(np.round(corr, 2)), ha='left', va='top', fontsize=fontsize,
-                                transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
-                if show_polyfit:
-                    idx_valid = ~np.isnan(x + y)
-                    x, y = x[idx_valid], y[idx_valid]
-                    fit = np.polyfit(x, y, deg=2 if isinstance(show_polyfit, (str, bool)) else show_polyfit)
-                    f = np.poly1d(fit)
-                    xnew = np.linspace(np.min(x), np.max(x), num=100)
-                    color = show_polyfit if isinstance(show_polyfit, str) else c if isinstance(c, str) else 'grey'
-                    ax.plot(xnew, f(xnew), color=color, linewidth=linewidth)
+            if groups is not None or np.any(pd.isnull(c)):
+                zorder = 0 if zorder is None else zorder
+                scatter_kwargs_all = scatter_kwargs
+                scatter_kwargs_all['groups'] = None
+                ax = scatter(adata, x=x, y=y, basis=basis, layer=layer,
+                             color='lightgrey', ax=ax, zorder=zorder, **scatter_kwargs_all)
+                idx = groups_to_bool(adata, groups, color)
+                x, y = x[idx], y[idx]
+                if not isinstance(c, str) and len(c) == adata.n_obs: c = c[idx]
+                zorder += 1
 
-                if rug:
-                    ax = rugplot(np.ravel(x), color=np.ravel(interpret_colorkey(adata, rug)), ax=ax)
+            if basis in adata.var_names:
+                lines, fits = plot_linear_fit(adata, basis, vkey, xkey, linewidth, ax=ax)
+                from .simulation import show_full_dynamics
+                if 'true_alpha' in adata.var.keys() and (vkey is not None and 'true_dynamics' in vkey):
+                    line, fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth, ax=ax)
+                    fits.append(fit)
+                    lines.append(line)
+                if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
+                    line, fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments, ax=ax)
+                    fits.append(fit)
+                    lines.append(line)
+                if len(fits) > 0 and legend_loc is not False and legend_loc is not 'none':
+                    ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize,
+                              loc='lower right' if legend_loc is None else legend_loc)
+                if use_raw and perc is not None:
+                    ax.set_xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
+                    ax.set_ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
 
-                set_label(xlabel, ylabel, fontsize, basis, ax=ax)
-                set_title(title, layer, color, fontsize, ax=ax)
-                ax = update_axes(ax, xlim, ylim, fontsize, is_embedding, frameon)
+            if not isinstance(c, str) and len(c) != len(x): c = 'grey'
+            smp = ax.scatter(np.ravel(x), np.ravel(y), c=np.ravel(c), cmap=color_map, s=size, alpha=alpha,
+                             edgecolors='none', marker='.', zorder=zorder, **kwargs)
 
-                if colorbar is None and not isinstance(c, str): colorbar = True
-                if colorbar and not is_categorical(adata, color):
-                    set_colorbar(smp, ax=ax, labelsize=fontsize * .75 if fontsize is not None else None)
+            if show_density:
+                plot_density(x, y, color=show_density if isinstance(show_density, str) else 'grey', ax=ax)
+
+            if show_linear_fit:
+                idx_valid = ~np.isnan(x + y)
+                x, y = x[idx_valid], y[idx_valid]
+                xnew = np.linspace(np.min(x), np.max(x) * 1.02)
+                ax.plot(xnew, xnew * (x * y).sum() / (x ** 2).sum(), linewidth=linewidth,
+                        color=show_linear_fit if isinstance(show_linear_fit, str) else 'grey')
+                corr, _ = pearsonr(x, y)
+                if legend_loc is not 'none':
+                    ax.text(.05, .95, r'$\rho = $' + str(np.round(corr, 2)), ha='left', va='top', fontsize=fontsize,
+                            transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
+            if show_polyfit:
+                idx_valid = ~np.isnan(x + y)
+                x, y = x[idx_valid], y[idx_valid]
+                fit = np.polyfit(x, y, deg=2 if isinstance(show_polyfit, (str, bool)) else show_polyfit)
+                f = np.poly1d(fit)
+                xnew = np.linspace(np.min(x), np.max(x), num=100)
+                color = show_polyfit if isinstance(show_polyfit, str) else c if isinstance(c, str) else 'grey'
+                ax.plot(xnew, f(xnew), color=color, linewidth=linewidth)
+
+            if rug:
+                ax = rugplot(np.ravel(x), color=np.ravel(interpret_colorkey(adata, rug)), ax=ax)
+
+            set_label(xlabel, ylabel, fontsize, basis, ax=ax)
+            set_title(title, layer, color, fontsize, ax=ax)
+            ax = update_axes(ax, xlim, ylim, fontsize, is_embedding, frameon)
+
+            if colorbar is None and not isinstance(c, str): colorbar = True
+            if colorbar and not is_categorical(adata, color):
+                set_colorbar(smp, ax=ax, labelsize=fontsize * .75 if fontsize is not None else None)
 
             savefig_or_show(dpi=dpi, save=save, show=show)
             if not show: return ax
