@@ -1,7 +1,8 @@
 from .. import settings
 from .. import logging as logg
 from .utils import not_yet_normalized, normalize_per_cell
-from .neighbors import neighbors, get_connectivities, neighbors_to_be_recomputed
+from .neighbors import neighbors, get_connectivities, \
+                       neighbors_to_be_recomputed, neighbors_to_be_recomputed_rep
 
 from scipy.sparse import csr_matrix
 import numpy as np
@@ -45,9 +46,14 @@ def moments(data, n_neighbors=30, n_pcs=None, mode='connectivities', method='uma
         raise ValueError('Could not find spliced / unspliced counts.')
     if any([not_yet_normalized(adata.layers[layer]) for layer in {'spliced', 'unspliced'}]):
         normalize_per_cell(adata)
-    if neighbors_to_be_recomputed(adata, n_neighbors=n_neighbors):
-        if use_rep is None: use_rep = 'X_pca'
-        neighbors(adata, n_neighbors=n_neighbors, use_rep=use_rep, n_pcs=n_pcs, method=method)
+
+    if use_rep is None:
+        if neighbors_to_be_recomputed(adata, n_neighbors=n_neighbors):
+            neighbors(adata, n_neighbors=n_neighbors, use_rep='X_pca', n_pcs=n_pcs, method=method)
+    else:
+        if neighbors_to_be_recomputed_rep(adata, n_neighbors=n_neighbors, use_rep=use_rep):
+            neighbors(adata, n_neighbors=n_neighbors, use_rep=use_rep, n_pcs=n_pcs, method=method)
+
     if mode not in adata.uns['neighbors']:
         raise ValueError('mode can only be \'connectivities\' or \'distances\'')
 
