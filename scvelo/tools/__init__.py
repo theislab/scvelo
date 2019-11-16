@@ -1,5 +1,5 @@
 from .velocity import velocity, velocity_genes
-from .velocity_graph import velocity_graph
+from .velocity_graph import velocity_graph, velocity_graph_sym
 from .transition_matrix import transition_matrix
 from .velocity_embedding import velocity_embedding
 from .velocity_confidence import velocity_confidence, velocity_confidence_transition, score_robustness

@@ -217,8 +217,8 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
 
 
 def velocity_graph_sym(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, method='umap', n_pcs=None, n_neighbors=None, n_recurse_neighbors=None,
-                   random_neighbors_at_max=None, sqrt_transform=None, variance_stabilization=None, gene_subset=None,
-                   approx=None, copy=False):
+                       random_neighbors_at_max=None, sqrt_transform=None, variance_stabilization=None, gene_subset=None,
+                       approx=None, copy=False):
     """Computes velocity graph based on cosine similarities.
 
     The cosine similarities are computed between velocities and potential cell state transitions.
