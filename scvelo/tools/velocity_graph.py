@@ -85,7 +85,7 @@ class VelocityGraph:
                     neighs.compute_neighbors(n_neighbors=n_neighbors, use_rep=basis, n_pcs=10)
                     self.indices = get_indices(dist=neighs.distances)[0]
         else:
-            assert 'neighbors' in adata.uns.keys(), 'For symmetric graph, neighbors must be computed before'
+            assert 'neighbors' in adata.uns.keys(), 'For symmetric graph, neighbors must be computed before.'
             self.indices = get_indices_sym(adata.uns['neighbors']['connectivities'])
 
         self.max_neighs = random_neighbors_at_max
@@ -274,7 +274,7 @@ def velocity_graph_sym(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, 
 
     vgraph = VelocityGraph(adata, vkey=vkey, xkey=xkey, tkey=tkey, basis=basis, n_neighbors=n_neighbors, approx=approx,
                            n_recurse_neighbors=n_recurse_neighbors, random_neighbors_at_max=random_neighbors_at_max,
-                           sqrt_transform=sqrt_transform, gene_subset=gene_subset, report=True)
+                           sqrt_transform=sqrt_transform, gene_subset=gene_subset, report=True, is_sym=True)
 
     if isinstance(basis, str):
         logg.warn(

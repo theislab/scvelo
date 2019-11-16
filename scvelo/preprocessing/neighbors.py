@@ -220,7 +220,7 @@ def neighbors_to_be_recomputed_rep(adata, n_neighbors=None, use_rep=None):
 
     neighbor_params = adata.uns['neighbors']['params']
     logg.info('using the precomputed KNN graph with {} neighbors computed in basis {!r}'.
-              format(neighbor_params['n_neighbors'], neighbor_params['use_rep']), r=True)
+              format(neighbor_params['n_neighbors'], neighbor_params.get('use_rep', None)), r=True)
 
     return False
 
