@@ -116,6 +116,30 @@ def get_iterative_indices(indices, index, n_recurse_neighbors=2, max_neighs=None
     return indices
 
 
+def get_indices_sym(conn):
+    # utility function that extract indices from connectivity matrix, pads with nans
+    # this is meant to yield the indices from a symmetric KNN graph
+
+    max_per_row = np.max((conn > 0).sum(1))
+    # faster than np.full
+    ixs = np.empty((conn.shape[0], mar_per_row))
+    ixs[:] = np.nan
+
+    for i in range(ixs.shape[0]):
+        cell_indices = conn[i, :].indices
+        ixs[i, :len(cell_indices)] = cell_indices
+
+    return ixs
+
+
+def get_iterative_indices_sym(all_indices, index):
+    # return indices of neighboring cells for a given cell. Works for symmetric KNN graphs.
+    ixs = all_indices[index, :]
+
+    # get rid of padding nans
+    return ixs[np.isfinite(ixs)]  #.astype('int32')
+
+
 def groups_to_bool(adata, groups, groupby=None):
     groups = [groups] if isinstance(groups, str) else groups
     if isinstance(groups, (list, tuple, np.ndarray, np.record)):
