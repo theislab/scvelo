@@ -122,7 +122,7 @@ def get_indices_sym(conn):
 
     max_per_row = np.max((conn > 0).sum(1))
     # faster than np.full
-    ixs = np.empty((conn.shape[0], mar_per_row))
+    ixs = np.empty((conn.shape[0], max_per_row))
     ixs[:] = np.nan
 
     for i in range(ixs.shape[0]):
