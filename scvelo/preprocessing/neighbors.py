@@ -207,6 +207,23 @@ def neighbors_to_be_recomputed(adata, n_neighbors=None):
         return n_neighs.max() * .1 > n_neighs.min()
 
 
+def neighbors_to_be_recomputed_rep(adata, n_neighbors=None, use_rep=None):
+    # check whether computed KNN graph can be used
+    invalid_neighs = 'neighbors' not in adata.uns.keys() \
+                     or 'distances' not in adata.uns['neighbors'] \
+                     or 'params' not in adata.uns['neighbors'] \
+                     or (n_neighbors is not None and n_neighbors != adata.uns['neighbors']['params']['n_neighbors']) \
+                     or (use_rep is not None and use_rep != adata.uns['neighbors']['params'].get('use_rep', None))
+    if invalid_neighs:
+        return True
+
+    neighbor_params = adata.uns['neighbors']['params']
+    logg.info('using the precomputed KNN graph with {} neighbors computed in basis {!r}'.
+              format(neighbor_params['n_neighbors'], neighbor_params['use_rep']), r=True)
+
+    return False
+
+
 def get_connectivities(adata, mode='connectivities', n_neighbors=None, recurse_neighbors=False):
     if 'neighbors' in adata.uns.keys():
         C = adata.uns['neighbors'][mode]
