@@ -137,7 +137,8 @@ def get_iterative_indices_sym(all_indices, index):
     ixs = all_indices[index, :]
 
     # get rid of padding nans
-    return ixs[np.isfinite(ixs)]  # .astype('int32')
+    # indices must be of integer
+    return ixs[np.isfinite(ixs)].astype('int32')
 
 
 def groups_to_bool(adata, groups, groupby=None):

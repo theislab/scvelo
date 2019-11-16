@@ -2,7 +2,8 @@ from .. import settings
 from .. import logging as logg
 from ..preprocessing.neighbors import pca, neighbors, neighbors_to_be_recomputed, \
                                       neighbors_to_be_recomputed_rep
-from .utils import cosine_correlation, get_indices, get_indices_sym, get_iterative_indices
+from .utils import cosine_correlation, get_indices, get_indices_sym, get_iterative_indices, \
+                   get_iterative_indices_sym
 from .velocity import velocity
 
 from scipy.sparse import coo_matrix, csr_matrix, issparse
