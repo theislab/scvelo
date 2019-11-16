@@ -108,7 +108,8 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
         logg.switch_verbosity('on', module='scanpy')
 
     adata.uns['neighbors'] = {}
-    adata.uns['neighbors']['params'] = {'n_neighbors': n_neighbors, 'method': method}
+    adata.uns['neighbors']['params'] = {'n_neighbors': n_neighbors, 'method': method,
+                                        'use_rep': use_rep, 'n_pcs': n_pcs}
 
     adata.uns['neighbors']['distances'] = neighbors.distances
     adata.uns['neighbors']['connectivities'] = neighbors.connectivities
