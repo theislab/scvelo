@@ -78,9 +78,8 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
                             recompute=None, X=None, V=None, X_grid=None, V_grid=None, principal_curve=False, color=None,
                             use_raw=None, layer=None, color_map=None, colorbar=True, palette=None, size=None, alpha=.2,
                             perc=None, sort_order=True, groups=None, components=None, projection='2d', legend_loc='none',
-                            legend_fontsize=None, legend_fontweight=None, right_margin=None, left_margin=None,
-                            xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, dpi=None, frameon=None,
-                            show=True, save=None, ax=None, ncols=None, **kwargs):
+                            legend_fontsize=None, legend_fontweight=None, xlabel=None, ylabel=None, title=None,
+                            fontsize=None, figsize=None, dpi=None, frameon=None,show=True, save=None, ax=None, ncols=None, **kwargs):
     """\
     Scatter plot of velocities on a grid.
 
@@ -138,8 +137,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
                       "components": components, "projection": projection, "legend_loc": legend_loc, "groups": groups,
                       "legend_fontsize": legend_fontsize, "legend_fontweight": legend_fontweight, "palette": palette,
                       "color_map": color_map, "frameon": frameon, "xlabel": xlabel, "ylabel": ylabel,
-                      "right_margin": right_margin, "left_margin": left_margin, "colorbar": colorbar, "dpi": dpi,
-                      "fontsize": fontsize, "show": False, "save": False}
+                      "colorbar": colorbar, "dpi": dpi, "fontsize": fontsize, "show": False, "save": False}
 
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 else vkeys if len(vkeys) > 1 else None
     if multikey is not None:

@@ -14,8 +14,8 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n
                    alpha=.8, perc=90, edge_width=.2, edge_color='grey', color=None, use_raw=None, layer=None,
                    color_map=None, colorbar=True, palette=None, size=None,  sort_order=True, groups=None,
                    components=None, projection='2d', legend_loc='on data', legend_fontsize=None, legend_fontweight=None,
-                   right_margin=None, left_margin=None, xlabel=None, ylabel=None, title=None, fontsize=None,
-                   figsize=None, dpi=None, frameon=None, show=True, save=None, ax=None):
+                   xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, dpi=None, frameon=None, show=True,
+                   save=None, ax=None):
     """\
     Plot of the velocity graph.
 
@@ -40,8 +40,7 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n
                       "components": components, "projection": projection, "legend_loc": legend_loc, "groups": groups,
                       "legend_fontsize": legend_fontsize, "legend_fontweight": legend_fontweight, "palette": palette,
                       "color_map": color_map, "frameon": frameon, "title": title, "xlabel": xlabel, "ylabel": ylabel,
-                      "right_margin": right_margin, "left_margin": left_margin, "colorbar": colorbar, "dpi": dpi,
-                      "fontsize": fontsize, "show": False, "save": None, "figsize": figsize, }
+                      "colorbar": colorbar, "dpi": dpi, "fontsize": fontsize, "show": False, "save": None, "figsize": figsize, }
     ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, zorder=0, **scatter_kwargs)
 
     from networkx import Graph, draw_networkx_edges
