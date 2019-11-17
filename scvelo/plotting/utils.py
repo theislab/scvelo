@@ -185,7 +185,7 @@ def get_colors(adata, c):
         return np.array([adata.uns[c + '_colors'][cluster_ix[i]] for i in range(adata.n_obs)])
 
 
-def interpret_colorkey(adata, c=None, layer=None, perc=None):
+def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
     if c is None: c = default_color(adata)
     if issparse(c): c = make_dense(c).flatten()
     if is_categorical(adata, c): c = get_colors(adata, c)
@@ -193,7 +193,10 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
         if c in adata.obs.keys():  # color by observation key
             c = adata.obs[c]
         elif c in adata.var_names:  # color by var in specific layer
-            c = adata[:, c].layers[layer] if layer in adata.layers.keys() else adata[:, c].X
+            if layer in adata.layers.keys():
+                c = adata[:, c].layers[layer]
+            else:
+                c = adata.raw.obs_vector(c) if use_raw else adata[:, c].X
             c = c.A.flatten() if issparse(c) else c
         elif c in adata.var.keys():  # color by observation key
             c = adata.var[c]

@@ -179,9 +179,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 zorder -= 1
 
             if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
-                c = interpret_colorkey(adata, basis, color, perc)
+                c = interpret_colorkey(adata, basis, color, perc, use_raw)
             else:
-                c = interpret_colorkey(adata, color, layer, perc)
+                c = interpret_colorkey(adata, color, layer, perc, use_raw)
 
             if smooth and len(c) == adata.n_obs:
                 c = get_connectivities(adata, n_neighbors=(None if isinstance(smooth, bool) else smooth)).dot(c)
