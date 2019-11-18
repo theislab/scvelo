@@ -344,14 +344,6 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
         colors = [colors[categories.index(x)] for x in groups]
         categories = groups
 
-    if legend_loc == 'right margin':
-        for idx, label in enumerate(categories):
-            color = colors[idx]
-            # use empty scatter to set labels
-            ax.scatter([], [], c=color, label=label)
-        ax.legend(frameon=False, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=legend_fontsize,
-                  ncol=(1 if len(categories) <= 14 else 2 if len(categories) <= 30 else 3))
-
     if legend_loc == 'on data':
         # identify centroids to put labels
         all_pos = np.zeros((len(categories), 2))
@@ -363,6 +355,15 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
                     horizontalalignment='center', fontsize=legend_fontsize, path_effects=legend_fontoutline)
 
             all_pos[ilabel] = [x_pos, y_pos]
+
+    else:
+        for idx, label in enumerate(categories):
+            ax.scatter([], [], c=colors[idx], label=label)
+        ncol = (1 if len(categories) <= 14 else 2 if len(categories) <= 30 else 3)
+        if legend_loc == 'right margin':
+            ax.legend(frameon=False, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=legend_fontsize, ncol=ncol)
+        elif legend_loc != 'none':
+            ax.legend(frameon=False, loc=legend_loc, fontsize=legend_fontsize, ncol=ncol)
 
 
 def get_components(components=None, basis=None, projection=None):

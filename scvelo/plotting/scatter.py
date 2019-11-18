@@ -117,8 +117,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if isinstance(groups, str): groups = [groups]
             if use_raw is None and basis not in adata.var_names:
                 use_raw = layer is None and adata.raw is not None
-            #if adata.raw is None and use_raw:
-            #    raise ValueError("`use_raw` is set to True but AnnData object does not have raw. Please check.")
+            if adata.raw is None and use_raw and basis not in adata.var_names:
+                raise ValueError("`use_raw` is set to True but AnnData object does not have raw. Please check.")
 
             dim = 3 if '3' in projection else 2
             if dim == 3: from mpl_toolkits.mplot3d import Axes3D
