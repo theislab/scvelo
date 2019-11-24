@@ -92,6 +92,10 @@ frameon: `bool` (default: `True`)
     Draw a frame around the scatter plot.
 ncols : `int` (default: `None`)
     Number of panels per row.
+wspace : `float` (default: None)
+    Adjust the width of the space between multiple panels.
+hspace : `float` (default: None)
+    Adjust the height of the space between multiple panels.
 show: `bool`, optional (default: `None`)
     Show the plot, do not return axis.
 save: `bool` or `str`, optional (default: `None`)

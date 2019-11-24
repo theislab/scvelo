@@ -115,7 +115,16 @@ def write_pars(adata, vkey, pars, pars_names, add_key=None):
 def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_offset2=False, filter_genes=False, groups=None,
              groupby=None, groups_for_fit=None, constrain_ratio=None, use_raw=False, use_latent_time=None,
              perc=[5, 95], min_r2=1e-2, min_likelihood=1e-3, r2_adjusted=None, copy=False, **kwargs):
-    """Estimates velocities in a gene-specific manner
+    """Estimates velocities in a gene-specific manner.
+
+    The steady-state model determines velocities by quantifying how observations deviate from a presumed steady-state
+    equilibrium ratio of unspliced to spliced mRNA levels. This steady-state ratio is obtained by performing a
+    linear regression restricting the input data to the extreme quantiles. By including second-order moments, the
+    stochastic model exploits not only the balance of of unspliced to spliced mRNA levels but also their covariation.
+    By contrast, the likelihood-based dynamical model solves the full splicing kinetics and generalizes RNA velocity
+    estimation to transient systems. It is also capable of capturing non-observed steady states.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69494713-1f9ac300-0ebf-11ea-9050-83ec7c63fe59.png
 
     Arguments
     ---------

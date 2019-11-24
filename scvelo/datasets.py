@@ -96,7 +96,7 @@ def pancreatic_endocrinogenesis():
 
 
 def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_=None, t_max=None,
-               noise_model='normal', noise_level=1, switches=None):
+               noise_model='normal', noise_level=1, switches=None, random_seed=0):
     """Simulation of mRNA metabolism with transcription, splicing and degradation
 
     Returns
@@ -104,15 +104,16 @@ def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_
     Returns `adata` object
     """
     from .tools.dynamical_model_utils import unspliced, spliced, vectorize, mRNA
+    np.random.seed(random_seed)
 
     def draw_poisson(n):
-        from random import uniform  # draw from poisson
+        from random import uniform, seed  # draw from poisson
+        seed(random_seed)
         t = np.cumsum([- .1 * np.log(uniform(0, 1)) for _ in range(n - 1)])
         return np.insert(t, 0, 0)  # prepend t0=0
 
     def simulate_dynamics(tau, alpha, beta, gamma, u0, s0, noise_model, noise_level):
         ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
-
         if noise_model is 'normal':  # add noise
             ut += np.random.normal(scale=noise_level * np.percentile(ut, 99) / 10, size=len(ut))
             st += np.random.normal(scale=noise_level * np.percentile(st, 99) / 10, size=len(st))

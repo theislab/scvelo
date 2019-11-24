@@ -11,7 +11,7 @@ def test_einsum():
 
 
 def test_pipeline():
-    adata = scv.datasets.simulation(n_obs=100)
+    adata = scv.datasets.simulation()
 
     scv.pp.filter_and_normalize(adata)
     scv.pp.moments(adata)

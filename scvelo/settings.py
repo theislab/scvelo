@@ -35,7 +35,7 @@ There is no need to call the matplotlib pl.show() in this case.
 """
 
 writedir = './write/'
-"""Directory where the function scanpy.write writes to by default.
+"""Directory where the function scvelo.write writes to by default.
 """
 
 cachedir = './cache/'

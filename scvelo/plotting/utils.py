@@ -1,5 +1,6 @@
 from .. import settings
 from .. import logging as logg
+from ..preprocessing.moments import get_connectivities
 from ..tools.utils import strings_to_categoricals
 from . import palettes
 
@@ -14,6 +15,7 @@ import matplotlib.transforms as tx
 from matplotlib import rcParams
 from scipy.sparse import issparse
 from cycler import Cycler, cycler
+import collections.abc as cabc
 
 
 def make_dense(X):
@@ -25,7 +27,7 @@ def is_categorical(adata, c):
     from pandas.api.types import is_categorical as cat
     strings_to_categoricals(adata)
     str_not_var = isinstance(c, str) and c not in adata.var_names
-    return str_not_var and (c in adata.obs.keys() and cat(adata.obs[c]) or is_color_like(c))
+    return str_not_var and (c in adata.obs.keys() and cat(adata.obs[c]))
 
 
 def n_categories(adata, c):
@@ -151,6 +153,7 @@ def default_color(adata):
 def default_color_map(adata, c):
     cmap = None
     if isinstance(c, str) and c in adata.obs.keys() and not is_categorical(adata, c): c = adata.obs[c]
+    elif isinstance(c, int): cmap = 'viridis_r'
     if len(np.array(c).flatten()) == adata.n_obs:
         if np.min(c) in [-1, 0, False] and np.max(c) in [1, True]: cmap = 'viridis_r'
     return cmap
@@ -182,7 +185,7 @@ def get_colors(adata, c):
         return np.array([adata.uns[c + '_colors'][cluster_ix[i]] for i in range(adata.n_obs)])
 
 
-def interpret_colorkey(adata, c=None, layer=None, perc=None):
+def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
     if c is None: c = default_color(adata)
     if issparse(c): c = make_dense(c).flatten()
     if is_categorical(adata, c): c = get_colors(adata, c)
@@ -190,17 +193,177 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None):
         if c in adata.obs.keys():  # color by observation key
             c = adata.obs[c]
         elif c in adata.var_names:  # color by var in specific layer
-            c = adata[:, c].layers[layer] if layer in adata.layers.keys() else adata[:, c].X
+            if layer in adata.layers.keys():
+                c = adata[:, c].layers[layer]
+            else:
+                c = adata.raw.obs_vector(c) if use_raw else adata[:, c].X
             c = c.A.flatten() if issparse(c) else c
         elif c in adata.var.keys():  # color by observation key
             c = adata.var[c]
-        else:
+        elif not is_color_like(c):
             raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
-        if perc is not None: c = clip(c, perc=perc)
+        if not isinstance(c, str) and perc is not None: c = clip(c, perc=perc)
     else:
         c = np.array(c).flatten()
         if perc is not None: c = clip(c, perc=perc)
     return c
+
+
+# adapted from scanpy
+def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
+    """
+    Sets the adata.uns[value_to_plot + '_colors'] according to the given palette or default colors.
+    Parameters
+    ----------
+    adata
+        annData object
+    value_to_plot
+        name of a valid categorical observation
+    palette
+        Palette should be either a valid :func:`~matplotlib.pyplot.colormaps` string,
+        a sequence of colors (in a format that can be understood by matplotlib,
+        eg. RGB, RGBS, hex, or a cycler object with key='color'
+    Returns
+    -------
+    None
+    """
+    from matplotlib.colors import to_hex
+    color_key = f"{value_to_plot}_colors"
+    valid = True
+    if palette is None and color_key in adata.uns:
+        # Check if colors already exist in adata.uns and if they are a valid palette
+        _palette = []
+        for color in adata.uns[color_key]:
+            if not is_color_like(color):
+                # check if the color is a valid R color and translate it
+                # to a valid hex color value
+                if color in additional_colors:
+                    color = additional_colors[color]
+                else:
+                    logg.warn(
+                        f"The following color value found in adata.uns['{value_to_plot}_colors'] "
+                        f"is not valid: '{color}'. Default colors will be used instead."
+                    )
+                    valid = False
+                    break
+    elif palette is not None:
+        # Check if given pallette is valid
+        categories = adata.obs[value_to_plot].cat.categories
+        # check is palette given is a valid matplotlib colormap
+        if isinstance(palette, str) and palette in pl.colormaps():
+            # this creates a palette from a colormap. E.g. 'Accent, Dark2, tab20'
+            cmap = pl.get_cmap(palette)
+            colors_list = [to_hex(x) for x in cmap(np.linspace(0, 1, len(categories)))]
+
+        else:
+            # check if palette is a list and convert it to a cycler, thus
+            # it doesnt matter if the list is shorter than the categories length:
+            if isinstance(palette, cabc.Sequence):
+                if len(palette) < len(categories):
+                    logg.warn(
+                        "Length of palette colors is smaller than the number of "
+                        f"categories (palette length: {len(palette)}, "
+                        f"categories length: {len(categories)}. "
+                        "Some categories will have the same color.")
+                # check that colors are valid
+                _color_list = []
+                for color in palette:
+                    if not is_color_like(color):
+                        # check if the color is a valid R color and translate it
+                        # to a valid hex color value
+                        if color in additional_colors:
+                            color = additional_colors[color]
+                        else:
+                            logg.warn(
+                                f"The following color value is not valid: '{color}'. "
+                                f"Default colors will be used instead.")
+                            valid = False
+                            break
+                    _color_list.append(color)
+
+                palette = cycler(color=_color_list)
+            if not isinstance(palette, Cycler) or 'color' not in palette.keys:
+                logg.warn(
+                    "Please check that the value of 'palette' is a valid "
+                    "matplotlib colormap string (eg. Set2), a  list of color names "
+                    "or a cycler with a 'color' key. Default colors will be used instead"
+                )
+            valid = False
+            if valid:
+                cc = palette()
+                colors_list = [to_hex(next(cc)['color']) for x in range(len(categories))]
+        if valid:
+            adata.uns[value_to_plot + '_colors'] = colors_list
+    else:
+        # No valid pallette exists or was given
+        valid = False
+
+     # Set to defaults:
+    if not valid:
+        categories = adata.obs[value_to_plot].cat.categories
+        length = len(categories)
+
+         # check if default matplotlib palette has enough colors
+        if len(rcParams['axes.prop_cycle'].by_key()['color']) >= length:
+            cc = rcParams['axes.prop_cycle']()
+            palette = [next(cc)['color'] for _ in range(length)]
+        # Else fall back to default palettes
+        else:
+            if length <= 28:
+                palette = palettes.default_26
+            elif length <= len(palettes.default_64):  # 103 colors
+                palette = palettes.default_64
+            else:
+                palette = ['grey' for _ in range(length)]
+                logg.info(
+                    f'the obs value {value_to_plot!r} has more than 103 categories. Uniform '
+                    "'grey' color will be used for all categories."
+                )
+
+        adata.uns[value_to_plot + '_colors'] = palette[:length]
+
+
+# adapted from scanpy
+def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
+                legend_fontoutline, groups, multi_panel):
+    """
+    Adds a legend to the given ax with categorial data.
+    """
+    # add legend
+    categories = list(adata.obs[value_to_plot].cat.categories)
+    colors = adata.uns[value_to_plot + '_colors']
+
+    if multi_panel is True:
+        # Shrink current axis by 10% to fit legend and match
+        # size of plots that are not categorical
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.91, box.height])
+
+    if groups is not None:
+        # only label groups with the respective color
+        colors = [colors[categories.index(x)] for x in groups]
+        categories = groups
+
+    if legend_loc == 'on data':
+        # identify centroids to put labels
+        all_pos = np.zeros((len(categories), 2))
+        for ilabel, label in enumerate(categories):
+            _scatter = scatter_array[adata.obs[value_to_plot] == label, :]
+            x_pos, y_pos = np.median(_scatter, axis=0)
+
+            ax.text(x_pos, y_pos, label, weight=legend_fontweight, verticalalignment='center',
+                    horizontalalignment='center', fontsize=legend_fontsize, path_effects=legend_fontoutline)
+
+            all_pos[ilabel] = [x_pos, y_pos]
+
+    else:
+        for idx, label in enumerate(categories):
+            ax.scatter([], [], c=colors[idx], label=label)
+        ncol = (1 if len(categories) <= 14 else 2 if len(categories) <= 30 else 3)
+        if legend_loc == 'right margin':
+            ax.legend(frameon=False, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=legend_fontsize, ncol=ncol)
+        elif legend_loc != 'none':
+            ax.legend(frameon=False, loc=legend_loc, fontsize=legend_fontsize, ncol=ncol)
 
 
 def get_components(components=None, basis=None, projection=None):
@@ -340,7 +503,6 @@ def rgb_custom_colormap(colors=['royalblue', 'white', 'forestgreen'], alpha=None
 
 
 def get_temporal_connectivities(adata, tkey, n_convolve=30):
-    from ..preprocessing.moments import get_connectivities
     from ..tools.velocity_graph import vals_to_csr
     from ..tools.utils import normalize, get_indices
 
@@ -360,6 +522,17 @@ def get_temporal_connectivities(adata, tkey, n_convolve=30):
     c_conn = get_connectivities(adata, recurse_neighbors=True)
     t_conn = vals_to_csr(vals, rows, cols, shape=(n_obs, n_obs))
     return normalize(t_conn)  # normalize(t_conn.multiply(c_conn))
+
+
+def groups_to_bool(adata, groups, groupby=None):
+    groups = [groups] if isinstance(groups, str) else groups
+    if isinstance(groups, (list, tuple, np.ndarray, np.record)):
+        groupby = groupby if groupby in adata.obs.keys() else 'clusters' if 'clusters' in adata.obs.keys() \
+            else 'louvain' if 'louvain' in adata.obs.keys() else None
+        if groupby is not None:
+            groups = np.array([key in groups for key in adata.obs[groupby]])
+        else: raise ValueError('groupby attribute not valid.')
+    return groups
 
 
 def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1, ax=None):
@@ -625,6 +798,18 @@ def fraction_timeseries(adata, xkey='clusters', tkey='dpt_pseudotime', bins=30, 
         return ax
     else:
         pl.show()
+
+
+# colors in addition to matplotlib's colors
+additional_colors = {
+    'gold2': '#eec900', 'firebrick3': '#cd2626', 'khaki2': '#eee685', 'slategray3': '#9fb6cd', 'palegreen3': '#7ccd7c',
+    'tomato2': '#ee5c42', 'grey80': '#cccccc', 'grey90': '#e5e5e5', 'wheat4': '#8b7e66', 'grey65': '#a6a6a6',
+    'grey10': '#1a1a1a', 'grey20': '#333333', 'grey50': '#7f7f7f', 'grey30': '#4d4d4d', 'grey40': '#666666',
+    'antiquewhite2': '#eedfcc', 'grey77': '#c4c4c4', 'snow4': '#8b8989', 'chartreuse3': '#66cd00', 'yellow4': '#8b8b00',
+    'darkolivegreen2': '#bcee68', 'olivedrab3': '#9acd32', 'azure3': '#c1cdcd', 'violetred': '#d02090',
+    'mediumpurple3': '#8968cd', 'purple4': '#551a8b', 'seagreen4': '#2e8b57', 'lightblue3': '#9ac0cd',
+    'orchid3': '#b452cd', 'indianred 3': '#cd5555', 'grey60': '#999999', 'mediumorchid1': '#e066ff', 'plum3': '#cd96cd',
+    'palevioletred3': '#cd6889'}
 
 
 # def phase(adata, var=None, x=None, y=None, color='louvain', fits='all', xlabel='spliced', ylabel='unspliced',
