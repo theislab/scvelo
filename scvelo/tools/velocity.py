@@ -124,8 +124,7 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
     By contrast, the likelihood-based dynamical model solves the full splicing kinetics and generalizes RNA velocity
     estimation to transient systems. It is also capable of capturing non-observed steady states.
 
-    https://user-images.githubusercontent.com/31883718/69494713-1f9ac300-0ebf-11ea-9050-83ec7c63fe59.png
-
+    .. image:: https://user-images.githubusercontent.com/31883718/69494713-1f9ac300-0ebf-11ea-9050-83ec7c63fe59.png
 
     Arguments
     ---------
