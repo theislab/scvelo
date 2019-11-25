@@ -489,8 +489,8 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
     return adata if copy else dm
 
 
-def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, min_corr=None, t_max=None, root_key=None,
-                        use_graph=None, weight_diffusion=None, weight_root=None, weight_fate=None, copy=False):
+def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, min_corr_diffusion=None,
+                        weight_diffusion=None, root_key=None, t_max=None, copy=False):
     """Computes a gene-shared latent time from the dynamical model.
 
     Gene-specific latent timepoints obtained from the dynamical model are coupled to a universal gene-shared
@@ -508,20 +508,14 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
         Minimal likelihood fitness for genes to be included to the weighting.
     min_confidence: `float` between `0` and `1` (default: `.75`)
         Parameter for local coherence selection.
-    min_corr: `float` between `0` and `1` or `None` (default: `None`)
-        Condition on correlation with VPT.
-    t_max: `float` or `None` (default: `None`)
-        Define the upper bound of the time scale.
-    root_key: `str` or `None` (default: `None`)
-        Name of roots to be used.
-    use_graph: `bool` or `None` (default: `True`)
-        Whether to instead compute VPT.
+    min_corr_diffusion: `float` between `0` and `1` or `None` (default: `None`)
+        Only select genes that correlate with velocity pseudotime obtained from diffusion random walk on velocity graph.
     weight_diffusion: `float` or `None` (default: `None`)
-        Diffusive parameter mixes latent time with VPT.
-    weight_root: `float` between `0` and `1` or `None` (default: `None`)
-        Weighting given to the root time in comparison to connectivities.
-    weight_fate: `float` between `0` and `1` or `None` (default: `None`)
-        Same as weight_root, but w.r.t. terminal states.
+        Weight to be applied to couple latent time with diffusion-based velocity pseudotime.
+    root_key: `str` or `None` (default: `None`)
+        Key of root cell to be used. If not set, it obtains root cells from velocity-inferred transition matrix.
+    t_max: `float` or `None` (default: `None`)
+        Overall duration of differentiation process. If not set, a splicing duration of 20 hours is used as prior.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
      Returns
@@ -563,12 +557,12 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
     idx_fates = adata.obs['end_points'] > 1 - 1e-3
     if np.sum(idx_fates) > 0: fates = fates[idx_fates]
 
-    VPT = velocity_pseudotime(adata, vkey, root=roots[0], end=fates[0] if weight_fate else None, return_model=True)
+    VPT = velocity_pseudotime(adata, vkey, root=roots[0], end=fates[0], return_model=True)
     vpt = VPT.pseudotime
 
-    if min_corr is not None:
+    if min_corr_diffusion is not None:
         corr = vcorrcoef(t.T, vpt)
-        t = t[:, np.array(corr >= min_corr, dtype=bool)]
+        t = t[:, np.array(corr >= min_corr_diffusion, dtype=bool)]
 
     if root_key in adata.uns.keys():
         root = adata.uns[root_key]
@@ -591,10 +585,6 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
         latent_time_ = np.mean(latent_time_, axis=0)
         latent_time_ /= np.max(latent_time_)
 
-        if weight_root is not None:
-            w = weight_root
-            latent_time = (1 - w) * latent_time + w * conn.dot(t_sum / np.max(t_sum))
-
     tl = latent_time
     tc = conn.dot(latent_time)
 
@@ -602,8 +592,8 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
     tl_conf = (1 - np.abs(tl / np.max(tl) - tc * z / np.max(tl))) ** 2
     idx_low_confidence = tl_conf < min_confidence
 
-    if weight_diffusion is not None or use_graph:
-        w = 1 if use_graph else weight_diffusion
+    if weight_diffusion is not None:
+        w = weight_diffusion
         latent_time = (1 - w) * latent_time + w * vpt
         latent_time[idx_low_confidence] = vpt[idx_low_confidence]
     else:
