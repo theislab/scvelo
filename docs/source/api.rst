@@ -43,6 +43,9 @@ Tools (tl)
    tl.recover_dynamics
    tl.transition_matrix
    tl.terminal_states
+   tl.latent_time
+   tl.velocity_pseudotime
+   tl.velocity_clusters
    tl.rank_velocity_genes
    tl.velocity_confidence
 

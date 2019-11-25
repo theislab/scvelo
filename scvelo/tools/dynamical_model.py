@@ -241,10 +241,12 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
                      t_max=None, fit_time=True, fit_scaling=True, fit_steady_states=True, fit_connected_states=None,
                      fit_basal_transcription=None, use_raw=False, load_pars=None, return_model=None, plot_results=False,
                      steady_state_prior=None, add_key='fit', copy=False, **kwargs):
-    """Recovers the full splicing kinetics of specified genes
+    """Recovers the full splicing kinetics of specified genes.
 
     The model infers transcription rates, splicing rates, degradation rates,
-    as well as cell-specific latent time and transcriptional states.
+    as well as cell-specific latent time and transcriptional states, estimated iteratively by expectation-maximization.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69534358-eb380d00-0f79-11ea-8cfd-a971e079bfd4.png
 
     Arguments
     ---------
@@ -408,7 +410,7 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
 def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outliers=None, copy=False):
     """Align dynamics to a common set of parameters
 
-     Arguments
+    Arguments
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -489,9 +491,14 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
 
 def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, min_corr=None, t_max=None, root_key=None,
                         use_graph=None, weight_diffusion=None, weight_root=None, weight_fate=None, copy=False):
-    """Computes the latent time from learned time assignments.
+    """Computes a gene-shared latent time from the dynamical model.
 
-     Arguments
+    Gene-specific latent timepoints obtained from the dynamical model are coupled to a universal gene-shared
+    latent time, which represents the cell’s internal clock and is based only on its transcriptional dynamics.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69545811-d0be5d80-0f92-11ea-8e52-3480b9958df7.png
+
+    Arguments
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix
@@ -616,3 +623,6 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
     logg.hint('added \n'
               '    \'latent_time\', shared time (adata.obs)')
     return adata if copy else None
+
+
+latent_time = recover_latent_time
