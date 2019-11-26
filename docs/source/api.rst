@@ -73,8 +73,8 @@ Datasets
 
    datasets.toy_data
    datasets.dentategyrus
-   datasets.forebrain
    datasets.pancreatic_endocrinogenesis
+   datasets.forebrain
 
 
 Utils

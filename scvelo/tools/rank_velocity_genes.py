@@ -55,7 +55,7 @@ def select_groups(adata, groups='all', key='louvain'):
 
 def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='dpt_pseudotime', resolution=None,
                       min_likelihood=None, copy=False):
-    """Computes velocity clusters via louvain on velocity expression.
+    """Computes velocity clusters via louvain on velocities.
 
     .. code:: python
 

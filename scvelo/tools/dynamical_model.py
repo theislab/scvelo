@@ -491,7 +491,7 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
 
 def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, min_corr_diffusion=None,
                         weight_diffusion=None, root_key=None, t_max=None, copy=False):
-    """Computes a gene-shared latent time from the dynamical model.
+    """Computes a gene-shared latent time.
 
     Gene-specific latent timepoints obtained from the dynamical model are coupled to a universal gene-shared
     latent time, which represents the cell’s internal clock and is based only on its transcriptional dynamics.

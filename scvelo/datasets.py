@@ -7,13 +7,13 @@ import numpy as np
 import pandas as pd
 
 
-def toy_data(n_obs):
+def toy_data(n_obs=None):
     """
-    Randomly samples from the Dentate Gyrus dataset.
+    Randomly sampled from the Dentate Gyrus dataset.
 
     Arguments
     ---------
-    n_obs: `int`
+    n_obs: `int` (default: `None`)
         Size of the sampled dataset
 
     Returns
@@ -24,14 +24,18 @@ def toy_data(n_obs):
     """Random samples from Dentate Gyrus.
     """
     adata_dg = dentategyrus()
-    indices = np.random.choice(adata_dg.n_obs, n_obs)
-    adata = adata_dg[indices]
+
+    if n_obs is not None:
+        indices = np.random.choice(adata_dg.n_obs, n_obs)
+        adata = adata_dg[indices]
+    else:
+        adata = adata_dg
     adata.obs_names_make_unique()
     return adata.copy()
 
 
 def dentategyrus(adjusted=True):
-    """Dentate Gyrus dataset from Hochgerner et al. (2018).
+    """Dentate Gyrus dataset from `Hochgerner et al. (2018) <https://doi.org/10.1038/s41593-017-0056-2>`_.
 
     Dentate gyrus is part of the hippocampus involved in learning, episodic memory formation and spatial coding.
     It is measured using 10X Genomics Chromium and described in Hochgerner et al. (2018).
@@ -66,6 +70,7 @@ def dentategyrus(adjusted=True):
 
 def forebrain():
     """Developing human forebrain.
+
     Forebrain tissue of a week 10 embryo, focusing on the glutamatergic neuronal lineage.
 
     Returns
@@ -80,14 +85,14 @@ def forebrain():
 
 
 def pancreatic_endocrinogenesis():
-    """Pancreatic endocrinogenesis.
-        Pancreatic epithelial and Ngn3-Venus fusion (NVF) cells during secondary transition / embryonic day 15.5.
-        https://dev.biologists.org/content/146/12/dev173849
+    """Pancreatic endocrinogenesis from `Bastidas-Ponce et al. (2019) <https://doi.org/10.1242/dev.173849>`_.
 
-        Returns
-        -------
-        Returns `adata` object
-        """
+    Pancreatic epithelial and Ngn3-Venus fusion (NVF) cells during secondary transition / embryonic day 15.5.
+
+    Returns
+    -------
+    Returns `adata` object
+    """
     filename = 'data/Pancreas/endocrinogenesis_day15.h5ad'
     url = 'https://github.com/theislab/scvelo_notebooks/raw/master/data/Pancreas/endocrinogenesis_day15.h5ad'
     adata = read(filename, backup_url=url, sparse=True, cache=True)
