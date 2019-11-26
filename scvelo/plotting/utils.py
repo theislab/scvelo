@@ -196,6 +196,8 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
             if layer in adata.layers.keys():
                 c = adata[:, c].layers[layer]
             else:
+                if adata.raw is None and use_raw:
+                    raise ValueError("`use_raw` is set to True but AnnData object does not have raw. Please check.")
                 c = adata.raw.obs_vector(c) if use_raw else adata[:, c].X
             c = c.A.flatten() if issparse(c) else c
         elif c in adata.var.keys():  # color by observation key
