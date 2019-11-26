@@ -57,6 +57,15 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='dpt
                       min_likelihood=None, copy=False):
     """Computes velocity clusters via louvain on velocity expression.
 
+    .. code:: python
+
+        scv.tl.velocity_clusters(adata)
+        scv.pl.scatter(adata, color='velocity_clusters')
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69625627-484dc480-1047-11ea-847f-6607a3430427.png
+       :width: 600px
+
+
     Arguments
     ----------
     data : :class:`~anndata.AnnData`
@@ -162,6 +171,18 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
     velocity expression, to find genes in a cluster that show dynamics that is transcriptionally regulated differently
     compared to all other clusters (e.g. induction in that cluster and homeostasis in remaining population).
     If no clusters are given, it priorly computes velocity clusters by applying louvain modularity on velocity expression.
+
+    .. code:: python
+
+        scv.tl.rank_velocity_genes(adata, groupby='clusters')
+        scv.pl.scatter(adata, basis=adata.uns['rank_velocity_genes']['names']['Beta'][:3])
+        pd.DataFrame(adata.uns['rank_velocity_genes']['names']).head()
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69626017-11c47980-1048-11ea-89f4-df3769df5ad5.png
+       :width: 600px
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69626036-1b4de180-1048-11ea-858d-7573c8b2bc0f.png
+       :width: 600px
 
     Arguments
     ----------

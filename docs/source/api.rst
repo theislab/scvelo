@@ -39,9 +39,9 @@ Tools (tl)
 
    tl.velocity
    tl.velocity_graph
+   tl.transition_matrix
    tl.velocity_embedding
    tl.recover_dynamics
-   tl.transition_matrix
    tl.terminal_states
    tl.latent_time
    tl.velocity_pseudotime
@@ -72,6 +72,7 @@ Datasets
    datasets.toy_data
    datasets.dentategyrus
    datasets.forebrain
+   datasets.pancreatic_endocrinogenesis
 
 
 Utils

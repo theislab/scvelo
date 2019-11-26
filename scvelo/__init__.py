@@ -15,6 +15,7 @@ from .preprocessing.neighbors import Neighbors
 from .tools.run import run_all, test
 from .tools.velocity import Velocity
 from .tools.velocity_graph import VelocityGraph
+from .settings import set_figure_params
 
 from . import pp
 from . import tl
