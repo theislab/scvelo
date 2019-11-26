@@ -37,14 +37,16 @@ Tools (tl)
 .. autosummary::
    :toctree: .
 
+   tl.recover_dynamics
    tl.velocity
    tl.velocity_graph
    tl.transition_matrix
    tl.velocity_embedding
-   tl.recover_dynamics
+
    tl.terminal_states
    tl.latent_time
    tl.velocity_pseudotime
+
    tl.velocity_clusters
    tl.rank_velocity_genes
    tl.velocity_confidence

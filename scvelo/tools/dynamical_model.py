@@ -246,7 +246,7 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
     The model infers transcription rates, splicing rates, degradation rates,
     as well as cell-specific latent time and transcriptional states, estimated iteratively by expectation-maximization.
 
-    .. image:: https://user-images.githubusercontent.com/31883718/69534358-eb380d00-0f79-11ea-8cfd-a971e079bfd4.png
+    .. image:: https://user-images.githubusercontent.com/31883718/69636459-ef862800-1056-11ea-8803-0a787ede5ce9.png
 
     Arguments
     ---------
@@ -496,7 +496,7 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
     Gene-specific latent timepoints obtained from the dynamical model are coupled to a universal gene-shared
     latent time, which represents the cell’s internal clock and is based only on its transcriptional dynamics.
 
-    .. image:: https://user-images.githubusercontent.com/31883718/69545811-d0be5d80-0f92-11ea-8e52-3480b9958df7.png
+    .. image:: https://user-images.githubusercontent.com/31883718/69636500-03318e80-1057-11ea-9e14-ae9f907711cc.png
 
     Arguments
     ---------

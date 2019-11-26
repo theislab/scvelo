@@ -181,7 +181,7 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
     .. image:: https://user-images.githubusercontent.com/31883718/69626017-11c47980-1048-11ea-89f4-df3769df5ad5.png
        :width: 600px
 
-    .. image:: https://user-images.githubusercontent.com/31883718/69626036-1b4de180-1048-11ea-858d-7573c8b2bc0f.png
+    .. image:: https://user-images.githubusercontent.com/31883718/69626572-30774000-1049-11ea-871f-e8a30c42f10e.png
        :width: 600px
 
     Arguments
