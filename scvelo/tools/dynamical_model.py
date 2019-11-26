@@ -513,7 +513,7 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
     weight_diffusion: `float` or `None` (default: `None`)
         Weight to be applied to couple latent time with diffusion-based velocity pseudotime.
     root_key: `str` or `None` (default: `None`)
-        Key of root cell to be used. If not set, it obtains root cells from velocity-inferred transition matrix.
+        Key (.uns) of root cell to be used. If not set, it obtains root cells from velocity-inferred transition matrix.
     t_max: `float` or `None` (default: `None`)
         Overall duration of differentiation process. If not set, a splicing duration of 20 hours is used as prior.
     copy: `bool` (default: `False`)

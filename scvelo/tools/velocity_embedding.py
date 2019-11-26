@@ -30,7 +30,7 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
     :math:`\\tilde \\pi_{ij}` as
 
     .. math::
-        \\tilde \\nu_i = E_{\\pi_{i\\cdot}} [\\tilde \\delta_{i \\cdot}]
+        \\tilde \\nu_i = E_{\\tilde \\pi_{i\\cdot}} [\\tilde \\delta_{i \\cdot}]
         = \\sum_{j \\neq i} \left( \\tilde \\pi_{ij} - \\frac1n \\right) \\tilde \\delta_{ij}.
 
 
