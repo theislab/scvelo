@@ -11,6 +11,9 @@ import numpy as np
 def moments(data, n_neighbors=30, n_pcs=None, mode='connectivities', method='umap', use_rep=None, copy=False):
     """Computes moments for velocity estimation.
 
+    First- and second-order moments are computed for each cell across its nearest neighbors, where the neighbor graph
+    is obtained from euclidean distances in PCA space.
+
     Arguments
     ---------
     data: :class:`~anndata.AnnData`

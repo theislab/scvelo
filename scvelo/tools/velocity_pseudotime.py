@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.sparse import issparse, spdiags, linalg
 
+from .terminal_states import terminal_states
 from .utils import groups_to_bool, scale, strings_to_categoricals
 from ..preprocessing.moments import get_connectivities
 
@@ -111,9 +112,54 @@ class VPT(DPT):
             self.pseudotime[:] = np.nan
 
 
-def velocity_pseudotime(adata, vkey='velocity', groupby=None, groups=None, root=None, end=None, n_dcs=10, n_branchings=0,
-                        min_group_size=0.01, allow_kendall_tau_shift=True, use_velocity_field=True,
-                        save_diffmap=False, return_model=False):
+def velocity_pseudotime(adata, vkey='velocity', groupby=None, groups=None, root=None, end=None, n_dcs=10,
+                        use_velocity_graph=True, save_diffmap=None, return_model=None, **kwargs):
+    """Computes a pseudotime based on the velocity graph.
+
+    Velocity pseudotime is a random-walk based distance measures on the velocity graph. After computing a distribution
+    over root cells obtained from the velocity-inferred transition matrix, it measures the average number of steps it
+    takes to reach a cell after start walking from one of the root cells. Contrarily to diffusion pseudotime, it
+    implicitly infers the root cells and is based on the directed velocity graph instead of the similarity-based diffusion kernel.
+
+    .. code:: python
+
+        scv.tl.velocity_pseudotime(adata)
+        scv.pl.scatter(adata, color='velocity_pseudotime', color_map='gnuplot')
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69545487-33fbc000-0f92-11ea-969b-194dc68400b0.png
+       :width: 600px
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix
+    vkey: `str` (default: `'velocity'`)
+        Name of velocity estimates to be used.
+    groupby: `str`, `list` or `np.ndarray` (default: `None`)
+        Key of observations grouping to consider.
+    groups: `str`, `list` or `np.ndarray` (default: `None`)
+        Groups selected to find terminal states on. Must be an element of adata.obs[groupby].
+    root: `int` (default: `None`)
+        Index of root cell to be used. Computed from velocity-inferred transition matrix if not specified.
+    end: `int` (default: `None`)
+        Index of end point to be used. Computed from velocity-inferred transition matrix if not specified.
+    n_dcs: `int` (default: 10)
+        The number of diffusion components to use.
+    use_velocity_graph: `bool` (default: `True`)
+        Whether to use the velocity graph. If False, it uses the similarity-based diffusion kernel.
+    save_diffmap: `bool` (default: `None`)
+        Whether to store diffmap coordinates.
+    return_model: `bool` (default: `None`)
+        Whether to return the vpt object for further inspection.
+    **kwargs:
+        Further arguments to pass to VPT, such as min_group_size, allow_kendall_tau_shift, and n_branchings.
+
+     Returns
+    -------
+    Updates `adata` with the attributes
+    velocity_pseudotime: `.obs`
+        Velocity pseudotime obtained from velocity graph.
+    """
     strings_to_categoricals(adata)
     root = 'root_cells' if root is None and 'root_cells' in adata.obs.keys() else root
     end = 'end_points' if end is None and 'end_points' in adata.obs.keys() else end
@@ -121,12 +167,15 @@ def velocity_pseudotime(adata, vkey='velocity', groupby=None, groups=None, root=
     categories = adata.obs[groupby].cat.categories if groupby is not None and groups is None else [None]
     for cat in categories:
         groups = cat if cat is not None else groups
+        if root is None or end is None:
+            terminal_states(adata, vkey, groupby, groups)
+            root, end = 'root_cells', 'end_points'
         cell_subset = groups_to_bool(adata, groups=groups, groupby=groupby)
         data = adata.copy() if cell_subset is None else adata[cell_subset].copy()
-        vpt = VPT(data, n_dcs=n_dcs, min_group_size=min_group_size,
-                  n_branchings=n_branchings, allow_kendall_tau_shift=allow_kendall_tau_shift)
+        if 'allow_kendall_tau_shift' not in kwargs: kwargs['allow_kendall_tau_shift'] = True
+        vpt = VPT(data, n_dcs=n_dcs, **kwargs)
 
-        if use_velocity_field:
+        if use_velocity_graph:
             T = data.uns[vkey + '_graph'] - data.uns[vkey + '_graph_neg']
             vpt._connectivities = T + T.T
 
@@ -147,7 +196,7 @@ def velocity_pseudotime(adata, vkey='velocity', groupby=None, groups=None, root=
         vpt.pseudotime = scale(vpt.pseudotime)
         vpt.pseudotime[np.isnan(dpt_root) & np.isnan(dpt_end)] = np.nan
 
-        if n_branchings > 0: vpt.branchings_segments()
+        if 'n_branchings' in kwargs and kwargs['n_branchings'] > 0: vpt.branchings_segments()
         else: vpt.indices = vpt.pseudotime.argsort()
 
         if vkey + '_pseudotime' not in adata.obs.keys():

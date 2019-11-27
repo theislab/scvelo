@@ -22,7 +22,17 @@ def quiver_autoscale(X_emb, V_emb):
 
 def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
                        direct_pca_projection=None, retain_scale=False, autoscale=True, all_comps=True, T=None, copy=False):
-    """Computes the single cell velocities in the embedding
+    """Projects the single cell velocities into any embedding.
+
+    Given normalized difference of the embedding positions
+    :math:`\\tilde \\delta_{ij} = \\frac{x_j-x_i}{\\left\\lVert x_j-x_i \\right\\rVert}`.
+    the projections are obtained as expected displacements with respect to the transition matrix
+    :math:`\\tilde \\pi_{ij}` as
+
+    .. math::
+        \\tilde \\nu_i = E_{\\tilde \\pi_{i\\cdot}} [\\tilde \\delta_{i \\cdot}]
+        = \\sum_{j \\neq i} \left( \\tilde \\pi_{ij} - \\frac1n \\right) \\tilde \\delta_{ij}.
+
 
     Arguments
     ---------
@@ -37,9 +47,9 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
     self_transitions: `bool` (default: `True`)
         Whether to allow self transitions, based on the confidences of transitioning to neighboring cell.
     use_negative_cosines: `bool` (default: `True`)
-        Whether to use not only positive, but also negative cosines and use those transitions to the opposite way.
+        Whether to project cell-to-cell transitions with negative cosines into negative/opposite direction.
     direct_pca_projection: `bool` (default: `None`)
-        Whether to directly project the velocities into PCA space, thus skipping velocity graph.
+        Whether to directly project the velocities into PCA space, thus skipping the velocity graph.
     retain_scale: `bool` (default: `False`)
         Whether to retain scale from high dimensional space in embedding.
     autoscale: `bool` (default: `True`)

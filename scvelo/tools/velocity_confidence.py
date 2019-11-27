@@ -8,6 +8,15 @@ import numpy as np
 def velocity_confidence(data, vkey='velocity', copy=False):
     """Computes confidences of velocities.
 
+    .. code:: python
+
+        scv.tl.velocity_confidence(adata)
+        scv.pl.scatter(adata, color='velocity_confidence', perc=[2,98])
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69626334-b6df5200-1048-11ea-9171-495845c5bc7a.png
+       :width: 600px
+
+
     Arguments
     ---------
     data: :class:`~anndata.AnnData`

@@ -37,12 +37,17 @@ Tools (tl)
 .. autosummary::
    :toctree: .
 
+   tl.recover_dynamics
    tl.velocity
    tl.velocity_graph
-   tl.velocity_embedding
-   tl.recover_dynamics
    tl.transition_matrix
+   tl.velocity_embedding
+
    tl.terminal_states
+   tl.latent_time
+   tl.velocity_pseudotime
+
+   tl.velocity_clusters
    tl.rank_velocity_genes
    tl.velocity_confidence
 
@@ -68,6 +73,7 @@ Datasets
 
    datasets.toy_data
    datasets.dentategyrus
+   datasets.pancreatic_endocrinogenesis
    datasets.forebrain
 
 

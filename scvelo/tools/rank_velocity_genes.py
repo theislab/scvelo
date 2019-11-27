@@ -55,6 +55,42 @@ def select_groups(adata, groups='all', key='louvain'):
 
 def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='dpt_pseudotime', resolution=None,
                       min_likelihood=None, copy=False):
+    """Computes velocity clusters via louvain on velocities.
+
+    .. code:: python
+
+        scv.tl.velocity_clusters(adata)
+        scv.pl.scatter(adata, color='velocity_clusters')
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69625627-484dc480-1047-11ea-847f-6607a3430427.png
+       :width: 600px
+
+
+    Arguments
+    ----------
+    data : :class:`~anndata.AnnData`
+        Annotated data matrix.
+    vkey: `str` (default: `'velocity'`)
+        Key of velocities computed in `tl.velocity`
+    match_with : `int`, optional (default: 100)
+        The number of genes that appear in the returned tables.
+    match_with: `str` (default: `'clusters'`)
+        Match the names of the velocity clusters with the names of this key (.obs).
+    sort_by: `str` or `None` (default: `'dpt_pseudotime'`)
+        Sort velocity clusters by this key (.obs).
+    resolution: `str` or `None` (default: `None`)
+        Resolution for louvain modularity.
+    min_likelihood: `float` between `0` and `1` or `None` (default: `None`)
+        Only rank velocity of genes with a likelihood higher than min_likelihood.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to data.
+
+    Returns
+    -------
+    Returns or updates `data` with the attributes
+    velocity_clusters : `.obs`
+        Velocity clusters obtained from applying louvain modularity on velocity expression.
+    """
     adata = data.copy() if copy else data
 
     logg.info('computing velocity clusters', r=True)
@@ -130,6 +166,23 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='dpt
 def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_with=None, resolution=None,
                         min_counts=None, min_r2=None, min_dispersion=None, min_likelihood=None, copy=False):
     """Rank genes for velocity characterizing groups.
+
+    This applies a differential expression test (Welch t-test with overestimated variance to be conservative) on
+    velocity expression, to find genes in a cluster that show dynamics that is transcriptionally regulated differently
+    compared to all other clusters (e.g. induction in that cluster and homeostasis in remaining population).
+    If no clusters are given, it priorly computes velocity clusters by applying louvain modularity on velocity expression.
+
+    .. code:: python
+
+        scv.tl.rank_velocity_genes(adata, groupby='clusters')
+        scv.pl.scatter(adata, basis=adata.uns['rank_velocity_genes']['names']['Beta'][:3])
+        pd.DataFrame(adata.uns['rank_velocity_genes']['names']).head()
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69626017-11c47980-1048-11ea-89f4-df3769df5ad5.png
+       :width: 600px
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69626572-30774000-1049-11ea-871f-e8a30c42f10e.png
+       :width: 600px
 
     Arguments
     ----------

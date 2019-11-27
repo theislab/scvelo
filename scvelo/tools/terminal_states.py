@@ -156,9 +156,23 @@ def write_to_obs(adata, key, vals, cell_subset=None):
         adata.obs[key] = vals_all
 
 
-def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_transitions=False, basis=None,
-                    weight_diffusion=0, scale_diffusion=1, eps=1e-3, copy=False):
+def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_transitions=False, eps=1e-3, copy=False,
+                    **kwargs):
     """Computes terminal states (root and end points).
+
+    The end points and root cells are obtained as stationary states of the velocity-inferred transition matrix
+    and its transposed, respectively, which is given by left eigenvectors corresponding to an eigenvalue of 1, i.e.
+
+    .. math::
+        μ^{\\textrm{end}}=μ^{\\textrm{end}} \\pi, \quad
+        μ^{\\textrm{root}}=μ^{\\textrm{root}} \\pi^{\\small \\textrm{T}}.
+
+    .. code:: python
+
+        scv.tl.terminal_states(adata)
+        scv.pl.scatter(adata, color=[ 'root_cells', 'end_points'])
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69496183-bcfdf300-0ecf-11ea-9aae-685300a0b1ba.png
 
     Arguments
     ---------
@@ -172,23 +186,19 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
         Groups selected to find terminal states on. Must be an element of adata.obs[groupby].
     self_transitions: `bool` (default: `False`)
         Allow transitions from one node to itself.
-    basis: `str` (default: `None`)
-        Basis to use.
-    weight_diffusion: `float` (default: 0)
-        Relative weight to be given to diffusion kernel (Brownian motion)
-    scale_diffusion: `float` (default: 1)
-        Scale of diffusion kernel.
     eps: `float` (default: 1e-3)
         Tolerance for eigenvalue selection.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to data.
+    **kwargs:
+        Passed to scvelo.tl.transition_matrix(), e.g. basis, weight_diffusion, scale_diffusion.
 
     Returns
     -------
     Returns or updates `data` with the attributes
-    root: `.obs`
+    root_cells: `.obs`
         sparse matrix with transition probabilities.
-    end: `.obs`
+    end_points: `.obs`
         sparse matrix with transition probabilities.
     """
     adata = data.copy() if copy else data
@@ -206,15 +216,13 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
         _adata = adata if groups is None else adata[cell_subset]
         connectivities = get_connectivities(_adata, 'distances')
 
-        T = transition_matrix(_adata, vkey=vkey, basis=basis, weight_diffusion=weight_diffusion,
-                              scale_diffusion=scale_diffusion, self_transitions=self_transitions, backward=True)
+        T = transition_matrix(_adata, vkey=vkey, self_transitions=self_transitions, backward=True, **kwargs)
         eigvecs_roots = eigs(T, eps=eps, perc=[2, 98])[1]
         roots = csr_matrix.dot(connectivities, eigvecs_roots).sum(1)
         roots = scale(np.clip(roots, 0, np.percentile(roots, 98)))
         write_to_obs(adata, 'root_cells', roots, cell_subset)
 
-        T = transition_matrix(_adata, vkey=vkey, basis=basis, weight_diffusion=weight_diffusion,
-                              scale_diffusion=scale_diffusion, self_transitions=self_transitions, backward=False)
+        T = transition_matrix(_adata, vkey=vkey, self_transitions=self_transitions, backward=False, **kwargs)
         eigvecs_ends = eigs(T, eps=eps, perc=[2, 98])[1]
         ends = csr_matrix.dot(connectivities, eigvecs_ends).sum(1)
         ends = scale(np.clip(ends, 0, np.percentile(ends, 98)))

@@ -148,7 +148,13 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
                    approx=None, copy=False):
     """Computes velocity graph based on cosine similarities.
 
-    The cosine similarities are computed between velocities and potential cell state transitions.
+    The cosine similarities are computed between velocities and potential cell state transitions, i.e. it measures how
+    well a corresponding change in gene expression :math:`\\delta_{ij} = x_j - x_i` matches the predicted change
+    according to the velocity vector :math:`\\nu_i`,
+
+    .. math::
+        \\pi_{ij} = \\cos\\angle(\\delta_{ij}, \\nu_i)
+        = \\frac{\\delta_{ij}^T \\nu_i}{\\left\\lVert\\delta_{ij}\\right\\rVert \\left\\lVert \\nu_i \\right\\rVert}.
 
     Arguments
     ---------

@@ -12,7 +12,13 @@ warnings.simplefilter('ignore', SparseEfficiencyWarning)
 def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_transitions=True, scale=10, perc=None,
                       use_negative_cosines=False, weight_diffusion=0, scale_diffusion=1, weight_indirect_neighbors=None,
                       n_neighbors=None, vgraph=None):
-    """Computes transition probabilities from velocity graph
+    """Computes cell-to-cell transition probabilities
+
+    .. math::
+        \\tilde \\pi_{ij} = \\frac1{z_i} \\exp( \\pi_{ij} / \\sigma),
+
+    from the velocity graph :math:`\\pi_{ij}`, with row-normalization :math:`z_i` and kernel width
+    :math:`\\sigma` (scale parameter :math:`\\lambda = \\sigma^{-1}`).
 
     Arguments
     ---------
