@@ -143,9 +143,9 @@ def print_version():
     from . import __version__
     _write_log('Running scvelo', __version__, '(python ' + python_version() + ')', 'on {}.'.format(get_date_string()))
     cur, lat = check_version()
-    if cur != lat:
-        warn('There is a newer scvelo version available on pypi:\n',
-             'Your version: \t', cur, '\n',
+    if cur.rsplit('.dev')[0] < lat.rsplit('.dev')[0]:
+        warn('There is a newer scvelo version available on PyPI:\n',
+             'Your version: \t\t', cur, '\n',
              'Latest version: \t', lat)
 
 
@@ -156,8 +156,8 @@ def print_versions():
         try: print('{}=={}'.format(mod_install, __import__(mod_name).__version__), end='  ')
         except (ImportError, AttributeError): pass
     cur, lat = check_version()
-    if cur != lat:
-        warn('There is a newer scvelo version available on pypi:\n',
+    if cur.rsplit('.dev')[0] < lat.rsplit('.dev')[0]:
+        warn('There is a newer scvelo version available on PyPI:\n',
              'Your version: \t\t', cur, '\n',
              'Latest version: \t', lat)
     print()
