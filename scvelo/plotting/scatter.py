@@ -192,7 +192,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 c *= rescale_color[1] / np.max(c)
 
             # check if higher value points should be plotted on top
-            if sort_order and not is_categorical(adata, color):
+            if sort_order and not is_categorical(adata, color) and c != 'grey':
                 order = np.argsort(c)
                 c = c[order]
                 x = x[order]
