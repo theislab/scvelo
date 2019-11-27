@@ -188,6 +188,17 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 c += rescale_color[0] - np.min(c)
                 c *= rescale_color[1] / np.max(c)
 
+            # check if higher value points should be plotted on top
+            if sort_order and not is_categorical(adata, color):
+                order = np.argsort(c)
+                c = c[order]
+                x = x[order]
+                y = y[order]
+
+                # check if 'size' is given as a vector and reorder it.
+                if isinstance(kwargs['s'], np.ndarray):
+                    kwargs['s'] = np.array(kwargs['s'])[order]
+
             if layer is not None and any(l in layer for l in ['spliced', 'Ms', 'Mu', 'velocity']) \
                     and isinstance(color, str) and color in adata.var_names:
                 ub = np.percentile(np.abs(c), 98)
