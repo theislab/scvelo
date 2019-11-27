@@ -5,7 +5,7 @@ from .docs import doc_scatter, doc_params
 from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
     default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
     plot_linear_fit, plot_density, default_legend_loc, make_unique_valid_list, rugplot, groups_to_bool, \
-    _set_colors_for_categorical_obs, _add_legend, get_connectivities
+    _set_colors_for_categorical_obs, _add_legend, get_connectivities, plot_outline
 
 from matplotlib import rcParams, patheffects
 import matplotlib.pyplot as pl
@@ -19,9 +19,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             colorbar=None, palette=None, size=None, alpha=None, linewidth=None, perc=None, sort_order=True, groups=None,
             components=None, projection='2d', legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, xlim=None, ylim=None, show_density=None,
-            show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, n_convolve=None, smooth=None,
-            rescale_color=None, dpi=None, frameon=None, zorder=None, ncols=None, wspace=None, hspace=None, show=True,
-            save=None, ax=None, **kwargs):
+            show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, add_outline=False,
+            outline_width=None, outline_color=None, n_convolve=None, smooth=None, rescale_color=None, dpi=None,
+            frameon=None, zorder=None, ncols=None, wspace=None, hspace=None, show=True, save=None, ax=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -234,7 +234,11 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     ax.set_ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
 
             if not isinstance(c, str) and len(c) != len(x): c = 'grey'
+
             smp = ax.scatter(np.ravel(x), np.ravel(y), c=np.ravel(c), alpha=alpha, marker='.', zorder=zorder, **kwargs)
+
+            if add_outline:
+                plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
 
             if show_density:
                 plot_density(x, y, color=show_density if isinstance(show_density, str) else 'grey', ax=ax)
