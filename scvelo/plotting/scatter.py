@@ -41,7 +41,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     -------
         If `show==False` a `matplotlib.Axis`
     """
-    scatter_kwargs = {"use_raw": use_raw, "sort_order": sort_order, "alpha": alpha, "components": components,
+    scatter_kwargs = {"use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
                       "projection": projection, "groups": groups, "palette": palette, "legend_fontsize": legend_fontsize,
                       "legend_fontweight": legend_fontweight, "show": False, "save": False}
 
@@ -57,8 +57,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     colors = make_unique_list(color, allow_array=True)
     xs, ys = make_unique_list(x, allow_array=True), make_unique_list(y, allow_array=True)
     layers, bases = make_unique_list(layer), make_unique_valid_list(adata, basis)
+    components = make_unique_list(components)
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 \
-        else bases if len(bases) > 1 else xs if len(xs) > 1 else ys if len(ys) > 1 else None
+        else bases if len(bases) > 1 else xs if len(xs) > 1 else ys if len(ys) > 1 \
+        else components if len(components) > 1 else None
     if multikey is not None:
         if ax is not None: logg.warn("Cannot specify `ax` when plotting multiple panels.")
         if isinstance(title, (list, tuple)): title *= int(np.ceil(len(multikey) / len(title)))
@@ -75,13 +77,14 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                                   color=colors[i] if len(colors) > 1 else color,
                                   layer=layers[i] if len(layers) > 1 else layer,
                                   basis=bases[i] if len(bases) > 1 else basis,
+                                  components=components[i] if len(components) > 1 else components,
                                   title=title[i] if isinstance(title, (list, tuple)) else title,
                                   **scatter_kwargs, **ext_kwargs, **kwargs))
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
 
     else:
-        color, layer, basis = colors[0], layers[0], bases[0]
+        color, layer, basis, components = colors[0], layers[0], bases[0], components[0]
 
         # comma-separated y or layers (string)
         ys = [yi.strip() for yi in y.split(',')] if isinstance(y, str) and ',' in y else [y]
