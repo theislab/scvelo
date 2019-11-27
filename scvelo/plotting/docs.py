@@ -82,6 +82,12 @@ show_polyfit: `bool` or `str` or `int` or `None` (default: `None`)
 rug: `str` or `None` (default: `None`)
     If categorical observation annotation (e.g. 'clusters') is given, a rugplot is attached to the x-axis showing the 
     distribution of data membership to each of the categories.
+add_outline: `bool` (default: `False`)
+    Whether to show an outline around scatter plot dots
+outline_width: tuple type `scalar` or `None` (default: `(0.3, 0.05)`)
+    Width of the inner and outer outline
+outline_color: tuple of type `str` or `None` (default: `('black', 'white')`)
+    Inner and outer matplotlib color of the outline
 n_convolve: `int` or `None` (default: `None`)
     If `int` is given, data is smoothed by convolution along the x-axis with kernel size n_convolve.
 smooth: `bool` or `int` (default: `None`)

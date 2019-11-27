@@ -590,6 +590,49 @@ def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3, color='grey', ax=No
         ax.set_xlim(-offset)
 
 
+def plot_outline(x, y, kwargs, outline_width=None, outline_color=None, zorder=None, ax=None):
+    # copied from scanpy
+    # the default outline is a black edge followed by a
+    # thin white edged added around connected clusters.
+    # To add an outline
+    # three overlapping scatter plots are drawn:
+    # First black dots with slightly larger size,
+    # then, white dots a bit smaller, but still larger
+    # than the final dots. Then the final dots are drawn
+    # with some transparency.
+
+    if ax is None: ax = pl.gca()
+
+    outline_width = (0.3, 0.05) if outline_width is None else outline_width
+    outline_color = ('black', 'white') if outline_color is None else outline_color
+
+    bg_width, gap_width = outline_width
+    s = kwargs.pop('s')
+    point = np.sqrt(s)
+
+    gap_size = (point + (point * gap_width) * 2) ** 2
+    bg_size = (np.sqrt(gap_size) + (point * bg_width) * 2) ** 2
+    # the default black and white colors can be changes using
+    # the contour_config parameter
+    bg_color, gap_color = outline_color
+
+    # remove edge from kwargs if present
+    # because edge needs to be set to None
+    kwargs['edgecolor'] = 'none'
+
+    zord = 0 if zorder is None else zorder
+    ax.scatter(
+        x, y, s=bg_size,
+        marker=".", c=bg_color, rasterized=settings._vector_friendly, zorder=zord - 2,
+        **kwargs)
+    ax.scatter(
+        x, y, s=gap_size,
+        marker=".", c=gap_color, rasterized=settings._vector_friendly, zorder=zord - 1,
+        **kwargs)
+    # restore size
+    kwargs['s'] = s
+
+
 def rugplot(x, height=.03, color=None, ax=None, **kwargs):
     if ax is None: ax = pl.gca()
     x = np.asarray(x)
