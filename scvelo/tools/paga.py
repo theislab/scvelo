@@ -1,8 +1,53 @@
 # This is adapted from https://github.com/theislab/paga
-
-from scanpy.tools._paga import PAGA
-import scanpy.logging as sclogg
+from .. import settings
+from .. import logging as logg
+from .utils import strings_to_categoricals
 import numpy as np
+
+try: from scanpy.tools.paga import PAGA
+except ImportError:
+    try: from scanpy.tools._paga import PAGA
+    except ImportError: pass
+
+
+def get_igraph_from_adjacency(adjacency, directed=None):
+    """Get igraph graph from adjacency matrix."""
+    import igraph as ig
+    sources, targets = adjacency.nonzero()
+    weights = adjacency[sources, targets]
+    if isinstance(weights, np.matrix):
+        weights = weights.A1
+    g = ig.Graph(directed=directed)
+    g.add_vertices(adjacency.shape[0])  # this adds adjacency.shap[0] vertices
+    g.add_edges(list(zip(sources, targets)))
+    try:
+        g.es['weight'] = weights
+    except:
+        pass
+    if g.vcount() != adjacency.shape[0]:
+        logg.warn(
+            f'The constructed graph has only {g.vcount()} nodes. '
+            'Your adjacency matrix contained redundant nodes.'
+        )
+    return g
+
+
+def get_sparse_from_igraph(graph, weight_attr=None):
+    from scipy.sparse import csr_matrix
+    edges = graph.get_edgelist()
+    if weight_attr is None:
+        weights = [1] * len(edges)
+    else:
+        weights = graph.es[weight_attr]
+    if not graph.is_directed():
+        edges.extend([(v, u) for u, v in edges])
+        weights.extend(weights)
+    shape = graph.vcount()
+    shape = (shape, shape)
+    if len(edges) > 0:
+        return csr_matrix((weights, zip(*edges)), shape=shape)
+    else:
+        return csr_matrix(shape)
 
 
 class PAGA2(PAGA):
@@ -16,7 +61,7 @@ class PAGA2(PAGA):
         if vkey not in self._adata.uns:
             if 'velocyto_transitions' in self._adata.uns:
                 self._adata.uns[vkey] = self._adata.uns['velocyto_transitions']
-                sclogg.debug("The key 'velocyto_transitions' has been changed to 'velocity_graph'.")
+                logg.warn("The key 'velocyto_transitions' has been changed to 'velocity_graph'.")
             else:
                 raise ValueError(
                     'The passed AnnData needs to have an `uns` annotation '
@@ -32,7 +77,6 @@ class PAGA2(PAGA):
         #     raise ValueError(
         #         'Before running PAGA with `use_rna_velocity=True`, run it with `False`.')
         import igraph
-        from scanpy.utils import get_igraph_from_adjacency, get_sparse_from_igraph
         g = get_igraph_from_adjacency(
             self._adata.uns[vkey].astype('bool'), directed=True)
         vc = igraph.VertexClustering(
@@ -125,9 +169,8 @@ def paga(
         raise ValueError(
             'You need to run `pp.neighbors` first to compute a neighborhood graph.')
     adata = adata.copy() if copy else adata
-    from scanpy.utils import sanitize_anndata
-    sanitize_anndata(adata)
-    start = sclogg.info('running PAGA')
+    strings_to_categoricals(adata)
+    start = logg.info('running PAGA')
     paga = PAGA2(adata, groups, model=model, vkey=vkey)
     # only add if not present
     if 'paga' not in adata.uns:
@@ -141,13 +184,10 @@ def paga(
     adata.uns['paga']['transitions_confidence'] = paga.transitions_confidence
     # adata.uns['paga']['transitions_ttest'] = paga.transitions_ttest
     adata.uns['paga']['groups'] = groups
-    sclogg.info(
-        '    finished',
-        time=start,
-        deep='added\n' + (
-            "    'paga/transitions_confidence', connectivities adjacency (adata.uns)\n"
-            "    'paga/connectivities', connectivities adjacency (adata.uns)\n"
-            "    'paga/connectivities_tree', connectivities subtree (adata.uns)"
-        ),
-    )
+    logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
+    logg.hint('added\n' +
+              "    'paga/transitions_confidence', connectivities adjacency (adata.uns)\n"
+              "    'paga/connectivities', connectivities adjacency (adata.uns)\n"
+              "    'paga/connectivities_tree', connectivities subtree (adata.uns)")
+
     return adata if copy else None
