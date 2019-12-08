@@ -198,7 +198,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
             c = adata.obs[c]
         elif c in adata.var_names:  # color by var in specific layer
             if layer in adata.layers.keys():
-                c = adata[:, c].layers[layer]
+                c = adata.obs_vector(c, layer=layer)
             else:
                 if adata.raw is None and use_raw:
                     raise ValueError("`use_raw` is set to True but AnnData object does not have raw. Please check.")
@@ -339,7 +339,7 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
     categories = np.array(adata.obs[value_to_plot].cat.categories)
     colors = np.array(adata.uns[value_to_plot + '_colors'])
 
-    valid_cats = adata.obs['clusters'].value_counts()[categories] > 0
+    valid_cats = adata.obs[value_to_plot].value_counts()[categories] > 0
     categories = categories[valid_cats]
     colors = colors[valid_cats]
 

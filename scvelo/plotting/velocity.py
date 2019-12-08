@@ -11,7 +11,7 @@ from scipy.sparse import issparse
 
 
 def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits='all', layers='all', color=None,
-             color_map='RdBu_r', colorbar=False, perc=[2,98], alpha=.5, size=None, groupby=None, groups=None,
+             color_map='RdBu_r', colorbar=False, perc=[2,98], alpha=.5, size=None, groupby=None, groups=None, legend_loc='none',
              use_raw=False, fontsize=None, figsize=None, dpi=None, show=True, save=None, ax=None, ncols=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
@@ -42,6 +42,8 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
         Subset of groups, e.g. [‘g1’, ‘g2’, ‘g3’], to which the plot shall be restricted.
     groupby: `str`, `list` or `np.ndarray` (default: `None`)
         Key of observations grouping to consider.
+    legend_loc: str (default: 'none')
+        Location of legend, either 'on data', 'right margin' or valid keywords for matplotlib.legend.
     size: `float` (default: 5)
         Point size.
     alpha: `float` (default: 1)
@@ -106,9 +108,10 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
 
         # spliced/unspliced phase portrait with steady-state estimate
         ax = pl.subplot(gs[v * nplts])
+
         scatter(adata, basis=var, color=color, colorbar=colorbar, frameon=True, title=var, size=size, use_raw=use_raw,
                 alpha=alpha, fontsize=fontsize, xlabel='spliced', ylabel='unspliced', show=False, ax=ax, save=False,
-                legend_loc=None if v < len(var_names)-1 else 'lower right', **kwargs)
+                legend_loc=None if v < len(var_names)-1 else legend_loc, **kwargs)
 
         # velocity and expression plots
         for l, layer in enumerate(layers):
