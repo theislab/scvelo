@@ -3,7 +3,6 @@
 
 from . import settings
 from sys import stdout
-from subprocess import check_output
 from datetime import datetime
 from time import time as get_time
 from platform import python_version
@@ -131,22 +130,28 @@ def print_passed_time():
     return _sec_to_str(get_passed_time())
 
 
-def check_version():
-    # Checks if the currently installed scvelo version is up-to-date with the pypi version of scvelo
-    result = check_output(["pip", "search", "scvelo"])
-    current_version = str(result.split()[-3])[2:-1]
-    latest_version = str(result.split()[-1])[2:-1]
-    return current_version, latest_version
+def get_latest_pypi_version():
+    from subprocess import check_output, CalledProcessError
+    try:  # needs to work offline as well
+        result = check_output(["pip", "search", "scvelo"])
+        return str(result.split()[-1])[2:-1]
+    except CalledProcessError:
+        return '0.0.0'
+
+
+def check_if_latest_version():
+    from . import __version__
+    latest_version = get_latest_pypi_version()
+    if __version__.rsplit('.dev')[0] < latest_version.rsplit('.dev')[0]:
+        warn('There is a newer scvelo version available on PyPI:\n',
+             'Your version: \t\t', __version__, '\n',
+             'Latest version: \t', latest_version)
 
 
 def print_version():
     from . import __version__
     _write_log('Running scvelo', __version__, '(python ' + python_version() + ')', 'on {}.'.format(get_date_string()))
-    cur, lat = check_version()
-    if cur != lat:
-        warn('There is a newer scvelo version available on pypi:\n',
-             'Your version: \t', cur, '\n',
-             'Latest version: \t', lat)
+    check_if_latest_version()
 
 
 def print_versions():
@@ -155,12 +160,7 @@ def print_versions():
         mod_install = mod[1] if isinstance(mod, tuple) else mod
         try: print('{}=={}'.format(mod_install, __import__(mod_name).__version__), end='  ')
         except (ImportError, AttributeError): pass
-    cur, lat = check_version()
-    if cur != lat:
-        warn('There is a newer scvelo version available on pypi:\n',
-             'Your version: \t\t', cur, '\n',
-             'Latest version: \t', lat)
-    print()
+    check_if_latest_version()
 
 
 def get_date_string():

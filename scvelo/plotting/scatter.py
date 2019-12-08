@@ -41,15 +41,14 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     -------
         If `show==False` a `matplotlib.Axis`
     """
-    scatter_kwargs = {"use_raw": use_raw, "sort_order": sort_order, "alpha": alpha,
-                      "projection": projection, "groups": groups, "palette": palette, "legend_fontsize": legend_fontsize,
-                      "legend_fontweight": legend_fontweight, "show": False, "save": False}
-
-    ext_kwargs = {'size': size, 'linewidth': linewidth, 'xlabel': xlabel, 'vkey': vkey, 'color_map': color_map,
-                  'colorbar': colorbar, 'perc': perc, 'frameon': frameon, 'zorder': zorder, 'legend_loc': legend_loc,
-                  'fontsize': fontsize, 'xlim': xlim, 'ylim': ylim, 'n_convolve': n_convolve, 'smooth': smooth,
-                  'show_density': show_density, 'show_assignments': show_assignments, 'rug': rug,
-                  'show_linear_fit': show_linear_fit, 'show_polyfit': show_polyfit}
+    scatter_kwargs = {'vkey': vkey, 'use_raw': use_raw, 'color_map': color_map, 'colorbar': colorbar, 'palette': palette,
+                      'size': size, 'alpha': alpha, 'linewidth': linewidth, 'perc': perc, 'sort_order': sort_order,
+                      'projection': projection, 'legend_loc': legend_loc, 'legend_fontsize': legend_fontsize,
+                      'legend_fontweight': legend_fontweight, 'xlabel': xlabel, 'fontsize': fontsize, 'xlim': xlim,
+                      'ylim': ylim, 'show_density': show_density, 'show_assignments': show_assignments,
+                      'show_linear_fit': show_linear_fit, 'show_polyfit': show_polyfit, 'rug': rug,
+                      'add_outline': add_outline, 'outline_color': outline_color, 'n_convolve': n_convolve, 'smooth': smooth,
+                      'rescale_color': rescale_color, 'frameon': frameon, 'zorder': zorder, 'show': False, 'save': False}
 
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
     # multiple colors, layers and bases (string)
@@ -72,14 +71,14 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi),
                             hspace=hspace, wspace=wspace)):
             if i < len(multikey):
-                ax.append(scatter(adata, ax=pl.subplot(gs), ylabel=ylabel,
+                ax.append(scatter(adata, ax=pl.subplot(gs), ylabel=ylabel, groups=groups,
                                   x=xs[i] if len(xs) > 1 else x, y=ys[i] if len(ys) > 1 else y,
                                   color=colors[i] if len(colors) > 1 else color,
                                   layer=layers[i] if len(layers) > 1 else layer,
                                   basis=bases[i] if len(bases) > 1 else basis,
                                   components=components[i] if len(components) > 1 else components,
                                   title=title[i] if isinstance(title, (list, tuple)) else title,
-                                  **scatter_kwargs, **ext_kwargs, **kwargs))
+                                  **scatter_kwargs, **kwargs))
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
 
@@ -93,10 +92,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         if multikey is not None:
             colors = [ci.strip() for ci in color.split(',')] if isinstance(color, str) and ',' in color else [color]
             for i, mi in enumerate(multikey):
-                ax = scatter(adata, x=x, ax=ax, basis=basis, title=y if title is None else title,
+                ax = scatter(adata, x=x, ax=ax, basis=basis, title=y if title is None else title, groups=groups,
                              y=ys[i] if len(ys) > 1 else y, ylabel='expression' if ylabel is None else ylabel,
                              layer=layers[i] if len(layers) > 1 else layer,
-                             color=colors[i] if len(colors) > 1 else color, **scatter_kwargs, **ext_kwargs)
+                             color=colors[i] if len(colors) > 1 else color, **scatter_kwargs)
             if legend_loc is not False and legend_loc is not 'none':
                 multikey = [key.replace('Mu', 'unspliced').replace('Ms', 'spliced') for key in multikey]
                 ax.legend(multikey, fontsize=legend_fontsize, loc='best' if legend_loc is None else legend_loc)
@@ -105,6 +104,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
         # perform regular plot
         else:
+            # set color, color_map, edgecolor, basis, linewidth, frameon, use_raw, dim
             if color is None:  color = default_color(adata)
             if 'cmap' not in kwargs:
                 kwargs['cmap'] = default_color_map(adata, color) if color_map is None else color_map
@@ -112,7 +112,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 kwargs['s'] = default_size(adata) if size is None else size
             if 'edgecolor' not in kwargs:
                 kwargs['edgecolor'] = 'none'
-
             is_embedding = ((x is None) | (y is None)) and basis not in adata.var_names
             if basis is None and is_embedding: basis = default_basis(adata)
             if linewidth is None: linewidth = 1
@@ -120,79 +119,104 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if isinstance(groups, str): groups = [groups]
             if use_raw is None and basis not in adata.var_names:
                 use_raw = layer is None and adata.raw is not None
-
             dim = 3 if '3' in projection else 2
             if dim == 3: from mpl_toolkits.mplot3d import Axes3D
+
             if ax is None:
                 ax = pl.figure(None, figsize, dpi=dpi).gca(projection='3d')\
                      if dim == 3 else pl.figure(None, figsize, dpi=dpi).gca()
 
+            # set legend
             if is_categorical(adata, color) and is_embedding:
                 _set_colors_for_categorical_obs(adata, color, palette)
-
                 legend_loc = default_legend_loc(adata, color, legend_loc)
                 legend_fontweight = 'bold' if legend_fontweight is None else legend_fontweight
                 _add_legend(adata, ax, color, legend_loc, adata.obsm['X_' + basis][:, :dim], legend_fontweight,
                             legend_fontsize, [patheffects.withStroke(linewidth=True, foreground='w')], groups, False)
 
+            # phase portrait: get x and y from .layers (e.g. spliced vs. unspliced) when basis is in var_names
             if basis in adata.var_names:
-                xkey, ykey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
-                x, y = adata[:, basis].layers[xkey], adata[:, basis].layers[ykey]
-                if xlabel is None: xlabel = 'spliced'
-                if ylabel is None: ylabel = 'unspliced'
                 if title is None: title = basis
+                if x is None:
+                    x = 'spliced' if 'spliced' in adata.layers.keys() and (use_raw or 'Ms' not in adata.layers.keys())\
+                        else 'Ms' if 'Ms' in adata.layers.keys() else 'X'
+                if y is None:
+                    y = 'unspliced' if 'unspliced' in adata.layers.keys() and (use_raw or 'Mu' not in adata.layers.keys())\
+                        else 'Mu' if 'Mu' in adata.layers.keys() else 'X'
+                if xlabel is None: xlabel = x
+                if ylabel is None: ylabel = y
 
+                if not (x in adata.layers.keys() or x is 'X') and not (y in adata.layers.keys() or y is 'X'):
+                    raise ValueError('Could not find x or y in layers.')
+                x = adata[:, basis].layers[x] if x in adata.layers.keys() \
+                    else adata.raw.obs_vector(basis) if use_raw else adata.obs_vector(basis)
+                y = adata[:, basis].layers[y] if y in adata.layers.keys() \
+                    else adata.raw.obs_vector(basis) if use_raw else adata.obs_vector(basis)
+
+            # embedding: set x and y to embedding coordinates
             elif is_embedding:
                 X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
                 x, y = X_emb[:, 0], X_emb[:, 1]
                 z = X_emb[:, 2] if dim == 3 and X_emb.shape[1] > 2 else None
 
             elif isinstance(x, str) and isinstance(y, str):
-                if xlabel is None: xlabel = x
-                if ylabel is None: ylabel = 'expression' if y in adata.var_names and x not in adata.var_names else y
-                if title is None: title = y if y in adata.var_names and x not in adata.var_names else color
-                if layer is None: layer = 'spliced' if use_raw or 'Ms' not in adata.layers.keys() else 'Ms'
+                if layer is None:
+                    layer = 'spliced' if 'spliced' in adata.layers.keys() and (use_raw or 'Ms' not in adata.layers.keys())\
+                        else 'Ms' if 'Ms' in adata.layers.keys() else 'X'
 
-                if x in adata.var_names and y in adata.var_names:
-                    x = adata[:, x].layers[layer] if layer in adata.layers.keys() else adata[:, x].X
-                    y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
-                elif x in adata.var.keys() and y in adata.var.keys():
-                    x, y = adata.var[x], adata.var[y]
-                    if colors[0] is None: color = 'grey'
-                elif y in adata.var_names:
-                    if x in adata.obs.keys(): x = adata.obs[x]
-                    elif x in adata.layers.keys(): x = adata[:, y].layers[x]
-                    y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata[:, y].X
-                elif x in adata.obs.keys() and y in adata.obs.keys():
-                    x, y = adata.obs[x], adata.obs[y]
+                # gene trend: get x and y as gene (var_names) along obs/layers (e.g. pseudotime)
+                if y in adata.var_names and (x in adata.obs.keys() or x in adata.layers.keys()):
+                    if xlabel is None: xlabel = x
+                    if ylabel is None: ylabel = layer
+                    if title is None: title = y
+                    x = adata.obs[x] if x in adata.obs.keys() else adata[:, y].layers[x]
+                    y = adata[:, y].layers[layer] if layer in adata.layers.keys() \
+                        else adata.raw.obs_vector(y) if use_raw else adata.obs_vector(y)
+                # get x and y from var_names, var or obs
                 else:
-                    raise ValueError('x or y key is invalid! pass valid observation annotation or a gene name')
+                    if xlabel is None: xlabel = x
+                    if ylabel is None: ylabel = y
+                    if title is None: title = color
+
+                    if x in adata.var_names and y in adata.var_names:
+                        x = adata[:, x].layers[layer] if layer in adata.layers.keys() else adata.raw.obs_vector(x) if use_raw else adata.obs_vector(x)
+                        y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata.raw.obs_vector(y) if use_raw else adata.obs_vector(y)
+                    elif x in adata.var.keys() and y in adata.var.keys():
+                        x, y = adata.var[x], adata.var[y]
+                        if colors[0] is None: color = 'grey'  # since default_color (clusters) does not match with .var
+                    elif x in adata.obs.keys() and y in adata.obs.keys():
+                        x, y = adata.obs[x], adata.obs[y]
+                    else:
+                        raise ValueError('x or y is invalid! pass valid observation annotation or a gene name')
 
             x, y = make_dense(x).flatten(), make_dense(y).flatten()
 
+            # convolve along x axes (e.g. pseudotime)
             if n_convolve is not None:
                 y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
 
+            # if color is set to a cell index, plot that cell on top
             if isinstance(color, int):
                 color = np.array(np.arange(len(x)) == color, dtype=bool)
                 if zorder is None: zorder = 10
                 ax.scatter(np.ravel(x[color]), np.ravel(y[color]), color='darkblue', s=kwargs['s'] * 2, zorder=zorder)
                 zorder -= 1
 
+            # set color
             if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
-                c = interpret_colorkey(adata, basis, color, perc, use_raw)
+                c = interpret_colorkey(adata, basis, color, perc, use_raw)  # phase portrait: color=basis, layer=color
             else:
-                c = interpret_colorkey(adata, color, layer, perc, use_raw)
+                c = interpret_colorkey(adata, color, layer, perc, use_raw)  # embedding, gene trend etc.
 
+            # smooth color values across neighbors and rescale
             if smooth and len(c) == adata.n_obs:
                 c = get_connectivities(adata, n_neighbors=(None if isinstance(smooth, bool) else smooth)).dot(c)
-
             if rescale_color is not None:
                 c += rescale_color[0] - np.min(c)
                 c *= rescale_color[1] / np.max(c)
 
             # check if higher value points should be plotted on top
-            if sort_order and not is_categorical(adata, color) and not isinstance(c, str):
+            if sort_order and not isinstance(c, str) and not is_categorical(adata, color):
                 order = np.argsort(c)
                 c = c[order]
                 x = x[order]
@@ -202,7 +226,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if isinstance(kwargs['s'], np.ndarray):
                     kwargs['s'] = np.array(kwargs['s'])[order]
 
-            if layer is not None and any(l in layer for l in ['spliced', 'Ms', 'Mu', 'velocity']) \
+            # adjust coloring to ignore extreme outliers since these layers are not logarithmized
+            if layer is not None and any(l in layer for l in ['spliced', 'unspliced', 'Ms', 'Mu', 'velocity']) \
                     and isinstance(color, str) and color in adata.var_names:
                 ub = np.percentile(np.abs(c), 98)
                 if "vmax" not in kwargs:
@@ -210,6 +235,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if "vmin" not in kwargs and 'velocity' in layer:
                     kwargs.update({"vmin": -ub})
 
+            # introduce vmid by setting vmin and vmax accordingly
             if "vmid" in kwargs:
                 if not isinstance(c, str) and not isinstance(c[0], str):
                     vmid, lb, ub = kwargs["vmid"], np.min(c), np.max(c)
@@ -217,20 +243,20 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     kwargs.update({"vmin": vmid - crange, "vmax": vmid + crange})
                 kwargs.pop("vmid")
 
+            # set color to grey for NAN values and for cells that are not in groups
             if groups is not None or np.any(pd.isnull(c)):
                 zorder = 0 if zorder is None else zorder
-                scatter_kwargs_all = scatter_kwargs
-                scatter_kwargs_all['groups'] = None
-                ax = scatter(adata, x=x, y=y, basis=basis, layer=layer,
-                             color='lightgrey', ax=ax, zorder=zorder, **scatter_kwargs_all)
+                ax = scatter(adata, x=x, y=y, basis=basis, layer=layer, color='lightgrey', ax=ax, groups=None, **scatter_kwargs)
                 idx = groups_to_bool(adata, groups, color)
                 x, y = x[idx], y[idx]
-                if not isinstance(c, str) and len(c) == adata.n_obs: c = c[idx]
+                if not isinstance(c, str) and len(c) == adata.n_obs:
+                    c = c[idx]
                 zorder += 1
 
+            # set color to grey for NAN values and for cells that are not in groups
             if basis in adata.var_names:
                 if use_raw is None: use_raw = 'Ms' not in adata.layers.keys()
-                lines, fits = plot_linear_fit(adata, basis, vkey, xkey, linewidth, ax=ax)
+                lines, fits = plot_linear_fit(adata, basis, vkey, 'spliced' if use_raw else 'Ms', linewidth, ax=ax)
                 from .simulation import show_full_dynamics
                 if 'true_alpha' in adata.var.keys() and (vkey is not None and 'true_dynamics' in vkey):
                     line, fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth, ax=ax)
@@ -247,9 +273,15 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     ax.set_xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
                     ax.set_ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
 
+            x, y, c = np.ravel(x), np.ravel(y), np.ravel(c)
             if not isinstance(c, str) and len(c) != len(x): c = 'grey'
 
-            smp = ax.scatter(np.ravel(x), np.ravel(y), c=np.ravel(c), alpha=alpha, marker='.', zorder=zorder, **kwargs)
+            if len(x) != len(y):
+                raise ValueError('x or y do not share the same dimension.')
+            elif not isinstance(c, str) and len(x) != len(c):
+                raise ValueError('color and x do not share the same dimensions.')
+
+            smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
 
             if add_outline:
                 plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
