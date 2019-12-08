@@ -185,7 +185,8 @@ def get_colors(adata, c):
             palette = adjust_palette(palette, length=len(adata.obs[c].cat.categories))
             adata.uns[c + '_colors'] = palette[:len(adata.obs[c].cat.categories)].by_key()['color']
         cluster_ix = adata.obs[c].cat.codes.values
-        return np.array([adata.uns[c + '_colors'][cluster_ix[i]] for i in range(adata.n_obs)])
+        return np.array([adata.uns[c + '_colors'][cluster_ix[i]] if cluster_ix[i] != -1 else '#808080'
+                         for i in range(adata.n_obs)])
 
 
 def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
