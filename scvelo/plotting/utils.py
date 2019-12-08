@@ -185,7 +185,8 @@ def get_colors(adata, c):
             palette = adjust_palette(palette, length=len(adata.obs[c].cat.categories))
             adata.uns[c + '_colors'] = palette[:len(adata.obs[c].cat.categories)].by_key()['color']
         cluster_ix = adata.obs[c].cat.codes.values
-        return np.array([adata.uns[c + '_colors'][cluster_ix[i]] for i in range(adata.n_obs)])
+        return np.array([adata.uns[c + '_colors'][cluster_ix[i]]
+                         if cluster_ix[i] != -1 else 'lightgrey' for i in range(adata.n_obs)])
 
 
 def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
@@ -335,8 +336,12 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
     Adds a legend to the given ax with categorial data.
     """
     # add legend
-    categories = list(adata.obs[value_to_plot].cat.categories)
-    colors = adata.uns[value_to_plot + '_colors']
+    categories = np.array(adata.obs[value_to_plot].cat.categories)
+    colors = np.array(adata.uns[value_to_plot + '_colors'])
+
+    valid_cats = adata.obs['clusters'].value_counts()[categories] > 0
+    categories = categories[valid_cats]
+    colors = colors[valid_cats]
 
     if multi_panel is True:
         # Shrink current axis by 10% to fit legend and match
@@ -354,11 +359,9 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
         all_pos = np.zeros((len(categories), 2))
         for ilabel, label in enumerate(categories):
             _scatter = scatter_array[adata.obs[value_to_plot] == label, :]
-            x_pos, y_pos = np.median(_scatter, axis=0)
-
+            x_pos, y_pos = np.nanmedian(_scatter, axis=0)
             ax.text(x_pos, y_pos, label, weight=legend_fontweight, verticalalignment='center',
                     horizontalalignment='center', fontsize=legend_fontsize, path_effects=legend_fontoutline)
-
             all_pos[ilabel] = [x_pos, y_pos]
 
     else:
