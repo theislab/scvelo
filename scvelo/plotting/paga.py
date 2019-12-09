@@ -12,13 +12,13 @@ from scanpy.plotting._tools.paga import paga as scanpy_paga
 
 
 @doc_params(scatter=doc_scatter)
-def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None, threshold=None, layout=None, layout_kwds={}, init_pos=None, root=0,
-         labels=None, single_component=False, solid_edges='connectivities', dashed_edges=None, transitions=None,
-         node_size_scale=1, node_size_power=0.5, edge_width_scale=1, min_edge_width=None,
-         max_edge_width=None, arrowsize=30, random_state=0, pos=None, normalize_to_color=False, cmap=None, cax=None,
-         cb_kwds={}, add_pos=True, export_to_gexf=False, plot=True,
-         use_raw=None, size=None, groups=None, components=None,
-         figsize=None, dpi=None, show=True, save=None, ax=None, ncols=None, scatter_flag=None, scatter_kwargs={}, **kwargs):
+def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None, threshold=0.2, layout=None,
+         layout_kwds={}, init_pos=None, root=0, labels=None, single_component=False, solid_edges='connectivities',
+         dashed_edges='connectivities', transitions='transitions_confidence', node_size_scale=1, node_size_power=0.5,
+         edge_width_scale=.4, min_edge_width=None, max_edge_width=1, arrowsize=15, random_state=0, pos=None,
+         normalize_to_color=False, cmap=None, cax=None, cb_kwds={}, add_pos=True, export_to_gexf=False, plot=True,
+         use_raw=None, size=None, groups=None, components=None, figsize=None, dpi=None, show=True, save=None, ax=None,
+         ncols=None, scatter_flag=None, **kwargs):
     """\
     PAGA plot on the embedding.
     Arguments
@@ -48,20 +48,9 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
                    'solid_edges': solid_edges, 'dashed_edges': dashed_edges, 'transitions': transitions,
                    'node_size_scale': node_size_scale, 'node_size_power': node_size_power,
                    'edge_width_scale': edge_width_scale, 'min_edge_width': min_edge_width,
-                   'max_edge_width': max_edge_width,
-                   'arrowsize': arrowsize,
-                   'random_state': random_state,
-                   'pos': pos,
-                   'normalize_to_color': normalize_to_color,
-                   'cmap': cmap,
-                   'cax': cax,
-                   'cb_kwds': cb_kwds,
-                   'add_pos': add_pos,
-                   'export_to_gexf': export_to_gexf,
-                   'colors': colors,
-                   'plot': plot}
-
-
+                   'max_edge_width': max_edge_width, 'arrowsize': arrowsize, 'random_state': random_state,
+                   'pos': pos, 'normalize_to_color': normalize_to_color, 'cmap': cmap, 'cax': cax, 'cb_kwds': cb_kwds,
+                   'add_pos': add_pos, 'export_to_gexf': export_to_gexf, 'colors': colors, 'plot': plot}
 
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 \
         else vkeys if len(vkeys) > 1 else bases if len(bases) > 1 else None
@@ -83,7 +72,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
                                layer=layers[i] if len(layers) > 1 else layer,
                                vkey=vkeys[i] if len(vkeys) > 1 else vkey,
                                title=title[i] if isinstance(title, (list, tuple)) else title,
-                               scatter_kwargs=scatter_kwargs, **paga_kwargs))
+                               **kwargs, **paga_kwargs))
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
 
@@ -116,27 +105,14 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
             else:
                 raise ValueError(
                     'You need to run `scv.tl.paga` first.')
-
-        # Defaults adjustments to PAGA
-        if 'node_size_scale' not in kwargs.keys():
-            kwargs['node_size_scale'] = 3
-        if 'edge_width_scale' not in kwargs.keys():
-            kwargs['edge_width_scale'] = 0.4
-        if 'dashed_edges' not in kwargs.keys():
-            kwargs['dashed_edges'] = 'connectivities'
-        if 'threshold' not in kwargs.keys():
-            kwargs['threshold'] = 0.1
-        if 'max_edge_width' not in kwargs.keys():
-            kwargs['max_edge_width'] = 1
-        if 'transitions' not in kwargs.keys():
-            kwargs['transitions'] = 'transitions_confidence'
+        paga_kwargs['pos'] = pos
 
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
         if scatter_flag and basis is not None:
+            if 'alpha' not in kwargs: kwargs['alpha'] = .5
             ax = scatter(adata, basis=basis, x=x, y=y, vkey=vkey, layer=layer, color=color, size=size, title=title,
-                         ax=ax, save=None,
-                         zorder=0, show=False, **scatter_kwargs)
-        scanpy_paga(adata, pos=pos, ax=ax, show=False, text_kwds={'alpha': 0}, **kwargs)
+                         ax=ax, save=None, zorder=0, show=False, **kwargs)
+        scanpy_paga(adata, ax=ax, show=False, text_kwds={'alpha': 0}, **paga_kwargs)
 
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax

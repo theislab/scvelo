@@ -55,8 +55,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     if 'c' in kwargs: color = kwargs.pop('c')
     colors = make_unique_list(color, allow_array=True)
     xs, ys = make_unique_list(x, allow_array=True), make_unique_list(y, allow_array=True)
-    layers, bases = make_unique_list(layer), make_unique_valid_list(adata, basis)
-    components = make_unique_list(components)
+    layers, components = make_unique_list(layer), make_unique_list(components)
+    bases = make_unique_valid_list(adata, basis)
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 \
         else bases if len(bases) > 1 else xs if len(xs) > 1 else ys if len(ys) > 1 \
         else components if len(components) > 1 else None
@@ -273,8 +273,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     ax.set_xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
                     ax.set_ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
 
-            x, y, c = np.ravel(x), np.ravel(y), np.ravel(c)
-            if not isinstance(c, str) and len(c) != len(x): c = 'grey'
+            x, y = np.ravel(x), np.ravel(y)
+            if not isinstance(c, str):
+                c = 'grey' if len(c) != len(x) else np.ravel(c)
 
             if len(x) != len(y):
                 raise ValueError('x or y do not share the same dimension.')
