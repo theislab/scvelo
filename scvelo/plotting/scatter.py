@@ -186,6 +186,12 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                         if colors[0] is None: color = 'grey'  # since default_color (clusters) does not match with .var
                     elif x in adata.obs.keys() and y in adata.obs.keys():
                         x, y = adata.obs[x], adata.obs[y]
+                    elif np.any([var_key in x or var_key in y for var_key in adata.var.keys()]):
+                        x = adata.var.astype(np.float32).eval(x)
+                        y = adata.var.astype(np.float32).eval(y)
+                    elif np.any([obs_key in x or obs_key in y for obs_key in adata.obs.keys()]):
+                        x = adata.obs.astype(np.float32).eval(x)
+                        y = adata.obs.astype(np.float32).eval(y)
                     else:
                         raise ValueError('x or y is invalid! pass valid observation annotation or a gene name')
 

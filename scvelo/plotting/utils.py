@@ -206,6 +206,10 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
             c = c.A.flatten() if issparse(c) else c
         elif c in adata.var.keys():  # color by observation key
             c = adata.var[c]
+        elif np.any([var_key in c for var_key in adata.var.keys()]):
+            c = adata.var.astype(np.float32).eval(c)
+        elif np.any([obs_key in c for obs_key in adata.obs.keys()]):
+            c = adata.obs.astype(np.float32).eval(c)
         elif not is_color_like(c):
             raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
         if not isinstance(c, str) and perc is not None: c = clip(c, perc=perc)
