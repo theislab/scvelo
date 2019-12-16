@@ -207,9 +207,11 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
         elif c in adata.var.keys():  # color by observation key
             c = adata.var[c]
         elif np.any([var_key in c for var_key in adata.var.keys()]):
-            c = adata.var.astype(np.float32).eval(c)
+            var = adata.var[[key for key in adata.var.keys() if not isinstance(adata.var[key][0], str)]]
+            c = var.astype(np.float32).eval(c)
         elif np.any([obs_key in c for obs_key in adata.obs.keys()]):
-            c = adata.obs.astype(np.float32).eval(c)
+            obs = adata.obs[[key for key in adata.obs.keys() if not isinstance(adata.obs[key][0], str)]]
+            c = obs.astype(np.float32).eval(c)
         elif not is_color_like(c):
             raise ValueError('color key is invalid! pass valid observation annotation or a gene name')
         if not isinstance(c, str) and perc is not None: c = clip(c, perc=perc)
@@ -442,7 +444,9 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
                     settings._low_resolution_warning = False
             else:
                 dpi = rcParams['savefig.dpi']
-        if not os.path.exists(settings.figdir): os.makedirs(settings.figdir)
+        if len(settings.figdir) > 0:
+            if settings.figdir[-1] != '/': settings.figdir += '/'
+            if not os.path.exists(settings.figdir): os.makedirs(settings.figdir)
         if ext is None: ext = settings.file_format_figs
         filename = settings.figdir + f'{settings.plot_prefix}{writekey}{settings.plot_suffix}.{ext}'
         logg.msg('saving figure to file', filename, v=1)
