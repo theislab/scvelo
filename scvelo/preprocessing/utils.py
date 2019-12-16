@@ -428,7 +428,7 @@ def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=Non
     adata = data.copy() if copy else data
 
     if 'spliced' not in adata.layers.keys() or 'unspliced' not in adata.layers.keys():
-        raise ValueError('Could not find spliced / unspliced counts.')
+        logg.warn('Could not find spliced / unspliced counts.')
 
     filter_genes(adata, min_counts=min_counts, min_counts_u=min_counts_u, min_cells=min_cells, min_cells_u=min_cells_u,
                  min_shared_counts=min_shared_counts, min_shared_cells=min_shared_cells,)
@@ -436,7 +436,7 @@ def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=Non
     if n_top_genes is not None:
         filter_genes_dispersion(adata, n_top_genes=n_top_genes, flavor=flavor)
 
-    log_advised = np.allclose(adata.X[:10].sum(), adata.layers['spliced'][:10].sum())
+    log_advised = np.allclose(adata.X[:10].sum(), adata.layers['spliced'][:10].sum()) if 'spliced' in adata.layers.keys() else True
     if log and log_advised: log1p(adata)
 
     if log and log_advised: logg.info('Logarithmized X.')
