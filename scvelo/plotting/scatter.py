@@ -117,7 +117,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if basis is None and is_embedding: basis = default_basis(adata)
             if linewidth is None: linewidth = 1
             if frameon is None: frameon = True if not is_embedding else settings._frameon
-            if isinstance(groups, str): groups = [groups]
+            if isinstance(groups, str):
+                if title is None: title = groups
+                groups = [groups]
             if use_raw is None and basis not in adata.var_names:
                 use_raw = layer is None and adata.raw is not None
             dim = 3 if '3' in projection else 2
