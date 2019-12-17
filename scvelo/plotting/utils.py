@@ -30,6 +30,10 @@ def is_categorical(adata, c):
     return str_not_var and (c in adata.obs.keys() and cat(adata.obs[c]))
 
 
+def is_list_of_list(lst):
+    return lst is not None and any(isinstance(l, list) for l in lst)
+
+
 def n_categories(adata, c):
     from pandas.api.types import is_categorical as cat
     return len(adata.obs[c].cat.categories) if (c in adata.obs.keys() and cat(adata.obs[c])) else 0
@@ -345,7 +349,7 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
     obs_vals = adata.obs[value_to_plot]
     valid_cats = obs_vals.value_counts()[obs_vals.cat.categories] > 0
     categories = np.array(obs_vals.cat.categories)[valid_cats]
-    colors = adata.uns[value_to_plot + '_colors'][valid_cats]
+    colors = np.array(adata.uns[value_to_plot + '_colors'])[valid_cats]
 
     if groups is not None:
         # only label groups with the respective color

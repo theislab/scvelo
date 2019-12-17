@@ -5,7 +5,7 @@ from .docs import doc_scatter, doc_params
 from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
     default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
     plot_linear_fit, plot_density, default_legend_loc, make_unique_valid_list, rugplot, groups_to_bool, \
-    _set_colors_for_categorical_obs, _add_legend, get_connectivities, plot_outline
+    _set_colors_for_categorical_obs, _add_legend, get_connectivities, plot_outline, is_list_of_list
 
 from matplotlib import rcParams, patheffects
 import matplotlib.pyplot as pl
@@ -51,15 +51,20 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                       'rescale_color': rescale_color, 'frameon': frameon, 'zorder': zorder, 'show': False, 'save': False}
 
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
+
     # multiple colors, layers and bases (string)
     if 'c' in kwargs: color = kwargs.pop('c')
     colors = make_unique_list(color, allow_array=True)
     xs, ys = make_unique_list(x, allow_array=True), make_unique_list(y, allow_array=True)
     layers, components = make_unique_list(layer), make_unique_list(components)
-    bases, groups = make_unique_valid_list(adata, basis), make_unique_list(groups)
+    bases = make_unique_valid_list(adata, basis)
+    if groups is 'all' and is_categorical(adata, color):
+        groups = [[c] for c in adata.obs[color].cat.categories]
+
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 \
         else bases if len(bases) > 1 else xs if len(xs) > 1 else ys if len(ys) > 1 \
-        else components if len(components) > 1 else groups if any(isinstance(g, list) for g in groups) else None
+        else components if len(components) > 1 else groups if is_list_of_list(groups) else None
+
     if multikey is not None:
         if ax is not None: logg.warn("Cannot specify `ax` when plotting multiple panels.")
         if isinstance(title, (list, tuple)): title *= int(np.ceil(len(multikey) / len(title)))
@@ -78,13 +83,13 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                                   basis=bases[i] if len(bases) > 1 else basis,
                                   components=components[i] if len(components) > 1 else components,
                                   title=title[i] if isinstance(title, (list, tuple)) else title,
-                                  groups=groups[i] if any(isinstance(g, list) for g in groups) else groups,
+                                  groups=groups[i] if is_list_of_list(groups) else groups,
                                   **scatter_kwargs, **kwargs))
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
 
     else:
-        color, layer, basis, components, groups = colors[0], layers[0], bases[0], components[0], groups[0]
+        color, layer, basis, components = colors[0], layers[0], bases[0], components[0]
 
         # comma-separated y or layers (string)
         ys = [yi.strip() for yi in y.split(',')] if isinstance(y, str) and ',' in y else [y]
@@ -117,9 +122,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if basis is None and is_embedding: basis = default_basis(adata)
             if linewidth is None: linewidth = 1
             if frameon is None: frameon = True if not is_embedding else settings._frameon
-            if isinstance(groups, str):
-                if title is None: title = groups
-                groups = [groups]
+            if isinstance(groups, str): groups = [groups]
             if use_raw is None and basis not in adata.var_names:
                 use_raw = layer is None and adata.raw is not None
             dim = 3 if '3' in projection else 2
@@ -262,6 +265,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 x, y = x[idx], y[idx]
                 if not isinstance(c, str) and len(c) == adata.n_obs:
                     c = c[idx]
+                if title is None and groups is not None and len(groups) == 1 and isinstance(groups[0], str):
+                    title = groups[0]
                 zorder += 1
 
             # set color to grey for NAN values and for cells that are not in groups

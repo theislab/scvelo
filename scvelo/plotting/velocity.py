@@ -108,10 +108,9 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
 
         # spliced/unspliced phase portrait with steady-state estimate
         ax = pl.subplot(gs[v * nplts])
-
         scatter(adata, basis=var, color=color, colorbar=colorbar, frameon=True, title=var, size=size, use_raw=use_raw,
                 alpha=alpha, fontsize=fontsize, xlabel='spliced', ylabel='unspliced', show=False, ax=ax, save=False,
-                legend_loc=None if v < len(var_names)-1 else legend_loc, **kwargs)
+                legend_loc='none' if v < len(var_names)-1 else legend_loc, **kwargs)
 
         # velocity and expression plots
         for l, layer in enumerate(layers):
