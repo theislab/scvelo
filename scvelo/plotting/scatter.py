@@ -58,14 +58,17 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     xs, ys = make_unique_list(x, allow_array=True), make_unique_list(y, allow_array=True)
     layers, components = make_unique_list(layer), make_unique_list(components)
     bases = make_unique_valid_list(adata, basis)
-    if groups is 'all' and is_categorical(adata, color):
-        groups = [[c] for c in adata.obs[color].cat.categories]
+    if groups is 'all':
+        if color is None:  color = default_color(adata)
+        if is_categorical(adata, color): groups = [[c] for c in adata.obs[color].cat.categories]
 
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 \
         else bases if len(bases) > 1 else xs if len(xs) > 1 else ys if len(ys) > 1 \
         else components if len(components) > 1 else groups if is_list_of_list(groups) else None
 
     if multikey is not None:
+        if len(multikey) > 20:
+            raise ValueError('Please restrict the passed list to no more than 20 items.')
         if ax is not None: logg.warn("Cannot specify `ax` when plotting multiple panels.")
         if isinstance(title, (list, tuple)): title *= int(np.ceil(len(multikey) / len(title)))
         ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
@@ -77,7 +80,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                             hspace=hspace, wspace=wspace)):
             if i < len(multikey):
                 ax.append(scatter(adata, ax=pl.subplot(gs), ylabel=ylabel,
-                                  x=xs[i] if len(xs) > 1 else x, y=ys[i] if len(ys) > 1 else y,
+                                  x=xs[i] if len(xs) > 1 else x,
+                                  y=ys[i] if len(ys) > 1 else y,
                                   color=colors[i] if len(colors) > 1 else color,
                                   layer=layers[i] if len(layers) > 1 else layer,
                                   basis=bases[i] if len(bases) > 1 else basis,
@@ -89,7 +93,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         if not show: return ax
 
     else:
-        color, layer, basis, components = colors[0], layers[0], bases[0], components[0]
+        color, layer, basis, components = colors[0], layers[0], bases[0], components[0]  # to allow input ['clusters']
 
         # comma-separated y or layers (string)
         ys = [yi.strip() for yi in y.split(',')] if isinstance(y, str) and ',' in y else [y]
