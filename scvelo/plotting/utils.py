@@ -337,38 +337,34 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
 
 # adapted from scanpy
 def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
-                legend_fontoutline, groups, multi_panel):
+                legend_fontoutline, groups):
     """
     Adds a legend to the given ax with categorial data.
     """
     # add legend
-    categories = np.array(adata.obs[value_to_plot].cat.categories)
-    colors = np.array(adata.uns[value_to_plot + '_colors'])
-
-    valid_cats = adata.obs[value_to_plot].value_counts()[categories] > 0
-    categories = categories[valid_cats]
-    colors = colors[valid_cats]
-
-    if multi_panel is True:
-        # Shrink current axis by 10% to fit legend and match
-        # size of plots that are not categorical
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.91, box.height])
+    obs_vals = adata.obs[value_to_plot]
+    valid_cats = obs_vals.value_counts()[obs_vals.cat.categories] > 0
+    categories = np.array(obs_vals.cat.categories)[valid_cats]
+    colors = adata.uns[value_to_plot + '_colors'][valid_cats]
 
     if groups is not None:
         # only label groups with the respective color
-        colors = [colors[categories.index(x)] for x in groups]
+        groups = [g for g in groups if g in categories]
+        colors = [colors[list(categories).index(x)] for x in groups]
         categories = groups
 
     if legend_loc == 'on data':
         # identify centroids to put labels
-        all_pos = np.zeros((len(categories), 2))
+        texts = []
         for ilabel, label in enumerate(categories):
-            _scatter = scatter_array[adata.obs[value_to_plot] == label, :]
-            x_pos, y_pos = np.nanmedian(_scatter, axis=0)
-            ax.text(x_pos, y_pos, label, weight=legend_fontweight, verticalalignment='center',
-                    horizontalalignment='center', fontsize=legend_fontsize, path_effects=legend_fontoutline)
-            all_pos[ilabel] = [x_pos, y_pos]
+            x_pos, y_pos = np.nanmedian(scatter_array[obs_vals == label, :], axis=0)
+            text = ax.text(x_pos, y_pos, label, weight=legend_fontweight, verticalalignment='center',
+                           horizontalalignment='center', fontsize=legend_fontsize, path_effects=legend_fontoutline)
+            texts.append(text)
+
+        # todo: adjust text positions to minimize overlaps, e.g. using https://github.com/Phlya/adjustText
+        # from adjustText import adjust_text
+        # adjust_text(texts, ax=ax)
 
     else:
         for idx, label in enumerate(categories):

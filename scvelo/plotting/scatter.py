@@ -56,10 +56,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     colors = make_unique_list(color, allow_array=True)
     xs, ys = make_unique_list(x, allow_array=True), make_unique_list(y, allow_array=True)
     layers, components = make_unique_list(layer), make_unique_list(components)
-    bases = make_unique_valid_list(adata, basis)
+    bases, groups = make_unique_valid_list(adata, basis), make_unique_list(groups)
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 \
         else bases if len(bases) > 1 else xs if len(xs) > 1 else ys if len(ys) > 1 \
-        else components if len(components) > 1 else None
+        else components if len(components) > 1 else groups if any(isinstance(g, list) for g in groups) else None
     if multikey is not None:
         if ax is not None: logg.warn("Cannot specify `ax` when plotting multiple panels.")
         if isinstance(title, (list, tuple)): title *= int(np.ceil(len(multikey) / len(title)))
@@ -71,19 +71,20 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi),
                             hspace=hspace, wspace=wspace)):
             if i < len(multikey):
-                ax.append(scatter(adata, ax=pl.subplot(gs), ylabel=ylabel, groups=groups,
+                ax.append(scatter(adata, ax=pl.subplot(gs), ylabel=ylabel,
                                   x=xs[i] if len(xs) > 1 else x, y=ys[i] if len(ys) > 1 else y,
                                   color=colors[i] if len(colors) > 1 else color,
                                   layer=layers[i] if len(layers) > 1 else layer,
                                   basis=bases[i] if len(bases) > 1 else basis,
                                   components=components[i] if len(components) > 1 else components,
                                   title=title[i] if isinstance(title, (list, tuple)) else title,
+                                  groups=groups[i] if any(isinstance(g, list) for g in groups) else groups,
                                   **scatter_kwargs, **kwargs))
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
 
     else:
-        color, layer, basis, components = colors[0], layers[0], bases[0], components[0]
+        color, layer, basis, components, groups = colors[0], layers[0], bases[0], components[0], groups[0]
 
         # comma-separated y or layers (string)
         ys = [yi.strip() for yi in y.split(',')] if isinstance(y, str) and ',' in y else [y]
@@ -132,7 +133,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 legend_loc = default_legend_loc(adata, color, legend_loc)
                 legend_fontweight = 'bold' if legend_fontweight is None else legend_fontweight
                 _add_legend(adata, ax, color, legend_loc, adata.obsm['X_' + basis][:, :dim], legend_fontweight,
-                            legend_fontsize, [patheffects.withStroke(linewidth=True, foreground='w')], groups, False)
+                            legend_fontsize, [patheffects.withStroke(linewidth=True, foreground='w')], groups)
 
             # phase portrait: get x and y from .layers (e.g. spliced vs. unspliced) when basis is in var_names
             if basis in adata.var_names:
