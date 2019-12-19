@@ -262,8 +262,10 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
                     )
                     valid = False
                     break
+        if len(adata.uns[color_key]) < len(adata.obs[value_to_plot].cat.categories):
+            valid = False
     elif palette is not None:
-        # Check if given pallette is valid
+        # Check if given palette is valid
         categories = adata.obs[value_to_plot].cat.categories
         # check is palette given is a valid matplotlib colormap
         if isinstance(palette, str) and palette in pl.colormaps():
@@ -311,7 +313,7 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
         if valid:
             adata.uns[value_to_plot + '_colors'] = colors_list
     else:
-        # No valid pallette exists or was given
+        # No valid palette exists or was given
         valid = False
 
      # Set to defaults:
@@ -347,7 +349,7 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
     """
     # add legend
     obs_vals = adata.obs[value_to_plot]
-    valid_cats = obs_vals.value_counts()[obs_vals.cat.categories] > 0
+    valid_cats = np.where(obs_vals.value_counts()[obs_vals.cat.categories] > 0)[0]
     categories = np.array(obs_vals.cat.categories)[valid_cats]
     colors = np.array(adata.uns[value_to_plot + '_colors'])[valid_cats]
 

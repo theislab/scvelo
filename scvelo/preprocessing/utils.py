@@ -184,12 +184,12 @@ def filter_genes(data, min_counts=None, min_cells=None, max_counts=None, max_cel
         gene_subset = np.ones(adata.n_vars, dtype=bool)
 
         if _min_counts is not None or _max_counts is not None:
-            gene_subset, _ = filter(X, min_counts=_min_counts, max_counts=_max_counts)
-            adata._inplace_subset_var(gene_subset)
+            gene_subset &= filter(X, min_counts=_min_counts, max_counts=_max_counts)[0]
 
         if _min_cells is not None or _max_cells is not None:
-            gene_subset, _ = filter(X, min_cells=_min_cells, max_cells=_max_cells)
-            adata._inplace_subset_var(gene_subset)
+            gene_subset &= filter(X, min_cells=_min_cells, max_cells=_max_cells)[0]
+
+        adata._inplace_subset_var(gene_subset)
 
         s = np.sum(~gene_subset)
         if s > 0:

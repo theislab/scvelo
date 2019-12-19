@@ -182,11 +182,11 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
 
     strings_to_categoricals(adata)
 
-    if mode is 'dynamical' and 'fit_alpha' not in adata.var.keys():
+    if mode is None or (mode == 'dynamical' and 'fit_alpha' not in adata.var.keys()):
         mode = 'stochastic'
         logg.warn('Falling back to stochastic model. For the dynamical model run tl.recover_dynamics first.')
 
-    if mode is 'dynamical':
+    if mode == 'dynamical':
         from .dynamical_model_utils import mRNA, vectorize, get_reads, get_vars, get_divergence
 
         gene_subset = ~np.isnan(adata.var['fit_alpha'].values)
@@ -215,7 +215,7 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
         adata.layers[vkey + '_u'] = np.ones(adata.shape) * np.nan
         adata.layers[vkey + '_u'][:, gene_subset] = wt
 
-    elif mode is None or mode in ['steady_state', 'deterministic', 'stochastic']:
+    elif mode in ['steady_state', 'deterministic', 'stochastic']:
         categories = adata.obs[groupby].cat.categories \
             if groupby is not None and groups is None and groups_for_fit is None else [None]
 
@@ -228,7 +228,7 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
                             min_r2=min_r2, r2_adjusted=r2_adjusted, use_raw=use_raw)
             velo.compute_deterministic(fit_offset=fit_offset, perc=perc)
 
-            if mode is 'stochastic':
+            if mode == 'stochastic':
                 if filter_genes and len(set(velo._velocity_genes)) > 1:
                     adata._inplace_subset_var(velo._velocity_genes)
                     residual = velo._residual[:, velo._velocity_genes]

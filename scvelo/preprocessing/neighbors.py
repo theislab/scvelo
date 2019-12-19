@@ -63,7 +63,6 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
         neighbors.
     """
     adata = adata.copy() if copy else adata
-    if adata.isview: adata._init_as_actual(adata.copy())
 
     if use_rep is None:
         use_rep = 'X' if adata.n_vars < 50 or n_pcs is 0 else 'X_pca'
