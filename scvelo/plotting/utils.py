@@ -19,6 +19,9 @@ from cycler import Cycler, cycler
 import collections.abc as cabc
 
 
+"""helper functions"""
+
+
 def make_dense(X):
     XA = X.A if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) or isinstance(X, np.matrix) else X
     return np.array(XA)
@@ -27,24 +30,28 @@ def make_dense(X):
 def is_categorical(adata, c):
     from pandas.api.types import is_categorical as cat
     strings_to_categoricals(adata)
-    str_not_var = isinstance(c, str) and c not in adata.var_names
-    return str_not_var and (c in adata.obs.keys() and cat(adata.obs[c]))
+    return isinstance(c, str) and c in adata.obs.keys() and cat(adata.obs[c])
+
+
+def is_list(key):
+    return isinstance(key, (list, tuple, np.record))
+
+
+def is_list_of_str(key):
+    return isinstance(key, (list, tuple, np.record)) and all(isinstance(item, str) for item in key)
 
 
 def is_list_of_list(lst):
     return lst is not None and any(isinstance(l, list) for l in lst)
 
 
-def n_categories(adata, c):
-    from pandas.api.types import is_categorical as cat
-    return len(adata.obs[c].cat.categories) if (c in adata.obs.keys() and cat(adata.obs[c])) else 0
+def to_list(key, max_len=20):
+    if isinstance(key, Index): key = key.tolist()
+    return key if is_list(key) and len(key) < max_len else [key]
 
 
-def default_basis(adata):
-    keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
-    if not keys:
-        raise ValueError('No basis specified.')
-    return keys[-1] if len(keys) > 0 else None
+def to_val(key):
+    return key[0] if isinstance(key, (list, tuple)) and len(key) == 1 else key
 
 
 def check_basis(adata, basis):
@@ -58,23 +65,6 @@ def get_basis(adata, basis):
         basis = basis[2:]
     check_basis(adata, basis)
     return basis
-
-
-def is_list(key):
-    return isinstance(key, (list, tuple, np.record))
-
-
-def is_list_of_str(key):
-    return isinstance(key, (list, tuple, np.record)) and all(isinstance(item, str) for item in key)
-
-
-def to_list(key, max_len=20):
-    if isinstance(key, Index): key = key.tolist()
-    return key if is_list(key) and len(key) < max_len else [key]
-
-
-def to_val(key):
-    return key[0] if isinstance(key, (list, tuple)) and len(key) == 1 else key
 
 
 def to_valid_bases_list(adata, keys):
@@ -94,28 +84,74 @@ def to_valid_bases_list(adata, keys):
     return keys
 
 
-def make_unique_list(key, allow_array=False):
-    if isinstance(key, Index): key = key.tolist()
-    is_list = isinstance(key, (list, tuple, np.record)) if allow_array else isinstance(key, (list, tuple, np.ndarray, np.record))
-    is_list_of_str = is_list and all(isinstance(item, str) for item in key)
-    return key if is_list_of_str else key if is_list and len(key) < 20 else [key]
+def get_components(components=None, basis=None, projection=None):
+    if components is None: components = '1,2,3' if projection == '3d' else '1,2'
+    if isinstance(components, str): components = components.split(',')
+    components = np.array(components).astype(int) - 1
+    if 'diffmap' in basis or 'vmap' in basis: components += 1
+    return components
 
 
-def make_unique_valid_list(adata, keys):
-    keys = make_unique_list(keys)
-    if all(isinstance(item, str) for item in keys):
-        for i, key in enumerate(keys):
-            if key.startswith('X_'):
-                keys[i] = key = key[2:]
-            check_basis(adata, key)
-        valid_keys = np.hstack([adata.obs.keys(), adata.var.keys(), adata.varm.keys(), adata.obsm.keys(),
-                                [key[2:] for key in adata.obsm.keys()], list(adata.layers.keys())])
-        keys_ = keys
-        keys = [key for key in keys if key in valid_keys or key in adata.var_names]
-        keys_ = [key for key in keys_ if key not in keys]
-        if len(keys_) > 0:
-            logg.warn(', '.join(keys_), 'not found.')
-    return keys
+def groups_to_bool(adata, groups, groupby=None):
+    groups = [groups] if isinstance(groups, str) else groups
+    if isinstance(groups, (list, tuple, np.ndarray, np.record)):
+        groupby = groupby if groupby in adata.obs.keys() else 'clusters' if 'clusters' in adata.obs.keys() \
+            else 'louvain' if 'louvain' in adata.obs.keys() else None
+        if groupby is not None:
+            groups = np.array([key in groups for key in adata.obs[groupby]])
+        else:
+            raise ValueError('groupby attribute not valid.')
+    return groups
+
+
+"""get default parameters"""
+
+
+def default_basis(adata):
+    keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
+    if not keys:
+        raise ValueError('No basis specified.')
+    return keys[-1] if len(keys) > 0 else None
+
+
+def default_size(adata):
+    adjusted, classic = 1.2e5 / adata.n_obs, 20
+    return np.mean([adjusted, classic]) if settings._rcParams_style == 'scvelo' else adjusted
+
+
+def default_color(adata):
+    return 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else 'grey'
+
+
+def default_color_map(adata, c):
+    cmap = None
+    if isinstance(c, str) and c in adata.obs.keys() and not is_categorical(adata, c): c = adata.obs[c]
+    elif isinstance(c, int): cmap = 'viridis_r'
+    if len(np.array(c).flatten()) == adata.n_obs:
+        if np.min(c) in [-1, 0, False] and np.max(c) in [1, True]: cmap = 'viridis_r'
+    return cmap
+
+
+def default_legend_loc(adata, color, legend_loc):
+    n_categories = len(adata.obs[color].cat.categories) if is_categorical(adata, color) else 0
+    if legend_loc is False:
+        legend_loc = 'none'
+    elif legend_loc is None:
+        legend_loc = 'upper right' if n_categories <= 4 else 'on data'
+    return legend_loc
+
+
+def default_arrow(size):
+    if isinstance(size, (list, tuple)) and len(size) == 3:
+        head_l, head_w, ax_l = size
+    elif type(size) == int or type(size) == float:
+        head_l, head_w, ax_l = 12 * size, 10 * size, 8 * size
+    else:
+        head_l, head_w, ax_l = 12, 10, 8
+    return head_l, head_w, ax_l
+
+
+"""set axes parameters (ticks, frame, labels, title, """
 
 
 def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, frameon=None):
@@ -182,30 +218,48 @@ def set_frame(ax, frameon):
     return ax
 
 
-def default_size(adata):
-    adjusted, classic = 1.2e5 / adata.n_obs, 20
-    return np.mean([adjusted, classic]) if settings._rcParams_style == 'scvelo' else adjusted
+def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
+                legend_fontoutline, groups):
+    """
+    Adds a legend to the given ax with categorial data.
+    """
+    # add legend
+    obs_vals = adata.obs[value_to_plot]
+    valid_cats = np.where(obs_vals.value_counts()[obs_vals.cat.categories] > 0)[0]
+    categories = np.array(obs_vals.cat.categories)[valid_cats]
+    colors = np.array(adata.uns[value_to_plot + '_colors'])[valid_cats]
+
+    if groups is not None:
+        # only label groups with the respective color
+        groups = [g for g in groups if g in categories]
+        colors = [colors[list(categories).index(x)] for x in groups]
+        categories = groups
+
+    if legend_loc == 'on data':
+        legend_fontweight = 'bold' if legend_fontweight is None else legend_fontweight
+        # identify centroids to put labels
+        texts = []
+        for ilabel, label in enumerate(categories):
+            x_pos, y_pos = np.nanmedian(scatter_array[obs_vals == label, :], axis=0)
+            text = ax.text(x_pos, y_pos, label, weight=legend_fontweight, verticalalignment='center',
+                           horizontalalignment='center', fontsize=legend_fontsize, path_effects=legend_fontoutline)
+            texts.append(text)
+
+        # todo: adjust text positions to minimize overlaps, e.g. using https://github.com/Phlya/adjustText
+        # from adjustText import adjust_text
+        # adjust_text(texts, ax=ax)
+
+    else:
+        for idx, label in enumerate(categories):
+            ax.scatter([], [], c=colors[idx], label=label)
+        ncol = (1 if len(categories) <= 14 else 2 if len(categories) <= 30 else 3)
+        if legend_loc == 'right margin':
+            ax.legend(frameon=False, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=legend_fontsize, ncol=ncol)
+        elif legend_loc != 'none':
+            ax.legend(frameon=False, loc=legend_loc, fontsize=legend_fontsize, ncol=ncol)
 
 
-def default_color(adata):
-    return 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else 'grey'
-
-
-def default_color_map(adata, c):
-    cmap = None
-    if isinstance(c, str) and c in adata.obs.keys() and not is_categorical(adata, c): c = adata.obs[c]
-    elif isinstance(c, int): cmap = 'viridis_r'
-    if len(np.array(c).flatten()) == adata.n_obs:
-        if np.min(c) in [-1, 0, False] and np.max(c) in [1, True]: cmap = 'viridis_r'
-    return cmap
-
-
-def default_legend_loc(adata, color, legend_loc):
-    if legend_loc is False:
-        legend_loc = 'none'
-    elif legend_loc is None:
-        legend_loc = 'upper right' if n_categories(adata, color) <= 4 else 'on data'
-    return legend_loc
+"""get color values"""
 
 
 def clip(c, perc):
@@ -259,6 +313,18 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
         c = np.array(c).flatten()
         if perc is not None: c = clip(c, perc=perc)
     return c
+
+
+# colors in addition to matplotlib's colors
+additional_colors = {
+    'gold2': '#eec900', 'firebrick3': '#cd2626', 'khaki2': '#eee685', 'slategray3': '#9fb6cd', 'palegreen3': '#7ccd7c',
+    'tomato2': '#ee5c42', 'grey80': '#cccccc', 'grey90': '#e5e5e5', 'wheat4': '#8b7e66', 'grey65': '#a6a6a6',
+    'grey10': '#1a1a1a', 'grey20': '#333333', 'grey50': '#7f7f7f', 'grey30': '#4d4d4d', 'grey40': '#666666',
+    'antiquewhite2': '#eedfcc', 'grey77': '#c4c4c4', 'snow4': '#8b8989', 'chartreuse3': '#66cd00', 'yellow4': '#8b8b00',
+    'darkolivegreen2': '#bcee68', 'olivedrab3': '#9acd32', 'azure3': '#c1cdcd', 'violetred': '#d02090',
+    'mediumpurple3': '#8968cd', 'purple4': '#551a8b', 'seagreen4': '#2e8b57', 'lightblue3': '#9ac0cd',
+    'orchid3': '#b452cd', 'indianred 3': '#cd5555', 'grey60': '#999999', 'mediumorchid1': '#e066ff', 'plum3': '#cd96cd',
+    'palevioletred3': '#cd6889'}
 
 
 # adapted from scanpy
@@ -352,12 +418,12 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
         # No valid palette exists or was given
         valid = False
 
-     # Set to defaults:
+    # Set to defaults:
     if not valid:
         categories = adata.obs[value_to_plot].cat.categories
         length = len(categories)
 
-         # check if default matplotlib palette has enough colors
+        # check if default matplotlib palette has enough colors
         if len(rcParams['axes.prop_cycle'].by_key()['color']) >= length:
             cc = rcParams['axes.prop_cycle']()
             palette = [next(cc)['color'] for _ in range(length)]
@@ -377,56 +443,6 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
         adata.uns[value_to_plot + '_colors'] = palette[:length]
 
 
-# adapted from scanpy
-def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
-                legend_fontoutline, groups):
-    """
-    Adds a legend to the given ax with categorial data.
-    """
-    # add legend
-    obs_vals = adata.obs[value_to_plot]
-    valid_cats = np.where(obs_vals.value_counts()[obs_vals.cat.categories] > 0)[0]
-    categories = np.array(obs_vals.cat.categories)[valid_cats]
-    colors = np.array(adata.uns[value_to_plot + '_colors'])[valid_cats]
-
-    if groups is not None:
-        # only label groups with the respective color
-        groups = [g for g in groups if g in categories]
-        colors = [colors[list(categories).index(x)] for x in groups]
-        categories = groups
-
-    if legend_loc == 'on data':
-        legend_fontweight = 'bold' if legend_fontweight is None else legend_fontweight
-        # identify centroids to put labels
-        texts = []
-        for ilabel, label in enumerate(categories):
-            x_pos, y_pos = np.nanmedian(scatter_array[obs_vals == label, :], axis=0)
-            text = ax.text(x_pos, y_pos, label, weight=legend_fontweight, verticalalignment='center',
-                           horizontalalignment='center', fontsize=legend_fontsize, path_effects=legend_fontoutline)
-            texts.append(text)
-
-        # todo: adjust text positions to minimize overlaps, e.g. using https://github.com/Phlya/adjustText
-        # from adjustText import adjust_text
-        # adjust_text(texts, ax=ax)
-
-    else:
-        for idx, label in enumerate(categories):
-            ax.scatter([], [], c=colors[idx], label=label)
-        ncol = (1 if len(categories) <= 14 else 2 if len(categories) <= 30 else 3)
-        if legend_loc == 'right margin':
-            ax.legend(frameon=False, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=legend_fontsize, ncol=ncol)
-        elif legend_loc != 'none':
-            ax.legend(frameon=False, loc=legend_loc, fontsize=legend_fontsize, ncol=ncol)
-
-
-def get_components(components=None, basis=None, projection=None):
-    if components is None: components = '1,2,3' if projection == '3d' else '1,2'
-    if isinstance(components, str): components = components.split(',')
-    components = np.array(components).astype(int) - 1
-    if 'diffmap' in basis or 'vmap' in basis: components += 1
-    return components
-
-
 def set_colorbar(smp, ax, orientation='vertical', labelsize=None):
     cb = pl.colorbar(smp, orientation=orientation, cax=inset_axes(ax, width="2%", height="30%", loc=4, borderpad=0))
     cb.set_alpha(1)
@@ -434,65 +450,6 @@ def set_colorbar(smp, ax, orientation='vertical', labelsize=None):
     cb.draw_all()
     cb.locator = MaxNLocator(nbins=3, integer=True)
     cb.update_ticks()
-
-
-def default_arrow(size):
-    if isinstance(size, (list, tuple)) and len(size) == 3:
-        head_l, head_w, ax_l = size
-    elif type(size) == int or type(size) == float:
-        head_l, head_w, ax_l = 12 * size, 10 * size, 8 * size
-    else:
-        head_l, head_w, ax_l = 12, 10, 8
-    return head_l, head_w, ax_l
-
-
-def velocity_embedding_changed(adata, basis, vkey):
-    if 'X_' + basis not in adata.obsm.keys(): changed = False
-    else:
-        changed = vkey + '_' + basis not in adata.obsm_keys()
-        if vkey + '_settings' in adata.uns.keys():
-            sett = adata.uns[vkey + '_settings']
-            changed |= 'embeddings' not in sett or basis not in sett['embeddings']
-    return changed
-
-
-def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
-    if isinstance(save, str):
-        # check whether `save` contains a figure extension
-        if ext is None:
-            for try_ext in ['.svg', '.pdf', '.png']:
-                if save.endswith(try_ext):
-                    ext = try_ext[1:]
-                    save = save.replace(try_ext, '')
-                    break
-        # append it
-        writekey = (writekey + '_' if writekey is not None and len(writekey) > 0 else '') + save
-        save = True
-    save = settings.autosave if save is None else save
-    show = settings.autoshow if show is None else show
-
-    if save:
-        if dpi is None:
-            # we need this as in notebooks, the internal figures are also influenced by 'savefig.dpi' this...
-            if not isinstance(rcParams['savefig.dpi'], str) and rcParams['savefig.dpi'] < 150:
-                if settings._low_resolution_warning:
-                    logg.warn(
-                        'You are using a low resolution (dpi<150) for saving figures.\n'
-                        'Consider running `set_figure_params(dpi_save=...)`, which will '
-                        'adjust `matplotlib.rcParams[\'savefig.dpi\']`')
-                    settings._low_resolution_warning = False
-            else:
-                dpi = rcParams['savefig.dpi']
-        if len(settings.figdir) > 0:
-            if settings.figdir[-1] != '/': settings.figdir += '/'
-            if not os.path.exists(settings.figdir): os.makedirs(settings.figdir)
-        if ext is None: ext = settings.file_format_figs
-        filename = settings.figdir + f'{settings.plot_prefix}{writekey}{settings.plot_suffix}.{ext}'
-        logg.msg('saving figure to file', filename, v=1)
-        pl.savefig(filename, dpi=dpi, bbox_inches='tight')
-
-    if show: pl.show()
-    if save: pl.close()  # clear figure
 
 
 def default_palette(palette=None):
@@ -557,37 +514,49 @@ def rgb_custom_colormap(colors=['royalblue', 'white', 'forestgreen'], alpha=None
     return ListedColormap(vals)
 
 
-def get_temporal_connectivities(adata, tkey, n_convolve=30):
-    from ..tools.velocity_graph import vals_to_csr
-    from ..tools.utils import normalize, get_indices
-
-    #c_idx = get_indices(get_connectivities(adata, recurse_neighbors=True))[0]
-    #c_idx = np.hstack([c_idx, np.linspace(0, len(c_idx) - 1, len(c_idx), dtype=int)[:, None]])
-
-    rows, cols, vals, n_obs, n_convolve = [], [], [], len(tkey), int(n_convolve / 2)
-    for i in range(n_obs):
-        i_max = None if i + n_convolve >= n_obs else i + n_convolve
-        i_min = np.max([0, i - n_convolve])
-        t_idx = np.argsort(tkey)[i_min: i_max]  # temporal neighbourhood
-        #t_idx = np.intersect1d(t_idx, c_idx[i])
-        rows.extend(np.ones(len(t_idx), dtype=int) * np.argsort(tkey)[i])
-        cols.extend(t_idx)
-        vals.extend(np.ones(len(t_idx), dtype=int))
-
-    c_conn = get_connectivities(adata, recurse_neighbors=True)
-    t_conn = vals_to_csr(vals, rows, cols, shape=(n_obs, n_obs))
-    return normalize(t_conn)  # normalize(t_conn.multiply(c_conn))
+"""save figure"""
 
 
-def groups_to_bool(adata, groups, groupby=None):
-    groups = [groups] if isinstance(groups, str) else groups
-    if isinstance(groups, (list, tuple, np.ndarray, np.record)):
-        groupby = groupby if groupby in adata.obs.keys() else 'clusters' if 'clusters' in adata.obs.keys() \
-            else 'louvain' if 'louvain' in adata.obs.keys() else None
-        if groupby is not None:
-            groups = np.array([key in groups for key in adata.obs[groupby]])
-        else: raise ValueError('groupby attribute not valid.')
-    return groups
+def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
+    if isinstance(save, str):
+        # check whether `save` contains a figure extension
+        if ext is None:
+            for try_ext in ['.svg', '.pdf', '.png']:
+                if save.endswith(try_ext):
+                    ext = try_ext[1:]
+                    save = save.replace(try_ext, '')
+                    break
+        # append it
+        writekey = (writekey + '_' if writekey is not None and len(writekey) > 0 else '') + save
+        save = True
+    save = settings.autosave if save is None else save
+    show = settings.autoshow if show is None else show
+
+    if save:
+        if dpi is None:
+            # we need this as in notebooks, the internal figures are also influenced by 'savefig.dpi' this...
+            if not isinstance(rcParams['savefig.dpi'], str) and rcParams['savefig.dpi'] < 150:
+                if settings._low_resolution_warning:
+                    logg.warn(
+                        'You are using a low resolution (dpi<150) for saving figures.\n'
+                        'Consider running `set_figure_params(dpi_save=...)`, which will '
+                        'adjust `matplotlib.rcParams[\'savefig.dpi\']`')
+                    settings._low_resolution_warning = False
+            else:
+                dpi = rcParams['savefig.dpi']
+        if len(settings.figdir) > 0:
+            if settings.figdir[-1] != '/': settings.figdir += '/'
+            if not os.path.exists(settings.figdir): os.makedirs(settings.figdir)
+        if ext is None: ext = settings.file_format_figs
+        filename = settings.figdir + f'{settings.plot_prefix}{writekey}{settings.plot_suffix}.{ext}'
+        logg.msg('saving figure to file', filename, v=1)
+        pl.savefig(filename, dpi=dpi, bbox_inches='tight')
+
+    if show: pl.show()
+    if save: pl.close()  # clear figure
+
+
+"""additional plots (linear fit, density, outline, rug)"""
 
 
 def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1, ax=None):
@@ -647,35 +616,21 @@ def plot_outline(x, y, kwargs, outline_width=None, outline_color=None, zorder=No
     # Adapted from scanpy. The default outline is a black edge followed by a thin white edged added around connected
     # clusters. Three overlapping scatter plots are drawn: First black dots with slightly larger size, then, white dots
     # a bit smaller, but still larger than the final dots. Then the final dots are drawn with some transparency.
-
     if ax is None: ax = pl.gca()
 
-    outline_width = (0.3, 0.05) if outline_width is None else outline_width
-    outline_color = ('black', 'white') if outline_color is None else outline_color
+    bg_width, gp_width = (0.3, 0.05) if outline_width is None else outline_width
+    bg_color, gp_color = ('black', 'white') if outline_color is None else outline_color
 
-    bg_width, gap_width = outline_width
     s = kwargs.pop('s')
     point = np.sqrt(s)
 
-    gap_size = (point + (point * gap_width) * 2) ** 2
-    bg_size = (np.sqrt(gap_size) + (point * bg_width) * 2) ** 2
-    # the default black and white colors can be changes using
-    # the contour_config parameter
-    bg_color, gap_color = outline_color
+    gp_size = (2 * (point * gp_width) + point) ** 2
+    bg_size = (2 * (point * bg_width) + np.sqrt(gp_size)) ** 2
 
-    # remove edge from kwargs if present
-    # because edge needs to be set to None
     kwargs['edgecolor'] = 'none'
-
     zord = 0 if zorder is None else zorder
-    ax.scatter(
-        x, y, s=bg_size,
-        marker=".", c=bg_color, rasterized=settings._vector_friendly, zorder=zord - 2,
-        **kwargs)
-    ax.scatter(
-        x, y, s=gap_size,
-        marker=".", c=gap_color, rasterized=settings._vector_friendly, zorder=zord - 1,
-        **kwargs)
+    ax.scatter(x, y, s=bg_size, marker=".", c=bg_color, rasterized=settings._vector_friendly, zorder=zord - 2, **kwargs)
+    ax.scatter(x, y, s=gp_size, marker=".", c=gp_color, rasterized=settings._vector_friendly, zorder=zord - 1, **kwargs)
     # restore size
     kwargs['s'] = s
 
@@ -689,6 +644,22 @@ def rugplot(x, height=.03, color=None, ax=None, **kwargs):
     ax.add_collection(LineCollection(line_segs, transform=transform, color=color, **kwargs))
     ax.autoscale_view(scalex=True, scaley=False)
     return ax
+
+
+"""for velocity_embedding"""
+
+
+def velocity_embedding_changed(adata, basis, vkey):
+    if 'X_' + basis not in adata.obsm.keys(): changed = False
+    else:
+        changed = vkey + '_' + basis not in adata.obsm_keys()
+        if vkey + '_settings' in adata.uns.keys():
+            sett = adata.uns[vkey + '_settings']
+            changed |= 'embeddings' not in sett or basis not in sett['embeddings']
+    return changed
+
+
+"""additional plots (linear fit, density, outline, rug)"""
 
 
 def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=None, bw_method=None, xlabel=None,
@@ -892,16 +863,54 @@ def fraction_timeseries(adata, xkey='clusters', tkey='dpt_pseudotime', bins=30, 
         pl.show()
 
 
-# colors in addition to matplotlib's colors
-additional_colors = {
-    'gold2': '#eec900', 'firebrick3': '#cd2626', 'khaki2': '#eee685', 'slategray3': '#9fb6cd', 'palegreen3': '#7ccd7c',
-    'tomato2': '#ee5c42', 'grey80': '#cccccc', 'grey90': '#e5e5e5', 'wheat4': '#8b7e66', 'grey65': '#a6a6a6',
-    'grey10': '#1a1a1a', 'grey20': '#333333', 'grey50': '#7f7f7f', 'grey30': '#4d4d4d', 'grey40': '#666666',
-    'antiquewhite2': '#eedfcc', 'grey77': '#c4c4c4', 'snow4': '#8b8989', 'chartreuse3': '#66cd00', 'yellow4': '#8b8b00',
-    'darkolivegreen2': '#bcee68', 'olivedrab3': '#9acd32', 'azure3': '#c1cdcd', 'violetred': '#d02090',
-    'mediumpurple3': '#8968cd', 'purple4': '#551a8b', 'seagreen4': '#2e8b57', 'lightblue3': '#9ac0cd',
-    'orchid3': '#b452cd', 'indianred 3': '#cd5555', 'grey60': '#999999', 'mediumorchid1': '#e066ff', 'plum3': '#cd96cd',
-    'palevioletred3': '#cd6889'}
+"""deprecated"""
+
+
+def make_unique_list(key, allow_array=False):
+    if isinstance(key, Index): key = key.tolist()
+    is_list = isinstance(key, (list, tuple, np.record)) if allow_array else isinstance(key, (list, tuple, np.ndarray, np.record))
+    is_list_of_str = is_list and all(isinstance(item, str) for item in key)
+    return key if is_list_of_str else key if is_list and len(key) < 20 else [key]
+
+
+def make_unique_valid_list(adata, keys):
+    keys = make_unique_list(keys)
+    if all(isinstance(item, str) for item in keys):
+        for i, key in enumerate(keys):
+            if key.startswith('X_'):
+                keys[i] = key = key[2:]
+            check_basis(adata, key)
+        valid_keys = np.hstack([adata.obs.keys(), adata.var.keys(), adata.varm.keys(), adata.obsm.keys(),
+                                [key[2:] for key in adata.obsm.keys()], list(adata.layers.keys())])
+        keys_ = keys
+        keys = [key for key in keys if key in valid_keys or key in adata.var_names]
+        keys_ = [key for key in keys_ if key not in keys]
+        if len(keys_) > 0:
+            logg.warn(', '.join(keys_), 'not found.')
+    return keys
+
+
+def get_temporal_connectivities(adata, tkey, n_convolve=30):
+    from ..tools.velocity_graph import vals_to_csr
+    from ..tools.utils import normalize, get_indices
+
+    #c_idx = get_indices(get_connectivities(adata, recurse_neighbors=True))[0]
+    #c_idx = np.hstack([c_idx, np.linspace(0, len(c_idx) - 1, len(c_idx), dtype=int)[:, None]])
+
+    rows, cols, vals, n_obs, n_convolve = [], [], [], len(tkey), int(n_convolve / 2)
+    for i in range(n_obs):
+        i_max = None if i + n_convolve >= n_obs else i + n_convolve
+        i_min = np.max([0, i - n_convolve])
+        t_idx = np.argsort(tkey)[i_min: i_max]  # temporal neighbourhood
+        #t_idx = np.intersect1d(t_idx, c_idx[i])
+        rows.extend(np.ones(len(t_idx), dtype=int) * np.argsort(tkey)[i])
+        cols.extend(t_idx)
+        vals.extend(np.ones(len(t_idx), dtype=int))
+
+    c_conn = get_connectivities(adata, recurse_neighbors=True)
+    t_conn = vals_to_csr(vals, rows, cols, shape=(n_obs, n_obs))
+    return normalize(t_conn)  # normalize(t_conn.multiply(c_conn))
+
 
 
 # def phase(adata, var=None, x=None, y=None, color='louvain', fits='all', xlabel='spliced', ylabel='unspliced',

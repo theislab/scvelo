@@ -10,6 +10,7 @@ from .utils import update_axes, set_label, set_title, set_colorbar, _set_colors_
 from .utils import plot_linear_fit, plot_density, plot_outline, rugplot, savefig_or_show
 
 
+from inspect import signature
 from matplotlib import rcParams, patheffects
 import matplotlib.pyplot as pl
 from scipy.stats import pearsonr
@@ -46,14 +47,12 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     """
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
 
+    fkeys = ['adata', 'show', 'save', 'groups', 'figsize', 'dpi', 'ncols', 'wspace', 'hspace', 'ax', 'kwargs']
     mkeys = ['color', 'layer', 'basis', 'components', 'x', 'y', 'xlabel', 'ylabel', 'title', 'color_map']
-    keys = ['vkey', 'use_raw', 'colorbar', 'palette', 'size', 'alpha', 'linewidth', 'perc', 'sort_order', 'projection',
-            'legend_loc', 'legend_fontsize', 'legend_fontweight', 'fontsize', 'xlim', 'ylim', 'show_density',
-            'show_assignments', 'show_linear_fit', 'show_polyfit', 'rug', 'add_outline', 'outline_color', 'n_convolve',
-            'smooth', 'rescale_color', 'frameon', 'zorder']
+
     scatter_kwargs = {'show': False, 'save': False}
-    for key in keys:
-        if key not in mkeys: scatter_kwargs[key] = eval(key)
+    for key in signature(scatter).parameters:
+        if key not in mkeys + fkeys: scatter_kwargs[key] = eval(key)
 
     # frame for multiple colors, layers and bases, xs, ys, components and groups (lists or tuples)
     if 'c' in kwargs: color = kwargs.pop('c')
