@@ -2,10 +2,13 @@ from .. import settings
 from .. import logging as logg
 from .. import AnnData
 from .docs import doc_scatter, doc_params
-from .utils import make_dense, is_categorical, update_axes, set_label, set_title, interpret_colorkey, set_colorbar, \
-    default_basis, default_color, default_size, default_color_map, get_components, savefig_or_show, make_unique_list, \
-    plot_linear_fit, plot_density, default_legend_loc, make_unique_valid_list, rugplot, groups_to_bool, \
-    _set_colors_for_categorical_obs, _add_legend, get_connectivities, plot_outline, is_list_of_list
+
+from .utils import is_categorical, is_list, is_list_of_str, is_list_of_list, to_list, to_valid_bases_list, to_val
+from .utils import default_basis, default_color, default_size, default_color_map, default_legend_loc
+from .utils import unique, make_dense, get_components, get_connectivities, groups_to_bool, interpret_colorkey
+from .utils import update_axes, set_label, set_title, set_colorbar, _set_colors_for_categorical_obs, _add_legend
+from .utils import plot_linear_fit, plot_density, plot_outline, rugplot, savefig_or_show
+
 
 from matplotlib import rcParams, patheffects
 import matplotlib.pyplot as pl
@@ -41,87 +44,95 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     -------
         If `show==False` a `matplotlib.Axis`
     """
-    scatter_kwargs = {'vkey': vkey, 'use_raw': use_raw, 'color_map': color_map, 'colorbar': colorbar, 'palette': palette,
-                      'size': size, 'alpha': alpha, 'linewidth': linewidth, 'perc': perc, 'sort_order': sort_order,
-                      'projection': projection, 'legend_loc': legend_loc, 'legend_fontsize': legend_fontsize,
-                      'legend_fontweight': legend_fontweight, 'xlabel': xlabel, 'fontsize': fontsize, 'xlim': xlim,
-                      'ylim': ylim, 'show_density': show_density, 'show_assignments': show_assignments,
-                      'show_linear_fit': show_linear_fit, 'show_polyfit': show_polyfit, 'rug': rug,
-                      'add_outline': add_outline, 'outline_color': outline_color, 'n_convolve': n_convolve, 'smooth': smooth,
-                      'rescale_color': rescale_color, 'frameon': frameon, 'zorder': zorder, 'show': False, 'save': False}
-
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
 
-    # multiple colors, layers and bases (string)
+    mkeys = ['color', 'layer', 'basis', 'components', 'x', 'y', 'xlabel', 'ylabel', 'title', 'color_map']
+    keys = ['vkey', 'use_raw', 'colorbar', 'palette', 'size', 'alpha', 'linewidth', 'perc', 'sort_order', 'projection',
+            'legend_loc', 'legend_fontsize', 'legend_fontweight', 'fontsize', 'xlim', 'ylim', 'show_density',
+            'show_assignments', 'show_linear_fit', 'show_polyfit', 'rug', 'add_outline', 'outline_color', 'n_convolve',
+            'smooth', 'rescale_color', 'frameon', 'zorder']
+    scatter_kwargs = {'show': False, 'save': False}
+    for key in keys:
+        if key not in mkeys: scatter_kwargs[key] = eval(key)
+
+    # frame for multiple colors, layers and bases, xs, ys, components and groups (lists or tuples)
     if 'c' in kwargs: color = kwargs.pop('c')
-    colors = make_unique_list(color, allow_array=True)
-    xs, ys = make_unique_list(x, allow_array=True), make_unique_list(y, allow_array=True)
-    layers, components = make_unique_list(layer), make_unique_list(components)
-    bases = make_unique_valid_list(adata, basis)
+    if 'cmap' in kwargs: color_map = kwargs.pop('cmap')
     if groups is 'all':
         if color is None:  color = default_color(adata)
         if is_categorical(adata, color): groups = [[c] for c in adata.obs[color].cat.categories]
 
-    multikey = colors if len(colors) > 1 else layers if len(layers) > 1 \
-        else bases if len(bases) > 1 else xs if len(xs) > 1 else ys if len(ys) > 1 \
-        else components if len(components) > 1 else groups if is_list_of_list(groups) else None
+    color, layer, x, y, components = to_list(color), to_list(layer), to_list(x), to_list(y), to_list(components)
+    basis = to_valid_bases_list(adata, basis)
+
+    multikeys = eval('[' + ','.join(mkeys) + ']')
+    if is_list_of_list(groups): multikeys.append(groups)
+    key_lengths = np.array([len(key) if is_list(key) else 1 for key in multikeys])
+    multikey = multikeys[np.where(key_lengths > 1)[0][0]] if np.max(key_lengths) > 1 else None
 
     if multikey is not None:
+        if np.sum(key_lengths > 1) == 1 and is_list_of_str(multikey):
+            multikey = unique(multikey)  # take unique set if no more than one multikey
         if len(multikey) > 20:
-            raise ValueError('Please restrict the passed list to no more than 20 items.')
+            raise ValueError('Please restrict the passed list to no more than 20 elements.')
         if ax is not None: logg.warn("Cannot specify `ax` when plotting multiple panels.")
-        if isinstance(title, (list, tuple)): title *= int(np.ceil(len(multikey) / len(title)))
+        if is_list(title): title *= int(np.ceil(len(multikey) / len(title)))
         ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
         nrows = int(np.ceil(len(multikey) / ncols))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
+
+        gs = pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi),
+                         hspace=0.25 if hspace is None else hspace, wspace=wspace)
         ax = []
-        for i, gs in enumerate(
-                pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi),
-                            hspace=hspace, wspace=wspace)):
+        for i, gs in enumerate(gs):
             if i < len(multikey):
-                ax.append(scatter(adata, ax=pl.subplot(gs), ylabel=ylabel,
-                                  x=xs[i] if len(xs) > 1 else x,
-                                  y=ys[i] if len(ys) > 1 else y,
-                                  color=colors[i] if len(colors) > 1 else color,
-                                  layer=layers[i] if len(layers) > 1 else layer,
-                                  basis=bases[i] if len(bases) > 1 else basis,
-                                  components=components[i] if len(components) > 1 else components,
-                                  title=title[i] if isinstance(title, (list, tuple)) else title,
-                                  groups=groups[i] if is_list_of_list(groups) else groups,
-                                  **scatter_kwargs, **kwargs))
+                multi_kwargs = {'groups': groups[i * (len(groups) > i)] if is_list_of_list(groups) else groups}
+                keys = ['x', 'y', 'color', 'layer', 'basis', 'components', 'title', 'xlabel', 'ylabel', 'color_map']
+                for key in keys:
+                    multi_kwargs[key] = eval('{0}[i * (len({0}) > i)] if is_list({0}) else {0}'.format(key))
+
+                ax.append(scatter(adata, ax=pl.subplot(gs), **multi_kwargs, **scatter_kwargs, **kwargs))
+
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
 
     else:
-        color, layer, basis, components = colors[0], layers[0], bases[0], components[0]  # to allow input ['clusters']
+        color_map = to_val(color_map)  # to allow input ['clusters']
+        color, layer, basis, components = to_val(color), to_val(layer), to_val(basis), to_val(components)
+        x, y, xlabel, ylabel, title = to_val(x), to_val(y), to_val(xlabel), to_val(ylabel), to_val(title)
 
-        # comma-separated y or layers (string)
-        ys = [yi.strip() for yi in y.split(',')] if isinstance(y, str) and ',' in y else [y]
-        layers = [li.strip() for li in layer.split(',')] if isinstance(layer, str) and ',' in layer else [layer]
-        multikey = ys if len(ys) > 1 else layers if len(layers) > 1 else None
-        if multikey is not None:
-            colors = [ci.strip() for ci in color.split(',')] if isinstance(color, str) and ',' in color else [color]
-            for i, mi in enumerate(multikey):
-                ax = scatter(adata, x=x, ax=ax, basis=basis, title=y if title is None else title, groups=groups,
-                             y=ys[i] if len(ys) > 1 else y, ylabel='expression' if ylabel is None else ylabel,
-                             layer=layers[i] if len(layers) > 1 else layer,
-                             color=colors[i] if len(colors) > 1 else color, **scatter_kwargs)
-            if legend_loc is not False and legend_loc is not 'none':
-                multikey = [key.replace('Mu', 'unspliced').replace('Ms', 'spliced') for key in multikey]
-                ax.legend(multikey, fontsize=legend_fontsize, loc='best' if legend_loc is None else legend_loc)
-            savefig_or_show(dpi=dpi, save=save, show=show)
-            if not show: return ax
+        # frame for comma-separated y or layers (string)
+        if (isinstance(y, str) and ',' in y) or (isinstance(layer, str) and ',' in layer):
+            y = [yi.strip() for yi in y.split(',')] if isinstance(y, str) and ',' in y else to_list(y)
+            layer = [li.strip() for li in layer.split(',')] if isinstance(layer, str) and ',' in layer else to_list(layer)
+            color = [ci.strip() for ci in color.split(',')] if isinstance(color, str) and ',' in color else to_list(color)
+            multikey = y if len(y) > 1 else layer if len(layer) > 1 else None
 
-        # perform regular plot
+            if multikey is not None:
+                for i, mi in enumerate(multikey):
+                    ax = scatter(adata, x=x, y=y[i * (len(y) > i)], color=color[i * (len(color) > i)],
+                                 layer=layer[i * (len(layer) > i)], basis=basis, components=components, groups=groups,
+                                 xlabel=xlabel, ylabel='expression' if ylabel is None else ylabel, color_map=color_map,
+                                 title=y[i * (len(y) > i)] if title is None else title, ax=ax, **scatter_kwargs)
+                if legend_loc is not False and legend_loc is not 'none':
+                    multikey = [key.replace('Mu', 'unspliced').replace('Ms', 'spliced') for key in multikey]
+                    ax.legend(multikey, fontsize=legend_fontsize, loc='best' if legend_loc is None else legend_loc)
+
+                savefig_or_show(dpi=dpi, save=save, show=show)
+                if not show: return ax
+
+        # actual scatter plot
         else:
-            # set color, color_map, edgecolor, basis, linewidth, frameon, use_raw, dim
-            if color is None:  color = default_color(adata)
+            # set color, color_map, edgecolor, basis, linewidth, frameon, use_raw, projection
+            if color is None:
+                color = default_color(adata)
             if 'cmap' not in kwargs:
                 kwargs['cmap'] = default_color_map(adata, color) if color_map is None else color_map
             if 's' not in kwargs:
                 kwargs['s'] = default_size(adata) if size is None else size
             if 'edgecolor' not in kwargs:
                 kwargs['edgecolor'] = 'none'
+
             is_embedding = ((x is None) | (y is None)) and basis not in adata.var_names
             if basis is None and is_embedding: basis = default_basis(adata)
             if linewidth is None: linewidth = 1
@@ -129,20 +140,13 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if isinstance(groups, str): groups = [groups]
             if use_raw is None and basis not in adata.var_names:
                 use_raw = layer is None and adata.raw is not None
-            dim = 3 if '3' in projection else 2
-            if dim == 3: from mpl_toolkits.mplot3d import Axes3D
+            if projection is '3d':
+                from mpl_toolkits.mplot3d import Axes3D
+            else:
+                projection = None
 
             if ax is None:
-                ax = pl.figure(None, figsize, dpi=dpi).gca(projection='3d')\
-                     if dim == 3 else pl.figure(None, figsize, dpi=dpi).gca()
-
-            # set legend
-            if is_categorical(adata, color) and is_embedding:
-                _set_colors_for_categorical_obs(adata, color, palette)
-                legend_loc = default_legend_loc(adata, color, legend_loc)
-                legend_fontweight = 'bold' if legend_fontweight is None else legend_fontweight
-                _add_legend(adata, ax, color, legend_loc, adata.obsm['X_' + basis][:, :dim], legend_fontweight,
-                            legend_fontsize, [patheffects.withStroke(linewidth=True, foreground='w')], groups)
+                ax = pl.figure(None, figsize, dpi=dpi).gca(projection=projection)
 
             # phase portrait: get x and y from .layers (e.g. spliced vs. unspliced) when basis is in var_names
             if basis in adata.var_names:
@@ -167,7 +171,14 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             elif is_embedding:
                 X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
                 x, y = X_emb[:, 0], X_emb[:, 1]
-                z = X_emb[:, 2] if dim == 3 and X_emb.shape[1] > 2 else None
+                z = X_emb[:, 2] if projection is '3d' and X_emb.shape[1] > 2 else None
+
+                # set legend if categorical color vals in embedding
+                if is_categorical(adata, color):
+                    _set_colors_for_categorical_obs(adata, color, palette)
+                    legend_loc = default_legend_loc(adata, color, legend_loc)
+                    _add_legend(adata, ax, color, legend_loc, X_emb, legend_fontweight, legend_fontsize,
+                                [patheffects.withStroke(linewidth=True, foreground='w')], groups)
 
             elif isinstance(x, str) and isinstance(y, str):
                 if layer is None:
@@ -189,11 +200,14 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     if title is None: title = color
 
                     if x in adata.var_names and y in adata.var_names:
-                        x = adata[:, x].layers[layer] if layer in adata.layers.keys() else adata.raw.obs_vector(x) if use_raw else adata.obs_vector(x)
-                        y = adata[:, y].layers[layer] if layer in adata.layers.keys() else adata.raw.obs_vector(y) if use_raw else adata.obs_vector(y)
+                        if layer in adata.layers.keys():
+                            x = adata[:, x].layers[layer]
+                            y = adata[:, y].layers[layer]
+                        else:
+                            x = adata.raw.obs_vector(x) if use_raw else adata.obs_vector(x)
+                            y = adata.raw.obs_vector(y) if use_raw else adata.obs_vector(y)
                     elif x in adata.var.keys() and y in adata.var.keys():
                         x, y = adata.var[x], adata.var[y]
-                        if colors[0] is None: color = 'grey'  # since default_color (clusters) does not match with .var
                     elif x in adata.obs.keys() and y in adata.obs.keys():
                         x, y = adata.obs[x], adata.obs[y]
                     elif np.any([var_key in x or var_key in y for var_key in adata.var.keys()]):
@@ -226,40 +240,35 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             else:
                 c = interpret_colorkey(adata, color, layer, perc, use_raw)  # embedding, gene trend etc.
 
-            # smooth color values across neighbors and rescale
-            if smooth and len(c) == adata.n_obs:
-                c = get_connectivities(adata, n_neighbors=(None if isinstance(smooth, bool) else smooth)).dot(c)
-            if rescale_color is not None:
-                c += rescale_color[0] - np.min(c)
-                c *= rescale_color[1] / np.max(c)
+            if c is not None and not isinstance(c, str) and not isinstance(c[0], str):
+                # smooth color values across neighbors and rescale
+                if smooth and len(c) == adata.n_obs:
+                    c = get_connectivities(adata, n_neighbors=(None if isinstance(smooth, bool) else smooth)).dot(c)
+                # rescale color values to min and max acc. to rescale_color tuple
+                if rescale_color is not None:
+                    if len(rescale_color) != 2:
+                        raise ValueError('rescale_color has to be a tuple with two values, e.g. [0,1].')
+                    c += rescale_color[0] - np.min(c)
+                    c *= rescale_color[1] / np.max(c)
 
             # check if higher value points should be plotted on top
             if sort_order and not isinstance(c, str) and not is_categorical(adata, color):
                 order = np.argsort(c)
-                c = c[order]
-                x = x[order]
-                y = y[order]
-
-                # check if 'size' is given as a vector and reorder it.
+                x, y, c = x[order], y[order], c[order]
+                # sort order of size if given as vector
                 if isinstance(kwargs['s'], np.ndarray):
                     kwargs['s'] = np.array(kwargs['s'])[order]
 
-            # adjust coloring to ignore extreme outliers since these layers are not logarithmized
-            if layer is not None and any(l in layer for l in ['spliced', 'unspliced', 'Ms', 'Mu', 'velocity']) \
-                    and isinstance(color, str) and color in adata.var_names:
-                ub = np.percentile(np.abs(c), 98)
-                if "vmax" not in kwargs:
-                    kwargs.update({"vmax": ub})
-                if "vmin" not in kwargs and 'velocity' in layer:
-                    kwargs.update({"vmin": -ub})
+            if "vmid" not in kwargs and "vmin" not in kwargs and layer is not None and 'velocity' in layer:
+                kwargs['vmid'] = 0  # set vmid to 0 if color values obtained from velocity expression
 
             # introduce vmid by setting vmin and vmax accordingly
             if "vmid" in kwargs:
-                if not isinstance(c, str) and not isinstance(c[0], str):
-                    vmid, lb, ub = kwargs["vmid"], np.min(c), np.max(c)
-                    crange = min(np.abs(vmid - lb), np.abs(ub - vmid))
+                vmid = kwargs.pop("vmid")
+                if not isinstance(c, str) and not isinstance(c[0], str) and vmid is not None:
+                    lb, ub = np.min(c), np.max(c)
+                    crange = max(np.abs(vmid - lb), np.abs(ub - vmid))
                     kwargs.update({"vmin": vmid - crange, "vmax": vmid + crange})
-                kwargs.pop("vmid")
 
             # set color to grey for NAN values and for cells that are not in groups
             if groups is not None or np.any(pd.isnull(c)):
@@ -273,7 +282,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     title = groups[0]
                 zorder += 1
 
-            # set color to grey for NAN values and for cells that are not in groups
+            # velocity model fits (full dynamics and steady-state ratios)
             if basis in adata.var_names:
                 if use_raw is None: use_raw = 'Ms' not in adata.layers.keys()
                 lines, fits = plot_linear_fit(adata, basis, vkey, 'spliced' if use_raw else 'Ms', linewidth, ax=ax)
@@ -359,6 +368,22 @@ def _wraps_plot_scatter(wrapper):
 
 @_wraps_plot_scatter
 @doc_params(scatter=doc_scatter)
+def trimap(adata, **kwargs):
+    """\
+    Scatter plot in trimap basis.
+    Parameters
+    ----------
+    {scatter}
+
+    Returns
+    -------
+    If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
+    """
+    return scatter(adata, basis='trimap', **kwargs)
+
+
+@_wraps_plot_scatter
+@doc_params(scatter=doc_scatter)
 def umap(adata, **kwargs):
     """\
     Scatter plot in UMAP basis.
@@ -377,7 +402,7 @@ def umap(adata, **kwargs):
 @doc_params(scatter=doc_scatter)
 def tsne(adata, **kwargs):
     """\
-    Scatter plot in UMAP basis.
+    Scatter plot in tsne basis.
     Parameters
     ----------
     {scatter}
@@ -393,7 +418,7 @@ def tsne(adata, **kwargs):
 @doc_params(scatter=doc_scatter)
 def diffmap(adata, **kwargs):
     """\
-    Scatter plot in UMAP basis.
+    Scatter plot in diffmap basis.
     Parameters
     ----------
     {scatter}
@@ -407,9 +432,25 @@ def diffmap(adata, **kwargs):
 
 @_wraps_plot_scatter
 @doc_params(scatter=doc_scatter)
+def phate(adata, **kwargs):
+    """\
+    Scatter plot in phate basis.
+    Parameters
+    ----------
+    {scatter}
+
+    Returns
+    -------
+    If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
+    """
+    return scatter(adata, basis='phate', **kwargs)
+
+
+@_wraps_plot_scatter
+@doc_params(scatter=doc_scatter)
 def draw_graph(adata, layout=None, **kwargs):
     """\
-    Scatter plot in UMAP basis.
+    Scatter plot in draw_graph basis.
     Parameters
     ----------
     {scatter}
@@ -431,7 +472,7 @@ def draw_graph(adata, layout=None, **kwargs):
 @doc_params(scatter=doc_scatter)
 def pca(adata, **kwargs):
     """\
-    Scatter plot in UMAP basis.
+    Scatter plot in pca basis.
     Parameters
     ----------
     {scatter}

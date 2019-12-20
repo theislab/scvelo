@@ -1,4 +1,4 @@
-from .scatter import scatter, umap, tsne, diffmap, draw_graph, pca
+from .scatter import scatter, umap, tsne, diffmap, phate, draw_graph, pca
 from .velocity import velocity
 from .velocity_embedding import velocity_embedding
 from .velocity_embedding_grid import velocity_embedding_grid

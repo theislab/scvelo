@@ -13,6 +13,7 @@ from matplotlib.colors import is_color_like, ListedColormap, to_rgb, cnames
 from matplotlib.collections import LineCollection
 import matplotlib.transforms as tx
 from matplotlib import rcParams
+from pandas import unique, Index
 from scipy.sparse import issparse
 from cycler import Cycler, cycler
 import collections.abc as cabc
@@ -59,12 +60,45 @@ def get_basis(adata, basis):
     return basis
 
 
+def is_list(key):
+    return isinstance(key, (list, tuple, np.record))
+
+
+def is_list_of_str(key):
+    return isinstance(key, (list, tuple, np.record)) and all(isinstance(item, str) for item in key)
+
+
+def to_list(key, max_len=20):
+    if isinstance(key, Index): key = key.tolist()
+    return key if is_list(key) and len(key) < max_len else [key]
+
+
+def to_val(key):
+    return key[0] if isinstance(key, (list, tuple)) and len(key) == 1 else key
+
+
+def to_valid_bases_list(adata, keys):
+    keys = to_list(keys, max_len=np.inf)
+    if all(isinstance(item, str) for item in keys):
+        for i, key in enumerate(keys):
+            if key.startswith('X_'):
+                keys[i] = key = key[2:]
+            check_basis(adata, key)
+        valid_keys = np.hstack([adata.obs.keys(), adata.var.keys(), adata.varm.keys(), adata.obsm.keys(),
+                                [key[2:] for key in adata.obsm.keys()], list(adata.layers.keys())])
+        keys_ = keys
+        keys = [key for key in keys if key in valid_keys or key in adata.var_names]
+        keys_ = [key for key in keys_ if key not in keys]
+        if len(keys_) > 0:
+            logg.warn(', '.join(keys_), 'not found.')
+    return keys
+
+
 def make_unique_list(key, allow_array=False):
-    from pandas import unique, Index
     if isinstance(key, Index): key = key.tolist()
     is_list = isinstance(key, (list, tuple, np.record)) if allow_array else isinstance(key, (list, tuple, np.ndarray, np.record))
     is_list_of_str = is_list and all(isinstance(item, str) for item in key)
-    return unique(key) if is_list_of_str else key if is_list and len(key) < 20 else [key]
+    return key if is_list_of_str else key if is_list and len(key) < 20 else [key]
 
 
 def make_unique_valid_list(adata, keys):
@@ -202,6 +236,8 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
             c = adata.obs[c]
         elif c in adata.var_names:  # color by var in specific layer
             if layer in adata.layers.keys():
+                if perc is None and any(l in layer for l in ['spliced', 'unspliced', 'Ms', 'Mu', 'velocity']):
+                    perc = [1, 99]  # clip values to ignore extreme outliers since these layers are not logarithmized
                 c = adata.obs_vector(c, layer=layer)
             else:
                 if adata.raw is None and use_raw:
@@ -360,6 +396,7 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
         categories = groups
 
     if legend_loc == 'on data':
+        legend_fontweight = 'bold' if legend_fontweight is None else legend_fontweight
         # identify centroids to put labels
         texts = []
         for ilabel, label in enumerate(categories):
@@ -607,15 +644,9 @@ def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3, color='grey', ax=No
 
 
 def plot_outline(x, y, kwargs, outline_width=None, outline_color=None, zorder=None, ax=None):
-    # copied from scanpy
-    # the default outline is a black edge followed by a
-    # thin white edged added around connected clusters.
-    # To add an outline
-    # three overlapping scatter plots are drawn:
-    # First black dots with slightly larger size,
-    # then, white dots a bit smaller, but still larger
-    # than the final dots. Then the final dots are drawn
-    # with some transparency.
+    # Adapted from scanpy. The default outline is a black edge followed by a thin white edged added around connected
+    # clusters. Three overlapping scatter plots are drawn: First black dots with slightly larger size, then, white dots
+    # a bit smaller, but still larger than the final dots. Then the final dots are drawn with some transparency.
 
     if ax is None: ax = pl.gca()
 
