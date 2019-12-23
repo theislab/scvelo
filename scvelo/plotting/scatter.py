@@ -4,16 +4,16 @@ from .. import AnnData
 from .docs import doc_scatter, doc_params
 
 from .utils import is_categorical, is_list, is_list_of_str, is_list_of_list, to_list, to_valid_bases_list, to_val
-from .utils import default_basis, default_color, default_size, default_color_map, default_legend_loc
-from .utils import unique, make_dense, get_components, get_connectivities, groups_to_bool, interpret_colorkey
+from .utils import default_basis, default_color, default_size, default_color_map, default_legend_loc, default_xkey, default_ykey
+from .utils import unique, make_dense, get_components, get_connectivities, groups_to_bool, interpret_colorkey, get_obs_vector
 from .utils import update_axes, set_label, set_title, set_colorbar, _set_colors_for_categorical_obs, _add_legend
-from .utils import plot_linear_fit, plot_density, plot_outline, rugplot, savefig_or_show
+from .utils import plot_linear_fit, plot_linfit, plot_polyfit, plot_density, plot_outline, plot_rug, plot_velocity_fits, savefig_or_show
 
 
 from inspect import signature
 from matplotlib import rcParams, patheffects
+from matplotlib.gridspec import SubplotSpec
 import matplotlib.pyplot as pl
-from scipy.stats import pearsonr
 import numpy as np
 import pandas as pd
 
@@ -21,11 +21,11 @@ import pandas as pd
 @doc_params(scatter=doc_scatter)
 def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
             colorbar=None, palette=None, size=None, alpha=None, linewidth=None, perc=None, sort_order=True, groups=None,
-            components=None, projection='2d', legend_loc=None, legend_fontsize=None, legend_fontweight=None,
+            components=None, projection=None, legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, xlim=None, ylim=None, show_density=None,
-            show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, add_outline=False,
+            show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, add_outline=None,
             outline_width=None, outline_color=None, n_convolve=None, smooth=None, rescale_color=None, dpi=None,
-            frameon=None, zorder=None, ncols=None, wspace=None, hspace=None, show=True, save=None, ax=None, **kwargs):
+            frameon=None, zorder=None, ncols=None, wspace=None, hspace=None, show=None, save=None, ax=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -47,64 +47,69 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     """
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
 
+    # keys for figures (fkeys) and multiple plots (mkeys)
     fkeys = ['adata', 'show', 'save', 'groups', 'figsize', 'dpi', 'ncols', 'wspace', 'hspace', 'ax', 'kwargs']
     mkeys = ['color', 'layer', 'basis', 'components', 'x', 'y', 'xlabel', 'ylabel', 'title', 'color_map']
-
     scatter_kwargs = {'show': False, 'save': False}
     for key in signature(scatter).parameters:
         if key not in mkeys + fkeys: scatter_kwargs[key] = eval(key)
 
-    # frame for multiple colors, layers and bases, xs, ys, components and groups (lists or tuples)
+    # use c & color and cmap & color_map interchangeably, and plot each group separately if groups is 'all'
     if 'c' in kwargs: color = kwargs.pop('c')
     if 'cmap' in kwargs: color_map = kwargs.pop('cmap')
     if groups is 'all':
         if color is None:  color = default_color(adata)
         if is_categorical(adata, color): groups = [[c] for c in adata.obs[color].cat.categories]
 
+    # create list of each mkey (won't be needed in the future) and check if all bases are valid.
     color, layer, x, y, components = to_list(color), to_list(layer), to_list(x), to_list(y), to_list(components)
     basis = to_valid_bases_list(adata, basis)
 
+    # get multikey (with more than one element)
     multikeys = eval('[' + ','.join(mkeys) + ']')
     if is_list_of_list(groups): multikeys.append(groups)
     key_lengths = np.array([len(key) if is_list(key) else 1 for key in multikeys])
     multikey = multikeys[np.where(key_lengths > 1)[0][0]] if np.max(key_lengths) > 1 else None
 
+    # gridspec frame for plotting multiple colors, layers and bases, xs, ys, components and groups (lists or tuples)
     if multikey is not None:
         if np.sum(key_lengths > 1) == 1 and is_list_of_str(multikey):
             multikey = unique(multikey)  # take unique set if no more than one multikey
         if len(multikey) > 20:
             raise ValueError('Please restrict the passed list to no more than 20 elements.')
-        if ax is not None: logg.warn("Cannot specify `ax` when plotting multiple panels.")
-        if is_list(title): title *= int(np.ceil(len(multikey) / len(title)))
+        if ax is not None:
+            logg.warn("Cannot specify `ax` when plotting multiple panels.")
+        if is_list(title):
+            title *= int(np.ceil(len(multikey) / len(title)))
+
         ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
         nrows = int(np.ceil(len(multikey) / ncols))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        fig = pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi)
+        gspec = pl.GridSpec(nrows, ncols, fig, hspace=0.25 if hspace is None else hspace, wspace=wspace)
 
-        gs = pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi),
-                         hspace=0.25 if hspace is None else hspace, wspace=wspace)
         ax = []
-        for i, gs in enumerate(gs):
+        for i, gs in enumerate(gspec):
             if i < len(multikey):
                 multi_kwargs = {'groups': groups[i * (len(groups) > i)] if is_list_of_list(groups) else groups}
-                keys = ['x', 'y', 'color', 'layer', 'basis', 'components', 'title', 'xlabel', 'ylabel', 'color_map']
-                for key in keys:
+                for key in mkeys:  # multi_kwargs[key] = key[i] if is multikey (list with more than 1 element) else key
                     multi_kwargs[key] = eval('{0}[i * (len({0}) > i)] if is_list({0}) else {0}'.format(key))
-
                 ax.append(scatter(adata, ax=pl.subplot(gs), **multi_kwargs, **scatter_kwargs, **kwargs))
 
         savefig_or_show(dpi=dpi, save=save, show=show)
-        if not show: return ax
+        if show is False: return ax
 
     else:
-        color_map = to_val(color_map)  # to allow input ['clusters']
+        # make sure that there are no more lists, e.g. input ['clusters'] becomes 'clusters'
+        color_map = to_val(color_map)
         color, layer, basis, components = to_val(color), to_val(layer), to_val(basis), to_val(components)
         x, y, xlabel, ylabel, title = to_val(x), to_val(y), to_val(xlabel), to_val(ylabel), to_val(title)
 
-        # frame for comma-separated y or layers (string)
-        if (isinstance(y, str) and ',' in y) or (isinstance(layer, str) and ',' in layer):
-            y = [yi.strip() for yi in y.split(',')] if isinstance(y, str) and ',' in y else to_list(y)
-            layer = [li.strip() for li in layer.split(',')] if isinstance(layer, str) and ',' in layer else to_list(layer)
-            color = [ci.strip() for ci in color.split(',')] if isinstance(color, str) and ',' in color else to_list(color)
+        # multiple plots within one ax for comma-separated y or layers (string).
+
+        if any([isinstance(key, str) and ',' in key for key in [y, layer]]):
+            y, layer, color = [[k.strip() for k in key.split(',')] if isinstance(key, str) and ',' in key
+                               else to_list(key) for key in [y, layer, color]]  # comma split
             multikey = y if len(y) > 1 else layer if len(layer) > 1 else None
 
             if multikey is not None:
@@ -118,7 +123,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     ax.legend(multikey, fontsize=legend_fontsize, loc='best' if legend_loc is None else legend_loc)
 
                 savefig_or_show(dpi=dpi, save=save, show=show)
-                if not show: return ax
+                if show is False: return ax
 
         # actual scatter plot
         else:
@@ -131,7 +136,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 kwargs['s'] = default_size(adata) if size is None else size
             if 'edgecolor' not in kwargs:
                 kwargs['edgecolor'] = 'none'
-
             is_embedding = ((x is None) | (y is None)) and basis not in adata.var_names
             if basis is None and is_embedding: basis = default_basis(adata)
             if linewidth is None: linewidth = 1
@@ -146,25 +150,36 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
             if ax is None:
                 ax = pl.figure(None, figsize, dpi=dpi).gca(projection=projection)
+                if show is None: show = True
+            elif isinstance(ax, SubplotSpec):
+                geo = ax.get_geometry()
+                if show is None: show = geo[-1] + 1 == geo[0] * geo[1]
+                ax = pl.subplot(ax)
 
             # phase portrait: get x and y from .layers (e.g. spliced vs. unspliced) when basis is in var_names
             if basis in adata.var_names:
                 if title is None: title = basis
-                if x is None:
-                    x = 'spliced' if 'spliced' in adata.layers.keys() and (use_raw or 'Ms' not in adata.layers.keys())\
-                        else 'Ms' if 'Ms' in adata.layers.keys() else 'X'
-                if y is None:
-                    y = 'unspliced' if 'unspliced' in adata.layers.keys() and (use_raw or 'Mu' not in adata.layers.keys())\
-                        else 'Mu' if 'Mu' in adata.layers.keys() else 'X'
+                if x is None and y is None:
+                    x, y = default_xkey(adata, use_raw=use_raw), default_ykey(adata, use_raw=use_raw)
+                elif x is None or y is None:
+                    raise ValueError('Both x and y have to specified.')
+                if any([key not in list(adata.layers.keys()) + ['X'] for key in [x, y]]):
+                    raise ValueError('Could not find x or y in layers.')
+
                 if xlabel is None: xlabel = x
                 if ylabel is None: ylabel = y
 
-                if not (x in adata.layers.keys() or x is 'X') and not (y in adata.layers.keys() or y is 'X'):
-                    raise ValueError('Could not find x or y in layers.')
-                x = adata[:, basis].layers[x] if x in adata.layers.keys() \
-                    else adata.raw.obs_vector(basis) if use_raw else adata.obs_vector(basis)
-                y = adata[:, basis].layers[y] if y in adata.layers.keys() \
-                    else adata.raw.obs_vector(basis) if use_raw else adata.obs_vector(basis)
+                x = get_obs_vector(adata, basis, layer=x, use_raw=use_raw)
+                y = get_obs_vector(adata, basis, layer=y, use_raw=use_raw)
+
+                if use_raw and perc is not None:
+                    ax.set_xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
+                    ax.set_ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
+
+                # velocity model fits (full dynamics and steady-state ratios)
+                if any(['gamma' in key or 'alpha' in key for key in adata.var.keys()]):
+                    plot_velocity_fits(adata, basis, vkey, use_raw, linewidth, legend_loc, legend_fontsize,
+                                       show_assignments, ax=ax)
 
             # embedding: set x and y to embedding coordinates
             elif is_embedding:
@@ -181,27 +196,22 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
             elif isinstance(x, str) and isinstance(y, str):
                 if layer is None:
-                    layer = 'spliced' if 'spliced' in adata.layers.keys() and (use_raw or 'Ms' not in adata.layers.keys())\
-                        else 'Ms' if 'Ms' in adata.layers.keys() else 'X'
+                    layer = default_xkey(adata, use_raw=use_raw)
+                is_timeseries = y in adata.var_names and x in list(adata.obs.keys()) + list(adata.layers.keys())
+                if xlabel is None: xlabel = x
+                if ylabel is None: ylabel = layer if is_timeseries else y
+                if title is None: title = y if is_timeseries else color
 
                 # gene trend: get x and y as gene (var_names) along obs/layers (e.g. pseudotime)
-                if y in adata.var_names and (x in adata.obs.keys() or x in adata.layers.keys()):
-                    if xlabel is None: xlabel = x
-                    if ylabel is None: ylabel = layer
-                    if title is None: title = y
-                    x = adata.obs[x] if x in adata.obs.keys() else adata[:, y].layers[x]
-                    y = adata[:, y].layers[layer] if layer in adata.layers.keys() \
-                        else adata.raw.obs_vector(y) if use_raw else adata.obs_vector(y)
+                if is_timeseries:
+                    x = adata.obs[x] if x in adata.obs.keys() else adata.obs_vector(y, layer=x)
+                    y = get_obs_vector(adata, basis=y, layer=layer, use_raw=use_raw)
                 # get x and y from var_names, var or obs
                 else:
-                    if xlabel is None: xlabel = x
-                    if ylabel is None: ylabel = y
-                    if title is None: title = color
-
                     if x in adata.var_names and y in adata.var_names:
                         if layer in adata.layers.keys():
-                            x = adata[:, x].layers[layer]
-                            y = adata[:, y].layers[layer]
+                            x = adata.obs_vector(x, layer=layer)
+                            y = adata.obs_vector(y, layer=layer)
                         else:
                             x = adata.raw.obs_vector(x) if use_raw else adata.obs_vector(x)
                             y = adata.raw.obs_vector(y) if use_raw else adata.obs_vector(y)
@@ -281,34 +291,16 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     title = groups[0]
                 zorder += 1
 
-            # velocity model fits (full dynamics and steady-state ratios)
-            if basis in adata.var_names:
-                if use_raw is None: use_raw = 'Ms' not in adata.layers.keys()
-                lines, fits = plot_linear_fit(adata, basis, vkey, 'spliced' if use_raw else 'Ms', linewidth, ax=ax)
-                from .simulation import show_full_dynamics
-                if 'true_alpha' in adata.var.keys() and (vkey is not None and 'true_dynamics' in vkey):
-                    line, fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth, ax=ax)
-                    fits.append(fit)
-                    lines.append(line)
-                if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
-                    line, fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments, ax=ax)
-                    fits.append(fit)
-                    lines.append(line)
-                if len(fits) > 0 and legend_loc is not False and legend_loc is not 'none':
-                    ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize,
-                              loc='lower right' if legend_loc is None else legend_loc)
-                if use_raw and perc is not None:
-                    ax.set_xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
-                    ax.set_ylim(top=np.percentile(y, 99.9 if not isinstance(perc, int) else perc) * 1.05)
-
             x, y = np.ravel(x), np.ravel(y)
-            if not isinstance(c, str):
-                c = 'grey' if len(c) != len(x) else np.ravel(c)
-
             if len(x) != len(y):
                 raise ValueError('x or y do not share the same dimension.')
-            elif not isinstance(c, str) and len(x) != len(c):
-                raise ValueError('color and x do not share the same dimensions.')
+
+            if not isinstance(c, str):
+                c = np.ravel(c)
+                if len(c) != len(x):
+                    c = 'grey'
+                    if color is not default_color(adata):
+                        logg.warn('Invalid color key. Using grey instead.')
 
             smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
 
@@ -316,39 +308,32 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
 
             if show_density:
-                plot_density(x, y, color=show_density if isinstance(show_density, str) else 'grey', ax=ax)
+                plot_density(x, y, show_density, ax=ax)
 
-            if show_linear_fit:
-                idx_valid = ~np.isnan(x + y)
-                x, y = x[idx_valid], y[idx_valid]
-                xnew = np.linspace(np.min(x), np.max(x) * 1.02)
-                ax.plot(xnew, xnew * (x * y).sum() / (x ** 2).sum(), linewidth=linewidth,
-                        color=show_linear_fit if isinstance(show_linear_fit, str) else 'grey')
-                corr, _ = pearsonr(x, y)
-                if legend_loc is not 'none':
-                    ax.text(.05, .95, r'$\rho = $' + str(np.round(corr, 2)), ha='left', va='top', fontsize=fontsize,
-                            transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
+            if show_linear_fit or show_linear_fit is 0:
+                plot_linfit(x, y, show_linear_fit, legend_loc is not 'none', c, linewidth, fontsize, ax=ax)
+
             if show_polyfit:
-                idx_valid = ~np.isnan(x + y)
-                x, y = x[idx_valid], y[idx_valid]
-                fit = np.polyfit(x, y, deg=2 if isinstance(show_polyfit, (str, bool)) else show_polyfit)
-                f = np.poly1d(fit)
-                xnew = np.linspace(np.min(x), np.max(x), num=100)
-                color = show_polyfit if isinstance(show_polyfit, str) else c if isinstance(c, str) else 'grey'
-                ax.plot(xnew, f(xnew), color=color, linewidth=linewidth)
+                plot_polyfit(x, y, show_polyfit, legend_loc is not 'none', c, linewidth, fontsize, ax=ax)
 
             if rug:
-                ax = rugplot(np.ravel(x), color=np.ravel(interpret_colorkey(adata, rug)), ax=ax)
+                plot_rug(np.ravel(x), color=np.ravel(interpret_colorkey(adata, rug)), ax=ax)
 
             set_label(xlabel, ylabel, fontsize, basis, ax=ax)
             set_title(title, layer, color, fontsize, ax=ax)
-            ax = update_axes(ax, xlim, ylim, fontsize, is_embedding, frameon)
+            update_axes(ax, xlim, ylim, fontsize, is_embedding, frameon)
 
             if colorbar is not False and not isinstance(c, str) and not is_categorical(adata, color):
                 set_colorbar(smp, ax=ax, labelsize=fontsize * .75 if fontsize is not None else None)
 
             savefig_or_show(dpi=dpi, save=save, show=show)
             if not show: return ax
+
+
+def gridspec(nrows=1, ncols=2, figsize=None, dpi=None):
+    if figsize is None: figsize = rcParams['figure.figsize']
+    gs = pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))
+    return gs
 
 
 def _wraps_plot_scatter(wrapper):

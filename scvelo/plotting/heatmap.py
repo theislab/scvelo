@@ -427,7 +427,7 @@ def heatmap_deprecated(adata, var_names, groups=None, groupby=None, annotations=
 
     # set_label(xlabel, None, fontsize, basis)
     # set_title(title, None, None, fontsize)
-    # ax = update_axes(ax, fontsize)
+    # update_axes(ax, fontsize)
 
     savefig_or_show('heatmap', dpi=dpi, save=save, show=show)
     if not show: return ax

@@ -15,6 +15,7 @@ import matplotlib.transforms as tx
 from matplotlib import rcParams
 from pandas import unique, Index
 from scipy.sparse import issparse
+from scipy.stats import pearsonr
 from cycler import Cycler, cycler
 import collections.abc as cabc
 
@@ -92,6 +93,11 @@ def get_components(components=None, basis=None, projection=None):
     return components
 
 
+def get_obs_vector(adata, basis, layer=None, use_raw=None):
+    return adata.obs_vector(basis, layer=layer) if layer in adata.layers.keys() \
+        else adata.raw.obs_vector(basis) if use_raw else adata.obs_vector(basis)
+
+
 def groups_to_bool(adata, groups, groupby=None):
     groups = [groups] if isinstance(groups, str) else groups
     if isinstance(groups, (list, tuple, np.ndarray, np.record)):
@@ -141,6 +147,16 @@ def default_legend_loc(adata, color, legend_loc):
     return legend_loc
 
 
+def default_xkey(adata, use_raw):
+    use_raw = 'spliced' in adata.layers.keys() and (use_raw or 'Ms' not in adata.layers.keys())
+    return 'spliced' if use_raw else 'Ms' if 'Ms' in adata.layers.keys() else 'X'
+
+
+def default_ykey(adata, use_raw):
+    use_raw = 'unspliced' in adata.layers.keys() and (use_raw or 'Mu' not in adata.layers.keys())
+    return 'unspliced' if use_raw else 'Mu' if 'Mu' in adata.layers.keys() else None
+
+
 def default_arrow(size):
     if isinstance(size, (list, tuple)) and len(size) == 3:
         head_l, head_w, ax_l = size
@@ -174,8 +190,6 @@ def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, fra
         ax.set_ylabel('')
         ax.tick_params(which='both', bottom=False, left=False, labelbottom=False, labelleft=False)
         ax.set_frame_on(False)
-
-    return ax
 
 
 def set_label(xlabel, ylabel, fontsize=None, basis=None, ax=None):
@@ -215,7 +229,6 @@ def set_frame(ax, frameon):
         ax.set_xlabel('')
         ax.set_ylabel('')
         ax.set_frame_on(False)
-    return ax
 
 
 def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
@@ -577,9 +590,43 @@ def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1, ax=None):
     return lines, fits
 
 
-def plot_density(x, y=None, eval_pts=50, scale=10, alpha=.3, color='grey', ax=None):
+def plot_linfit(x, y, add_linfit=True, add_legend=True, color=None, linewidth=None, fontsize=None, ax=None):
+    if ax is None: ax = pl.gca()
+    idx_valid = ~np.isnan(x + y)
+    x, y = x[idx_valid], y[idx_valid]
+    xnew = np.linspace(np.min(x), np.max(x) * 1.02)
+    color = add_linfit if isinstance(add_linfit, str) else color if isinstance(color, str) else 'grey'
+
+    mu_x, mu_y = (0, 0) if add_linfit is 0 else (np.mean(x), np.mean(y))
+    slope = (np.mean(x * y) - mu_x * mu_y) / (np.mean(x ** 2) - mu_x ** 2)
+    offset = mu_y - slope * mu_x
+
+    ax.plot(xnew, offset + xnew * slope, linewidth=linewidth, color=color)
+    if add_legend:
+        ax.text(.05, .95, r'$\rho = $' + str(np.round(pearsonr(x, y)[0], 2)), ha='left', va='top', fontsize=fontsize,
+                transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
+
+
+def plot_polyfit(x, y, add_polyfit=True, add_legend=True, color=None, linewidth=None, fontsize=None, ax=None):
+    if ax is None: ax = pl.gca()
+    idx_valid = ~np.isnan(x + y)
+    x, y = x[idx_valid], y[idx_valid]
+    fit = np.polyfit(x, y, deg=2 if isinstance(add_polyfit, (str, bool)) else add_polyfit)
+    f = np.poly1d(fit)
+    xnew = np.linspace(np.min(x), np.max(x), num=100)
+    color = add_polyfit if isinstance(add_polyfit, str) else color if isinstance(color, str) else 'grey'
+    ax.plot(xnew, f(xnew), color=color, linewidth=linewidth)
+
+    if add_legend:
+        R2 = np.sum((f(x) - np.mean(y)) ** 2) / np.sum((y - np.mean(y)) ** 2)
+        ax.text(.05, .95, r'$R^2 = $' + str(np.round(R2, 2)), ha='left', va='top', fontsize=fontsize,
+                transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
+
+
+def plot_density(x, y=None, add_density=True, eval_pts=50, scale=10, alpha=.3, color='grey', ax=None):
     from scipy.stats import gaussian_kde as kde
     if ax is None: ax = pl.gca()
+    color = add_density if isinstance(add_density, str) else color if isinstance(color, str) else 'grey'
 
     # density plot along x-coordinate
     xnew = np.linspace(min(x), max(x), eval_pts)
@@ -635,7 +682,7 @@ def plot_outline(x, y, kwargs, outline_width=None, outline_color=None, zorder=No
     kwargs['s'] = s
 
 
-def rugplot(x, height=.03, color=None, ax=None, **kwargs):
+def plot_rug(x, height=.03, color=None, ax=None, **kwargs):
     if ax is None: ax = pl.gca()
     x = np.asarray(x)
 
@@ -643,7 +690,26 @@ def rugplot(x, height=.03, color=None, ax=None, **kwargs):
     line_segs = np.column_stack([np.repeat(x, 2), np.tile([0, height], len(x))]).reshape([len(x), 2, 2])
     ax.add_collection(LineCollection(line_segs, transform=transform, color=color, **kwargs))
     ax.autoscale_view(scalex=True, scaley=False)
-    return ax
+
+
+def plot_velocity_fits(adata, basis, vkey=None, use_raw=None, linewidth=None, legend_loc=None, legend_fontsize=None,
+                       show_assignments=None, ax=None):
+    if ax is None: ax = pl.gca()
+    if use_raw is None: use_raw = 'Ms' not in adata.layers.keys()
+    lines, fits = plot_linear_fit(adata, basis, vkey, 'spliced' if use_raw else 'Ms', linewidth, ax=ax)
+    from .simulation import show_full_dynamics
+    if 'true_alpha' in adata.var.keys() and (vkey is not None and 'true_dynamics' in vkey):
+        line, fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth, ax=ax)
+        fits.append(fit)
+        lines.append(line)
+    if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
+        line, fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments,
+                                       ax=ax)
+        fits.append(fit)
+        lines.append(line)
+    if len(fits) > 0 and legend_loc is not False and legend_loc is not 'none':
+        ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize,
+                  loc='lower right' if legend_loc is None else legend_loc)
 
 
 """for velocity_embedding"""
