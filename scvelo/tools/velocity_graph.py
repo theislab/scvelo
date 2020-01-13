@@ -28,7 +28,8 @@ def vals_to_csr(vals, rows, cols, shape, split_negative=False):
 
 class VelocityGraph:
     def __init__(self, adata, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, sqrt_transform=None,
-                 n_recurse_neighbors=None, random_neighbors_at_max=None, gene_subset=None, approx=None, report=False):
+                 n_recurse_neighbors=None, random_neighbors_at_max=None, gene_subset=None, approx=None, report=False,
+                 mode_neighbors='distances'):
 
         subset = np.ones(adata.n_vars, bool)
         if gene_subset is not None:
@@ -135,7 +136,7 @@ class VelocityGraph:
 
 def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, n_recurse_neighbors=None,
                    random_neighbors_at_max=None, sqrt_transform=None, variance_stabilization=None, gene_subset=None,
-                   approx=None, copy=False):
+                   approx=None, mode_neighbors='distances', copy=False):
     """Computes velocity graph based on cosine similarities.
 
     The cosine similarities are computed between velocities and potential cell state transitions, i.e. it measures how
@@ -171,6 +172,9 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
         Subset of genes to compute velocity graph on exclusively.
     approx: `bool` or `None` (default: `None`)
         If True, first 30 pc's are used instead of the full count matrix
+    mode_neighbors: 'str' (default: `'distances'`)
+        Determines the type of KNN graph used. Options are 'distances' or 'connectivities'. The latter yields a
+        symmetric KNN graph while the former does not.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to adata.
 
@@ -187,7 +191,8 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
 
     vgraph = VelocityGraph(adata, vkey=vkey, xkey=xkey, tkey=tkey, basis=basis, n_neighbors=n_neighbors, approx=approx,
                            n_recurse_neighbors=n_recurse_neighbors, random_neighbors_at_max=random_neighbors_at_max,
-                           sqrt_transform=sqrt_transform, gene_subset=gene_subset, report=True)
+                           sqrt_transform=sqrt_transform, gene_subset=gene_subset, report=True,
+                           mode_neighbors=mode_neighbors)
 
     if isinstance(basis, str):
         logg.warn(
