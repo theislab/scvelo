@@ -136,7 +136,7 @@ def get_iterative_indices(indices, index, n_recurse_neighbors=2, max_neighs=None
     indices = np.unique(iterate_indices(indices, index, n_recurse_neighbors, exclude_nans))
     if max_neighs is not None and len(indices) > max_neighs:
         indices = np.random.choice(indices, max_neighs, replace=False)
-    return indices
+    return indices.astype(int)
 
 
 def groups_to_bool(adata, groups, groupby=None):

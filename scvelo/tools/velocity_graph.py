@@ -99,6 +99,7 @@ class VelocityGraph:
 
         self.report = report
         self.self_prob = None
+        
 
     def compute_cosines(self):
         vals, rows, cols, n_obs = [], [], [], self.X.shape[0]
