@@ -130,13 +130,32 @@ def get_indices_from_csr(conn):
 
 
 def get_iterative_indices(indices, index, n_recurse_neighbors=2, max_neighs=None, exclude_nans=None):
+    # def iterate_indices(indices, index, n_recurse_neighbors, exclude_nans=None):
+    #     return indices[iterate_indices(indices, index, n_recurse_neighbors - 1, exclude_nans)] \
+    #         if n_recurse_neighbors > 1 else indices[index][~np.isnan(indices[index])].astype(int) \
+    #         if exclude_nans else indices[index]
+
     def iterate_indices(indices, index, n_recurse_neighbors, exclude_nans=None):
-        return indices[iterate_indices(indices, index, n_recurse_neighbors - 1)] \
-            if n_recurse_neighbors > 1 else indices[index][~np.isnan(indices[index])] if exclude_nans else indices[index]
+        if n_recurse_neighbors > 1:
+            if exclude_nans:
+                ix_ = indices[iterate_indices(indices, index, n_recurse_neighbors - 1, exclude_nans)]
+                ix = ix_[~np.isnan(ix_)].astype(int)
+            else:
+                ix = indices[iterate_indices(indices, index, n_recurse_neighbors - 1)]
+        else:
+            if exclude_nans:
+                ix = indices[index][~np.isnan(indices[index])].astype(int)
+            else:
+                ix = indices[index]
+        return ix
+    
+    def prep_indices(ixs):
+        return ixs[~np.isnan(ixs)].astype(int)
+
     indices = np.unique(iterate_indices(indices, index, n_recurse_neighbors, exclude_nans))
     if max_neighs is not None and len(indices) > max_neighs:
         indices = np.random.choice(indices, max_neighs, replace=False)
-    return indices.astype(int)
+    return indices
 
 
 def groups_to_bool(adata, groups, groupby=None):
