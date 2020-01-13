@@ -238,6 +238,7 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
     """
     # add legend
     obs_vals = adata.obs[value_to_plot]
+    obs_vals.cat.categories = obs_vals.cat.categories.astype(str)
     valid_cats = np.where(obs_vals.value_counts()[obs_vals.cat.categories] > 0)[0]
     categories = np.array(obs_vals.cat.categories)[valid_cats]
     colors = np.array(adata.uns[value_to_plot + '_colors'])[valid_cats]
