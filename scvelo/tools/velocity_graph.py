@@ -67,7 +67,8 @@ class VelocityGraph:
         if np.min((adata.uns['neighbors']['distances'] > 0).sum(1).A1) == 0:
             raise ValueError('Your neighbor graph seems to be corrupted. Consider recomputing via pp.neighbors.')
         if n_neighbors is None or n_neighbors <= adata.uns['neighbors']['params']['n_neighbors']:
-            self.indices = get_indices(dist=adata.uns['neighbors']['distances'], n_neighbors=n_neighbors)[0]
+            self.indices = get_indices(dist=adata.uns['neighbors']['distances'], n_neighbors=n_neighbors,
+                                       mode_neighbors=mode_neighbors)[0]
         else:
             if basis is None: basis = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()][-1]
             elif 'X_' + basis in adata.obsm.keys(): basis = 'X_' + basis
@@ -81,7 +82,7 @@ class VelocityGraph:
                 from .. import Neighbors
                 neighs = Neighbors(adata)
                 neighs.compute_neighbors(n_neighbors=n_neighbors, use_rep=basis, n_pcs=10)
-                self.indices = get_indices(dist=neighs.distances)[0]
+                self.indices = get_indices(dist=neighs.distances, mode_neighbors=mode_neighbors)[0]
 
         self.max_neighs = random_neighbors_at_max
 
@@ -102,9 +103,10 @@ class VelocityGraph:
     def compute_cosines(self):
         vals, rows, cols, n_obs = [], [], [], self.X.shape[0]
         progress = logg.ProgressReporter(n_obs)
+        exclude_nans = np.any(np.isnan(self.indices))
         for i in range(n_obs):
             if self.V[i].max() != 0 or self.V[i].min() != 0:
-                neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors, self.max_neighs)
+                neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors, self.max_neighs, exclude_nans)
 
                 if self.t0 is not None:
                     t0, t1 = self.t0[i], self.t1[i]
