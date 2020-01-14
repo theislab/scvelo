@@ -5,6 +5,8 @@ import numpy as np
 import warnings
 warnings.simplefilter("ignore")
 
+from ..preprocessing.neighbors import compute_connectivities_umap
+
 
 def mean(x, axis=0):
     return x.mean(axis).A1 if issparse(x) else x.mean(axis)
@@ -86,7 +88,7 @@ def scale(X, min=0, max=1):
     return X
 
 
-def get_indices(dist, n_neighbors=None):
+def get_indices(dist, n_neighbors=None, mode_neighbors='distances'):
     D = dist.copy()
     D.data += 1e-6
 
@@ -102,15 +104,43 @@ def get_indices(dist, n_neighbors=None):
     D.eliminate_zeros()
 
     D.data -= 1e-6
-    indices = D.indices.reshape((-1, n_neighbors))
+    if mode_neighbors == 'distances':
+        indices = D.indices.reshape((-1, n_neighbors))
+    elif mode_neighbors == 'connectivities':
+        knn_indices = D.indices.reshape((-1, n_neighbors))
+        knn_distances = D.data.reshape((-1, n_neighbors))
+        _ ,conn = compute_connectivities_umap(knn_indices, knn_distances, D.shape[0], n_neighbors)
+        indices = get_indices_from_csr(conn)
     return indices, D
 
 
-def get_iterative_indices(indices, index, n_recurse_neighbors=2, max_neighs=None):
-    def iterate_indices(indices, index, n_recurse_neighbors):
-        return indices[iterate_indices(indices, index, n_recurse_neighbors - 1)] \
-            if n_recurse_neighbors > 1 else indices[index]
-    indices = np.unique(iterate_indices(indices, index, n_recurse_neighbors))
+def get_indices_from_csr(conn):
+    # utility function that extract indices from connectivity matrix, pads with nans
+    # this is meant to yield the indices from a symmetric KNN graph
+
+    max_per_row = np.max((conn > 0).sum(1))
+    # faster than np.full
+    ixs = np.empty((conn.shape[0], max_per_row))
+    ixs[:] = np.nan
+
+    for i in range(ixs.shape[0]):
+        cell_indices = conn[i, :].indices
+        ixs[i, :len(cell_indices)] = cell_indices
+    return ixs
+
+
+def get_iterative_indices(indices, index, n_recurse_neighbors=2, max_neighs=None, exclude_nans=None):
+    def iterate_indices(indices, index, n_recurse_neighbors, exclude_nans=None):
+        def prep_indices(ixs):
+            return ixs[~np.isnan(ixs)].astype(int)
+        if n_recurse_neighbors > 1:
+            ix = prep_indices(indices[iterate_indices(indices, index, n_recurse_neighbors - 1, exclude_nans)]) \
+                if exclude_nans else indices[iterate_indices(indices, index, n_recurse_neighbors - 1)]
+        else:
+            ix = prep_indices(indices[index]) if exclude_nans else indices[index]
+        return ix
+
+    indices = np.unique(iterate_indices(indices, index, n_recurse_neighbors, exclude_nans))
     if max_neighs is not None and len(indices) > max_neighs:
         indices = np.random.choice(indices, max_neighs, replace=False)
     return indices

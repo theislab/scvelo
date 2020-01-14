@@ -28,7 +28,8 @@ def vals_to_csr(vals, rows, cols, shape, split_negative=False):
 
 class VelocityGraph:
     def __init__(self, adata, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, sqrt_transform=None,
-                 n_recurse_neighbors=None, random_neighbors_at_max=None, gene_subset=None, approx=None, report=False):
+                 n_recurse_neighbors=None, random_neighbors_at_max=None, gene_subset=None, approx=None, report=False,
+                 mode_neighbors='distances'):
 
         subset = np.ones(adata.n_vars, bool)
         if gene_subset is not None:
@@ -66,7 +67,8 @@ class VelocityGraph:
         if np.min((adata.uns['neighbors']['distances'] > 0).sum(1).A1) == 0:
             raise ValueError('Your neighbor graph seems to be corrupted. Consider recomputing via pp.neighbors.')
         if n_neighbors is None or n_neighbors <= adata.uns['neighbors']['params']['n_neighbors']:
-            self.indices = get_indices(dist=adata.uns['neighbors']['distances'], n_neighbors=n_neighbors)[0]
+            self.indices = get_indices(dist=adata.uns['neighbors']['distances'], n_neighbors=n_neighbors,
+                                       mode_neighbors=mode_neighbors)[0]
         else:
             if basis is None: basis = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()][-1]
             elif 'X_' + basis in adata.obsm.keys(): basis = 'X_' + basis
@@ -80,7 +82,7 @@ class VelocityGraph:
                 from .. import Neighbors
                 neighs = Neighbors(adata)
                 neighs.compute_neighbors(n_neighbors=n_neighbors, use_rep=basis, n_pcs=10)
-                self.indices = get_indices(dist=neighs.distances)[0]
+                self.indices = get_indices(dist=neighs.distances, mode_neighbors=mode_neighbors)[0]
 
         self.max_neighs = random_neighbors_at_max
 
@@ -98,12 +100,15 @@ class VelocityGraph:
         self.report = report
         self.self_prob = None
 
+
     def compute_cosines(self):
         vals, rows, cols, n_obs = [], [], [], self.X.shape[0]
         progress = logg.ProgressReporter(n_obs)
+        exclude_nans = np.any(np.isnan(self.indices))
         for i in range(n_obs):
             if self.V[i].max() != 0 or self.V[i].min() != 0:
-                neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors, self.max_neighs)
+                neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors, self.max_neighs,
+                                                   exclude_nans)
 
                 if self.t0 is not None:
                     t0, t1 = self.t0[i], self.t1[i]
@@ -135,7 +140,7 @@ class VelocityGraph:
 
 def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, n_recurse_neighbors=None,
                    random_neighbors_at_max=None, sqrt_transform=None, variance_stabilization=None, gene_subset=None,
-                   approx=None, copy=False):
+                   approx=None, mode_neighbors='distances', copy=False):
     """Computes velocity graph based on cosine similarities.
 
     The cosine similarities are computed between velocities and potential cell state transitions, i.e. it measures how
@@ -171,6 +176,9 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
         Subset of genes to compute velocity graph on exclusively.
     approx: `bool` or `None` (default: `None`)
         If True, first 30 pc's are used instead of the full count matrix
+    mode_neighbors: 'str' (default: `'distances'`)
+        Determines the type of KNN graph used. Options are 'distances' or 'connectivities'. The latter yields a
+        symmetric KNN graph while the former does not.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to adata.
 
@@ -187,7 +195,8 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
 
     vgraph = VelocityGraph(adata, vkey=vkey, xkey=xkey, tkey=tkey, basis=basis, n_neighbors=n_neighbors, approx=approx,
                            n_recurse_neighbors=n_recurse_neighbors, random_neighbors_at_max=random_neighbors_at_max,
-                           sqrt_transform=sqrt_transform, gene_subset=gene_subset, report=True)
+                           sqrt_transform=sqrt_transform, gene_subset=gene_subset, report=True,
+                           mode_neighbors=mode_neighbors)
 
     if isinstance(basis, str):
         logg.warn(
