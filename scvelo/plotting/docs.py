@@ -34,6 +34,9 @@ alpha: `float` (default: 1)
     Set blending - 0 transparent to 1 opaque.
 linewidth: `float` (default: 1)
     Scaling factor for the width of occurring lines.
+linecolor: `str` ir list of `str` (default: 'k')
+    Color of lines from velocity fits, linear fits and polynomial fits
+perc: tuple, e.g. [2,98] (default: `None`)
 perc: tuple, e.g. [2,98] (default: `None`)
     Specify percentile for continuous coloring.
 sort_order: `bool` (default: `True`)

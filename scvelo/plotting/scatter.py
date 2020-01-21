@@ -20,8 +20,8 @@ import pandas as pd
 
 @doc_params(scatter=doc_scatter)
 def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
-            colorbar=None, palette=None, size=None, alpha=None, linewidth=None, perc=None, sort_order=True, groups=None,
-            components=None, projection=None, legend_loc=None, legend_fontsize=None, legend_fontweight=None,
+            colorbar=None, palette=None, size=None, alpha=None, linewidth=None, linecolor=None, perc=None, groups=None,
+            sort_order=True, components=None, projection=None, legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, xlim=None, ylim=None, show_density=None,
             show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, add_outline=None,
             outline_width=None, outline_color=None, n_convolve=None, smooth=None, rescale_color=None, dpi=None,
@@ -139,6 +139,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             is_embedding = ((x is None) | (y is None)) and basis not in adata.var_names
             if basis is None and is_embedding: basis = default_basis(adata)
             if linewidth is None: linewidth = 1
+            if linecolor is None: linecolor = 'k'
             if frameon is None: frameon = True if not is_embedding else settings._frameon
             if isinstance(groups, str): groups = [groups]
             if use_raw is None and basis not in adata.var_names:
@@ -178,7 +179,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
                 # velocity model fits (full dynamics and steady-state ratios)
                 if any(['gamma' in key or 'alpha' in key for key in adata.var.keys()]):
-                    plot_velocity_fits(adata, basis, vkey, use_raw, linewidth, legend_loc, legend_fontsize,
+                    plot_velocity_fits(adata, basis, vkey, use_raw, linewidth, linecolor, legend_loc, legend_fontsize,
                                        show_assignments, ax=ax)
 
             # embedding: set x and y to embedding coordinates
@@ -311,10 +312,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 plot_density(x, y, show_density, ax=ax)
 
             if show_linear_fit or show_linear_fit is 0:
-                plot_linfit(x, y, show_linear_fit, legend_loc is not 'none', c, linewidth, fontsize, ax=ax)
+                plot_linfit(x, y, show_linear_fit, legend_loc is not 'none', linecolor, linewidth, fontsize, ax=ax)
 
             if show_polyfit:
-                plot_polyfit(x, y, show_polyfit, legend_loc is not 'none', c, linewidth, fontsize, ax=ax)
+                plot_polyfit(x, y, show_polyfit, legend_loc is not 'none', linecolor, linewidth, fontsize, ax=ax)
 
             if rug:
                 plot_rug(np.ravel(x), color=np.ravel(interpret_colorkey(adata, rug)), ax=ax)

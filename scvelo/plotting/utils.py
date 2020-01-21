@@ -573,19 +573,19 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
 """additional plots (linear fit, density, outline, rug)"""
 
 
-def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1, ax=None):
+def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1, linecolor=None, ax=None):
     if ax is None: ax = pl.gca()
     xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
     vkeys = adata.layers.keys() if vkey is None else make_unique_list(vkey)
     fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
-    lines = []
+    linecolor, lines = to_list(linecolor), []
     for i, fit in enumerate(fits):
         linestyle = '--' if 'variance_' + fit in adata.layers.keys() else '-'
         gamma = adata[:, basis].var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
         beta = adata[:, basis].var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
         offset = adata[:, basis].var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
         line, = ax.plot(xnew, gamma / beta * xnew + offset / beta, linestyle=linestyle, linewidth=linewidth,
-                        c='k' if i == 0 else None)
+                        c=linecolor[i] if len(linecolor) > i and linecolor[i] is not None else 'k' if i == 0 else None)
         lines.append(line)
         fits[i] = 'steady-state ratio ({})'.format(fit) if len(fits) > 1 else 'steady-state ratio'
     return lines, fits
@@ -693,11 +693,11 @@ def plot_rug(x, height=.03, color=None, ax=None, **kwargs):
     ax.autoscale_view(scalex=True, scaley=False)
 
 
-def plot_velocity_fits(adata, basis, vkey=None, use_raw=None, linewidth=None, legend_loc=None, legend_fontsize=None,
-                       show_assignments=None, ax=None):
+def plot_velocity_fits(adata, basis, vkey=None, use_raw=None, linewidth=None, linecolor=None, legend_loc=None,
+                       legend_fontsize=None, show_assignments=None, ax=None):
     if ax is None: ax = pl.gca()
     if use_raw is None: use_raw = 'Ms' not in adata.layers.keys()
-    lines, fits = plot_linear_fit(adata, basis, vkey, 'spliced' if use_raw else 'Ms', linewidth, ax=ax)
+    lines, fits = plot_linear_fit(adata, basis, vkey, 'spliced' if use_raw else 'Ms', linewidth, linecolor, ax=ax)
     from .simulation import show_full_dynamics
     if 'true_alpha' in adata.var.keys() and (vkey is not None and 'true_dynamics' in vkey):
         line, fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth, ax=ax)
