@@ -37,12 +37,11 @@ linewidth: `float` (default: 1)
 linecolor: `str` ir list of `str` (default: 'k')
     Color of lines from velocity fits, linear fits and polynomial fits
 perc: tuple, e.g. [2,98] (default: `None`)
-perc: tuple, e.g. [2,98] (default: `None`)
     Specify percentile for continuous coloring.
-sort_order: `bool` (default: `True`)
-    For continuous annotations used as color parameter, plot data points with higher values on top of others.
 groups: `str` (default: `all groups`)
     Restrict to a few categories in categorical observation annotation.
+sort_order: `bool` (default: `True`)
+    For continuous annotations used as color parameter, plot data points with higher values on top of others.
 components: `str` or list of `str` (default: '1,2')
     For instance, ['1,2', '2,3'].
 projection: {'2d', '3d'} (default: '2d')
