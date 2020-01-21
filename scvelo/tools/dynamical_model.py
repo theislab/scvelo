@@ -4,14 +4,12 @@ from .. import settings
 from .. import logging as logg
 from ..preprocessing.moments import get_connectivities
 from .utils import make_unique_list, test_bimodality
-from .dynamical_model_utils import BaseDynamics, mRNA, linreg, convolve, tau_inv, compute_dt, unspliced, spliced
+from .dynamical_model_utils import BaseDynamics, linreg, convolve, tau_inv, unspliced, spliced
 
-import warnings
 import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
-from scipy.optimize import minimize, leastsq
-from scipy.stats import t
+from scipy.optimize import minimize
 
 
 class DynamicsRecovery(BaseDynamics):
@@ -83,11 +81,14 @@ class DynamicsRecovery(BaseDynamics):
 
     def fit(self, assignment_mode=None):
         if self.max_iter > 0:
+
             # pre-train with explicit time assignment
             self.fit_t_and_alpha()
             self.fit_scaling_()
             self.fit_rates()
             self.fit_t_()
+
+            # actual EM (each iteration of simplex downhill is
             self.fit_t_and_rates()
 
             # train with optimal time assignment (oth. projection)
@@ -513,7 +514,7 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
     weight_diffusion: `float` or `None` (default: `None`)
         Weight to be applied to couple latent time with diffusion-based velocity pseudotime.
     root_key: `str` or `None` (default: `None`)
-        Key (.uns) of root cell to be used. If not set, it obtains root cells from velocity-inferred transition matrix.
+        Key (.uns, .obs) of root cell to be used. If not set, it obtains root cells from velocity-inferred transition matrix.
     t_max: `float` or `None` (default: `None`)
         Overall duration of differentiation process. If not set, a splicing duration of 20 hours is used as prior.
     copy: `bool` (default: `False`)
@@ -535,7 +536,10 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
 
     if vkey + '_graph' not in adata.uns.keys():
         velocity_graph(adata, approx=True)
-    if 'root_cells' not in adata.obs.keys():
+
+    if root_key not in adata.uns.keys() and root_key not in adata.obs.keys():
+        root_key = 'root_cells'
+    if root_key not in adata.obs.keys():
         terminal_states(adata, vkey=vkey)
 
     t = np.array(adata.layers['fit_t'])
@@ -550,12 +554,18 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
     logg.info('computing latent time', r=True)
 
     roots = np.argsort(t_sum)
-    idx_roots = adata.obs['root_cells'] > 1 - 1e-3
-    if np.sum(idx_roots) > 0: roots = roots[idx_roots]
+    idx_roots = adata.obs[root_key].astype(int) > 1 - 1e-3
+    if np.sum(idx_roots) > 0:
+        roots = roots[idx_roots]
+    else:
+        logg.warn('No root cells detected. Consider specifying root cells to improve latent time prediction.')
 
-    fates = np.argsort(t_sum)[::-1]
-    idx_fates = adata.obs['end_points'] > 1 - 1e-3
-    if np.sum(idx_fates) > 0: fates = fates[idx_fates]
+    if 'end_points' in adata.obs.keys():
+        fates = np.argsort(t_sum)[::-1]
+        idx_fates = adata.obs['end_points'].astype(int) > 1 - 1e-3
+        if np.sum(idx_fates) > 0: fates = fates[idx_fates]
+    else:
+        fates = [None]
 
     VPT = velocity_pseudotime(adata, vkey, root=roots[0], end=fates[0], return_model=True)
     vpt = VPT.pseudotime
@@ -577,13 +587,14 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
         latent_time = np.mean(latent_time, axis=0)
         latent_time /= np.max(latent_time)
 
-        fates = fates[:4]
-        latent_time_ = np.ones(shape=(len(fates), adata.n_obs))
-        for i, fate in enumerate(fates):
-            t, t_ = root_time(t, root=fate)
-            latent_time_[i] = 1 - compute_shared_time(t)
-        latent_time_ = np.mean(latent_time_, axis=0)
-        latent_time_ /= np.max(latent_time_)
+        if fates[0] is not None:
+            fates = fates[:4]
+            latent_time_ = np.ones(shape=(len(fates), adata.n_obs))
+            for i, fate in enumerate(fates):
+                t, t_ = root_time(t, root=fate)
+                latent_time_[i] = 1 - compute_shared_time(t)
+            latent_time_ = np.mean(latent_time_, axis=0)
+            latent_time_ /= np.max(latent_time_)
 
     tl = latent_time
     tc = conn.dot(latent_time)
