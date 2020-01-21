@@ -100,15 +100,13 @@ class VelocityGraph:
         self.report = report
         self.self_prob = None
 
-
     def compute_cosines(self):
         vals, rows, cols, n_obs = [], [], [], self.X.shape[0]
         progress = logg.ProgressReporter(n_obs)
-        exclude_nans = np.any(np.isnan(self.indices))
+
         for i in range(n_obs):
             if self.V[i].max() != 0 or self.V[i].min() != 0:
-                neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors, self.max_neighs,
-                                                   exclude_nans)
+                neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors, self.max_neighs)
 
                 if self.t0 is not None:
                     t0, t1 = self.t0[i], self.t1[i]
