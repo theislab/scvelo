@@ -573,24 +573,6 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
 """additional plots (linear fit, density, outline, rug)"""
 
 
-def plot_linear_fit(adata, basis, vkey, xkey, linewidth=1, linecolor=None, ax=None):
-    if ax is None: ax = pl.gca()
-    xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
-    vkeys = adata.layers.keys() if vkey is None else make_unique_list(vkey)
-    fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
-    linecolor, lines = to_list(linecolor), []
-    for i, fit in enumerate(fits):
-        linestyle = '--' if 'variance_' + fit in adata.layers.keys() else '-'
-        gamma = adata[:, basis].var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
-        beta = adata[:, basis].var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
-        offset = adata[:, basis].var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
-        line, = ax.plot(xnew, gamma / beta * xnew + offset / beta, linestyle=linestyle, linewidth=linewidth,
-                        c=linecolor[i] if len(linecolor) > i and linecolor[i] is not None else 'k' if i == 0 else None)
-        lines.append(line)
-        fits[i] = 'steady-state ratio ({})'.format(fit) if len(fits) > 1 else 'steady-state ratio'
-    return lines, fits
-
-
 def plot_linfit(x, y, add_linfit=True, add_legend=True, color=None, linewidth=None, fontsize=None, ax=None):
     if ax is None: ax = pl.gca()
     idx_valid = ~np.isnan(x + y)
@@ -622,6 +604,46 @@ def plot_polyfit(x, y, add_polyfit=True, add_legend=True, color=None, linewidth=
         R2 = np.sum((f(x) - np.mean(y)) ** 2) / np.sum((y - np.mean(y)) ** 2)
         ax.text(.05, .95, r'$R^2 = $' + str(np.round(R2, 2)), ha='left', va='top', fontsize=fontsize,
                 transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
+
+
+def plot_vlines(adata, basis, vkey, xkey, linewidth=1, linecolor=None, ax=None):
+    if ax is None: ax = pl.gca()
+    xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
+    vkeys = adata.layers.keys() if vkey is None else make_unique_list(vkey)
+    fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
+    linecolor, lines = to_list(linecolor), []
+    for i, fit in enumerate(fits):
+        linestyle = '--' if 'variance_' + fit in adata.layers.keys() else '-'
+        gamma = adata[:, basis].var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
+        beta = adata[:, basis].var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
+        offset = adata[:, basis].var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
+        line, = ax.plot(xnew, gamma / beta * xnew + offset / beta, linestyle=linestyle, linewidth=linewidth,
+                        c=linecolor[i] if len(linecolor) > i and linecolor[i] is not None else 'k' if i == 0 else None)
+        lines.append(line)
+        fits[i] = 'steady-state ratio ({})'.format(fit) if len(fits) > 1 else 'steady-state ratio'
+    return lines, fits
+
+
+def plot_velocity_fits(adata, basis, vkey=None, use_raw=None, linewidth=None, linecolor=None, legend_loc=None,
+                       legend_fontsize=None, show_assignments=None, ax=None):
+    if ax is None: ax = pl.gca()
+    if use_raw is None: use_raw = 'Ms' not in adata.layers.keys()
+
+    # linear fits
+    lines, fits = plot_vlines(adata, basis, vkey, 'spliced' if use_raw else 'Ms', linewidth, linecolor, ax=ax)
+
+    # full dynamic fits
+    from .simulation import show_full_dynamics
+    if 'true_alpha' in adata.var.keys() and (vkey is not None and 'true_dynamics' in vkey):
+        line, fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth, ax=ax)
+        fits.append(fit); lines.append(line)
+    if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
+        line, fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments, ax=ax)
+        fits.append(fit); lines.append(line)
+
+    if len(fits) > 0 and legend_loc is not False and legend_loc is not 'none':
+        ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize,
+                  loc='lower right' if legend_loc is None else legend_loc)
 
 
 def plot_density(x, y=None, add_density=True, eval_pts=50, scale=10, alpha=.3, color='grey', ax=None):
@@ -691,26 +713,6 @@ def plot_rug(x, height=.03, color=None, ax=None, **kwargs):
     line_segs = np.column_stack([np.repeat(x, 2), np.tile([0, height], len(x))]).reshape([len(x), 2, 2])
     ax.add_collection(LineCollection(line_segs, transform=transform, color=color, **kwargs))
     ax.autoscale_view(scalex=True, scaley=False)
-
-
-def plot_velocity_fits(adata, basis, vkey=None, use_raw=None, linewidth=None, linecolor=None, legend_loc=None,
-                       legend_fontsize=None, show_assignments=None, ax=None):
-    if ax is None: ax = pl.gca()
-    if use_raw is None: use_raw = 'Ms' not in adata.layers.keys()
-    lines, fits = plot_linear_fit(adata, basis, vkey, 'spliced' if use_raw else 'Ms', linewidth, linecolor, ax=ax)
-    from .simulation import show_full_dynamics
-    if 'true_alpha' in adata.var.keys() and (vkey is not None and 'true_dynamics' in vkey):
-        line, fit = show_full_dynamics(adata, basis, 'true', use_raw, linewidth, ax=ax)
-        fits.append(fit)
-        lines.append(line)
-    if 'fit_alpha' in adata.var.keys() and (vkey is None or 'dynamics' in vkey):
-        line, fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments,
-                                       ax=ax)
-        fits.append(fit)
-        lines.append(line)
-    if len(fits) > 0 and legend_loc is not False and legend_loc is not 'none':
-        ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize,
-                  loc='lower right' if legend_loc is None else legend_loc)
 
 
 """for velocity_embedding"""

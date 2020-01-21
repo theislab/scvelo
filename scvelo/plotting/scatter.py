@@ -7,7 +7,7 @@ from .utils import is_categorical, is_list, is_list_of_str, is_list_of_list, to_
 from .utils import default_basis, default_color, default_size, default_color_map, default_legend_loc, default_xkey, default_ykey
 from .utils import unique, make_dense, get_components, get_connectivities, groups_to_bool, interpret_colorkey, get_obs_vector
 from .utils import update_axes, set_label, set_title, set_colorbar, _set_colors_for_categorical_obs, _add_legend
-from .utils import plot_linear_fit, plot_linfit, plot_polyfit, plot_density, plot_outline, plot_rug, plot_velocity_fits, savefig_or_show
+from .utils import plot_linfit, plot_polyfit, plot_density, plot_outline, plot_rug, plot_velocity_fits, savefig_or_show
 
 
 from inspect import signature
