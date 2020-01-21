@@ -130,6 +130,27 @@ def print_passed_time():
     return _sec_to_str(get_passed_time())
 
 
+def timeout(func, args=(), kwargs={}, timeout_duration=2, default=None):
+    """This will spwan a thread and run the given function using the args, kwargs and
+    return the given default value if the timeout_duration is exceeded
+    """
+    import threading
+
+    class InterruptableThread(threading.Thread):
+        def __init__(self):
+            threading.Thread.__init__(self)
+            self.result = default
+
+        def run(self):
+            try: self.result = func(*args, **kwargs)
+            except: pass
+
+    it = InterruptableThread()
+    it.start()
+    it.join(timeout_duration)
+    return it.result
+
+
 def get_latest_pypi_version():
     from subprocess import check_output, CalledProcessError
     try:  # needs to work offline as well
@@ -141,7 +162,7 @@ def get_latest_pypi_version():
 
 def check_if_latest_version():
     from . import __version__
-    latest_version = get_latest_pypi_version()
+    latest_version = timeout(get_latest_pypi_version, timeout_duration=2, default='0.0.0')
     if __version__.rsplit('.dev')[0] < latest_version.rsplit('.dev')[0]:
         warn('There is a newer scvelo version available on PyPI:\n',
              'Your version: \t\t', __version__, '\n',
