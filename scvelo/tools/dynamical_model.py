@@ -7,6 +7,7 @@ from .utils import make_unique_list, test_bimodality
 from .dynamical_model_utils import BaseDynamics, linreg, convolve, tau_inv, unspliced, spliced
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 from scipy.optimize import minimize
@@ -35,7 +36,7 @@ class DynamicsRecovery(BaseDynamics):
         weights_u = u_w >= np.percentile(u_w, perc, axis=0)
 
         weights_g = weights_s if self.steady_state_prior is None else weights_s | self.steady_state_prior[w]
-        beta, gamma = 1, linreg(convolve(u_w, weights_g), convolve(s_w, weights_g))
+        beta, gamma = 1, linreg(convolve(u_w, weights_g), convolve(s_w, weights_g)) + 1e-6  # 1e-6 to avoid beta = gamma
         # initialize gamma / beta * scaling clipped to adapt faster to extreme ratios
         gamma = gamma * 1.2 if gamma < .05 / scaling else gamma / 1.2 if gamma > 1.5 / scaling else gamma
         u_inf, s_inf = u_w[weights_u | weights_s].mean(), s_w[weights_s].mean()
@@ -491,7 +492,7 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
 
 
 def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, min_corr_diffusion=None,
-                        weight_diffusion=None, root_key=None, t_max=None, copy=False):
+                        weight_diffusion=None, root_key=None, end_key=None, t_max=None, copy=False):
     """Computes a gene-shared latent time.
 
     Gene-specific latent timepoints obtained from the dynamical model are coupled to a universal gene-shared
@@ -515,6 +516,8 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
         Weight to be applied to couple latent time with diffusion-based velocity pseudotime.
     root_key: `str` or `None` (default: `None`)
         Key (.uns, .obs) of root cell to be used. If not set, it obtains root cells from velocity-inferred transition matrix.
+    end_key: `str` or `None` (default: `None`)
+        Key (.obs) of end points to be used. If not set, it obtains end points from velocity-inferred transition matrix.
     t_max: `float` or `None` (default: `None`)
         Overall duration of differentiation process. If not set, a splicing duration of 20 hours is used as prior.
     copy: `bool` (default: `False`)
@@ -541,6 +544,11 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
         root_key = 'root_cells'
     if root_key not in adata.obs.keys():
         terminal_states(adata, vkey=vkey)
+    if end_key is None:
+        if 'end_points' in adata.obs.keys():
+            end_key = 'end_points'
+        elif 'final_cells' in adata.obs.keys():
+            end_key = 'final_cells'
 
     t = np.array(adata.layers['fit_t'])
     idx_valid = ~np.isnan(t.sum(0))
@@ -554,15 +562,23 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
     logg.info('computing latent time', r=True)
 
     roots = np.argsort(t_sum)
-    idx_roots = adata.obs[root_key].astype(int) > 1 - 1e-3
+    idx_roots = adata.obs[root_key]
+    idx_roots[pd.isnull(idx_roots)] = 0
+    if np.any([isinstance(ix, str) for ix in idx_roots]):
+        idx_roots = np.array(idx_roots, dtype=bool)
+    idx_roots = idx_roots.astype(int) > 1 - 1e-3
     if np.sum(idx_roots) > 0:
         roots = roots[idx_roots]
     else:
         logg.warn('No root cells detected. Consider specifying root cells to improve latent time prediction.')
 
-    if 'end_points' in adata.obs.keys():
+    if end_key in adata.obs.keys():
         fates = np.argsort(t_sum)[::-1]
-        idx_fates = adata.obs['end_points'].astype(int) > 1 - 1e-3
+        idx_fates = adata.obs[end_key]
+        idx_fates[pd.isnull(idx_fates)] = 0
+        if np.any([isinstance(ix, str) for ix in idx_fates]):
+            idx_fates = np.array(idx_fates, dtype=bool)
+        idx_fates = idx_fates.astype(int) > 1 - 1e-3
         if np.sum(idx_fates) > 0: fates = fates[idx_fates]
     else:
         fates = [None]
