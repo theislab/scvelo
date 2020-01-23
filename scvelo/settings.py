@@ -84,7 +84,7 @@ vega_20 = [*vega_20[0:14:2], *vega_20[16::2], *vega_20[1:15:2], *vega_20[17::2],
 vega_20[2], vega_20[4], vega_20[7] = '#279e68', '#aa40fc', '#b5bd61'  # green, purple, khaki
 
 
-def set_rcParams_scvelo(fontsize=8, color_map=None, frameon=None):
+def set_rcParams_scvelo(fontsize=12, color_map=None, frameon=None):
     """Set matplotlib.rcParams to scvelo defaults."""
 
     # dpi options (mpl default: 100, 100)
@@ -92,7 +92,7 @@ def set_rcParams_scvelo(fontsize=8, color_map=None, frameon=None):
     rcParams['savefig.dpi'] = 150
 
     # figure (mpl default: 0.125, 0.96, 0.15, 0.91)
-    rcParams['figure.figsize'] = (7, 5)
+    rcParams['figure.figsize'] = (6, 4)
     rcParams['figure.subplot.left'] = 0.18
     rcParams['figure.subplot.right'] = 0.96
     rcParams['figure.subplot.bottom'] = 0.15
@@ -150,7 +150,7 @@ def set_rcParams_scvelo(fontsize=8, color_map=None, frameon=None):
     _frameon = frameon
 
 
-def set_rcParams_scanpy(fontsize=14, color_map=None, frameon=None):
+def set_rcParams_scanpy(fontsize=12, color_map=None, frameon=None):
     """Set matplotlib.rcParams to Scanpy defaults."""
 
     # dpi options
@@ -214,8 +214,8 @@ def set_rcParams_scanpy(fontsize=14, color_map=None, frameon=None):
     _frameon = frameon
 
 
-def set_figure_params(style='scvelo', figsize=None, dpi=None, dpi_save=None, frameon=None, vector_friendly=True,
-                      color_map=None, format='pdf', transparent=False, ipython_format='png2x'):
+def set_figure_params(style='scvelo', dpi=100, dpi_save=150, frameon=None, vector_friendly=True, transparent=True,
+                      fontsize=12, figsize=None, color_map=None, facecolor=None, format='pdf', ipython_format='png2x'):
     """Set resolution/size, styling and format of figures.
 
     Arguments
@@ -223,8 +223,7 @@ def set_figure_params(style='scvelo', figsize=None, dpi=None, dpi_save=None, fra
     style : `str` (default: `None`)
         Init default values for ``matplotlib.rcParams`` suited for `scvelo` or `scanpy`.
         Use `None` for the default matplotlib values.
-    figsize: `[float, float]` (default: `None`)
-        Width and height for default figure size.
+
     dpi : `int` (default: `None`)
         Resolution of rendered figures - this influences the size of figures in notebooks.
     dpi_save : `int` (default: `None`)
@@ -234,13 +233,19 @@ def set_figure_params(style='scvelo', figsize=None, dpi=None, dpi_save=None, fra
         Add frames and axes labels to scatter plots.
     vector_friendly : `bool` (default: `True`)
         Plot scatter plots using `png` backend even when exporting as `pdf` or `svg`.
-    color_map : `str` (default: `None`)
-        Convenience method for setting the default color map.
-    format : {'png', 'pdf', 'svg', etc.} (default: 'pdf')
-        This sets the default format for saving figures: `file_format_figs`.
     transparent : `bool` (default: `True`)
         Save figures with transparent back ground. Sets
         `rcParams['savefig.transparent']`.
+    fontsize : `int` (default: 14)
+        Set the fontsize for several `rcParams` entries.
+    figsize: `[float, float]` (default: `None`)
+        Width and height for default figure size.
+    color_map : `str` (default: `None`)
+        Convenience method for setting the default color map.
+    facecolor : `str` (default: `None`)
+        Sets backgrounds `rcParams['figure.facecolor']` and `rcParams['axes.facecolor']` to `facecolor`.
+    format : {'png', 'pdf', 'svg', etc.} (default: 'pdf')
+        This sets the default format for saving figures: `file_format_figs`.
     ipython_format : list of `str` (default: 'png2x')
         Only concerns the notebook/IPython environment; see
         `IPython.core.display.set_matplotlib_formats` for more details.
@@ -259,10 +264,13 @@ def set_figure_params(style='scvelo', figsize=None, dpi=None, dpi_save=None, fra
     file_format_figs = format
     if transparent is not None:
         rcParams['savefig.transparent'] = transparent
+    if facecolor is not None:
+        rcParams['figure.facecolor'] = facecolor
+        rcParams['axes.facecolor'] = facecolor
     if style is 'scvelo':
-        set_rcParams_scvelo(color_map=color_map, frameon=frameon)
+        set_rcParams_scvelo(fontsize=fontsize, color_map=color_map, frameon=frameon)
     elif style is 'scanpy':
-        set_rcParams_scanpy(color_map=color_map, frameon=frameon)
+        set_rcParams_scanpy(fontsize=fontsize, color_map=color_map, frameon=frameon)
     # Overwrite style options if given
     if figsize is not None:
         rcParams['figure.figsize'] = figsize
