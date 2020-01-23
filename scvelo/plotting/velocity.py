@@ -11,7 +11,7 @@ from scipy.sparse import issparse
 
 
 def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits='all', layers='all', color=None,
-             color_map=['RdYlGn', 'gnuplot_r'], colorbar=False, perc=[2,98], alpha=.5, size=None, groupby=None,
+             color_map=['RdYlGn', 'gnuplot_r'], colorbar=True, perc=[2,98], alpha=.5, size=None, groupby=None,
              groups=None, legend_loc='none', use_raw=False, fontsize=None, figsize=None, dpi=None, show=True, save=None,
              ax=None, ncols=None, **kwargs):
     """Phase and velocity plot for set of genes.
@@ -146,7 +146,6 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
                 offset2 = _adata.var[fit + '_offset2'].values if fit + '_offset2' in adata.var.keys() else 0
 
                 pl.plot(xnew, gamma / beta * xnew + offset2 / beta, c='k', linestyle='--')
-            if v == len(var_names) - 1: pl.legend(fits, loc='lower right', prop={'size': 34/ncols})
 
     savefig_or_show(dpi=dpi, save=save, show=show)
     if not show: return ax

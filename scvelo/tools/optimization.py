@@ -87,6 +87,7 @@ def leastsq_generalized(x, y, x2, y2, res_std=None, res2_std=None, fit_offset=Fa
         if not fit_offset and isinstance(perc, (list, tuple)): perc = perc[1]
         weights = csr_matrix(get_weight(x, y, perc=perc) | get_weight(x, perc=perc)).astype(bool)
         x, y = weights.multiply(x).tocsr(), weights.multiply(y).tocsr()
+        #x2, y2 = weights.multiply(x2).tocsr(), weights.multiply(y2).tocsr()
 
     n_obs, n_var = x.shape
     offset, offset_ss = np.zeros(n_var, dtype="float32"), np.zeros(n_var, dtype="float32")

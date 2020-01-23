@@ -219,6 +219,10 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
         T = transition_matrix(_adata, vkey=vkey, self_transitions=self_transitions, backward=True, **kwargs)
         eigvecs_roots = eigs(T, eps=eps, perc=[2, 98])[1]
         roots = csr_matrix.dot(connectivities, eigvecs_roots).sum(1)
+        #roots = scale(eigvecs_roots.sum(1))
+        #n_neighs_roots = ((connectivities > 0) * 1).dot(roots > 1 - 1e-3)
+        #roots = csr_matrix.dot(connectivities, (n_neighs_roots > np.nanmax(n_neighs_roots) / 3) * roots)
+
         roots = scale(np.clip(roots, 0, np.percentile(roots, 98)))
         write_to_obs(adata, 'root_cells', roots, cell_subset)
 

@@ -715,7 +715,7 @@ class BaseDynamics:
         return ut * beta - st * gamma
 
     def plot_phase(self, adata=None, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, refit_time=None,
-                   show=True, **kwargs):
+                   show=True, show_assignments=None, **kwargs):
         from ..plotting.scatter import scatter
         if np.all([x is None for x in [alpha, beta, gamma, scaling, t_]]): refit_time = False
         t, t_, alpha, beta, gamma, scaling = self.get_vals(t, t_, alpha, beta, gamma, scaling, refit_time=refit_time)
@@ -732,6 +732,10 @@ class BaseDynamics:
 
         pl.plot(st, ut, color='purple', linestyle='-')
         pl.xlabel('spliced'); pl.ylabel('unspliced');
+
+        if show_assignments is not None and show_assignments is not False:
+            ax.plot(np.array([self.s[idx_sorted], st]),
+                    np.array([self.u[idx_sorted], ut]), color='grey', linewidth=.1 * 1)
         return ax if show is False else None
 
     def plot_profile_contour(self, xkey='gamma', ykey='alpha', x_sight=.5, y_sight=.5, num=20, contour_levels=4,
@@ -820,7 +824,7 @@ class BaseDynamics:
         ax.scatter(xp, yp, c=yp, cmap=color_map, edgecolor='none', vmin=vmin, vmax=vmax)
         ax.set_xlabel(x_label, fontsize=fontsize)
         ax.set_ylabel('likelihood', fontsize=fontsize)
-        ax = update_axes(ax, fontsize=fontsize, frameon=True)
+        update_axes(ax, fontsize=fontsize, frameon=True)
 
         self.assignment_mode = assignment_mode
         if not show: return ax
@@ -938,16 +942,16 @@ class BaseDynamics:
         ax.set_ylabel('unspliced', fontsize=fontsize)
         title = '' if title is None else title
         ax.set_title(title, fontsize=fontsize)
-        ax = update_axes(ax, fontsize=fontsize, frameon=True)
+        update_axes(ax, fontsize=fontsize, frameon=True)
 
         return ax
 
 
 def get_reads(adata, key='fit', scaled=True, use_raw=False):
-    if 'Ms' not in adata.layers.keys(): use_raw=True
-    u = np.array(adata.layers['unspliced'] if use_raw else adata.layers['Mu'])
+    if 'Ms' not in adata.layers.keys(): use_raw = True
+    s = make_dense(adata.layers['spliced' if use_raw else 'Ms'])
+    u = make_dense(adata.layers['unspliced'if use_raw else 'Mu'])
     if scaled: u /= adata.var[key + '_scaling'].values
-    s = np.array(adata.layers['spliced'] if use_raw else adata.layers['Ms'])
     return u, s
 
 

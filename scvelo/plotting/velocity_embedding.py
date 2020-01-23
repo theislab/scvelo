@@ -41,6 +41,8 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
     -------
         `matplotlib.Axis` if `show==False`
     """
+    #fkeys = ['adata', 'show', 'save', 'groups', 'figsize', 'dpi', 'ncols', 'wspace', 'hspace', 'ax', 'kwargs']
+
     vkey = [key for key in adata.layers.keys() if 'velocity' in key and '_u' not in key] if vkey is 'all' else vkey
     layers, vkeys, colors = make_unique_list(layer), make_unique_list(vkey), make_unique_list(color, allow_array=True)
     bases = [default_basis(adata) if basis is None else basis for basis in make_unique_valid_list(adata, basis)]
@@ -58,7 +60,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
                       "colorbar": colorbar, "dpi": dpi, "fontsize": fontsize, "show": False, "save": False}
 
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 \
-        else vkeys if len(vkeys) > 1 else bases if len(bases) > 1 else  None
+        else vkeys if len(vkeys) > 1 else bases if len(bases) > 1 else None
     if multikey is not None:
         if title is None: title = list(multikey)
         elif isinstance(title, (list, tuple)): title *= int(np.ceil(len(multikey) / len(title)))
