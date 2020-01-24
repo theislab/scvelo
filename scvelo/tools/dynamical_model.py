@@ -562,7 +562,7 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
     logg.info('computing latent time', r=True)
 
     roots = np.argsort(t_sum)
-    idx_roots = adata.obs[root_key]
+    idx_roots = np.array(adata.obs[root_key])
     idx_roots[pd.isnull(idx_roots)] = 0
     if np.any([isinstance(ix, str) for ix in idx_roots]):
         idx_roots = np.array(idx_roots, dtype=bool)
@@ -574,7 +574,7 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
 
     if end_key in adata.obs.keys():
         fates = np.argsort(t_sum)[::-1]
-        idx_fates = adata.obs[end_key]
+        idx_fates = np.array(adata.obs[end_key])
         idx_fates[pd.isnull(idx_fates)] = 0
         if np.any([isinstance(ix, str) for ix in idx_fates]):
             idx_fates = np.array(idx_fates, dtype=bool)
