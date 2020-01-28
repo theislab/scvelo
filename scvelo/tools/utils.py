@@ -1,4 +1,5 @@
 from scipy.sparse import csr_matrix, issparse
+from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as pl
 import pandas as pd
 import numpy as np
@@ -277,6 +278,15 @@ def make_unique_list(key, allow_array=False):
     is_list = isinstance(key, (list, tuple, np.record)) if allow_array else isinstance(key, (list, tuple, np.ndarray, np.record))
     is_list_of_str = is_list and all(isinstance(item, str) for item in key)
     return unique(key) if is_list_of_str else key if is_list and len(key) < 20 else [key]
+
+
+def test_linearity(x, y):
+    # Fits a linear regression onto data, returns r squared value
+    if len(x.shape) == 1:
+        x = x.reshape(-1, 1)  # single feature
+    lr = LinearRegression()
+    lr.fit(x, y)
+    return lr.score(x, y)
 
 
 def test_bimodality(x, bins=30, kde=True, plot=False):

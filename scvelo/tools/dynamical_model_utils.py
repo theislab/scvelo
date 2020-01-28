@@ -196,7 +196,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
                        std_u=1, std_s=1, normalized=False, mode='distance', assignment_mode=None, var_scale=False,
                        kernel_width=None, fit_steady_states=True, connectivities=None, constraint_time_increments=True,
                        reg_time=None, reg_par=None, min_confidence=None, pval_steady=None, steady_u=None, steady_s=None,
-                       noise_model='chi', time_connectivities=None, **kwargs):
+                       noise_model='chi', time_connectivities=None, states_to_fit=None, **kwargs):
     """Estimates the divergence (avaiable metrics: distance, mse, likelihood, loglikelihood) of ODE to observations
 
     Arguments
@@ -257,12 +257,20 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
             std_u *= np.sqrt(varu)
             std_s *= np.sqrt(vars)
 
+    # States to exclude from the fit have their dists set to infinity
+    stf = [1 if s == 1 else np.inf for s in states_to_fit] if states_to_fit is not None else states_to_fit
+
     # compute steady state distances
     if fit_steady_states:
         distx_steady = ((u - alpha / beta) / std_u) ** 2 + ((s - alpha / gamma) / std_s) ** 2
         distx_steady_ = (u / std_u) ** 2 + (s / std_s) ** 2
 
         res = np.array([distx_, distx, distx_steady_, distx_steady])
+
+        # Restrict fit to certain states only
+        res = np.multiply(stf, res.T).T if states_to_fit is not None else res
+    else:
+        res = np.multiply(stf[0:2], res.T).T if states_to_fit is not None else res
 
     if connectivities is not None and connectivities is not False:
         res = np.array([connectivities.dot(r) for r in res]) if res.ndim > 2 else connectivities.dot(res.T).T
@@ -479,7 +487,7 @@ def curve_dists(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, std_u=1, 
 class BaseDynamics:
     def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, perc=99, max_iter=10, fit_time=True,
                  fit_scaling=True, fit_steady_states=True, fit_connected_states=True, fit_basal_transcription=None,
-                 high_pars_resolution=False, steady_state_prior=None):
+                 high_pars_resolution=False, steady_state_prior=None, root_prior=None, states_to_fit=None):
         self.s, self.u, self.use_raw = None, None, None
 
         _layers = adata[:, gene].layers
@@ -507,6 +515,10 @@ class BaseDynamics:
         self.max_iter = max_iter
         # partition to total of 5 fitting procedures (t_ and alpha, scaling, rates, t_, all together)
         self.simplex_kwargs = {'method': 'Nelder-Mead', 'options': {'maxiter': int(self.max_iter / 5)}}
+
+        self.root_prior = root_prior  # must be set before initializing weights
+        self.states_to_fit = [1, 1, 1, 1] if states_to_fit is None else states_to_fit
+        self.one_sided = np.sum(self.states_to_fit[0:2]) < 2
 
         self.perc = perc
         self.recoverable = True
@@ -537,6 +549,7 @@ class BaseDynamics:
         weights = np.array(nonzero, dtype=bool)
         if filter_by_s: weights &= np.ravel(self.s <= np.percentile(self.s[nonzero], self.perc))
         if filter_by_u: weights &= np.ravel(self.u <= np.percentile(self.u[nonzero], self.perc))
+        if self.root_prior is not None: weights[self.root_prior] = True  # root should never be excluded
 
         self.weights = weights
         self.std_u = np.std(self.u[weights])
@@ -590,11 +603,13 @@ class BaseDynamics:
         alpha, beta, gamma, scaling, t_ = self.get_vars(alpha, beta, gamma, scaling, t_, u0_, s0_)
         res = compute_divergence(self.u / scaling, self.s, alpha, beta, gamma, scaling, t_, u0_, s0_, mode=mode,
                                  std_u=self.std_u, std_s=self.std_s, assignment_mode=self.assignment_mode,
-                                 connectivities=self.connectivities, fit_steady_states=self.fit_steady_states, **kwargs)
+                                 connectivities=self.connectivities, fit_steady_states=self.fit_steady_states,
+                                 states_to_fit=self.states_to_fit, constraint_time_increments=not self.one_sided,
+                                 **kwargs)
         return res
 
     def get_time_assignment(self, alpha=None, beta=None, gamma=None, scaling=None, t_=None, u0_=None, s0_=None,
-                             t=None, refit_time=None, rescale_factor=None, weighted=False):
+                            t=None, refit_time=None, rescale_factor=None, weighted=False):
         if refit_time is None:
             refit_time = self.refit_time
 
@@ -641,8 +656,23 @@ class BaseDynamics:
         alpha, beta, gamma, scaling, t_ = self.get_vars(alpha, beta, gamma, scaling, t_, u0_, s0_)
         t, tau, o = self.get_time_assignment(alpha, beta, gamma, scaling, t_, u0_, s0_, t, refit_time, weighted=weighted)
 
+        prior_w = np.isin(np.arange(len(self.u))[self.weights], self.root_prior)
+        # pre-select best root if multiple ones are given
+        if self.root_prior is not None and not np.isscalar(self.root_prior):
+            u_rest, s_rest = np.mean(u[~prior_w]), np.mean(s[~prior_w])
+            # the best root is the furthest outlier
+            root_dists = [np.mean((u[np.arange(len(self.u))[self.weights] == root]-u_rest)**2 +
+                                  (s[np.arange(len(self.u))[self.weights] == root]-s_rest)**2)
+                          for root in self.root_prior]
+            best_root = self.root_prior[np.argmax(root_dists)]
+            prior_w = np.isin(np.arange(len(self.u))[self.weights], best_root)
+
+        # Get root time
+        t_root = t[prior_w] if self.root_prior is not None else None
+
         if weighted is 'dynamical':
             idx = (u > np.max(u) / 3) & (s > np.max(s) / 3)
+            idx[prior_w] = 1  # roots are never filtered out
             if np.sum(idx) > 0: u, s, t = u[idx], s[idx], t[idx]
 
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
@@ -650,8 +680,20 @@ class BaseDynamics:
 
         udiff = np.array(ut - u) / self.std_u * scaling
         sdiff = np.array(st - s) / self.std_s
-        reg = (gamma / beta - self.steady_state_ratio) * s / self.std_s if self.steady_state_ratio is not None else 0
-        return udiff, sdiff, reg
+
+        # Steady state ratio regularizer
+        reg_1 = (gamma / beta - self.steady_state_ratio) * s / self.std_s \
+            if self.steady_state_ratio is not None and not self.one_sided else 0
+
+        # Root prior regularizer
+        # This is very heuristic
+        # Best regularizer currently is the number of temporally incorrectly arranged cells (i.e. cells not earlier than
+        # the root cell in latent time.) averaged across multiple roots and scaled to the highest 95-th percentile
+        # of curve-obs distances.
+        reg_2 = np.mean([(ti - t) > 0 for ti in t_root], axis=0)\
+                * np.percentile(np.linalg.norm([udiff, sdiff], 2, axis=0), 95) if self.root_prior is not None else 0
+
+        return udiff, sdiff, reg_1 + reg_2
 
     def get_residuals(self, **kwargs):
         udiff, sdiff, reg = self.get_dists(**kwargs)
@@ -677,9 +719,12 @@ class BaseDynamics:
         n = np.clip(len(distx) - len(self.u) * .01, 2, None)
         return - 1 / 2 / n * np.sum(distx) / varx - 1 / 2 * np.log(2 * np.pi * varx)
 
-    def get_likelihood(self, **kwargs):
+    def get_likelihood(self, one_sided=False, **kwargs):
         if 'weighted' not in kwargs: kwargs.update({'weighted': 'dynamical'})
+        steady_state_ratio = self.steady_state_ratio
+        self.steady_state_ratio = None if one_sided else self.steady_state_ratio
         likelihood = np.exp(self.get_loglikelihood(**kwargs))
+        self.steady_state_ratio = steady_state_ratio
         return likelihood
 
     def get_curve_likelihood(self):

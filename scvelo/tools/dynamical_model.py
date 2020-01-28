@@ -3,8 +3,8 @@
 from .. import settings
 from .. import logging as logg
 from ..preprocessing.moments import get_connectivities
-from .utils import make_unique_list, test_bimodality
-from .dynamical_model_utils import BaseDynamics, linreg, convolve, tau_inv, unspliced, spliced
+from .utils import make_unique_list, test_bimodality, test_linearity
+from .dynamical_model_utils import BaseDynamics, mRNA, linreg, convolve, tau_inv, unspliced, spliced
 
 import numpy as np
 import pandas as pd
@@ -242,7 +242,7 @@ def write_pars(adata, pars, pars_names=None, add_key='fit'):
 def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_iter=10, assignment_mode='projection',
                      t_max=None, fit_time=True, fit_scaling=True, fit_steady_states=True, fit_connected_states=None,
                      fit_basal_transcription=None, use_raw=False, load_pars=None, return_model=None, plot_results=False,
-                     steady_state_prior=None, add_key='fit', copy=False, **kwargs):
+                     steady_state_prior=None, root_prior=None, linear_action=None, add_key='fit', copy=False, **kwargs):
     """Recovers the full splicing kinetics of specified genes.
 
     The model infers transcription rates, splicing rates, degradation rates,
@@ -286,6 +286,10 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
         Plot results after parameter inference.
     steady_state_prior: list of `bool` or `None` (default: `None`)
         Mask for indices used for steady state regression.
+    root_prior: `int` or list of `int` or `None` (default: `None`)
+        Indices of cells to be used as root priors.
+    linear_action: `'check'` or `'skip'` or `None` (default: `None`)
+        Whether to double-check or skip linear dynamic genes.
     add_key: `str` (default: `'fit'`)
         Key to add to parameter names, e.g. 'fit_t' for fitted time.
     copy: `bool` (default: `False`)
@@ -334,13 +338,33 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
     Tau_ = adata.layers['fit_tau_'] if 'fit_tau_' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
 
     conn = get_connectivities(adata) if fit_connected_states else None
+
+    dwargs = {'use_raw': use_raw, 'load_pars': load_pars, 'max_iter': max_iter, 'fit_time': fit_time,
+              'fit_steady_states': fit_steady_states, 'fit_connected_states': conn, 'fit_scaling': fit_scaling,
+              'fit_basal_transcription': fit_basal_transcription, 'steady_state_prior': steady_state_prior,
+              'root_prior': root_prior}
+
     progress = logg.ProgressReporter(len(var_names))
     for i, gene in enumerate(var_names):
-        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=load_pars, max_iter=max_iter, fit_time=fit_time,
-                              fit_steady_states=fit_steady_states, fit_connected_states=conn, fit_scaling=fit_scaling,
-                              fit_basal_transcription=fit_basal_transcription, steady_state_prior=steady_state_prior, **kwargs)
+        dm = DynamicsRecovery(adata, gene, **dwargs, **kwargs)
         if dm.recoverable:
-            dm.fit(assignment_mode=assignment_mode)
+            # test for highly linear shape
+            rsq = test_linearity(dm.s, dm.u)
+            ambiguous_dynamics = rsq > 0.95
+            if ambiguous_dynamics:
+                dm.one_sided = True
+                if linear_action is 'check':
+                    dm_on = DynamicsRecovery(adata, gene, states_to_fit=[0, 1, 0, 0], **dwargs, **kwargs)
+                    dm_on.fit(assignment_mode=assignment_mode)
+
+                    dm_off = DynamicsRecovery(adata, gene, states_to_fit=[1, 0, 0, 0], **dwargs, **kwargs)
+                    dm_off.fit(assignment_mode=assignment_mode)
+
+                    dm = dm_on if dm_on.likelihood >= dm_off.likelihood else dm_off
+                elif linear_action is 'skip':
+                    dm = None
+                    continue
+            dm.fit(assignment_mode=assignment_mode)  # This is kinda necessary
 
             ix = np.where(adata.var_names == gene)[0][0]
             idx.append(ix)
