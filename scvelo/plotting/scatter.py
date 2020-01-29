@@ -297,7 +297,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 raise ValueError('x or y do not share the same dimension.')
 
             if not isinstance(c, str):
-                c = np.ravel(c)
+                c = np.ravel(c) if len(np.ravel(c)) == len(x) else c
                 if len(c) != len(x):
                     c = 'grey'
                     if color is not default_color(adata):

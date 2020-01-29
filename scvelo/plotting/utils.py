@@ -265,7 +265,7 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
 
     else:
         for idx, label in enumerate(categories):
-            ax.scatter([], [], c=colors[idx], label=label)
+            ax.scatter([], [], c=[colors[idx]], label=label)
         ncol = (1 if len(categories) <= 14 else 2 if len(categories) <= 30 else 3)
         if legend_loc == 'right margin':
             ax.legend(frameon=False, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=legend_fontsize, ncol=ncol)
