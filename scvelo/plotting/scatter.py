@@ -269,7 +269,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if isinstance(kwargs['s'], np.ndarray):
                     kwargs['s'] = np.array(kwargs['s'])[order]
 
-            if "vmid" not in kwargs and "vmin" not in kwargs and layer is not None and 'velocity' in layer:
+            if not np.any([v in kwargs for v in ['vmin', 'vmid', 'vmax']]) \
+                    and np.any([isinstance(v, str) and 'velocity' in v for v in [color, layer]]):
                 kwargs['vmid'] = 0  # set vmid to 0 if color values obtained from velocity expression
 
             # introduce vmid by setting vmin and vmax accordingly

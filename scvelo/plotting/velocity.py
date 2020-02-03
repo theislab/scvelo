@@ -35,8 +35,9 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
         Which layers to show.
     color: `str`,  list of `str` or `None` (default: `None`)
         Key for annotations of observations/cells or variables/genes
-    color_map: `str` (default: `matplotlib.rcParams['image.cmap']`)
+    color_map: `str` or tuple (default: `matplotlib.rcParams['image.cmap']`)
         String denoting matplotlib color map.
+        If tuple is given, first and latter color map correspond to velocity and expression, respectively.
     perc: tuple, e.g. [2,98] (default: `None`)
         Specify percentile for continuous coloring.
     groups: `str`, `list` (default: `None`)
@@ -109,9 +110,12 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
 
         # spliced/unspliced phase portrait with steady-state estimate
         ax = pl.subplot(gs[v * nplts])
-        scatter(adata, basis=var, color=color, colorbar=colorbar, frameon=True, title=var, size=size, use_raw=use_raw,
-                alpha=alpha, fontsize=fontsize, xlabel='spliced', ylabel='unspliced', show=False, ax=ax, save=False,
-                legend_loc='none' if v < len(var_names)-1 else legend_loc, **kwargs)
+        cmap = color_map
+        if isinstance(color_map, (list, tuple)):
+            cmap = color_map[-1] if color in ['X', skey] else color_map[0]
+        scatter(adata, basis=var, color=color, colorbar=colorbar, color_map=cmap, perc=perc, frameon=True, title=var,
+                size=size, use_raw=use_raw, alpha=alpha, fontsize=fontsize, xlabel='spliced', ylabel='unspliced',
+                show=False, ax=ax, save=False, legend_loc='none' if v < len(var_names)-1 else legend_loc, **kwargs)
 
         # velocity and expression plots
         for l, layer in enumerate(layers):
@@ -139,7 +143,7 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
                     xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$',
                     use_raw=use_raw, frameon=True, ax=ax, save=False, show=False, **kwargs)
 
-            xnew = np.linspace(x.min(), x.max() * 1.02)
+            xnew = np.linspace(np.min(x), np.max(x) * 1.02)
             for fit in stochastic_fits:
                 gamma = _adata.var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
                 beta = _adata.var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
