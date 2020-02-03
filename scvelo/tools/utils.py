@@ -123,10 +123,13 @@ def get_indices_from_csr(conn):
     return ixs
 
 
-def get_iterative_indices(indices, index, n_recurse_neighbors=2, max_neighs=None):
+def get_iterative_indices(indices, index, n_recurse_neighbors=2, max_neighs=None, ):
     def iterate_indices(indices, index, n_recurse_neighbors):
-        ix = indices[iterate_indices(indices, index, n_recurse_neighbors - 1)] if n_recurse_neighbors > 1 else indices[index]
-        if np.isnan(ix).any(): ix = ix[~np.isnan(ix)]
+        if n_recurse_neighbors > 1:
+            index = iterate_indices(indices, index, n_recurse_neighbors - 1)
+        ix = np.append(index, indices[index])  # append to also include direct neighbors, otherwise ix = indices[index]
+        if np.isnan(ix).any():
+            ix = ix[~np.isnan(ix)]
         return ix.astype(int)
 
     indices = np.unique(iterate_indices(indices, index, n_recurse_neighbors))
