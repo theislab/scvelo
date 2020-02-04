@@ -1,4 +1,4 @@
-|PyPI| |Docs| |travis|
+|PyPI| |PyPIDownloads| |Docs| |travis|
 
 scVelo - single-cell RNA velocity generalized to transient cell states
 ======================================================================
@@ -29,16 +29,16 @@ Install from PyPI::
 
 See the the documentation at `<https://scvelo.org>`_ for details, which includes:
 
-- **How scVelo estimates RNA velocity:** `<https://scvelo.org/about.html>`_
-- **How to install and getting started:** `<https://scvelo.org/getting_started.html>`_
-- **About the API:** `<https://scvelo.org/api.html>`_
-- **Tutorials:** `<http://tutorials.scvelo.org/Pancreas.html>`_
+`About RNA velocity <https://scvelo.org/about.html>`_ | `Install & Getting Started <https://scvelo.org/getting_started.html>`_ |
+`API <https://scvelo.org/api.html>`_ | `Tutorials <http://tutorials.scvelo.org/Pancreas.html>`_
 
 Your feedback, in particular any issue you stumble upon, is highly appreciated and addressed to `feedback@scvelo.org <mailto:feedback@scvelo.org>`_.
 
-
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
     :target: https://pypi.org/project/scvelo
+
+.. |PyPIDownloads| image:: https://pepy.tech/badge/scvelo
+   :target: https://pepy.tech/project/scvelo
 
 .. |Docs| image:: https://readthedocs.org/projects/scvelo/badge/?version=latest
    :target: https://scvelo.readthedocs.io

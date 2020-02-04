@@ -1,4 +1,4 @@
-|PyPI| |Docs| |travis|
+|PyPI| |PyPIDownloads| |Docs| |travis|
 
 scVelo - single-cell RNA velocity generalized to transient cell states
 ======================================================================
@@ -23,17 +23,6 @@ It is compatible with scanpy_ (`Wolf et al., 2018 <https://doi.org/10.1186/s1305
 Making use of sparse implementation, iterative neighbors search and other techniques, it is remarkably efficient in
 terms of memory and runtime without loss in accuracy and runs easily on your local machine (30k cells in a few minutes).
 
-.. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
-    :target: https://pypi.org/project/scvelo
-
-.. |Docs| image:: https://readthedocs.org/projects/scvelo/badge/?version=latest
-   :target: https://scvelo.readthedocs.io
-
-.. |travis| image:: https://travis-ci.org/theislab/scvelo.svg?branch=master
-   :target: https://travis-ci.org/theislab/scvelo
-
-.. _scanpy: https://github.com/theislab/scanpy
-
 Report issues and see the code on `GitHub <https://github.com/theislab/scvelo>`__.
 
 
@@ -54,3 +43,18 @@ Report issues and see the code on `GitHub <https://github.com/theislab/scvelo>`_
 
    Dentate Gyrus <https://scvelo-notebooks.readthedocs.io/DentateGyrus.html>
    Pancreatic endocrinogenesis <https://scvelo-notebooks.readthedocs.io/Pancreas.html>
+
+
+.. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
+    :target: https://pypi.org/project/scvelo
+
+.. |PyPIDownloads| image:: https://pepy.tech/badge/scvelo
+   :target: https://pepy.tech/project/scvelo
+
+.. |Docs| image:: https://readthedocs.org/projects/scvelo/badge/?version=latest
+   :target: https://scvelo.readthedocs.io
+
+.. |travis| image:: https://travis-ci.org/theislab/scvelo.svg?branch=master
+   :target: https://travis-ci.org/theislab/scvelo
+
+.. _scanpy: https://github.com/theislab/scanpy
