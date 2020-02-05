@@ -97,6 +97,7 @@ def get_indices(dist, n_neighbors=None, mode_neighbors='distances'):
     rows = np.where(n_counts > n_neighbors)[0]
     cumsum_neighs = np.insert(n_counts.cumsum(), 0, 0)
     dat = D.data
+
     for row in rows:
         n0, n1 = cumsum_neighs[row], cumsum_neighs[row + 1]
         rm_idx = n0 + dat[n0:n1].argsort()[n_neighbors:]
@@ -136,6 +137,12 @@ def get_iterative_indices(indices, index, n_recurse_neighbors=2, max_neighs=None
     if max_neighs is not None and len(indices) > max_neighs:
         indices = np.random.choice(indices, max_neighs, replace=False)
     return indices
+
+
+def geometric_matrix_sum(C, n_power=2):  # computes C + C^2 + C^3 + ...
+    C_n = geometric_matrix_sum(C, n_power-1) \
+        if n_power > 2 else C if n_power > 1 else 0
+    return C + C.dot(C_n)
 
 
 def groups_to_bool(adata, groups, groupby=None):
