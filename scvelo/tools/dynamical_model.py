@@ -314,6 +314,7 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
             velo = Velocity(adata, use_raw=use_raw)
             velo.compute_deterministic(perc=[5, 95])
             var_names = adata.var_names[velo._velocity_genes]
+            adata.var['fit_r2'] = velo._r2
         else:
             raise ValueError('Variable name not found in var keys.')
 
