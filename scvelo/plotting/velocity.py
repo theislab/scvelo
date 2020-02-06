@@ -87,7 +87,7 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
 
     (skey, ukey) = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
     layers = [vkey, skey] if layers == 'all' else layers
-    layers = [layer for layer in layers if layer in adata.layers.keys() or layer is 'X']
+    layers = [layer for layer in layers if layer in adata.layers.keys() or layer == 'X']
 
     fits = adata.layers.keys() if fits == 'all' else fits
     fits = [fit for fit in fits if fit + '_gamma' in adata.var.keys()]
@@ -121,7 +121,7 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
         for l, layer in enumerate(layers):
             ax = pl.subplot(gs[v * nplts + l + 1])
             title = 'expression' if layer in ['X', skey] else layer
-            _kwargs = {} if title is 'expression' else kwargs
+            _kwargs = {} if title == 'expression' else kwargs
             cmap = color_map
             if isinstance(color_map, (list, tuple)):
                 cmap = color_map[-1] if layer in ['X', skey] else color_map[0]

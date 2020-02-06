@@ -590,15 +590,15 @@ class DynamicsRecovery(BaseDynamics):
 
     def update_vars(self, r=None, method=None, clip_loss=None):
         if r is None:
-            r = 1e-2 if method is 'adam' else 1e-5
+            r = 1e-2 if method == 'adam' else 1e-5
         if clip_loss is None:
-            clip_loss = False if method is 'adam' else True
+            clip_loss = method != 'adam'
         # if self.weights is None:
         #    self.uniform_weighting(n_regions=5, perc=95)
         t, t_, alpha, beta, gamma, scaling = self.t, self.t_, self.alpha, self.beta, self.gamma, self.scaling
         dalpha, dbeta, dgamma, dalpha_, dtau, dt_ = derivatives(self.u, self.s, t, t_, alpha, beta, gamma, scaling)
 
-        if method is 'adam':
+        if method == 'adam':
             b1, b2, eps = 0.9, 0.999, 1e-8
 
             # update 1st and 2nd order gradient moments
@@ -763,7 +763,7 @@ def recover_dynamics_deprecated(data, var_names='velocity_genes', max_iter=10, l
     if len(var_names) == 0:
         raise ValueError('Variable name not found in var keys.')
 
-    if fit_connected_states is True:
+    if fit_connected_states:
         fit_connected_states = get_connectivities(adata)
 
     alpha, beta, gamma, t_, scaling = read_pars(adata)

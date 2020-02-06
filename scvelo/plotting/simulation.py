@@ -13,7 +13,7 @@ def get_dynamics(adata, key='fit', extrapolate=False, sorted=False, t=None):
         tmax = t_ + tau_inv(u0_ * 1e-4, u0=u0_, alpha=0, beta=beta)
         t = np.concatenate([np.linspace(0, t_, num=500), t_ + np.linspace(0, tmax, num=500)])
     elif t is None or t is True:
-        t = adata.obs[key + '_t'].values if key is 'true' else adata.layers[key + '_t']
+        t = adata.obs[key + '_t'].values if key == 'true' else adata.layers[key + '_t']
 
     tau, alpha, u0, s0 = vectorize(np.sort(t) if sorted else t, t_, alpha, beta, gamma)
     ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
@@ -32,7 +32,7 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
         u0_offset, s0_offset = 0, 0
 
     if t is None or isinstance(t, bool) or len(t) < adata.n_obs:
-        t = adata.obs[key + '_t'].values if key is 'true' else adata.layers[key + '_t'][:, idx]
+        t = adata.obs[key + '_t'].values if key == 'true' else adata.layers[key + '_t'][:, idx]
 
     if extrapolate:
         u0_ = unspliced(t_, 0, alpha, beta)
@@ -48,21 +48,21 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
 
 def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, show_assignments=None, ax=None):
     if ax is None: ax = pl.gca()
-    color = 'grey' if key is 'true' else 'purple'
-    linewidth = .5 * linewidth if key is 'true' else linewidth
-    label = 'learned dynamics' if key is 'fit' else 'true dynamics'
+    color = 'grey' if key == 'true' else 'purple'
+    linewidth = .5 * linewidth if key == 'true' else linewidth
+    label = 'learned dynamics' if key == 'fit' else 'true dynamics'
     line = None
 
-    if key is not 'true':
+    if key != 'true':
         _, ut, st = compute_dynamics(adata, basis, key, extrapolate=False, sort=False, t=show_assignments)
-        if show_assignments is not 'only':
+        if not isinstance(show_assignments, str) or show_assignments != 'only':
             ax.scatter(st, ut, color=color, s=1)
         if show_assignments is not None and show_assignments is not False:
             skey, ukey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
             s, u = make_dense(adata[:, basis].layers[skey]).flatten(), make_dense(adata[:, basis].layers[ukey]).flatten()
             ax.plot(np.array([s, st]), np.array([u, ut]), color='grey', linewidth=.1 * linewidth)
 
-    if show_assignments is not 'only':
+    if not isinstance(show_assignments, str) or show_assignments != 'only':
         _, ut, st = compute_dynamics(adata, basis, key, extrapolate=True, t=show_assignments)
         line, = ax.plot(st, ut, color=color, linewidth=linewidth, label=label)
 
@@ -78,7 +78,7 @@ def simulation(adata, var_names='all', legend_loc='upper right', legend_fontsize
                xkey='true_t', ykey=['unspliced', 'spliced', 'alpha'], colors=['darkblue', 'darkgreen', 'grey'], **kwargs):
     from ..tools.utils import make_dense
     from .scatter import scatter
-    var_names = adata.var_names if var_names is 'all' else [name for name in var_names if name in adata.var_names]
+    var_names = adata.var_names if isinstance(var_names, str) and var_names == 'all' else [name for name in var_names if name in adata.var_names]
 
     figsize = rcParams['figure.figsize']
     ncols = len(var_names)
@@ -102,15 +102,15 @@ def simulation(adata, var_names='all', legend_loc='upper right', legend_fontsize
                 y = make_dense(adata.layers[key][:, idx])[idx_sorted]
                 ax = scatter(x=t, y=y, color=colors[j], ax=ax, show=False, **_kwargs)
 
-            if key is 'unspliced':
+            if key == 'unspliced':
                 ax.plot(t, ut, label='unspliced', color=colors[j], linewidth=linewidth)
-            elif key is 'spliced':
+            elif key == 'spliced':
                 ax.plot(t, st, label='spliced', color=colors[j], linewidth=linewidth)
-            elif key is 'alpha':
+            elif key == 'alpha':
                 ax.plot(t, alpha, label='alpha', linestyle='--', color=colors[j], linewidth=linewidth)
 
         pl.xlim(0)
         pl.ylim(0)
-        if legend_loc is not 'none' and i == ncols-1:
+        if legend_loc != 'none' and i == ncols-1:
             pl.legend(loc=legend_loc, fontsize=legend_fontsize)
 

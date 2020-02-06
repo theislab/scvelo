@@ -267,9 +267,9 @@ def set_figure_params(style='scvelo', dpi=100, dpi_save=150, frameon=None, vecto
     if facecolor is not None:
         rcParams['figure.facecolor'] = facecolor
         rcParams['axes.facecolor'] = facecolor
-    if style is 'scvelo':
+    if style == 'scvelo':
         set_rcParams_scvelo(fontsize=fontsize, color_map=color_map, frameon=frameon)
-    elif style is 'scanpy':
+    elif style == 'scanpy':
         set_rcParams_scanpy(fontsize=fontsize, color_map=color_map, frameon=frameon)
     # Overwrite style options if given
     if figsize is not None:

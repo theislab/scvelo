@@ -119,7 +119,7 @@ def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_
 
     def simulate_dynamics(tau, alpha, beta, gamma, u0, s0, noise_model, noise_level):
         ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
-        if noise_model is 'normal':  # add noise
+        if noise_model == 'normal':  # add noise
             ut += np.random.normal(scale=noise_level * np.percentile(ut, 99) / 10, size=len(ut))
             st += np.random.normal(scale=noise_level * np.percentile(st, 99) / 10, size=len(st))
         ut, st = np.clip(ut, 0, None), np.clip(st, 0, None)
@@ -178,7 +178,7 @@ def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_
         gamma_i = gamma[i] if isinstance(gamma, (tuple, list, np.ndarray)) else gamma
         tau, alpha_vec, u0_vec, s0_vec = vectorize(t, t_[i], alpha_i, beta_i, gamma_i, alpha_=alpha_, u0=0, s0=0)
 
-        if noise_model is 'gillespie':
+        if noise_model == 'gillespie':
             U[:, i], S[:, i] = simulate_gillespie(alpha_vec, beta, gamma)
         else:
             U[:, i], S[:, i] = simulate_dynamics(tau, alpha_vec, beta_i, gamma_i,
