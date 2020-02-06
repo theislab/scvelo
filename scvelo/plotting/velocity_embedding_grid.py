@@ -114,7 +114,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
         `matplotlib.Axis` if `show==False`
     """
     basis = default_basis(adata) if basis is None else get_basis(adata, basis)
-    vkey = [key for key in adata.layers.keys() if 'velocity' in key and '_u' not in key] if vkey is 'all' else vkey
+    vkey = [key for key in adata.layers.keys() if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
     colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
 
     if V is None:

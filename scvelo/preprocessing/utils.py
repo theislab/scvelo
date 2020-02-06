@@ -102,7 +102,7 @@ def get_initial_size(adata, layer=None, by_total_size=None):
                        if 'initial_size_' + layer in adata.obs.keys()], axis=0)
     elif layer in adata.layers.keys():
         return np.array(adata.obs['initial_size_' + layer]) if 'initial_size_' + layer in adata.obs.keys() else get_size(adata, layer)
-    elif layer is None or layer is 'X':
+    elif layer is None or layer == 'X':
         return np.array(adata.obs['initial_size']) if 'initial_size' in adata.obs.keys() else get_size(adata)
     else:
         return None
@@ -167,9 +167,9 @@ def filter_genes(data, min_counts=None, min_cells=None, max_counts=None, max_cel
 
     for layer in layers:
 
-        if layer is 'spliced':
+        if layer == 'spliced':
             _min_counts, _min_cells, _max_counts, _max_cells = min_counts, min_cells, max_counts, max_cells
-        elif layer is 'unspliced':
+        elif layer == 'unspliced':
             _min_counts, _min_cells, _max_counts, _max_cells = min_counts_u, min_cells_u, max_counts_u, max_cells_u
         else:  # shared counts/cells
             _min_counts, _min_cells, _max_counts, _max_cells = min_shared_counts, min_shared_cells, None, None
@@ -251,7 +251,7 @@ def filter_genes_dispersion(data, flavor='seurat', min_disp=None, max_disp=None,
     if n_top_genes is not None and adata.n_vars < n_top_genes:
         logg.info('Skip filtering by dispersion since number of variables are less than `n_top_genes`')
     else:
-        if flavor is 'svr':
+        if flavor == 'svr':
             mu = adata.X.mean(0).A1 if issparse(adata.X) else adata.X.mean(0)
             sigma = np.sqrt(adata.X.multiply(adata.X).mean(0).A1 - mu ** 2) if issparse(adata.X) else adata.X.std(0)
             log_mu = np.log2(mu)
@@ -283,9 +283,9 @@ def not_yet_normalized(X):
 
 
 def check_if_valid_dtype(adata, layer='X'):
-    X = adata.X if layer is 'X' else adata.layers[layer]
+    X = adata.X if layer == 'X' else adata.layers[layer]
     if 'int' in X.dtype.name:
-        if layer is 'X':
+        if layer == 'X':
             adata.X = adata.X.astype(np.float32)
         elif layer in adata.layers.keys():
             adata.layers[layer] = adata.layers[layer].astype(np.float32)
@@ -324,14 +324,14 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, k
     Returns or updates `adata` with normalized version of the original `adata.X`, depending on `copy`.
     """
     adata = data.copy() if copy else data
-    layers = adata.layers.keys() if layers is 'all' else [layers] if isinstance(layers, str) \
+    layers = adata.layers.keys() if layers == 'all' else [layers] if isinstance(layers, str) \
         else [layer for layer in layers if layer in adata.layers.keys()]
     layers = ['X'] + layers
     modified_layers = []
 
     for layer in layers:
         check_if_valid_dtype(adata, layer)
-        X = adata.X if layer is 'X' else adata.layers[layer]
+        X = adata.X if layer == 'X' else adata.layers[layer]
 
         if not_yet_normalized(X) or enforce:
             counts = counts_per_cell if counts_per_cell is not None \

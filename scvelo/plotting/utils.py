@@ -516,7 +516,7 @@ def rgb_custom_colormap(colors=['royalblue', 'white', 'forestgreen'], alpha=None
     """
     c = []
     for color in colors:
-        if type(color) is str:
+        if isinstance(color, str):
             c.append(to_rgb(cnames[color]))
 
     vals = np.ones((N, 4))
@@ -584,7 +584,7 @@ def plot_linfit(x, y, add_linfit=True, add_legend=True, color=None, linewidth=No
     xnew = np.linspace(np.min(x), np.max(x) * 1.02)
     color = add_linfit if isinstance(add_linfit, str) else color if isinstance(color, str) else 'grey'
 
-    mu_x, mu_y = (0, 0) if add_linfit is 0 else (np.mean(x), np.mean(y))
+    mu_x, mu_y = (0, 0) if add_linfit == 0 else (np.mean(x), np.mean(y))
     slope = (np.mean(x * y) - mu_x * mu_y) / (np.mean(x ** 2) - mu_x ** 2)
     offset = mu_y - slope * mu_x
 
@@ -645,7 +645,7 @@ def plot_velocity_fits(adata, basis, vkey=None, use_raw=None, linewidth=None, li
         line, fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments, ax=ax)
         fits.append(fit); lines.append(line)
 
-    if len(fits) > 0 and legend_loc is not False and legend_loc is not 'none':
+    if len(fits) > 0 and (not legend_loc or legend_loc != 'none'):
         ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize,
                   loc='lower right' if legend_loc is None else legend_loc)
 
@@ -830,7 +830,7 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
         bmin, bmax = np.nanpercentile(masked_arrays, perc)
     bins = np.arange(bmin, bmax + (bmax - bmin) / bins, (bmax - bmin) / bins)
 
-    if xscale is 'log':
+    if xscale == 'log':
         bins = bins[bins > 0]
         bins = np.logspace(np.log10(bins[0]), np.log10(bins[-1]), len(bins))
 

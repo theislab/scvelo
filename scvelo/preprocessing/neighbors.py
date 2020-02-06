@@ -65,12 +65,12 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
     adata = adata.copy() if copy else adata
 
     if use_rep is None:
-        use_rep = 'X' if adata.n_vars < 50 or n_pcs is 0 else 'X_pca'
-        n_pcs = None if use_rep is 'X' else n_pcs
+        use_rep = 'X' if adata.n_vars < 50 or n_pcs == 0 else 'X_pca'
+        n_pcs = None if use_rep == 'X' else n_pcs
     elif use_rep not in adata.obsm.keys() and 'X_' + use_rep in adata.obsm.keys():
         use_rep = 'X_' + use_rep
 
-    if use_rep is 'X_pca':
+    if use_rep == 'X_pca':
         if 'X_pca' not in adata.obsm.keys() or n_pcs is not None and n_pcs > adata.obsm['X_pca'].shape[1]:
             pca(adata, n_comps=30 if n_pcs is None else n_pcs, svd_solver='arpack')
         elif n_pcs is None and adata.obsm['X_pca'].shape[1] < 10:
@@ -82,17 +82,17 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
 
     logg.info('computing neighbors', r=True)
 
-    if method is 'sklearn':
+    if method == 'sklearn':
         from sklearn.neighbors import NearestNeighbors
-        X = adata.X if use_rep is 'X' else adata.obsm[use_rep]
+        X = adata.X if use_rep == 'X' else adata.obsm[use_rep]
         neighbors = NearestNeighbors(n_neighbors=n_neighbors, metric=metric, metric_params=metric_kwds, n_jobs=num_threads)
         neighbors.fit(X if n_pcs is None else X[:, :n_pcs])
         knn_distances, neighbors.knn_indices = neighbors.kneighbors()
         neighbors.distances, neighbors.connectivities = \
             compute_connectivities_umap(neighbors.knn_indices, knn_distances, X.shape[0], n_neighbors=30)
 
-    elif method is 'hnsw':
-        X = adata.X if use_rep is 'X' else adata.obsm[use_rep]
+    elif method == 'hnsw':
+        X = adata.X if use_rep == 'X' else adata.obsm[use_rep]
         neighbors = FastNeighbors(n_neighbors=n_neighbors, num_threads=num_threads)
         neighbors.fit(X if n_pcs is None else X[:, :n_pcs], metric=metric, random_state=random_state, **metric_kwds)
 
@@ -136,7 +136,7 @@ class FastNeighbors:
             print("In order to use fast approx neighbor search, you need to `pip install hnswlib`\n")
 
         ef_c, ef = max(ef_construction, self.n_neighbors), max(self.n_neighbors, ef)
-        metric = 'l2' if metric is 'euclidean' else metric
+        metric = 'l2' if metric == 'euclidean' else metric
 
         X = X.A if issparse(X) else X
         ns, dim = X.shape
@@ -154,7 +154,7 @@ class FastNeighbors:
             knn_indices = knn_indices[:, 1:].astype(int)
             n_neighbors -= 1
 
-        if metric is 'l2':
+        if metric == 'l2':
             knn_distances = np.sqrt(knn_distances)
 
         self.distances, self.connectivities = compute_connectivities_umap(knn_indices, knn_distances, ns, n_neighbors)

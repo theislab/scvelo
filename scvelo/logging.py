@@ -190,14 +190,14 @@ def get_date_string():
 
 def switch_verbosity(mode='on', module=None):
     if module is None: from . import settings
-    elif module is 'scanpy': from scanpy import settings
+    elif module == 'scanpy': from scanpy import settings
     else: exec('from ' + module + ' import settings')
 
-    if mode is 'on' and hasattr(settings, 'tmp_verbosity'):
+    if mode == 'on' and hasattr(settings, 'tmp_verbosity'):
         settings.verbosity = settings.tmp_verbosity
         del settings.tmp_verbosity
 
-    elif mode is 'off':
+    elif mode == 'off':
         settings.tmp_verbosity = settings.verbosity
         settings.verbosity = 0
 

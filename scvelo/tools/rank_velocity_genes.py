@@ -220,7 +220,7 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_w
     """
     adata = data.copy() if copy else data
 
-    if groupby is None or groupby is 'velocity_clusters':
+    if groupby is None or groupby == 'velocity_clusters':
         velocity_clusters(adata, vkey=vkey, match_with=match_with, resolution=resolution, min_likelihood=min_likelihood)
         groupby = vkey + '_clusters'
 

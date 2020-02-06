@@ -57,7 +57,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     # use c & color and cmap & color_map interchangeably, and plot each group separately if groups is 'all'
     if 'c' in kwargs: color = kwargs.pop('c')
     if 'cmap' in kwargs: color_map = kwargs.pop('cmap')
-    if groups is 'all':
+    if groups == 'all':
         if color is None:  color = default_color(adata)
         if is_categorical(adata, color): groups = [[c] for c in adata.obs[color].cat.categories]
 
@@ -97,7 +97,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 ax.append(scatter(adata, ax=pl.subplot(gs), **multi_kwargs, **scatter_kwargs, **kwargs))
 
         savefig_or_show(dpi=dpi, save=save, show=show)
-        if show is False: return ax
+        if not show: return ax
 
     else:
         # make sure that there are no more lists, e.g. input ['clusters'] becomes 'clusters'
@@ -118,12 +118,12 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                                  layer=layer[i * (len(layer) > i)], basis=basis, components=components, groups=groups,
                                  xlabel=xlabel, ylabel='expression' if ylabel is None else ylabel, color_map=color_map,
                                  title=y[i * (len(y) > i)] if title is None else title, ax=ax, **scatter_kwargs)
-                if legend_loc is not False and legend_loc is not 'none':
+                if legend_loc and legend_loc != 'none':
                     multikey = [key.replace('Mu', 'unspliced').replace('Ms', 'spliced') for key in multikey]
                     ax.legend(multikey, fontsize=legend_fontsize, loc='best' if legend_loc is None else legend_loc)
 
                 savefig_or_show(dpi=dpi, save=save, show=show)
-                if show is False: return ax
+                if not show: return ax
 
         # actual scatter plot
         else:
@@ -144,7 +144,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if isinstance(groups, str): groups = [groups]
             if use_raw is None and basis not in adata.var_names:
                 use_raw = layer is None and adata.raw is not None
-            if projection is '3d':
+            if projection == '3d':
                 from mpl_toolkits.mplot3d import Axes3D
             else:
                 projection = None
@@ -186,7 +186,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             elif is_embedding:
                 X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
                 x, y = X_emb[:, 0], X_emb[:, 1]
-                z = X_emb[:, 2] if projection is '3d' and X_emb.shape[1] > 2 else None
+                z = X_emb[:, 2] if projection == '3d' and X_emb.shape[1] > 2 else None
 
                 # set legend if categorical color vals in embedding
                 if is_categorical(adata, color):
@@ -301,7 +301,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 c = np.ravel(c) if len(np.ravel(c)) == len(x) else c
                 if len(c) != len(x):
                     c = 'grey'
-                    if color is not default_color(adata):
+                    if color != default_color(adata):
                         logg.warn('Invalid color key. Using grey instead.')
 
             smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
@@ -312,11 +312,11 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if show_density:
                 plot_density(x, y, show_density, ax=ax)
 
-            if show_linear_fit or show_linear_fit is 0:
-                plot_linfit(x, y, show_linear_fit, legend_loc is not 'none', linecolor, linewidth, fontsize, ax=ax)
+            if show_linear_fit or show_linear_fit == 0:
+                plot_linfit(x, y, show_linear_fit, legend_loc != 'none', linecolor, linewidth, fontsize, ax=ax)
 
             if show_polyfit:
-                plot_polyfit(x, y, show_polyfit, legend_loc is not 'none', linecolor, linewidth, fontsize, ax=ax)
+                plot_polyfit(x, y, show_polyfit, legend_loc != 'none', linecolor, linewidth, fontsize, ax=ax)
 
             if rug:
                 plot_rug(np.ravel(x), color=np.ravel(interpret_colorkey(adata, rug)), ax=ax)

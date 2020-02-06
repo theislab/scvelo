@@ -165,7 +165,7 @@ def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
 
 
 def assign_tau(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, assignment_mode=None):
-    if assignment_mode is 'projection' and beta < gamma:
+    if assignment_mode == 'projection' and beta < gamma:
         x_obs = np.vstack([u, s]).T
         t0 = tau_inv(np.min(u[s > 0]), u0=u0_, alpha=0, beta=beta)
 
@@ -243,7 +243,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
     res, varx = np.array([distx_, distx]), 1  # default vals;
 
-    if noise_model is 'normal':
+    if noise_model == 'normal':
         if var_scale:
             o = np.argmin([distx_, distx], axis=0)
             varu = np.nanvar(distu * o + distu_ + (1 - o), axis=0)
@@ -268,7 +268,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         res = np.array([connectivities.dot(r) for r in res]) if res.ndim > 2 else connectivities.dot(res.T).T
 
     # compute variances
-    if noise_model is 'chi':
+    if noise_model == 'chi':
         if var_scale:
             o = np.argmin([distx_, distx], axis=0)
             dist = distx * o + distx_ * (1 - o)
@@ -296,58 +296,58 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
             res[2] += dist_tau * mu_res[1]
             res[3] += dist_tau_ * mu_res[0]
 
-    if mode is 'tau':
+    if mode == 'tau':
         res = [tau, tau_]
 
-    elif mode is 'likelihood':
+    elif mode == 'likelihood':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         if normalized: res = normalize(res, min_confidence=min_confidence)
 
-    elif mode is 'nll':
+    elif mode == 'nll':
         res = np.log(2 * np.pi * np.sqrt(varx)) + .5 * res
         if normalized: res = normalize(res, min_confidence=min_confidence)
 
-    elif mode is 'confidence':
+    elif mode == 'confidence':
         res = np.array([res[0], res[1]])
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         if normalized: res = normalize(res, min_confidence=min_confidence)
         res = np.median(np.max(res, axis=0) - (np.sum(res, axis=0) - np.max(res, axis=0)), axis=1)
 
-    elif mode is 'soft_eval' or mode is 'soft':
+    elif mode in {'soft_eval', 'soft'}:
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         if normalized: res = normalize(res, min_confidence=min_confidence)
 
         o_, o = res[0], res[1]
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
-    elif mode is 'hardsoft_eval' or mode is 'hardsoft':
+    elif mode in {'hardsoft_eval', 'hardsoft'}:
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         if normalized: res = normalize(res, min_confidence=min_confidence)
         o = np.argmax(res, axis=0)
         o_, o = (o == 0) * res[0], (o == 1) * res[1]
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
-    elif mode is 'hard_eval' or mode is 'hard':
+    elif mode in {'hard_eval', 'hard'}:
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         if normalized: res = normalize(res, min_confidence=min_confidence)
         o = np.argmax(res, axis=0)
         o_, o = o == 0, o == 1
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
-    elif mode is 'soft_state':
+    elif mode == 'soft_state':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         if normalized: res = normalize(res, min_confidence=min_confidence)
         res = res[1] - res[0]
 
-    elif mode is 'hard_state':
+    elif mode == 'hard_state':
         res = np.argmin(res, axis=0)
 
-    elif mode is 'steady_state':
+    elif mode == 'steady_state':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         if normalized: res = normalize(res, min_confidence=min_confidence)
         res = res[2] + res[3]
 
-    elif mode is 'assign_timepoints' or mode is 'time':
+    elif mode in {'assign_timepoints', 'time'}:
         o = np.argmin(res, axis=0)
 
         tau_ *= (o == 0)
@@ -357,9 +357,9 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         if 3 in o: o[o == 3] = 0
 
         t = tau * (o == 1) + (tau_ + t_) * (o == 0)
-        res = [t, tau, o] if mode is 'assign_timepoints' else t
+        res = [t, tau, o] if mode == 'assign_timepoints' else t
 
-    elif mode is 'gene_likelihood':
+    elif mode == 'gene_likelihood':
         o = np.argmin(res, axis=0)
 
         tau_ *= (o == 0)
@@ -382,7 +382,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         ll = - 1 / 2 / n * np.sum(distx) / varx - 1 / 2 * np.log(2 * np.pi * varx)
         res = np.exp(ll)
 
-    elif mode is 'velocity':
+    elif mode == 'velocity':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         res = np.array([res[0], res[1], res[2], res[3], 1e-6 * np.ones(res[0].shape)]) if res.ndim > 2 \
             else np.array([res[0], res[1], min_confidence * np.ones(res[0].shape)])
@@ -410,7 +410,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
         res = [vt, wt]
 
-    elif mode is 'soft_velocity':
+    elif mode == 'soft_velocity':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
         if normalized: res = normalize(res, min_confidence=min_confidence)
         o_, o = res[0], res[1]
@@ -521,7 +521,7 @@ class BaseDynamics:
         self.fit_scaling = fit_scaling
         self.fit_steady_states = fit_steady_states
         self.fit_connected_states = fit_connected_states
-        self.connectivities = get_connectivities(adata) if self.fit_connected_states is True else self.fit_connected_states
+        self.connectivities = get_connectivities(adata) if self.fit_connected_states else self.fit_connected_states
         self.high_pars_resolution = high_pars_resolution
 
     def initialize_weights(self):
@@ -641,7 +641,7 @@ class BaseDynamics:
         alpha, beta, gamma, scaling, t_ = self.get_vars(alpha, beta, gamma, scaling, t_, u0_, s0_)
         t, tau, o = self.get_time_assignment(alpha, beta, gamma, scaling, t_, u0_, s0_, t, refit_time, weighted=weighted)
 
-        if weighted is 'dynamical':
+        if weighted == 'dynamical':
             idx = (u > np.max(u) / 3) & (s > np.max(s) / 3)
             if np.sum(idx) > 0: u, s, t = u[idx], s[idx], t[idx]
 
@@ -733,10 +733,10 @@ class BaseDynamics:
         pl.plot(st, ut, color='purple', linestyle='-')
         pl.xlabel('spliced'); pl.ylabel('unspliced');
 
-        if show_assignments is not None and show_assignments is not False:
+        if show_assignments:
             ax.plot(np.array([self.s[idx_sorted], st]),
                     np.array([self.u[idx_sorted], ut]), color='grey', linewidth=.1 * 1)
-        return ax if show is False else None
+        return ax if not show else None
 
     def plot_profile_contour(self, xkey='gamma', ykey='alpha', x_sight=.5, y_sight=.5, num=20, contour_levels=4,
                              fontsize=12, refit_time=None, ax=None, color_map='RdGy', figsize=None, dpi=None,
@@ -771,7 +771,7 @@ class BaseDynamics:
             ax = pl.figure(figsize=(figsize[0], figsize[1]), dpi=dpi).gca()
 
         ax.contourf(x, y, log_zp, levels=num, cmap=color_map, vmin=vmin, vmax=vmax)
-        if contour_levels is not 0:
+        if contour_levels != 0:
             contours = ax.contour(x, y, log_zp, levels=contour_levels, colors='k', linewidths=.5)
             fmt = '%1.1f' if np.isscalar(contour_levels) else '%1.0f'
             ax.clabel(contours, fmt=fmt, inline=True, fontsize=fontsize * .75)
