@@ -521,7 +521,7 @@ class BaseDynamics:
         self.fit_scaling = fit_scaling
         self.fit_steady_states = fit_steady_states
         self.fit_connected_states = fit_connected_states
-        self.connectivities = get_connectivities(adata) if self.fit_connected_states else self.fit_connected_states
+        self.connectivities = get_connectivities(adata) if self.fit_connected_states is True else self.fit_connected_states
         self.high_pars_resolution = high_pars_resolution
 
     def initialize_weights(self):
