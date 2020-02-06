@@ -55,14 +55,14 @@ def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, sho
 
     if key != 'true':
         _, ut, st = compute_dynamics(adata, basis, key, extrapolate=False, sort=False, t=show_assignments)
-        if show_assignments != 'only':
+        if not isinstance(show_assignments, str) or show_assignments != 'only':
             ax.scatter(st, ut, color=color, s=1)
         if show_assignments is not None and show_assignments is not False:
             skey, ukey = ('spliced', 'unspliced') if use_raw or 'Ms' not in adata.layers.keys() else ('Ms', 'Mu')
             s, u = make_dense(adata[:, basis].layers[skey]).flatten(), make_dense(adata[:, basis].layers[ukey]).flatten()
             ax.plot(np.array([s, st]), np.array([u, ut]), color='grey', linewidth=.1 * linewidth)
 
-    if show_assignments != 'only':
+    if not isinstance(show_assignments, str) or show_assignments != 'only':
         _, ut, st = compute_dynamics(adata, basis, key, extrapolate=True, t=show_assignments)
         line, = ax.plot(st, ut, color=color, linewidth=linewidth, label=label)
 
@@ -78,7 +78,7 @@ def simulation(adata, var_names='all', legend_loc='upper right', legend_fontsize
                xkey='true_t', ykey=['unspliced', 'spliced', 'alpha'], colors=['darkblue', 'darkgreen', 'grey'], **kwargs):
     from ..tools.utils import make_dense
     from .scatter import scatter
-    var_names = adata.var_names if var_names == 'all' else [name for name in var_names if name in adata.var_names]
+    var_names = adata.var_names if isinstance(var_names, str) and var_names == 'all' else [name for name in var_names if name in adata.var_names]
 
     figsize = rcParams['figure.figsize']
     ncols = len(var_names)
