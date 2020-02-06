@@ -645,9 +645,10 @@ def plot_velocity_fits(adata, basis, vkey=None, use_raw=None, linewidth=None, li
         line, fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments, ax=ax)
         fits.append(fit); lines.append(line)
 
-    if len(fits) > 0 and (not legend_loc or legend_loc != 'none'):
-        ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize,
-                  loc='lower right' if legend_loc is None else legend_loc)
+    if legend_loc is None:
+        legend_loc = 'lower right'
+    if len(fits) > 0 and legend_loc and legend_loc != 'none':
+        ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize, loc=legend_loc)
 
 
 def plot_density(x, y=None, add_density=True, eval_pts=50, scale=10, alpha=.3, color='grey', ax=None):
