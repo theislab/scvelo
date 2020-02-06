@@ -426,7 +426,7 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
                     "matplotlib colormap string (eg. Set2), a  list of color names "
                     "or a cycler with a 'color' key. Default colors will be used instead"
                 )
-            valid = False
+                valid = False
             if valid:
                 cc = palette()
                 colors_list = [to_hex(next(cc)['color']) for x in range(len(categories))]
