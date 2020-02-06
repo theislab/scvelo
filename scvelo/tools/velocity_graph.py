@@ -56,7 +56,7 @@ class VelocityGraph:
             self.X = np.array(X, dtype=np.float32)
             self.V = np.array(V, dtype=np.float32)
 
-        self.sqrt_transform = (adata.uns[vkey + '_settings']['mode'] is 'stochastic') if sqrt_transform is None else sqrt_transform
+        self.sqrt_transform = (adata.uns[vkey + '_settings']['mode'] == 'stochastic') if sqrt_transform is None else sqrt_transform
         if self.sqrt_transform: self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
         self.V -= np.nanmean(self.V, axis=1)[:, None]
 

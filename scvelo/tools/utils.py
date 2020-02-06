@@ -157,7 +157,7 @@ def groups_to_bool(adata, groups, groupby=None):
 
 
 def most_common_in_list(lst):
-    lst = [item for item in lst if item is not np.nan and item is not 'nan']
+    lst = [item for item in lst if item is not np.nan and item != 'nan']
     lst = list(lst)
     return max(set(lst), key=lst.count)
 
@@ -342,7 +342,7 @@ def get_duplicates(array):
 
 def corrcoef(x, y, mode='pearsons'):
     from scipy.stats import pearsonr, spearmanr
-    corr, _ = spearmanr(x, y) if mode is 'spearmans' else pearsonr(x, y)
+    corr, _ = spearmanr(x, y) if mode == 'spearmans' else pearsonr(x, y)
     return corr
 
 

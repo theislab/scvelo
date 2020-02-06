@@ -264,7 +264,7 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
         Determined how times are assigned to observations.
         If `projection`, observations are projected onto the model trajectory.
         Else uses an inverse approximating formula.
-    t_max: `float` or `None` (default: `None`)
+    t_max: `float`, `False` or `None` (default: `None`)
         Total range for time assignments.
     fit_scaling: `bool` or `float` or `None` (default: `True`)
         Whether to fit scaling between unspliced and spliced or keep initially given scaling fixed.
@@ -307,7 +307,7 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
     if isinstance(var_names, str) and var_names not in adata.var_names:
         if var_names in adata.var.keys():
             var_names = adata.var_names[adata.var[var_names].values]
-        elif use_raw or var_names is 'all':
+        elif use_raw or var_names == 'all':
             var_names = adata.var_names
         elif '_genes' in var_names:
             from .velocity import Velocity
@@ -417,7 +417,7 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
-    t_max: `float` or `None` (default: `None`)
+    t_max: `float`, `False` or `None` (default: `None`)
         Total range for time assignments.
     dm: :class:`~DynamicsRecovery`
         DynamicsRecovery object to perform alignment on.
@@ -454,7 +454,7 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
     if dm is not None:  # newly fitted
         mz[idx] = 1
 
-    if mode is 'align_total_time' and t_max is not False:
+    if mode == 'align_total_time' and t_max is not False:
         T_max = np.max(T[:, idx] * (T[:, idx] < t_[idx]), axis=0) \
                 + np.max((T[:, idx] - t_[idx]) * (T[:, idx] > t_[idx]), axis=0)
 
