@@ -97,7 +97,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 ax.append(scatter(adata, ax=pl.subplot(gs), **multi_kwargs, **scatter_kwargs, **kwargs))
 
         savefig_or_show(dpi=dpi, save=save, show=show)
-        if not show: return ax
+        if show is False: return ax
 
     else:
         # make sure that there are no more lists, e.g. input ['clusters'] becomes 'clusters'
@@ -118,12 +118,13 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                                  layer=layer[i * (len(layer) > i)], basis=basis, components=components, groups=groups,
                                  xlabel=xlabel, ylabel='expression' if ylabel is None else ylabel, color_map=color_map,
                                  title=y[i * (len(y) > i)] if title is None else title, ax=ax, **scatter_kwargs)
+                if legend_loc is None: legend_loc = 'best'
                 if legend_loc and legend_loc != 'none':
                     multikey = [key.replace('Mu', 'unspliced').replace('Ms', 'spliced') for key in multikey]
-                    ax.legend(multikey, fontsize=legend_fontsize, loc='best' if legend_loc is None else legend_loc)
+                    ax.legend(multikey, fontsize=legend_fontsize, loc=legend_loc)
 
                 savefig_or_show(dpi=dpi, save=save, show=show)
-                if not show: return ax
+                if show is False: return ax
 
         # actual scatter plot
         else:
@@ -301,7 +302,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 c = np.ravel(c) if len(np.ravel(c)) == len(x) else c
                 if len(c) != len(x):
                     c = 'grey'
-                    if color != default_color(adata):
+                    if not isinstance(color, str) or color != default_color(adata):
                         logg.warn('Invalid color key. Using grey instead.')
 
             smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
