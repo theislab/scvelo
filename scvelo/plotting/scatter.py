@@ -57,7 +57,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     # use c & color and cmap & color_map interchangeably, and plot each group separately if groups is 'all'
     if 'c' in kwargs: color = kwargs.pop('c')
     if 'cmap' in kwargs: color_map = kwargs.pop('cmap')
-    if groups == 'all':
+    if isinstance(groups, str) and groups == 'all':
         if color is None:  color = default_color(adata)
         if is_categorical(adata, color): groups = [[c] for c in adata.obs[color].cat.categories]
 
