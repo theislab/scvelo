@@ -738,8 +738,8 @@ def velocity_embedding_changed(adata, basis, vkey):
 
 def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=None, bw_method=None, xlabel=None,
          ylabel=None, xlim=None, ylim=None, cutoff=None, xscale=None, yscale=None, fontsize=None, legend_fontsize=None,
-         figsize=None, norm=None, perc=None, exclude_zeros=None, axvline=None, axhline=None, ax=None, dpi=None,
-         show=True):
+         figsize=None, normed=None, perc=None, exclude_zeros=None, axvline=None, axhline=None, pdf=None, ax=None,
+         dpi=None, show=True):
     """\
     Plot a histogram.
 
@@ -790,7 +790,7 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
         Legend font size.
     figsize: tuple (default: `(7,5)`)
         Figure size.
-    norm: `bool` or `None` (default: `None`)
+    normed: `bool` or `None` (default: `None`)
         Whether to normalize data.
     perc: tuple, e.g. [2,98] (default: `None`)
         Specify percentile for continuous coloring.
@@ -800,6 +800,8 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
         Plot a vertical line at the specified x-value.
     axhline `float` or `None` (default: `None`)
         Plot a horizontal line at the specified y-value.
+    pdf: `str` or `None` (default: `None`)
+        probability density function to be fitted. E.g. 'norm', 't', 'chi', 'beta', 'gamma', 'laplace' etc.
     ax: `matplotlib.Axes`, optional (default: `None`)
         A matplotlib axes object. Only works if plotting a single component.
     dpi: `int` (default: 80)
@@ -816,7 +818,7 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
         fig, ax = pl.subplots(figsize=figsize, dpi=dpi)
 
     arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
-    if norm is None: norm = kde
+    if normed is None: normed = kde
     if hist is None: hist = not kde
 
     palette = default_palette(None).by_key()['color'][::-1]
@@ -838,22 +840,23 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
     if cutoff is not None:
         bins = bins[(bins > cutoff[0]) & (bins < cutoff[1])] if isinstance(cutoff, list) else bins[bins < cutoff]
 
+    if isinstance(labels, str):
+        labels = [labels]
+
     for i, x in enumerate(arrays):
         x_vals = np.array(x[np.isfinite(x)])
         if exclude_zeros: x_vals = np.array(x_vals[x_vals != 0])
         if kde:
             from scipy.stats import gaussian_kde
             kde_bins = gaussian_kde(x_vals, bw_method=bw_method)(bins)
-            if not norm:
+            if not normed:
                 kde_bins *= (bins[1] - bins[0]) * len(x_vals)
             ax.plot(bins, kde_bins, color=colors[i])
             ax.fill_between(bins, 0, kde_bins, alpha=.4, color=colors[i],
                             label=labels[i] if labels is not None else None)
             ylim = np.min(kde_bins) if ylim is None else ylim
         if hist:
-            if norm:
-                x_vals /= (bins[1] - bins[0]) * len(x_vals)
-            ax.hist(x_vals, bins=bins, alpha=alpha, color=colors[i],
+            ax.hist(x_vals, bins=bins, alpha=alpha, color=colors[i], normed=normed,
                     label=labels[i] if labels is not None else None)
 
     set_label(xlabel if xlabel is not None else '', ylabel if xlabel is not None else '', fontsize=fontsize, ax=ax)
@@ -868,6 +871,21 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
     if yscale is not None: ax.set_yscale(yscale)
 
     update_axes(ax, xlim, ylim, fontsize, frameon=True)
+
+    pdf = [pdf] if isinstance(pdf, str) else pdf
+    if pdf is not None:
+        fits = []
+        for i, pd in enumerate(pdf):
+            from scipy import stats
+            xt = ax.get_xticks()
+            xmin, xmax = min(xt), max(xt)
+            lnspc = np.linspace(xmin, xmax, len(bins))
+
+            args = eval('stats.' + pd + '.fit(x_vals)')
+            pd_vals = eval('stats.' + pd + '.pdf(lnspc, *args)')
+            fit = ax.plot(lnspc, pd_vals, label=pd, color=colors[i])
+            fits.extend(fit)
+        ax.legend(handles=fits, labels=pdf, fontsize=legend_fontsize)
 
     if not show:
         return ax

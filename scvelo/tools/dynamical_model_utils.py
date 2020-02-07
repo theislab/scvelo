@@ -653,6 +653,10 @@ class BaseDynamics:
         reg = (gamma / beta - self.steady_state_ratio) * s / self.std_s if self.steady_state_ratio is not None else 0
         return udiff, sdiff, reg
 
+    def get_residuals_linear(self, **kwargs):
+        udiff, sdiff, reg = self.get_dists(**kwargs)
+        return udiff, sdiff
+
     def get_residuals(self, **kwargs):
         udiff, sdiff, reg = self.get_dists(**kwargs)
         return np.sign(sdiff) * np.sqrt(udiff ** 2 + sdiff ** 2)
