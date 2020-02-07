@@ -167,6 +167,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     raise ValueError('Both x and y have to specified.')
                 if any([key not in list(adata.layers.keys()) + ['X'] for key in [x, y]]):
                     raise ValueError('Could not find x or y in layers.')
+                if legend_loc is None:
+                    legend_loc = 'none'
 
                 if xlabel is None: xlabel = x
                 if ylabel is None: ylabel = y
@@ -188,13 +190,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
                 x, y = X_emb[:, 0], X_emb[:, 1]
                 z = X_emb[:, 2] if projection == '3d' and X_emb.shape[1] > 2 else None
-
-                # set legend if categorical color vals in embedding
-                if is_categorical(adata, color):
-                    _set_colors_for_categorical_obs(adata, color, palette)
-                    legend_loc = default_legend_loc(adata, color, legend_loc)
-                    _add_legend(adata, ax, color, legend_loc, X_emb, legend_fontweight, legend_fontsize,
-                                [patheffects.withStroke(linewidth=True, foreground='w')], groups)
 
             elif isinstance(x, str) and isinstance(y, str):
                 if layer is None:
@@ -237,6 +232,13 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             # convolve along x axes (e.g. pseudotime)
             if n_convolve is not None:
                 y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
+
+            # set legend if categorical color vals in embedding
+            if is_categorical(adata, color):
+                _set_colors_for_categorical_obs(adata, color, palette)
+                legend_loc = default_legend_loc(adata, color, legend_loc)
+                _add_legend(adata, ax, color, legend_loc, np.stack([x, y]).T, legend_fontweight, legend_fontsize,
+                            [patheffects.withStroke(linewidth=True, foreground='w')], groups)
 
             # if color is set to a cell index, plot that cell on top
             if isinstance(color, int):
