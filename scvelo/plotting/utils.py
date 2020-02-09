@@ -366,6 +366,7 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
     from matplotlib.colors import to_hex
     color_key = f"{value_to_plot}_colors"
     valid = True
+
     if palette is None and color_key in adata.uns:
         # Check if colors already exist in adata.uns and if they are a valid palette
         _palette = []
@@ -387,6 +388,7 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
     elif palette is not None:
         # Check if given palette is valid
         categories = adata.obs[value_to_plot].cat.categories
+
         # check is palette given is a valid matplotlib colormap
         if isinstance(palette, str) and palette in pl.colormaps():
             # this creates a palette from a colormap. E.g. 'Accent, Dark2, tab20'
@@ -394,6 +396,9 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
             colors_list = [to_hex(x) for x in cmap(np.linspace(0, 1, len(categories)))]
 
         else:
+            # check if palette is as dict and convert it to an ordered list.
+            if isinstance(palette, dict):
+                palette = [palette[c] for c in categories]
             # check if palette is a list and convert it to a cycler, thus
             # it doesnt matter if the list is shorter than the categories length:
             if isinstance(palette, cabc.Sequence):
@@ -418,8 +423,8 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
                             valid = False
                             break
                     _color_list.append(color)
-
                 palette = cycler(color=_color_list)
+
             if not isinstance(palette, Cycler) or 'color' not in palette.keys:
                 logg.warn(
                     "Please check that the value of 'palette' is a valid "
@@ -427,6 +432,7 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
                     "or a cycler with a 'color' key. Default colors will be used instead"
                 )
                 valid = False
+
             if valid:
                 cc = palette()
                 colors_list = [to_hex(next(cc)['color']) for x in range(len(categories))]
