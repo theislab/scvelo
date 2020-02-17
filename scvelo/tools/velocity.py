@@ -223,6 +223,9 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
         adata.layers[vkey + '_u'] = np.ones(adata.shape) * np.nan
         adata.layers[vkey + '_u'][:, gene_subset] = wt
 
+        if filter_genes and len(set(vgenes)) > 1:
+            adata._inplace_subset_var(vgenes)
+
     elif mode in ['steady_state', 'deterministic', 'stochastic']:
         categories = adata.obs[groupby].cat.categories \
             if groupby is not None and groups is None and groups_for_fit is None else [None]
