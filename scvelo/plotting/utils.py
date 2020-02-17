@@ -824,7 +824,7 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
         fig, ax = pl.subplots(figsize=figsize, dpi=dpi)
 
     arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
-    if normed is None: normed = kde
+    if normed is None: normed = kde or pdf
     if hist is None: hist = not kde
 
     palette = default_palette(None).by_key()['color'][::-1]
@@ -887,8 +887,12 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
             xmin, xmax = min(xt), max(xt)
             lnspc = np.linspace(xmin, xmax, len(bins))
 
-            args = eval('stats.' + pd + '.fit(x_vals)')
+            if '(' in pd:  # used passed parameters
+                args, pd = eval(pd[pd.rfind('('):]), pd[:pd.rfind('(')]
+            else:  # fit parameters
+                args = eval('stats.' + pd + '.fit(x_vals)')
             pd_vals = eval('stats.' + pd + '.pdf(lnspc, *args)')
+            logg.info('Fitting', pd, np.round(args, 4), '.')
             fit = ax.plot(lnspc, pd_vals, label=pd, color=colors[i])
             fits.extend(fit)
         ax.legend(handles=fits, labels=pdf, fontsize=legend_fontsize)
