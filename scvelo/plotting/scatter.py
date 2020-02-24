@@ -58,12 +58,14 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     if 'c' in kwargs: color = kwargs.pop('c')
     if 'cmap' in kwargs: color_map = kwargs.pop('cmap')
 
-    c = color[0] if not isinstance(color, str) else color
+    cols = [color] if isinstance(color, str) else color
     if groups is None:
-        if is_categorical(adata, c): groups = [c for c in adata.obs[c].cat.categories]
+        if is_categorical(adata, cols[0]):
+            groups = [c for col in cols
+                      for c in (adata.obs[col].cat.categories if is_categorical(adata, col) else [])]
     elif isinstance(groups, str) and groups == 'all':
         if color is None:  color = default_color(adata)
-        if is_categorical(adata, c): groups = [[c] for c in adata.obs[c].cat.categories]
+        if is_categorical(adata, cols[0]): groups = [[c] for c in adata.obs[cols[0]].cat.categories]
 
     # create list of each mkey (won't be needed in the future) and check if all bases are valid.
     color, layer, x, y, components = to_list(color), to_list(layer), to_list(x), to_list(y), to_list(components)
