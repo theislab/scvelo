@@ -58,7 +58,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     if 'c' in kwargs: color = kwargs.pop('c')
     if 'cmap' in kwargs: color_map = kwargs.pop('cmap')
 
-    cols = [color] if isinstance(color, str) else color
+    cols = to_list(color)
     if groups is None:
         if is_categorical(adata, cols[0]):
             groups = [c for col in cols
