@@ -23,7 +23,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             colorbar=None, palette=None, size=None, alpha=None, linewidth=None, linecolor=None, perc=None, groups=None,
             sort_order=True, components=None, projection=None, legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, xlim=None, ylim=None, show_density=None,
-            show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, add_outline=None,
+            show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, add_outline=None, add_text=None,
             outline_width=None, outline_color=None, n_convolve=None, smooth=None, rescale_color=None, dpi=None,
             frameon=None, zorder=None, ncols=None, wspace=None, hspace=None, show=None, save=None, ax=None, **kwargs):
     """\
@@ -165,16 +165,18 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     x, y = default_xkey(adata, use_raw=use_raw), default_ykey(adata, use_raw=use_raw)
                 elif x is None or y is None:
                     raise ValueError('Both x and y have to specified.')
-                if any([key not in list(adata.layers.keys()) + ['X'] for key in [x, y]]):
-                    raise ValueError('Could not find x or y in layers.')
+                if isinstance(x, str) and isinstance(y, str):
+                    if any([key not in list(adata.layers.keys()) + ['X'] for key in [x, y]]):
+                        raise ValueError('Could not find x or y in layers.')
+
+                    if xlabel is None: xlabel = x
+                    if ylabel is None: ylabel = y
+
+                    x = get_obs_vector(adata, basis, layer=x, use_raw=use_raw)
+                    y = get_obs_vector(adata, basis, layer=y, use_raw=use_raw)
+
                 if legend_loc is None:
                     legend_loc = 'none'
-
-                if xlabel is None: xlabel = x
-                if ylabel is None: ylabel = y
-
-                x = get_obs_vector(adata, basis, layer=x, use_raw=use_raw)
-                y = get_obs_vector(adata, basis, layer=y, use_raw=use_raw)
 
                 if use_raw and perc is not None:
                     ax.set_xlim(right=np.percentile(x, 99.9 if not isinstance(perc, int) else perc) * 1.05)
@@ -323,6 +325,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
             if rug:
                 plot_rug(np.ravel(x), color=np.ravel(interpret_colorkey(adata, rug)), ax=ax)
+
+            if add_text:
+                ax.text(.05, .95, str(add_text), ha='left', va='top', fontsize=fontsize,
+                        transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
 
             set_label(xlabel, ylabel, fontsize, basis, ax=ax)
             set_title(title, layer, color, fontsize, ax=ax)
