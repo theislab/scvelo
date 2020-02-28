@@ -6,6 +6,7 @@ from . import palettes
 
 import os
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
@@ -100,13 +101,20 @@ def get_obs_vector(adata, basis, layer=None, use_raw=None):
 
 def groups_to_bool(adata, groups, groupby=None):
     groups = [groups] if isinstance(groups, str) else groups
+    groupby = groupby if groupby in adata.obs.keys() else 'clusters' if 'clusters' in adata.obs.keys() \
+        else 'louvain' if 'louvain' in adata.obs.keys() else None
+
     if isinstance(groups, (list, tuple, np.ndarray, np.record)):
-        groupby = groupby if groupby in adata.obs.keys() else 'clusters' if 'clusters' in adata.obs.keys() \
-            else 'louvain' if 'louvain' in adata.obs.keys() else None
         if groupby is not None:
             groups = np.array([key in groups for key in adata.obs[groupby]])
         else:
             raise ValueError('groupby attribute not valid.')
+
+    if groupby is not None and groupby in adata.obs.keys():
+        c = adata.obs[groupby]
+        if np.any(pd.isnull(c)):
+            valid = np.array(~pd.isnull(c))
+            groups = valid if groups is None or len(groups) != len(c) else groups & valid
     return groups
 
 

@@ -24,8 +24,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             sort_order=True, components=None, projection=None, legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, xlim=None, ylim=None, show_density=None,
             show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, add_outline=None, add_text=None,
-            outline_width=None, outline_color=None, n_convolve=None, smooth=None, rescale_color=None, dpi=None,
-            frameon=None, zorder=None, ncols=None, wspace=None, hspace=None, show=None, save=None, ax=None, **kwargs):
+            add_text_pos=[0.05, 0.95], outline_width=None, outline_color=None, n_convolve=None, smooth=None,
+            rescale_color=None, dpi=None, frameon=None, zorder=None, ncols=None, wspace=None, hspace=None, show=None,
+            save=None, ax=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -59,7 +60,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     if 'cmap' in kwargs: color_map = kwargs.pop('cmap')
     if isinstance(groups, str) and groups == 'all':
         if color is None:  color = default_color(adata)
-        if is_categorical(adata, color): groups = [[c] for c in adata.obs[color].cat.categories]
+        if is_categorical(adata, color):
+            vc = adata.obs[color].value_counts()
+            groups = [[c] for c in vc[vc > 0].index]
 
     # create list of each mkey (won't be needed in the future) and check if all bases are valid.
     color, layer, x, y, components = to_list(color), to_list(layer), to_list(x), to_list(y), to_list(components)
@@ -287,7 +290,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     kwargs.update({"vmin": vmid - crange, "vmax": vmid + crange})
 
             # set color to grey for NAN values and for cells that are not in groups
-            if groups is not None or np.any(pd.isnull(c)):
+            if groups is not None or is_categorical(adata, color) and np.any(pd.isnull(adata.obs[color])):
                 zorder = 0 if zorder is None else zorder
                 ax = scatter(adata, x=x, y=y, basis=basis, layer=layer, color='lightgrey', ax=ax, groups=None, **scatter_kwargs)
                 idx = groups_to_bool(adata, groups, color)
@@ -327,7 +330,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 plot_rug(np.ravel(x), color=np.ravel(interpret_colorkey(adata, rug)), ax=ax)
 
             if add_text:
-                ax.text(.05, .95, str(add_text), ha='left', va='top', fontsize=fontsize,
+                if add_text_pos is None:
+                    add_text_pos = [.05, .95]
+                ax.text(add_text_pos[0], add_text_pos[1], str(add_text), ha='left', va='top', fontsize=fontsize,
                         transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
 
             set_label(xlabel, ylabel, fontsize, basis, ax=ax)
