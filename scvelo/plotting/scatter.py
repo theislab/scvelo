@@ -235,6 +235,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                         raise ValueError('x or y is invalid! pass valid observation annotation or a gene name')
 
             x, y = make_dense(x).flatten(), make_dense(y).flatten()
+            scatter_array = np.stack([x, y]).T
 
             # convolve along x axes (e.g. pseudotime)
             if n_convolve is not None:
@@ -294,8 +295,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if title is None and groups is not None and len(groups) == 1 and isinstance(groups[0], str):
                     title = groups[0]
                 zorder += 1
-            else:
-                idx = None
 
             x, y = np.ravel(x), np.ravel(y)
             if len(x) != len(y):
@@ -317,23 +316,19 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if idx is not None:
                     zorder = 2 if zorder is None else zorder + 2
                     if kwargs['s'] is not None: kwargs['s'] *= 1.5
-                    ax.scatter(x[idx], y[idx], c=c[idx] if not isinstance(c, str) and len(c) == adata.n_obs else c,
-                               alpha=alpha, marker='.', zorder=zorder, **kwargs)
-                    plot_outline(x[idx], y[idx], kwargs, outline_width, outline_color, zorder, ax=ax)
-                    if groups is None:
-                        groups = add_outline
-                else:
-                    plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
+                    x, y = scatter_array[:, 0], scatter_array[:, 1]
+                    x, y, c = x[idx], y[idx], c[idx] if not isinstance(c, str) and len(c) == adata.n_obs else c
+                    ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
+
+                plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
 
             # set legend if categorical color vals in embedding
             if is_categorical(adata, color):
                 _set_colors_for_categorical_obs(adata, color, palette)
                 legend_loc = default_legend_loc(adata, color, legend_loc)
-                _add_legend(adata, ax, color, legend_loc, np.stack([x, y]).T, legend_fontweight, legend_fontsize,
-                            [patheffects.withStroke(linewidth=True, foreground='w')], groups)
-
-            if idx is not None:
-                x, y = x[idx], y[idx]
+                _add_legend(adata, ax, color, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
+                            [patheffects.withStroke(linewidth=True, foreground='w')],
+                            add_outline if groups_to_bool(adata, add_outline, color) is not None else groups)
 
             if show_density:
                 plot_density(x, y, show_density, ax=ax)
