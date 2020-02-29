@@ -63,6 +63,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         if is_categorical(adata, color):
             vc = adata.obs[color].value_counts()
             groups = [[c] for c in vc[vc > 0].index]
+    elif isinstance(groups, str) and ',' in groups:
+        groups = [g.strip() for g in groups.split(',')]
 
     # create list of each mkey (won't be needed in the future) and check if all bases are valid.
     color, layer, x, y, components = to_list(color), to_list(layer), to_list(x), to_list(y), to_list(components)
@@ -238,13 +240,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if n_convolve is not None:
                 y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
 
-            # set legend if categorical color vals in embedding
-            if is_categorical(adata, color):
-                _set_colors_for_categorical_obs(adata, color, palette)
-                legend_loc = default_legend_loc(adata, color, legend_loc)
-                _add_legend(adata, ax, color, legend_loc, np.stack([x, y]).T, legend_fontweight, legend_fontsize,
-                            [patheffects.withStroke(linewidth=True, foreground='w')], groups)
-
             # if color is set to a cell index, plot that cell on top
             if isinstance(color, int):
                 color = np.array(np.arange(len(x)) == color, dtype=bool)
@@ -288,7 +283,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     lb, ub = np.min(c), np.max(c)
                     crange = max(np.abs(vmid - lb), np.abs(ub - vmid))
                     kwargs.update({"vmin": vmid - crange, "vmax": vmid + crange})
-
             # set color to grey for NAN values and for cells that are not in groups
             if groups is not None or is_categorical(adata, color) and np.any(pd.isnull(adata.obs[color])):
                 zorder = 0 if zorder is None else zorder
@@ -300,6 +294,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if title is None and groups is not None and len(groups) == 1 and isinstance(groups[0], str):
                     title = groups[0]
                 zorder += 1
+            else:
+                idx = None
 
             x, y = np.ravel(x), np.ravel(y)
             if len(x) != len(y):
@@ -315,7 +311,29 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
 
             if add_outline:
-                plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
+                if isinstance(add_outline, str) and ',' in add_outline:
+                    add_outline = [a.strip() for a in add_outline.split(',')]
+                idx = groups_to_bool(adata, add_outline, color)
+                if idx is not None:
+                    zorder = 2 if zorder is None else zorder + 2
+                    if kwargs['s'] is not None: kwargs['s'] *= 1.5
+                    ax.scatter(x[idx], y[idx], c=c[idx] if not isinstance(c, str) and len(c) == adata.n_obs else c,
+                               alpha=alpha, marker='.', zorder=zorder, **kwargs)
+                    plot_outline(x[idx], y[idx], kwargs, outline_width, outline_color, zorder, ax=ax)
+                    if groups is None:
+                        groups = add_outline
+                else:
+                    plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
+
+            # set legend if categorical color vals in embedding
+            if is_categorical(adata, color):
+                _set_colors_for_categorical_obs(adata, color, palette)
+                legend_loc = default_legend_loc(adata, color, legend_loc)
+                _add_legend(adata, ax, color, legend_loc, np.stack([x, y]).T, legend_fontweight, legend_fontsize,
+                            [patheffects.withStroke(linewidth=True, foreground='w')], groups)
+
+            if idx is not None:
+                x, y = x[idx], y[idx]
 
             if show_density:
                 plot_density(x, y, show_density, ax=ax)

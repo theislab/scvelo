@@ -115,6 +115,10 @@ def groups_to_bool(adata, groups, groupby=None):
         if np.any(pd.isnull(c)):
             valid = np.array(~pd.isnull(c))
             groups = valid if groups is None or len(groups) != len(c) else groups & valid
+
+    if not isinstance(groups, (list, tuple, np.ndarray, np.record)):
+        groups = None
+
     return groups
 
 
