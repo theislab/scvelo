@@ -334,6 +334,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 plot_density(x, y, show_density, ax=ax)
 
             if show_linear_fit or show_linear_fit == 0:
+                if show_linear_fit is True and basis in adata.var_names: show_linear_fit = 0  # without intercept
                 plot_linfit(x, y, show_linear_fit, legend_loc != 'none', linecolor, linewidth, fontsize, ax=ax)
 
             if show_polyfit:
