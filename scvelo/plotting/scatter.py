@@ -248,6 +248,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 ax.scatter(np.ravel(x[color]), np.ravel(y[color]), color='darkblue', s=kwargs['s'] * 2, zorder=zorder)
                 zorder -= 1
 
+            # set palette if categorical color vals
+            if is_categorical(adata, color):
+                _set_colors_for_categorical_obs(adata, color, palette)
+
             # set color
             if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
                 c = interpret_colorkey(adata, basis, color, perc, use_raw)  # phase portrait: color=basis, layer=color
@@ -274,7 +278,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     kwargs['s'] = np.array(kwargs['s'])[order]
 
             if not np.any([v in kwargs for v in ['vmin', 'vmid', 'vmax']]) \
-                    and np.any([isinstance(v, str) and 'velocity' in v for v in [color, layer]]):
+                    and np.any([isinstance(v, str) and 'velocity' in v and 'time' not in v for v in [color, layer]]):
                 kwargs['vmid'] = 0  # set vmid to 0 if color values obtained from velocity expression
 
             # introduce vmid by setting vmin and vmax accordingly
@@ -322,9 +326,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
                 plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
 
-            # set legend if categorical color vals in embedding
+            # set legend if categorical categorical color vals
             if is_categorical(adata, color):
-                _set_colors_for_categorical_obs(adata, color, palette)
                 legend_loc = default_legend_loc(adata, color, legend_loc)
                 _add_legend(adata, ax, color, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
                             [patheffects.withStroke(linewidth=True, foreground='w')],
@@ -337,7 +340,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if show_linear_fit is True and basis in adata.var_names: show_linear_fit = 0  # without intercept
                 plot_linfit(x, y, show_linear_fit, legend_loc != 'none', linecolor, linewidth, fontsize, ax=ax)
 
-            if show_polyfit:
+            if show_polyfit or show_polyfit == 0:
+                if show_polyfit is 0 or show_polyfit is True and basis in adata.var_names:
+                    x, y, show_polyfit = np.hstack([np.zeros(10), x]), np.hstack([np.zeros(10), y]), True
                 plot_polyfit(x, y, show_polyfit, legend_loc != 'none', linecolor, linewidth, fontsize, ax=ax)
 
             if rug:
