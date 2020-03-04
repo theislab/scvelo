@@ -9,8 +9,8 @@ from .utils import is_categorical, interpret_colorkey, savefig_or_show
 
 
 def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis', col_color=None, n_convolve=30,
-            standard_scale=0, sort=True, colorbar=None, col_cluster=False, row_cluster=False,
-            figsize=(10, 5), show=True, save=None, ax=None):
+            standard_scale=0, sort=True, colorbar=None, col_cluster=False, row_cluster=False, figsize=(10, 5),
+            font_scale=None, show=True, save=None, ax=None, **kwargs):
     """\
     Plot time series for genes as heatmap.
 
@@ -71,8 +71,9 @@ def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis',
         max_sort = np.argsort(np.argmax(df.values, axis=0))
         df = pd.DataFrame(df.values[:, max_sort], columns=df.columns[max_sort])
     if col_color is not None: col_color = interpret_colorkey(adata, col_color)[np.argsort(time)]
+    if font_scale is not None: sns.set(font_scale=font_scale)
     cm = sns.clustermap(df.T, col_colors=col_color, col_cluster=col_cluster, row_cluster=row_cluster, cmap=color_map,
-                        xticklabels=False, standard_scale=standard_scale, figsize=figsize)
+                        xticklabels=False, standard_scale=standard_scale, figsize=figsize, **kwargs)
     if not colorbar: cm.cax.set_visible(False)
     savefig_or_show('heatmap', save=save, show=show)
     if not show: return ax
