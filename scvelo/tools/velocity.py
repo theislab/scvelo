@@ -206,7 +206,7 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
         if min_r2 is not None:
             if 'fit_r2' not in adata.var.keys():
                 velo = Velocity(adata, groups_for_fit=groups_for_fit, groupby=groupby, constrain_ratio=constrain_ratio,
-                                min_r2=min_r2, r2_adjusted=r2_adjusted, use_raw=use_raw)
+                                min_r2=min_r2, use_raw=use_raw)
                 velo.compute_deterministic(fit_offset=fit_offset, perc=perc)
                 adata.var['fit_r2'] = velo._r2
             vgenes &= adata.var.fit_r2 > min_r2
