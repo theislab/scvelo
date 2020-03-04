@@ -50,7 +50,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
     # keys for figures (fkeys) and multiple plots (mkeys)
     fkeys = ['adata', 'show', 'save', 'groups', 'figsize', 'dpi', 'ncols', 'wspace', 'hspace', 'ax', 'kwargs']
-    mkeys = ['color', 'layer', 'basis', 'components', 'x', 'y', 'xlabel', 'ylabel', 'title', 'color_map']
+    mkeys = ['color', 'layer', 'basis', 'components', 'x', 'y', 'xlabel', 'ylabel', 'title', 'color_map', 'add_text']
     scatter_kwargs = {'show': False, 'save': False}
     for key in signature(scatter).parameters:
         if key not in mkeys + fkeys: scatter_kwargs[key] = eval(key)
@@ -65,6 +65,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             groups = [[c] for c in vc[vc > 0].index]
     elif isinstance(groups, str) and ',' in groups:
         groups = [g.strip() for g in groups.split(',')]
+    if isinstance(add_text, (list, tuple, np.ndarray, np.record)):
+        add_text = list(np.array(add_text, dtype=str))
 
     # create list of each mkey (won't be needed in the future) and check if all bases are valid.
     color, layer, x, y, components = to_list(color), to_list(layer), to_list(x), to_list(y), to_list(components)
