@@ -65,7 +65,9 @@ def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis',
     if n_convolve is not None:
         weights = np.ones(n_convolve) / n_convolve
         for i, gene in enumerate(var_names):
-            df[gene] = np.convolve(df[gene].values, weights, mode='same')
+            try:
+                df[gene] = np.convolve(df[gene].values, weights, mode='same')
+            except: pass  # some extreme cases may not be convolved e.g. due to all-zero counts or nans
 
     if sort:
         max_sort = np.argsort(np.argmax(df.values, axis=0))
