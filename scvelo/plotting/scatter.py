@@ -23,10 +23,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             colorbar=None, palette=None, size=None, alpha=None, linewidth=None, linecolor=None, perc=None, groups=None,
             sort_order=True, components=None, projection=None, legend_loc=None, legend_fontsize=None, legend_fontweight=None,
             xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, xlim=None, ylim=None, show_density=None,
-            show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, add_outline=None, add_text=None,
-            add_text_pos=[0.05, 0.95], outline_width=None, outline_color=None, n_convolve=None, smooth=None,
-            rescale_color=None, dpi=None, frameon=None, zorder=None, ncols=None, wspace=None, hspace=None, show=None,
-            save=None, ax=None, **kwargs):
+            show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, add_text=None, add_text_pos=None,
+            add_outline=None, outline_width=None, outline_color=None, n_convolve=None, smooth=None, rescale_color=None,
+            dpi=None, frameon=None, zorder=None, ncols=None, nrows=None, wspace=None, hspace=None,
+            show=None, save=None, ax=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -49,7 +49,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
 
     # keys for figures (fkeys) and multiple plots (mkeys)
-    fkeys = ['adata', 'show', 'save', 'groups', 'figsize', 'dpi', 'ncols', 'wspace', 'hspace', 'ax', 'kwargs']
+    fkeys = ['adata', 'show', 'save', 'groups', 'figsize', 'dpi', 'ncols', 'nrows', 'wspace', 'hspace', 'ax', 'kwargs']
     mkeys = ['color', 'layer', 'basis', 'components', 'x', 'y', 'xlabel', 'ylabel', 'title', 'color_map', 'add_text']
     scatter_kwargs = {'show': False, 'save': False}
     for key in signature(scatter).parameters:
@@ -88,9 +88,11 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             logg.warn("Cannot specify `ax` when plotting multiple panels.")
         if is_list(title):
             title *= int(np.ceil(len(multikey) / len(title)))
-
-        ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
-        nrows = int(np.ceil(len(multikey) / ncols))
+        if nrows is None:
+            ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
+            nrows = int(np.ceil(len(multikey) / ncols))
+        else:
+            ncols = int(np.ceil(len(multikey) / nrows))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
         fig = pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi)
         gspec = pl.GridSpec(nrows, ncols, fig, hspace=0.25 if hspace is None else hspace, wspace=wspace)
@@ -316,9 +318,16 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
 
             if add_outline:
-                if isinstance(add_outline, str) and ',' in add_outline:
-                    add_outline = [a.strip() for a in add_outline.split(',')]
-                idx = groups_to_bool(adata, add_outline, color)
+                groupby_outline = color
+                if isinstance(add_outline, str):
+                    if add_outline in adata.var.keys() and basis in adata.var_names:
+                        add_outline = str(adata[:, basis].var[add_outline])
+                    if ':' in add_outline:
+                        groupby_outline, add_outline = add_outline.split(':')
+                        add_outline = add_outline.strip()
+                    if ',' in add_outline:
+                        add_outline = [a.strip() for a in add_outline.split(',')]
+                idx = groups_to_bool(adata, add_outline, groupby_outline)
                 if idx is not None:
                     zorder = 2 if zorder is None else zorder + 2
                     if kwargs['s'] is not None: kwargs['s'] *= 1.5

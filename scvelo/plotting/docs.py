@@ -38,8 +38,9 @@ linecolor: `str` ir list of `str` (default: 'k')
     Color of lines from velocity fits, linear fits and polynomial fits
 perc: tuple, e.g. [2,98] (default: `None`)
     Specify percentile for continuous coloring.
-groups: `str` (default: `all groups`)
+groups: `str` or list of `str` (default: `all groups`)
     Restrict to a few categories in categorical observation annotation.
+    Multiple categories can be passed as list with ['cluster_1', 'cluster_3'], or as string with 'cluster_1, cluster_3'.
 sort_order: `bool` (default: `True`)
     For continuous annotations used as color parameter, plot data points with higher values on top of others.
 components: `str` or list of `str` (default: '1,2')
@@ -73,19 +74,24 @@ xlim: tuple, e.g. [0,1] or `None` (default: `None`)
 ylim: tuple, e.g. [0,1] or `None` (default: `None`)
     Restrict y-limits of the axis.
 show_density: `bool` or `str` or `None` (default: `None`)
-    Whether to show density of counts attached to the x and y axes. Color of the plot can also be given as `str`.
+    Whether to show density of values along x and y axes. Color of the density plot can also be passed as `str`.
 show_assignments: `bool` or `str` or `None` (default: `None`)
-    Whether to show assignments to the model curve. Color of the assignments can also be given as `str`.
+    Whether to show assignments to the model curve. Color of the assignments can also be passed as `str`.
 show_linear_fit: `bool` or `str` or `None` (default: `None`)
-    Whether to show linear fit to the data. Color of the plot can also be given as `str`.
+    Whether to show linear regression fit to the data points. Color of the line can also be passed as `str`.
 show_polyfit: `bool` or `str` or `int` or `None` (default: `None`)
-    Whether to show polynomial fit to ???. Color of the polyfit plot can also be given as `str`. If `int` is given,
-    determines the degree of the polynomial fit (else the degree defaults to 2).
+    Whether to show polynomial fit to the data points. Color of the polyfit plot can also be passed as `str`. 
+    The degree of the polynomial fit can be passed as `int` (default is 2 for quadratic fit).
 rug: `str` or `None` (default: `None`)
     If categorical observation annotation (e.g. 'clusters') is given, a rugplot is attached to the x-axis showing the 
     distribution of data membership to each of the categories.
-add_outline: `bool` (default: `False`)
-    Whether to show an outline around scatter plot dots
+add_text: `str` (default: `None`)
+    Text to be added to the plot, passed as `str`.
+add_text_pos: `tuple`, e.g. [0.05, 0.95] (defaut: `[0.05, 0.95]`) 
+    Text position. The default is `[0.05, 0.95]`, positioning the text in the top right corner.
+add_outline: `bool` or `str` (default: `False`)
+    Whether to show an outline around scatter plot dots. 
+    Alternatively a string of cluster names can be passed, e.g. 'cluster_1, clusters_3'.
 outline_width: tuple type `scalar` or `None` (default: `(0.3, 0.05)`)
     Width of the inner and outer outline
 outline_color: tuple of type `str` or `None` (default: `('black', 'white')`)
@@ -98,8 +104,10 @@ dpi: `int` (default: 80)
     Figure dpi.
 frameon: `bool` (default: `True`)
     Draw a frame around the scatter plot.
-ncols : `int` (default: `None`)
+ncols: `int` (default: `None`)
     Number of panels per row.
+nrows: `int` (default: `None`)
+    Number of panels per column.
 wspace : `float` (default: None)
     Adjust the width of the space between multiple panels.
 hspace : `float` (default: None)
