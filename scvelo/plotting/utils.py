@@ -199,6 +199,20 @@ def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, fra
             ax.yaxis.set_major_locator(MaxNLocator(nbins=3, integer=True))
             labelsize = int(fontsize * .75) if fontsize is not None else None
             ax.tick_params(axis='both', which='major', labelsize=labelsize)
+        if isinstance(frameon, str):
+            bf, lf, tf, rf = [f in frameon for f in ['bottom', 'left', 'top', 'right']]
+            if not np.any([bf, lf, tf, rf]):
+                bf, lf, tf, rf = [f in frameon for f in ['b', 'l', 't', 'r']]
+            ax.spines['top'].set_visible(tf)
+            ax.spines['right'].set_visible(rf)
+            if not bf:
+                ax.set_xlabel('')
+                ax.spines['bottom'].set_visible(False)
+            if not lf:
+                ax.set_ylabel('')
+                ax.spines['left'].set_visible(False)
+            ax.tick_params(which='both', bottom=bf, left=lf, top=tf, right=rf, labelbottom=bf, labelleft=lf)
+
     else:
         ax.set_xlabel('')
         ax.set_ylabel('')
@@ -756,10 +770,10 @@ def velocity_embedding_changed(adata, basis, vkey):
 """additional plots (linear fit, density, outline, rug)"""
 
 
-def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=None, bw_method=None, xlabel=None,
+def hist(arrays, alpha=.5, bins=50, color=None, colors=None, labels=None, hist=None, kde=None, bw_method=None, xlabel=None,
          ylabel=None, xlim=None, ylim=None, cutoff=None, xscale=None, yscale=None, fontsize=None, legend_fontsize=None,
          figsize=None, normed=None, perc=None, exclude_zeros=None, axvline=None, axhline=None, pdf=None, ax=None,
-         dpi=None, show=True):
+         dpi=None, show=True, **kwargs):
     """\
     Plot a histogram.
 
@@ -837,11 +851,12 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
     if ax is None:
         fig, ax = pl.subplots(figsize=figsize, dpi=dpi)
 
-    arrays = arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
+    arrays = [np.ravel(array) for array in arrays] if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
     if normed is None: normed = kde or pdf
     if hist is None: hist = not kde
 
     palette = default_palette(None).by_key()['color'][::-1]
+    colors = to_list(colors) if color is None else to_list(color)
     colors = palette if colors is None or len(colors) < len(arrays) else colors
 
     masked_arrays = np.ma.masked_invalid(np.hstack(arrays))
@@ -877,7 +892,7 @@ def hist(arrays, alpha=.5, bins=50, colors=None, labels=None, hist=None, kde=Non
             ylim = np.min(kde_bins) if ylim is None else ylim
         if hist:
             ax.hist(x_vals, bins=bins, alpha=alpha, color=colors[i], normed=normed,
-                    label=labels[i] if labels is not None else None)
+                    label=labels[i] if labels is not None else None, **kwargs)
 
     set_label(xlabel if xlabel is not None else '', ylabel if xlabel is not None else '', fontsize=fontsize, ax=ax)
 
