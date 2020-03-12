@@ -165,7 +165,7 @@ def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
 
 
 def assign_tau(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, assignment_mode=None):
-    if assignment_mode == 'projection' and beta < gamma:
+    if assignment_mode in {'full_projection', 'partial_projection'} or (assignment_mode == 'projection' and beta < gamma):
         x_obs = np.vstack([u, s]).T
         t0 = tau_inv(np.min(u[s > 0]), u0=u0_, alpha=0, beta=beta)
 
@@ -479,7 +479,7 @@ def curve_dists(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, std_u=1, 
 class BaseDynamics:
     def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, perc=99, max_iter=10, fit_time=True,
                  fit_scaling=True, fit_steady_states=True, fit_connected_states=True, fit_basal_transcription=None,
-                 high_pars_resolution=False, steady_state_prior=None):
+                 high_pars_resolution=False, steady_state_prior=None, init_vals=None):
         self.s, self.u, self.use_raw = None, None, None
 
         _layers = adata[:, gene].layers
@@ -523,6 +523,7 @@ class BaseDynamics:
         self.fit_connected_states = fit_connected_states
         self.connectivities = get_connectivities(adata) if self.fit_connected_states is True else self.fit_connected_states
         self.high_pars_resolution = high_pars_resolution
+        self.init_vals = init_vals
 
     def initialize_weights(self):
         nonzero_s = np.ravel(self.s > 0)
@@ -535,8 +536,12 @@ class BaseDynamics:
         if filter_by_u: nonzero &= nonzero_u
 
         weights = np.array(nonzero, dtype=bool)
-        if filter_by_s: weights &= np.ravel(self.s <= np.percentile(self.s[nonzero], self.perc))
-        if filter_by_u: weights &= np.ravel(self.u <= np.percentile(self.u[nonzero], self.perc))
+        if filter_by_s or filter_by_u:
+            ub_s = np.percentile(self.s[nonzero], self.perc)
+            ub_u = np.percentile(self.u[nonzero], self.perc)
+            if ub_s > 0 and ub_u > 0:
+                if filter_by_s: weights &= np.ravel(self.s <= ub_s)
+                if filter_by_u: weights &= np.ravel(self.u <= ub_u)
 
         self.weights = weights
         self.std_u = np.std(self.u[weights])
@@ -661,9 +666,12 @@ class BaseDynamics:
         udiff, sdiff, reg = self.get_dists(**kwargs)
         return np.sign(sdiff) * np.sqrt(udiff ** 2 + sdiff ** 2)
 
-    def get_se(self, **kwargs):
+    def get_se(self, noise_model='normal', **kwargs):
         udiff, sdiff, reg = self.get_dists(**kwargs)
-        return np.sum(udiff ** 2 + sdiff ** 2 + reg ** 2)
+        distx = udiff ** 2 + sdiff ** 2 + reg ** 2
+        if noise_model == 'laplace':
+            distx = np.sqrt(distx)
+        return np.sum(distx)
 
     def get_mse(self, **kwargs):
         return self.get_se(**kwargs) / np.sum(self.weights)
@@ -671,15 +679,25 @@ class BaseDynamics:
     def get_loss(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, u0_=None, s0_=None, refit_time=None):
         return self.get_se(t=t, t_=t_, alpha=alpha, beta=beta, gamma=gamma, scaling=scaling, u0_=u0_, s0_=s0_, refit_time=refit_time)
 
-    def get_loglikelihood(self, varx=None, **kwargs):
+    def get_loglikelihood(self, varx=None, noise_model='normal', **kwargs):
         if 'weighted' not in kwargs: kwargs.update({'weighted': 'dynamical'})
         udiff, sdiff, reg = self.get_dists(**kwargs)
+
         distx = udiff ** 2 + sdiff ** 2 + reg ** 2
-        # compute variance / equivalent to np.var(np.sign(sdiff) * np.sqrt(distx))
-        varx = np.mean(distx) - np.mean(np.sign(sdiff) * np.sqrt(distx))**2 if varx is None else varx
-        varx += varx == 0  # edge case of mRNAs levels to be the same across all cells
+        eucl_distx = np.sqrt(distx)
         n = np.clip(len(distx) - len(self.u) * .01, 2, None)
-        return - 1 / 2 / n * np.sum(distx) / varx - 1 / 2 * np.log(2 * np.pi * varx)
+
+        # compute variance / equivalent to np.var(np.sign(sdiff) * np.sqrt(distx))
+        varx = np.mean(distx) - np.mean(np.sign(sdiff) * eucl_distx) ** 2 if varx is None else varx
+        varx += varx == 0  # edge case of mRNAs levels to be the same across all cells
+
+        if noise_model == 'normal':
+            loglik = - 1 / 2 / n * np.sum(distx) / varx - 1 / 2 * np.log(2 * np.pi * varx)
+        elif noise_model == 'laplace':
+            loglik = - 1 / np.sqrt(2) / n * np.sum(eucl_distx) / np.sqrt(varx) - 1 / 2 * np.log(2 * varx)
+        else:
+            raise ValueError('That noise model is not supported.')
+        return loglik
 
     def get_likelihood(self, **kwargs):
         if 'weighted' not in kwargs: kwargs.update({'weighted': 'dynamical'})

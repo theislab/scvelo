@@ -28,6 +28,8 @@ class DynamicsRecovery(BaseDynamics):
 
         # initialize scaling
         self.std_u, self.std_s = np.std(u_w), np.std(s_w)
+        if self.std_u == 0 or self.std_s == 0:
+            self.std_u = self.std_s = 1
         scaling = self.std_u / self.std_s if isinstance(self.fit_scaling, bool) else self.fit_scaling
         u, u_w = u / scaling, u_w / scaling
 
@@ -39,9 +41,13 @@ class DynamicsRecovery(BaseDynamics):
         beta, gamma = 1, linreg(convolve(u_w, weights_g), convolve(s_w, weights_g)) + 1e-6  # 1e-6 to avoid beta = gamma
         # initialize gamma / beta * scaling clipped to adapt faster to extreme ratios
         gamma = gamma * 1.2 if gamma < .05 / scaling else gamma / 1.2 if gamma > 1.5 / scaling else gamma
+
         u_inf, s_inf = u_w[weights_u | weights_s].mean(), s_w[weights_s].mean()
         u0_, s0_ = u_inf, s_inf
         alpha = u_inf * beta  # np.mean([s_inf * gamma, u_inf * beta])  # np.mean([s0_ * gamma, u0_ * beta])
+
+        if self.init_vals is not None:  # just to test different EM start
+            alpha, beta, gamma = np.array([alpha, beta, gamma]) * np.array(self.init_vals)
 
         # initialize switching from u quantiles and alpha from s quantiles
         tstat_u, pval_u, means_u = test_bimodality(u_w, kde=True)
@@ -82,6 +88,9 @@ class DynamicsRecovery(BaseDynamics):
 
     def fit(self, assignment_mode=None):
         if self.max_iter > 0:
+            # for comparison with exact time assignment
+            if assignment_mode == 'full_projection':
+                self.assignment_mode = assignment_mode
 
             # pre-train with explicit time assignment
             self.fit_t_and_alpha()
