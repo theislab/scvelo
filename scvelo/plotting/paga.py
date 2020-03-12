@@ -115,7 +115,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
             if 'alpha' not in kwargs: kwargs['alpha'] = .5
             ax = scatter(adata, basis=basis, x=x, y=y, vkey=vkey, layer=layer, color=color, size=size, title=title,
                          ax=ax, save=None, zorder=0, show=False, **kwargs)
-        scanpy_paga(adata, ax=ax, show=False, text_kwds={'alpha': 0}, **paga_kwargs)
+        scanpy_paga(adata, ax=ax, show=False,  **paga_kwargs)
 
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
