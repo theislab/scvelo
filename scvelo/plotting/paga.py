@@ -110,12 +110,16 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
                     'You need to run `scv.tl.paga` first.')
         paga_kwargs['pos'] = pos
 
+        legend_loc = kwargs.pop('legend_loc', None)
+        kwargs['legend_loc'] = 'none' if legend_loc == 'on data' else legend_loc  # let paga handle 'on data'
+
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
         if scatter_flag and basis is not None:
             if 'alpha' not in kwargs: kwargs['alpha'] = .5
             ax = scatter(adata, basis=basis, x=x, y=y, vkey=vkey, layer=layer, color=color, size=size, title=title,
                          ax=ax, save=None, zorder=0, show=False, **kwargs)
-        scanpy_paga(adata, ax=ax, show=False,  **paga_kwargs, text_kwds={'zorder': 1000})
+        scanpy_paga(adata, ax=ax, show=False,  **paga_kwargs,
+                    text_kwds={'zorder': 1000, 'alpha': legend_loc == 'on data'})
 
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
