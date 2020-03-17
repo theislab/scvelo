@@ -182,8 +182,10 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
         Name of velocity estimates to be used.
     groupby: `str`, `list` or `np.ndarray` (default: `None`)
         Key of observations grouping to consider.
+        Only to be set, if each group is assumed to have a distinct lineage with an independent root and end point.
     groups: `str`, `list` or `np.ndarray` (default: `None`)
         Groups selected to find terminal states on. Must be an element of adata.obs[groupby].
+        This is to be specified for very distinct clusters where cells are only connected within that clusters.
     self_transitions: `bool` (default: `False`)
         Allow transitions from one node to itself.
     eps: `float` (default: 1e-3)
@@ -209,6 +211,9 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
     strings_to_categoricals(adata)
 
     groupby = 'cell_fate' if groupby is None and 'cell_fate' in adata.obs.keys() else groupby
+    if groupby is not None:
+        logg.warn('Only set groupby, when you have evident distinct clusters/lineages,'
+                  ' each with an own root and end point.')
     categories = adata.obs[groupby].cat.categories if groupby is not None and groups is None else [None]
     for cat in categories:
         groups = cat if cat is not None else groups

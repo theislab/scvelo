@@ -1,10 +1,10 @@
-import numpy as np
-from scipy.sparse import issparse, spdiags, linalg
-
+from .. import logging as logg
 from .terminal_states import terminal_states
 from .utils import groups_to_bool, scale, strings_to_categoricals
 from ..preprocessing.moments import get_connectivities
 
+import numpy as np
+from scipy.sparse import issparse, spdiags, linalg
 try: from scanpy.tools.dpt import DPT
 except ImportError:
     try: from scanpy.tools._dpt import DPT
@@ -139,6 +139,7 @@ def velocity_pseudotime(adata, vkey='velocity', groupby=None, groups=None, root=
         Key of observations grouping to consider.
     groups: `str`, `list` or `np.ndarray` (default: `None`)
         Groups selected to find terminal states on. Must be an element of adata.obs[groupby].
+        Only to be set, if each group is assumed to have a distinct lineage with an independent root and end point.
     root: `int` (default: `None`)
         Index of root cell to be used. Computed from velocity-inferred transition matrix if not specified.
     end: `int` (default: `None`)
@@ -164,6 +165,9 @@ def velocity_pseudotime(adata, vkey='velocity', groupby=None, groups=None, root=
     root = 'root_cells' if root is None and 'root_cells' in adata.obs.keys() else root
     end = 'end_points' if end is None and 'end_points' in adata.obs.keys() else end
     groupby = 'cell_fate' if groupby is None and 'cell_fate' in adata.obs.keys() else groupby
+    if groupby is not None:
+        logg.warn('Only set groupby, when you have evident distinct clusters/lineages,'
+                  ' each with an own root and end point.')
     categories = adata.obs[groupby].cat.categories if groupby is not None and groups is None else [None]
     for cat in categories:
         groups = cat if cat is not None else groups
