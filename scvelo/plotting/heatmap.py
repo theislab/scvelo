@@ -5,12 +5,12 @@ from matplotlib.colors import ColorConverter
 import pandas as pd
 from pandas import unique, isnull
 from scipy.sparse import issparse
-from .utils import is_categorical, interpret_colorkey, savefig_or_show
+from .utils import is_categorical, interpret_colorkey, savefig_or_show, _set_colors_for_categorical_obs, strings_to_categoricals
 
 
-def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis', col_color=None, n_convolve=30,
-            standard_scale=0, sort=True, colorbar=None, col_cluster=False, row_cluster=False, figsize=(10, 5),
-            font_scale=None, show=True, save=None, ax=None, **kwargs):
+def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis', col_color=None, palette='viridis',
+            n_convolve=30, standard_scale=0, sort=True, colorbar=None, col_cluster=False, row_cluster=False,
+            figsize=(10, 5), font_scale=None, show=True, save=None, ax=None, **kwargs):
     """\
     Plot time series for genes as heatmap.
 
@@ -72,6 +72,11 @@ def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis',
     if sort:
         max_sort = np.argsort(np.argmax(df.values, axis=0))
         df = pd.DataFrame(df.values[:, max_sort], columns=df.columns[max_sort])
+    strings_to_categoricals(adata)
+    if not isinstance(col_color, pd.Categorical):
+        col_color = tkey + '_categorical'
+        adata.obs[col_color] = pd.Categorical(np.round(time / np.max(time), 2) * np.max(time))
+        _set_colors_for_categorical_obs(adata, col_color, palette)
     if col_color is not None: col_color = interpret_colorkey(adata, col_color)[np.argsort(time)]
     if font_scale is not None: sns.set(font_scale=font_scale)
     cm = sns.clustermap(df.T, col_colors=col_color, col_cluster=col_cluster, row_cluster=row_cluster, cmap=color_map,
