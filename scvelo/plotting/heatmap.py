@@ -5,7 +5,8 @@ from matplotlib.colors import ColorConverter
 import pandas as pd
 from pandas import unique, isnull
 from scipy.sparse import issparse
-from .utils import is_categorical, interpret_colorkey, savefig_or_show, _set_colors_for_categorical_obs, strings_to_categoricals
+from .utils import is_categorical, interpret_colorkey, savefig_or_show, to_list, \
+    _set_colors_for_categorical_obs, strings_to_categoricals
 
 
 def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis', col_color=None, palette='viridis',
@@ -26,7 +27,7 @@ def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis',
         Layer key to extract count data from.
     color_map: `str` (default: `'viridis'`)
         String denoting matplotlib color map.
-    col_color: `str` or `None` (default: `None`)
+    col_color: `str` or list of `str` (default: `None`)
         String denoting matplotlib color map to use along the columns.
     n_convolve: `int` or `None` (default: `30`)
         If `int` is given, data is smoothed by convolution along the x-axis with kernel size n_convolve.
@@ -73,14 +74,23 @@ def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis',
         max_sort = np.argsort(np.argmax(df.values, axis=0))
         df = pd.DataFrame(df.values[:, max_sort], columns=df.columns[max_sort])
     strings_to_categoricals(adata)
-    if not isinstance(col_color, pd.Categorical):
-        col_color = tkey + '_categorical'
-        adata.obs[col_color] = pd.Categorical(np.round(time / np.max(time), 2) * np.max(time))
-        _set_colors_for_categorical_obs(adata, col_color, palette)
-    if col_color is not None: col_color = interpret_colorkey(adata, col_color)[np.argsort(time)]
-    if font_scale is not None: sns.set(font_scale=font_scale)
+
+    if col_color is not None:
+        col_colors = to_list(col_color)
+        col_color = []
+        for i, col in enumerate(col_colors):
+            if not is_categorical(adata, col):
+                obs_col = adata.obs[col]
+                adata.obs[col + '_categorical'] = pd.Categorical(np.round(obs_col / np.max(obs_col), 2) * np.max(obs_col))
+                col += '_categorical'
+                _set_colors_for_categorical_obs(adata, col, palette)
+            col_color.append(interpret_colorkey(adata, col)[np.argsort(time)])
+
+    if font_scale is not None:
+        sns.set(font_scale=font_scale)
     cm = sns.clustermap(df.T, col_colors=col_color, col_cluster=col_cluster, row_cluster=row_cluster, cmap=color_map,
                         xticklabels=False, standard_scale=standard_scale, figsize=figsize, **kwargs)
+
     if not colorbar: cm.cax.set_visible(False)
     savefig_or_show('heatmap', save=save, show=show)
     if not show: return ax
