@@ -51,6 +51,12 @@ class Velocity:
         self._velocity_genes = (self._r2 > self._min_r2) & (self._gamma > .01) & \
                                (np.max(self._Ms > 0, 0) > 0) & (np.max(self._Mu > 0, 0) > 0)
 
+        if np.sum(velo._velocity_genes) < 2:
+            velo._velocity_genes = velo._r2 > np.median(velo._r2)
+            logg.warn('You seem to have very low signal in splicing dynamics.\n'
+                      'The correlation threshold has been reduced to ' + str(np.median(velo._r2)) + '\n'
+                      'Please be cautious when interpretating results.')
+
     def compute_stochastic(self, fit_offset=False, fit_offset2=False, mode=None, perc=None):
         if self._residual is None: self.compute_deterministic(fit_offset=fit_offset, perc=perc)
         idx = self._velocity_genes if np.any(self._velocity_genes) else np.ones(self._velocity_genes.shape, dtype=bool)
