@@ -346,7 +346,14 @@ def corrcoef(x, y, mode='pearsons'):
     return corr
 
 
-def vcorrcoef(X, y):
+def vcorrcoef(X, y, mode='pearsons', axis=-1):
+    if axis == 0:
+        if X.ndim > 1: X = np.array(X.T)
+        if y.ndim > 1: y = np.array(y.T)
+    if mode == 'spearmans':
+        from scipy.stats.stats import rankdata
+        X = np.apply_along_axis(rankdata, axis=-1, arr=X)
+        y = np.apply_along_axis(rankdata, axis=-1, arr=y)
     Xm = np.array(X - (np.nanmean(X, -1)[:, None] if X.ndim > 1 else np.nanmean(X, -1)))
     ym = np.array(y - (np.nanmean(y, -1)[:, None] if y.ndim > 1 else np.nanmean(y, -1)))
     corr = np.nansum(Xm * ym, -1) / np.sqrt(np.nansum(Xm ** 2, -1) * np.nansum(ym ** 2, -1))
