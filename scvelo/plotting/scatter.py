@@ -376,12 +376,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             if not show: return ax
 
 
-def gridspec(nrows=1, ncols=2, figsize=None, dpi=None):
-    if figsize is None: figsize = rcParams['figure.figsize']
-    gs = pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))
-    return gs
-
-
 def _wraps_plot_scatter(wrapper):
     annots_orig = {
         k: v for k, v in wrapper.__annotations__.items()
