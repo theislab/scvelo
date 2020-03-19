@@ -16,7 +16,7 @@ assignees: ''
 
 <!-- Error output in the code block below (if applicable, else delete): -->
 <details>
-<summary> Versions</summary>
+<summary> Error </summary>
 ```pytb
 ...
 ```
