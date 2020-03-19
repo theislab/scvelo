@@ -51,10 +51,11 @@ class Velocity:
         self._velocity_genes = (self._r2 > self._min_r2) & (self._gamma > .01) & \
                                (np.max(self._Ms > 0, 0) > 0) & (np.max(self._Mu > 0, 0) > 0)
 
-        if np.sum(velo._velocity_genes) < 2:
-            velo._velocity_genes = velo._r2 > np.median(velo._r2)
+        if np.sum(self._velocity_genes) < 2:
+            min_r2 = np.percentile(self._r2, 80)
+            self._velocity_genes = self._r2 > min_r2
             logg.warn('You seem to have very low signal in splicing dynamics.\n'
-                      'The correlation threshold has been reduced to ' + str(np.median(velo._r2)) + '\n'
+                      'The correlation threshold has been reduced to', str(np.round(min_r2,4)), '\n'
                       'Please be cautious when interpretating results.')
 
     def compute_stochastic(self, fit_offset=False, fit_offset2=False, mode=None, perc=None):
