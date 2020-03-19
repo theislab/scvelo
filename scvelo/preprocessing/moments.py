@@ -116,3 +116,11 @@ def second_order_moments_u(adata):
     Muu = csr_matrix.dot(connectivities, u.multiply(u)).astype(np.float32).A
 
     return Muu
+
+
+def magic_impute(adata, knn=5, t=2, verbose=0, **kwargs):
+    logg.info('To be used carefully. Magic has not yet been tested for this application.')
+    import magic
+    magic_operator = magic.MAGIC(verbose=verbose, knn=knn, t=t, **kwargs)
+    adata.layers['Ms'] = magic_operator.fit_transform(adata.layers['spliced'])
+    adata.layers['Mu'] = magic_operator.transform(adata.layers['unspliced'])
