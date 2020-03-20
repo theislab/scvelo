@@ -546,7 +546,7 @@ class BaseDynamics:
         self.weights = weights
         self.std_u = np.std(self.u[weights])
         self.std_s = np.std(self.s[weights])
-        self.recoverable = (np.sum(nonzero_s) > 0) & (np.sum(nonzero_u) > 0)
+        self.recoverable = (np.sum(nonzero_s) > 2) & (np.sum(nonzero_u) > 2)
 
     def load_pars(self, adata, gene):
         idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
