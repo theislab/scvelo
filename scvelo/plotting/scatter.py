@@ -321,7 +321,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 groupby_outline = color
                 if isinstance(add_outline, str):
                     if add_outline in adata.var.keys() and basis in adata.var_names:
-                        add_outline = str(adata[:, basis].var[add_outline])
+                        add_outline = str(adata[:, basis].var[add_outline][0])
                     if ':' in add_outline:
                         groupby_outline, add_outline = add_outline.split(':')
                         add_outline = add_outline.strip()
