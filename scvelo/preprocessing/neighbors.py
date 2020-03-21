@@ -88,11 +88,12 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
     if method == 'sklearn':
         from sklearn.neighbors import NearestNeighbors
         X = adata.X if use_rep == 'X' else adata.obsm[use_rep]
-        neighbors = NearestNeighbors(n_neighbors=n_neighbors, metric=metric, metric_params=metric_kwds, n_jobs=num_threads)
+        neighbors = NearestNeighbors(n_neighbors=n_neighbors-1, metric=metric, metric_params=metric_kwds, n_jobs=num_threads)
         neighbors.fit(X if n_pcs is None else X[:, :n_pcs])
         knn_distances, neighbors.knn_indices = neighbors.kneighbors()
+        knn_distances, neighbors.knn_indices = set_diagonal(knn_distances, neighbors.knn_indices)
         neighbors.distances, neighbors.connectivities = \
-            compute_connectivities_umap(neighbors.knn_indices, knn_distances, X.shape[0], n_neighbors=30)
+            compute_connectivities_umap(neighbors.knn_indices, knn_distances, X.shape[0], n_neighbors=n_neighbors)
 
     elif method == 'hnsw':
         X = adata.X if use_rep == 'X' else adata.obsm[use_rep]
@@ -149,16 +150,24 @@ class FastNeighbors:
         knn_indices, knn_distances = knn.knn_query(X, k=self.n_neighbors, num_threads=self.num_threads)
 
         n_neighbors = self.n_neighbors
-        if knn_distances[0, 0] == 0:
-            knn_distances = knn_distances[:, 1:]
-            knn_indices = knn_indices[:, 1:].astype(int)
-            n_neighbors -= 1
+        #knn_distances, knn_indices = set_diagonal(knn_distances, knn_indices, remove_diag=True)
+        #n_neighbors -= 1
 
         if metric == 'l2':
             knn_distances = np.sqrt(knn_distances)
 
         self.distances, self.connectivities = compute_connectivities_umap(knn_indices, knn_distances, ns, n_neighbors)
         self.knn_indices = knn_indices
+
+
+def set_diagonal(knn_distances, knn_indices, remove_diag=False):
+    if remove_diag and knn_distances[0, 0] == 0:
+        knn_distances = knn_distances[:, 1:]
+        knn_indices = knn_indices[:, 1:].astype(int)
+    elif knn_distances[0, 0] != 0:
+        knn_distances = np.hstack([np.zeros(len(knn_distances))[:, None], knn_distances])
+        knn_indices = np.array(np.hstack([np.arange(len(knn_indices), dtype=int)[:, None], knn_indices]), dtype=int)
+    return knn_distances, knn_indices
 
 
 def select_distances(dist, n_neighbors=None):
