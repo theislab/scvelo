@@ -82,6 +82,9 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
 
     logg.info('computing neighbors', r=True)
 
+    adata.uns['neighbors'] = {}
+    adata.uns['neighbors']['params'] = {'n_neighbors': n_neighbors, 'method': method, 'metric': metric, 'n_pcs': n_pcs}
+
     if method == 'sklearn':
         from sklearn.neighbors import NearestNeighbors
         X = adata.X if use_rep == 'X' else adata.obsm[use_rep]
@@ -101,13 +104,10 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
         with warnings.catch_warnings():  # ignore numba warning (reported in umap/issues/252)
             warnings.simplefilter("ignore")
             neighbors = Neighbors(adata)
-            neighbors.compute_neighbors(n_neighbors=n_neighbors, knn=knn, n_pcs=n_pcs, use_rep=use_rep, method=method,
-                                        metric=metric, metric_kwds=metric_kwds, random_state=random_state,
-                                        write_knn_indices=True)
+            neighbors.compute_neighbors(n_neighbors=n_neighbors, knn=knn, n_pcs=n_pcs, method=method,
+                                        use_rep=None if use_rep == 'X_pca' else use_rep, random_state=random_state,
+                                        metric=metric, metric_kwds=metric_kwds, write_knn_indices=True)
         logg.switch_verbosity('on', module='scanpy')
-
-    adata.uns['neighbors'] = {}
-    adata.uns['neighbors']['params'] = {'n_neighbors': n_neighbors, 'method': method}
 
     adata.uns['neighbors']['distances'] = neighbors.distances
     adata.uns['neighbors']['connectivities'] = neighbors.connectivities
