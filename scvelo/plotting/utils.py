@@ -31,7 +31,7 @@ def make_dense(X):
 
 def is_categorical(adata, c):
     from pandas.api.types import is_categorical as cat
-    strings_to_categoricals(adata)
+    if not adata.is_view: strings_to_categoricals(adata)
     return isinstance(c, str) and c in adata.obs.keys() and cat(adata.obs[c])
 
 
@@ -45,6 +45,10 @@ def is_list_of_str(key):
 
 def is_list_of_list(lst):
     return lst is not None and any(isinstance(l, list) for l in lst)
+
+
+def is_list_of_int(lst):
+    return isinstance(lst, (list, tuple, np.ndarray, np.record)) and all(isinstance(item, (int, np.integer)) for item in lst)
 
 
 def to_list(key, max_len=20):
@@ -103,7 +107,8 @@ def get_obs_vector(adata, basis, layer=None, use_raw=None):
 
 def groups_to_bool(adata, groups, groupby=None):
     groups = [groups] if isinstance(groups, str) else groups
-    groupby = groupby if groupby in adata.obs.keys() else 'clusters' if 'clusters' in adata.obs.keys() \
+    groupby = groupby if isinstance(groupby, str) and groupby in adata.obs.keys() \
+        else 'clusters' if 'clusters' in adata.obs.keys() \
         else 'louvain' if 'louvain' in adata.obs.keys() else None
 
     if isinstance(groups, (list, tuple, np.ndarray, np.record)):
@@ -267,9 +272,12 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
     # add legend
     obs_vals = adata.obs[value_to_plot]
     obs_vals.cat.categories = obs_vals.cat.categories.astype(str)
+    color_keys = adata.uns[value_to_plot + '_colors']
+    if isinstance(color_keys, dict):
+        color_keys = np.array([color_keys[c] for c in obs_vals.cat.categories])
     valid_cats = np.where(obs_vals.value_counts()[obs_vals.cat.categories] > 0)[0]
     categories = np.array(obs_vals.cat.categories)[valid_cats]
-    colors = np.array(adata.uns[value_to_plot + '_colors'])[valid_cats]
+    colors = np.array(color_keys)[valid_cats]
 
     if groups is not None:
         # only label groups with the respective color
@@ -318,11 +326,11 @@ def get_colors(adata, c):
     if is_color_like(c):
         return c
     else:
-        if c+'_colors' not in adata.uns.keys():
+        if c + '_colors' not in adata.uns.keys():
             palette = default_palette(None)
             palette = adjust_palette(palette, length=len(adata.obs[c].cat.categories))
             adata.uns[c + '_colors'] = palette[:len(adata.obs[c].cat.categories)].by_key()['color']
-        cluster_ix = adata.obs[c].cat.codes.values
+        cluster_ix = adata.obs[c].values if isinstance(adata.uns[c + '_colors'], dict) else adata.obs[c].cat.codes.values
         return np.array([adata.uns[c + '_colors'][cluster_ix[i]]
                          if cluster_ix[i] != -1 else 'lightgrey' for i in range(adata.n_obs)])
 
@@ -398,7 +406,8 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
     if palette is None and color_key in adata.uns:
         # Check if colors already exist in adata.uns and if they are a valid palette
         _palette = []
-        for color in adata.uns[color_key]:
+        color_keys = adata.uns[color_key].values() if isinstance(adata.uns[color_key], dict) else adata.uns[color_key]
+        for color in color_keys:
             if not is_color_like(color):
                 # check if the color is a valid R color and translate it
                 # to a valid hex color value
@@ -551,7 +560,8 @@ def rgb_custom_colormap(colors=['royalblue', 'white', 'forestgreen'], alpha=None
     c = []
     for color in colors:
         if isinstance(color, str):
-            c.append(to_rgb(cnames[color]))
+            color = to_rgb(color if color.startswith('#') else cnames[color])
+            c.append(color)
 
     vals = np.ones((N, 4))
     ints = len(c) - 1
@@ -891,9 +901,12 @@ def hist(arrays, alpha=.5, bins=50, color=None, colors=None, labels=None, hist=N
                             label=labels[i] if labels is not None else None)
             ylim = np.min(kde_bins) if ylim is None else ylim
         if hist:
-            ax.hist(x_vals, bins=bins, alpha=alpha, color=colors[i], normed=normed,
-                    label=labels[i] if labels is not None else None, **kwargs)
-
+            kwargs.update({'color': colors[i], 'label': labels[i] if labels is not None else None})
+            ax.hist(x_vals, bins=bins, alpha=alpha, density=normed, **kwargs)
+            #try:
+            #    ax.hist(x_vals, bins=bins, alpha=alpha, normed=normed, **kwargs)
+            #except:
+            #    ax.hist(x_vals, bins=bins, alpha=alpha, **kwargs)
     set_label(xlabel if xlabel is not None else '', ylabel if xlabel is not None else '', fontsize=fontsize, ax=ax)
 
     if labels is not None:
