@@ -1,4 +1,5 @@
 from .. import settings
+from ..preprocessing.neighbors import get_neighs
 from ..tools.transition_matrix import transition_matrix
 from .utils import savefig_or_show, default_basis, get_components, get_basis, groups_to_bool
 from .scatter import scatter
@@ -44,13 +45,19 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n
 
     from networkx import Graph, DiGraph
     if which_graph in {'neighbors', 'connectivities'}:
-        T = adata.uns['neighbors']['connectivities'].copy()
+        T = get_neighs(adata, 'connectivities').copy()
         if perc is not None:
             threshold = np.percentile(T.data, perc)
             T.data[T.data < threshold] = 0
             T.eliminate_zeros()
     elif which_graph in adata.uns.keys():
         T = adata.uns[which_graph].copy()
+        if perc is not None:
+            threshold = np.percentile(T.data, perc)
+            T.data[T.data < threshold] = 0
+            T.eliminate_zeros()
+    elif hasattr(adata, 'obsp') and which_graph in adata.obsp.keys():
+        T = adata.obsp[which_graph].copy()
         if perc is not None:
             threshold = np.percentile(T.data, perc)
             T.data[T.data < threshold] = 0

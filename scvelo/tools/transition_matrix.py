@@ -1,4 +1,4 @@
-from ..preprocessing.neighbors import get_connectivities
+from ..preprocessing.neighbors import get_connectivities, get_neighs
 from .utils import normalize
 
 import numpy as np
@@ -56,7 +56,16 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
     if vkey+'_graph' not in adata.uns:
         raise ValueError('You need to run `tl.velocity_graph` first to compute cosine correlations.')
 
-    graph = csr_matrix(adata.uns[vkey + '_graph']).copy() if vgraph is None else vgraph.copy()
+    graph_neg = None
+    if vgraph is not None:
+        graph = vgraph.copy()
+    else:
+        if hasattr(adata, 'obsp') and vkey + '_graph' in adata.obsp.keys():
+            graph = csr_matrix(adata.obsp[vkey + '_graph']).copy()
+            if vkey + '_graph_neg' in adata.obsp.keys(): graph_neg = adata.obsp[vkey + '_graph_neg']
+        else:
+            graph = csr_matrix(adata.uns[vkey + '_graph']).copy()
+            if vkey + '_graph_neg' in adata.uns.keys(): graph_neg = adata.uns[vkey + '_graph_neg']
 
     if self_transitions:
         confidence = graph.max(1).A.flatten()
@@ -65,7 +74,7 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
         graph.setdiag(self_prob)
 
     T = np.expm1(graph * scale)  # equivalent to np.exp(graph.A * scale) - 1
-    if vkey + '_graph_neg' in adata.uns.keys():
+    if graph_neg is not None:
         graph_neg = adata.uns[vkey + '_graph_neg']
         if use_negative_cosines:
             T -= np.expm1(-graph_neg * scale)
@@ -74,8 +83,8 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
             T.data += 1
 
     # weight direct and indirect (recursed) neighbors
-    if 'neighbors' in adata.uns.keys() and weight_indirect_neighbors is not None and weight_indirect_neighbors < 1:
-        direct_neighbors = adata.uns['neighbors']['distances'] > 0
+    if weight_indirect_neighbors is not None and weight_indirect_neighbors < 1:
+        direct_neighbors = get_neighs(adata, 'distances') > 0
         direct_neighbors.setdiag(1)
         w = weight_indirect_neighbors
         T = w * T + (1-w) * direct_neighbors.multiply(T)

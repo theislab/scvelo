@@ -51,8 +51,8 @@ def moments(data, n_neighbors=30, n_pcs=None, mode='connectivities', method='uma
     if neighbors_to_be_recomputed(adata, n_neighbors=n_neighbors):
         if use_rep is None: use_rep = 'X_pca'
         neighbors(adata, n_neighbors=n_neighbors, use_rep=use_rep, n_pcs=n_pcs, method=method)
-    if mode not in adata.uns['neighbors']:
-        raise ValueError('mode can only be \'connectivities\' or \'distances\'')
+    if not (mode in adata.uns['neighbors'] or hasattr(adata, 'obsp') and mode in adata.obsp.keys()):
+        raise ValueError('The selected mode is not valid.')
 
     logg.info('computing moments based on ' + str(mode), r=True)
 

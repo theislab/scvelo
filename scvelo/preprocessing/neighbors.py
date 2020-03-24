@@ -82,9 +82,6 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
 
     logg.info('computing neighbors', r=True)
 
-    adata.uns['neighbors'] = {}
-    adata.uns['neighbors']['params'] = {'n_neighbors': n_neighbors, 'method': method, 'metric': metric, 'n_pcs': n_pcs}
-
     if method == 'sklearn':
         from sklearn.neighbors import NearestNeighbors
         X = adata.X if use_rep == 'X' else adata.obsm[use_rep]
@@ -110,8 +107,17 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
                                         metric=metric, metric_kwds=metric_kwds, write_knn_indices=True)
         logg.switch_verbosity('on', module='scanpy')
 
-    adata.uns['neighbors']['distances'] = neighbors.distances
-    adata.uns['neighbors']['connectivities'] = neighbors.connectivities
+    adata.uns['neighbors'] = {}
+    adata.uns['neighbors']['params'] = {'n_neighbors': n_neighbors, 'method': method, 'metric': metric, 'n_pcs': n_pcs}
+
+    try:
+        adata.obsp['distances'] = neighbors.distances
+        adata.obsp['connectivities'] = neighbors.connectivities
+        adata.uns['connectivities_key'] = 'connectivities',
+        adata.uns['distances_key'] = 'distances'
+    except:
+        adata.uns['neighbors']['distances'] = neighbors.distances
+        adata.uns['neighbors']['connectivities'] = neighbors.connectivities
     if hasattr(neighbors, 'knn_indices'):
         adata.uns['neighbors']['indices'] = neighbors.knn_indices
 
@@ -202,22 +208,25 @@ def select_connectivities(connectivities, n_neighbors=None):
     return C
 
 
+def get_neighs(adata, mode='distances'):
+    return adata.obsp[mode] if hasattr(adata, 'obsp') and mode in adata.obsp.keys() else adata.uns['neighbors'][mode]
+
+
 def neighbors_to_be_recomputed(adata, n_neighbors=None):
     # check whether neighbors graph is disrupted or whether graph has insufficient number of neighbors
     invalid_neighs = 'neighbors' not in adata.uns.keys() \
-                     or 'distances' not in adata.uns['neighbors'] \
                      or 'params' not in adata.uns['neighbors'] \
-                     or (n_neighbors is not None and n_neighbors > adata.uns['neighbors']['params']['n_neighbors'] )
+                     or (n_neighbors is not None and n_neighbors > adata.uns['neighbors']['params']['n_neighbors'])
     if invalid_neighs:
         return True
     else:
-        n_neighs = (adata.uns['neighbors']['distances'] > 0).sum(1)
+        n_neighs = (get_neighs(adata, 'distances') > 0).sum(1)
         return n_neighs.max() * .1 > n_neighs.min()
 
 
 def get_connectivities(adata, mode='connectivities', n_neighbors=None, recurse_neighbors=False):
     if 'neighbors' in adata.uns.keys():
-        C = adata.uns['neighbors'][mode]
+        C = get_neighs(adata, mode)
         if n_neighbors is not None and n_neighbors < adata.uns['neighbors']['params']['n_neighbors']:
             C = select_connectivities(C, n_neighbors) if mode == 'connectivities' else select_distances(C, n_neighbors)
         connectivities = C > 0

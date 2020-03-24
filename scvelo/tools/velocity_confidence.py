@@ -1,4 +1,5 @@
 from .. import logging as logg
+from ..preprocessing.neighbors import get_neighs
 from .utils import prod_sum_var, norm, get_indices, random_subsample
 from .transition_matrix import transition_matrix
 
@@ -47,7 +48,7 @@ def velocity_confidence(data, vkey='velocity', copy=False):
     if np.any(nans):
         V = V[:, ~nans]
 
-    indices = get_indices(dist=adata.uns['neighbors']['distances'])[0]
+    indices = get_indices(dist=get_neighs(adata, 'distances'))[0]
 
     V -= V.mean(1)[:, None]
     V_norm = norm(V)

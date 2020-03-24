@@ -1,6 +1,6 @@
 from .. import settings
 from .. import logging as logg
-from ..preprocessing.neighbors import pca, neighbors, neighbors_to_be_recomputed
+from ..preprocessing.neighbors import pca, neighbors, neighbors_to_be_recomputed, get_neighs
 from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
 
@@ -64,10 +64,10 @@ class VelocityGraph:
             else 2 if n_recurse_neighbors is None else n_recurse_neighbors
 
         if 'neighbors' not in adata.uns.keys(): neighbors(adata)
-        if np.min((adata.uns['neighbors']['distances'] > 0).sum(1).A1) == 0:
+        if np.min((get_neighs(adata, 'distances') > 0).sum(1).A1) == 0:
             raise ValueError('Your neighbor graph seems to be corrupted. Consider recomputing via pp.neighbors.')
         if n_neighbors is None or n_neighbors <= adata.uns['neighbors']['params']['n_neighbors']:
-            self.indices = get_indices(dist=adata.uns['neighbors']['distances'], n_neighbors=n_neighbors,
+            self.indices = get_indices(dist=get_neighs(adata, 'distances'), n_neighbors=n_neighbors,
                                        mode_neighbors=mode_neighbors)[0]
         else:
             if basis is None: basis = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()][-1]
