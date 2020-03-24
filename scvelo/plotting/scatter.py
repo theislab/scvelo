@@ -3,7 +3,7 @@ from .. import logging as logg
 from .. import AnnData
 from .docs import doc_scatter, doc_params
 
-from .utils import is_categorical, is_list, is_list_of_str, is_list_of_list, to_list, to_valid_bases_list, to_val
+from .utils import is_categorical, is_list, is_list_of_str, is_list_of_list, to_list, to_valid_bases_list, to_val, is_list_of_int
 from .utils import default_basis, default_color, default_size, default_color_map, default_legend_loc, default_xkey, default_ykey
 from .utils import unique, make_dense, get_components, get_connectivities, groups_to_bool, interpret_colorkey, get_obs_vector
 from .utils import update_axes, set_label, set_title, set_colorbar, _set_colors_for_categorical_obs, _add_legend
@@ -25,7 +25,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, xlim=None, ylim=None, show_density=None,
             show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, add_text=None, add_text_pos=None,
             add_outline=None, outline_width=None, outline_color=None, n_convolve=None, smooth=None, rescale_color=None,
-            dpi=None, frameon=None, zorder=None, ncols=None, nrows=None, wspace=None, hspace=None,
+            color_gradients=None, dpi=None, frameon=None, zorder=None, ncols=None, nrows=None, wspace=None, hspace=None,
             show=None, save=None, ax=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
@@ -134,6 +134,35 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
                 savefig_or_show(dpi=dpi, save=save, show=show)
                 if show is False: return ax
+
+        elif color_gradients is not None and color_gradients is not False:
+            from .utils import rgb_custom_colormap
+            scatter_kwargs.update({'colorbar': False, 'color_gradients': None})
+            base_kwargs = scatter_kwargs.copy()
+            base_kwargs.update({'s': 0, 'alpha': 0})
+            ax = scatter(adata, color=color, **base_kwargs)
+
+            if 's' not in kwargs:
+                scatter_kwargs['s'] = default_size(adata) if size is None else size
+            if isinstance(color_gradients, str) and color_gradients in adata.obsm.keys():
+                color_gradients = adata.obsm[color_gradients]
+
+            sorted_idx = np.argsort(color_gradients, 1)[:, ::-1][:, :2]
+            c_colors = {cat: col for (cat, col) in zip(adata.obs[color].cat.categories, adata.uns[color + '_colors'])}
+
+            for id0 in range(color_gradients.shape[1]):
+                for id1 in range(id0 + 1, color_gradients.shape[1]):
+                    if hasattr(color_gradients, 'names'):
+                        c0, c1 = c_colors[color_gradients.names[id0]], c_colors[color_gradients.names[id1]]
+                    else:
+                        c0, c1 = list(c_colors.values())[id0], list(c_colors.values())[id1]
+                    scatter_kwargs.update({'color_map': rgb_custom_colormap([c0, 'white', c1], alpha=[1, 0, 1])})
+                    c_vals = np.array(color_gradients[:, id1] - color_gradients[:, id0]).flatten()
+                    c_bool = np.array([id0 in c and id1 in c for c in sorted_idx])
+                    if np.sum(c_bool) > 1:
+                        ax = scatter(adata[c_bool], color=c_vals[c_bool], ax=ax, **scatter_kwargs)
+            savefig_or_show(dpi=dpi, save=save, show=show)
+            if show is False: return ax
 
         # actual scatter plot
         else:
@@ -246,10 +275,13 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
 
             # if color is set to a cell index, plot that cell on top
-            if isinstance(color, int):
-                color = np.array(np.arange(len(x)) == color, dtype=bool)
+            if isinstance(color, int) or is_list_of_int(color) and len(color) != len(x):
+                color = np.array(np.isin(np.arange(len(x)), color), dtype=bool)
+                size = kwargs['s'] * 2 if np.sum(color) == 1 else kwargs['s']
                 if zorder is None: zorder = 10
-                ax.scatter(np.ravel(x[color]), np.ravel(y[color]), color='darkblue', s=kwargs['s'] * 2, zorder=zorder)
+                ax.scatter(np.ravel(x[color]), np.ravel(y[color]), s=size, zorder=zorder,
+                           color=palette[-1] if palette is not None else 'darkblue')
+                color = palette[0] if palette is not None and len(palette) > 1 else 'gold'
                 zorder -= 1
 
             # set palette if categorical color vals

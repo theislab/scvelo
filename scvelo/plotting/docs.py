@@ -100,6 +100,10 @@ n_convolve: `int` or `None` (default: `None`)
     If `int` is given, data is smoothed by convolution along the x-axis with kernel size n_convolve.
 smooth: `bool` or `int` (default: `None`)
     Whether to convolve/average the color values over the nearest neighbors. If `int`, it specifies number of neighbors.
+rescale_color: `tuple` (default: `None`)
+    Boundaries for color rescaling, e.g. [0, 1], essentially setting the min/max values of the colorbar.
+color_gradients: `str` or `np.ndarray` (default: `None`)
+    Key for `.obsm` or array with color gradients by categories.
 dpi: `int` (default: 80)
     Figure dpi.
 frameon: `bool` (default: `True`)
