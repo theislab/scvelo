@@ -16,9 +16,9 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
          layout_kwds={}, init_pos=None, root=0, labels=None, single_component=False, solid_edges='connectivities',
          dashed_edges='connectivities', transitions='transitions_confidence', node_size_scale=1, node_size_power=0.5,
          edge_width_scale=.4, min_edge_width=None, max_edge_width=1, arrowsize=15, random_state=0, pos=None,
-         normalize_to_color=False, cmap=None, cax=None, cb_kwds={}, add_pos=True, export_to_gexf=False, plot=True,
-         use_raw=None, size=None, groups=None, components=None, figsize=None, dpi=None, show=True, save=None, ax=None,
-         ncols=None, scatter_flag=None, **kwargs):
+         node_colors=None, normalize_to_color=False, cmap=None, cax=None, cb_kwds={}, add_pos=True,
+         export_to_gexf=False, plot=True, use_raw=None, size=None, groups=None, components=None, figsize=None, dpi=None,
+         show=True, save=None, ax=None, ncols=None, scatter_flag=None, **kwargs):
     """\
     PAGA plot on the embedding.
     Arguments
@@ -41,6 +41,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
         scatter_flag = ax is None
     vkey = [key for key in adata.layers.keys() if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
     layers, vkeys, colors = make_unique_list(layer), make_unique_list(vkey), make_unique_list(color, allow_array=True)
+    node_colors = colors if node_colors is None else node_colors
     bases = [default_basis(adata) if basis is None else basis for basis in make_unique_valid_list(adata, basis)]
 
     paga_kwargs = {'threshold': threshold, 'layout': layout, 'layout_kwds': layout_kwds, 'init_pos': init_pos,
@@ -50,7 +51,9 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
                    'edge_width_scale': edge_width_scale, 'min_edge_width': min_edge_width,
                    'max_edge_width': max_edge_width, 'arrowsize': arrowsize, 'random_state': random_state,
                    'pos': pos, 'normalize_to_color': normalize_to_color, 'cmap': cmap, 'cax': cax, 'cb_kwds': cb_kwds,
-                   'add_pos': add_pos, 'export_to_gexf': export_to_gexf, 'colors': colors, 'plot': plot}
+                   'add_pos': add_pos, 'export_to_gexf': export_to_gexf, 'colors': node_colors, 'plot': plot}
+    if isinstance(node_colors, dict):  # has to be disabled
+        paga_kwargs['colorbar'] = False
 
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 \
         else vkeys if len(vkeys) > 1 else bases if len(bases) > 1 else None
@@ -107,12 +110,16 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
                     'You need to run `scv.tl.paga` first.')
         paga_kwargs['pos'] = pos
 
+        legend_loc = kwargs.pop('legend_loc', None)
+        kwargs['legend_loc'] = 'none' if legend_loc == 'on data' else legend_loc  # let paga handle 'on data'
+
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
         if scatter_flag and basis is not None:
             if 'alpha' not in kwargs: kwargs['alpha'] = .5
             ax = scatter(adata, basis=basis, x=x, y=y, vkey=vkey, layer=layer, color=color, size=size, title=title,
                          ax=ax, save=None, zorder=0, show=False, **kwargs)
-        scanpy_paga(adata, ax=ax, show=False, text_kwds={'alpha': 0}, **paga_kwargs)
+        scanpy_paga(adata, ax=ax, show=False,  **paga_kwargs,
+                    text_kwds={'zorder': 1000, 'alpha': legend_loc == 'on data'})
 
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
