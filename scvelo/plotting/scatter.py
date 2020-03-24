@@ -146,6 +146,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 scatter_kwargs['s'] = default_size(adata) if size is None else size
             if isinstance(color_gradients, str) and color_gradients in adata.obsm.keys():
                 color_gradients = adata.obsm[color_gradients]
+            if 'vmin' not in scatter_kwargs:
+                scatter_kwargs['vmin'] = np.min(color_gradients)
+            if 'vmax' not in scatter_kwargs:
+                scatter_kwargs['vmax'] = np.max(color_gradients)
 
             sorted_idx = np.argsort(color_gradients, 1)[:, ::-1][:, :2]
             c_colors = {cat: col for (cat, col) in zip(adata.obs[color].cat.categories, adata.uns[color + '_colors'])}
