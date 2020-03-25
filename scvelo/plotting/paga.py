@@ -53,9 +53,12 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
                    'max_edge_width': max_edge_width, 'arrowsize': arrowsize, 'random_state': random_state,
                    'pos': pos, 'normalize_to_color': normalize_to_color, 'cmap': cmap, 'cax': cax, 'cb_kwds': cb_kwds,
                    'add_pos': add_pos, 'export_to_gexf': export_to_gexf, 'colors': node_colors, 'plot': plot}
-    for key in kwargs.copy():
+
+    for key in kwargs:
         if key in signature(scanpy_paga).parameters:
-            paga_kwargs[key] = kwargs.pop(key)
+            paga_kwargs[key] = kwargs[key]
+    kwargs = {k: v for k, v in kwargs.items() if k in signature(scatter).parameters}
+
     if isinstance(node_colors, dict):  # has to be disabled
         paga_kwargs['colorbar'] = False
 
