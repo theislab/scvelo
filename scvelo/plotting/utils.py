@@ -610,9 +610,14 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
             if settings.figdir[-1] != '/': settings.figdir += '/'
             if not os.path.exists(settings.figdir): os.makedirs(settings.figdir)
         if ext is None: ext = settings.file_format_figs
-        filename = settings.figdir + f'{settings.plot_prefix}{writekey}{settings.plot_suffix}.{ext}'
+        try:
+            filename = settings.figdir + f'{settings.plot_prefix}{writekey}{settings.plot_suffix}.{ext}'
+            pl.savefig(filename, dpi=dpi, bbox_inches='tight')
+        except:  # save as .png if it cannot be saved as .pdf (e.g. streamplot under specific settings)
+            logg.msg(f'figure cannot be saved as {ext}, using png instead.', v=1)
+            filename = settings.figdir + f'{settings.plot_prefix}{writekey}{settings.plot_suffix}.png'
+            pl.savefig(filename, dpi=dpi, bbox_inches='tight')
         logg.msg('saving figure to file', filename, v=1)
-        pl.savefig(filename, dpi=dpi, bbox_inches='tight')
 
     if show: pl.show()
     if save: pl.close()  # clear figure
