@@ -18,7 +18,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
          edge_width_scale=.4, min_edge_width=None, max_edge_width=1, arrowsize=15, random_state=0, pos=None,
          node_colors=None, normalize_to_color=False, cmap=None, cax=None, cb_kwds={}, add_pos=True,
          export_to_gexf=False, plot=True, use_raw=None, size=None, groups=None, components=None, figsize=None, dpi=None,
-         show=True, save=None, ax=None, ncols=None, scatter_flag=None, frameon=None, **kwargs):
+         show=True, save=None, ax=None, ncols=None, scatter_flag=None, frameon=None, fontweight = 'bold', **kwargs):
     """\
     PAGA plot on the embedding.
     Arguments
@@ -52,7 +52,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
                    'max_edge_width': max_edge_width, 'arrowsize': arrowsize, 'random_state': random_state,
                    'pos': pos, 'normalize_to_color': normalize_to_color, 'cmap': cmap, 'cax': cax, 'cb_kwds': cb_kwds,
                    'add_pos': add_pos, 'export_to_gexf': export_to_gexf, 'colors': node_colors, 'plot': plot,
-                   'frameon': frameon}
+                   'frameon': frameon, 'fontweight': fontweight}
     if isinstance(node_colors, dict):  # has to be disabled
         paga_kwargs['colorbar'] = False
 
