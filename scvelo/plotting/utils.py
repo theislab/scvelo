@@ -347,7 +347,14 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
                 if perc is None and any(l in layer for l in ['spliced', 'unspliced', 'Ms', 'Mu', 'velocity']):
                     perc = [1, 99]  # clip values to ignore extreme outliers since these layers are not logarithmized
                 c = adata.obs_vector(c, layer=layer)
+            elif np.any([l in layer or 'X' in layer for l in adata.layers.keys()]):
+                l_array = np.hstack([adata.obs_vector(c, layer=l)[:, None] for l in adata.layers.keys()])
+                l_array = pd.DataFrame(l_array, columns=adata.layers.keys())
+                l_array.insert(0, 'X', adata.obs_vector(c))
+                c = l_array.astype(np.float32).eval(layer)
             else:
+                if layer is not None and layer != 'X':
+                    logg.warn(layer, 'not found. Using .X instead.')
                 if adata.raw is None and use_raw:
                     raise ValueError("`use_raw` is set to True but AnnData object does not have raw. Please check.")
                 c = adata.raw.obs_vector(c) if use_raw else adata[:, c].X
