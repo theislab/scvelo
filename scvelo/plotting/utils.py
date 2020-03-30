@@ -347,11 +347,11 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
                 if perc is None and any(l in layer for l in ['spliced', 'unspliced', 'Ms', 'Mu', 'velocity']):
                     perc = [1, 99]  # clip values to ignore extreme outliers since these layers are not logarithmized
                 c = adata.obs_vector(c, layer=layer)
-            elif np.any([l in layer or 'X' in layer for l in adata.layers.keys()]):
+            elif layer is not None and np.any([l in layer or 'X' in layer for l in adata.layers.keys()]):
                 l_array = np.hstack([adata.obs_vector(c, layer=l)[:, None] for l in adata.layers.keys()])
                 l_array = pd.DataFrame(l_array, columns=adata.layers.keys())
                 l_array.insert(0, 'X', adata.obs_vector(c))
-                c = l_array.astype(np.float32).eval(layer)
+                c = np.array(l_array.astype(np.float32).eval(layer))
             else:
                 if layer is not None and layer != 'X':
                     logg.warn(layer, 'not found. Using .X instead.')
