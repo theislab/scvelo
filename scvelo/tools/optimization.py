@@ -19,7 +19,7 @@ def get_weight(x, y=None, perc=95):
     return weights
 
 
-def leastsq_NxN(x, y, fit_offset=False, perc=None):
+def leastsq_NxN(x, y, fit_offset=False, perc=None, constraint_positive_offset=True):
     """Solution to least squares: gamma = cov(X,Y) / var(X)
     """
     if perc is not None:
@@ -42,14 +42,23 @@ def leastsq_NxN(x, y, fit_offset=False, perc=None):
             offset = y_ - gamma * x_
 
             # fix negative offsets:
-            idx = offset < 0
-            gamma[idx] = xy_[idx] / xx_[idx]
-            offset = np.clip(offset, 0, None)
+            if constraint_positive_offset:
+                idx = offset < 0
+                if gamma.ndim > 0:
+                    gamma[idx] = xy_[idx] / xx_[idx]
+                else:
+                    gamma = xy_ / xx_
+                offset = np.clip(offset, 0, None)
         else:
             gamma = xy_ / xx_
-            offset = np.zeros(x.shape[1])
-    offset[np.isnan(offset)], gamma[np.isnan(gamma)] = 0, 0
+            offset = np.zeros(x.shape[1]) if x.ndim > 1 else 0
+    nans_offset, nans_gamma = np.isnan(offset), np.isnan(gamma)
+    if np.any([nans_offset, nans_gamma]):
+        offset[np.isnan(offset)], gamma[np.isnan(gamma)] = 0, 0
     return offset, gamma
+
+
+leastsq = leastsq_NxN
 
 
 def optimize_NxN(x, y, fit_offset=False, perc=None):

@@ -5,7 +5,7 @@ from .preprocessing.moments import second_order_moments, second_order_moments_u
 from .tools.utils import *
 from .tools.rank_velocity_genes import get_mean_var
 from .tools.run import convert_to_adata, convert_to_loom
-from .tools.optimization import leastsq_NxN, leastsq_generalized, maximum_likelihood, get_weight
+from .tools.optimization import leastsq, get_weight
 from .tools.velocity_graph import vals_to_csr
 
 from .plotting.utils import is_categorical, clip, interpret_colorkey, rgb_custom_colormap

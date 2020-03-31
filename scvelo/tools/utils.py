@@ -22,31 +22,31 @@ def make_dense(X):
 def sum_obs(A):
     """summation over axis 0 (obs) equivalent to np.sum(A, 0)
     """
-    return A.sum(0).A1 if issparse(A) else np.einsum('ij -> j', A)
+    return A.sum(0).A1 if issparse(A) else np.einsum('ij -> j', A) if A.ndim > 1 else np.sum(A)
 
 
 def sum_var(A):
     """summation over axis 1 (var) equivalent to np.sum(A, 1)
     """
-    return A.sum(1).A1 if issparse(A) else np.sum(A, axis=1)
+    return A.sum(1).A1 if issparse(A) else np.sum(A, axis=1) if A.ndim > 1 else np.sum(A)
 
 
 def prod_sum_obs(A, B):
     """dot product and sum over axis 0 (obs) equivalent to np.sum(A * B, 0)
     """
-    return A.multiply(B).sum(0).A1 if issparse(A) else np.einsum('ij, ij -> j', A, B)
+    return A.multiply(B).sum(0).A1 if issparse(A) else np.einsum('ij, ij -> j', A, B) if A.ndim > 1 else (A * B).sum()
 
 
 def prod_sum_var(A, B):
     """dot product and sum over axis 1 (var) equivalent to np.sum(A * B, 1)
     """
-    return A.multiply(B).sum(1).A1 if issparse(A) else np.einsum('ij, ij -> i', A, B)
+    return A.multiply(B).sum(1).A1 if issparse(A) else np.einsum('ij, ij -> i', A, B) if A.ndim > 1 else (A * B).sum()
 
 
 def norm(A):
     """computes the L2-norm along axis 1 (e.g. genes or embedding dimensions) equivalent to np.linalg.norm(A, axis=1)
     """
-    return np.sqrt(A.multiply(A).sum(1).A1) if issparse(A) else np.sqrt(np.einsum('ij, ij -> i', A, A))
+    return np.sqrt(A.multiply(A).sum(1).A1 if issparse(A) else np.einsum('ij, ij -> i', A, A) if A.ndim > 1 else np.sum(A*A))
 
 
 def vector_norm(x):
