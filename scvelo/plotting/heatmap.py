@@ -93,8 +93,7 @@ def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis',
 
     if not colorbar: cm.cax.set_visible(False)
     savefig_or_show('heatmap', save=save, show=show)
-    if not show: return ax
-    pl.show()
+    if not show: return cm
 
 
 def heatmap_deprecated(adata, var_names, groups=None, groupby=None, annotations=None, use_raw=False, layers=['X'],
