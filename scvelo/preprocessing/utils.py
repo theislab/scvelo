@@ -23,7 +23,7 @@ def sum_var(A):
         return A.sum(1).A1 if issparse(A) else np.sum(A, axis=1)
 
 
-def show_proportions(adata):
+def show_proportions(adata, layers=['spliced', 'unspliced', 'ambigious'], use_raw=True):
     """Fraction of spliced/unspliced/ambiguous abundances
 
     Arguments
@@ -35,14 +35,17 @@ def show_proportions(adata):
     -------
     Prints the fractions of abundances.
     """
-    layers_keys = [key for key in ['spliced', 'unspliced', 'ambiguous'] if key in adata.layers.keys()]
-    counts_per_cell_layers = [sum_var(adata.layers[key]) for key in layers_keys]
+    layers_keys = [key for key in layers if key in adata.layers.keys()]
+    counts_layers = [sum_var(adata.layers[key]) for key in layers_keys]
+    if use_raw:
+        ikey, obs = 'initial_size_', adata.obs
+        counts_layers = [obs[ikey + l] if ikey + l in obs.keys() else c for l, c in zip(layers_keys, counts_layers)]
 
-    counts_per_cell_sum = np.sum(counts_per_cell_layers, 0)
+    counts_per_cell_sum = np.sum(counts_layers, 0)
     counts_per_cell_sum += counts_per_cell_sum == 0
 
     mean_abundances = np.round(
-        [np.mean(counts_per_cell / counts_per_cell_sum) for counts_per_cell in counts_per_cell_layers], 2)
+        [np.mean(counts_per_cell / counts_per_cell_sum) for counts_per_cell in counts_layers], 2)
 
     print('Abundance of ' + str(layers_keys) + ': ' + str(mean_abundances))
 
@@ -328,6 +331,10 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, k
         else [layer for layer in layers if layer in adata.layers.keys()]
     layers = ['X'] + layers
     modified_layers = []
+
+    if isinstance(counts_per_cell, str):
+        if counts_per_cell not in adata.obs.keys(): set_initial_size(adata, layers)
+        counts_per_cell = adata.obs[counts_per_cell].values if counts_per_cell in adata.obs.keys() else None
 
     for layer in layers:
         check_if_valid_dtype(adata, layer)

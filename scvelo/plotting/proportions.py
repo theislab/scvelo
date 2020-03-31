@@ -5,7 +5,7 @@ import numpy as np
 
 
 def proportions(adata, groupby='clusters', layers=['spliced', 'unspliced', 'ambigious'], highlight='unspliced',
-                add_labels_pie=True, add_labels_bar=True, fontsize=8, figsize=(10, 2), dpi=100, show=True):
+                add_labels_pie=True, add_labels_bar=True, fontsize=8, figsize=(10, 2), dpi=100, use_raw=True, show=True):
     """
     Parameters
     ----------
@@ -13,6 +13,9 @@ def proportions(adata, groupby='clusters', layers=['spliced', 'unspliced', 'ambi
     # get counts per cell for each layer
     layers_keys = [key for key in layers if key in adata.layers.keys()]
     counts_layers = [sum_var(adata.layers[key]) for key in layers_keys]
+    if use_raw:
+        ikey, obs = 'initial_size_', adata.obs
+        counts_layers = [obs[ikey + l] if ikey + l in obs.keys() else c for l, c in zip(layers_keys, counts_layers)]
     counts_total = np.sum(counts_layers, 0)
     counts_total += counts_total == 0
     counts_layers = np.array([counts / counts_total for counts in counts_layers])
