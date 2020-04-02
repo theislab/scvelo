@@ -6,6 +6,7 @@ import matplotlib.pyplot as pl
 from matplotlib import rcParams
 import matplotlib.gridspec as gridspec
 
+from scipy.stats.distributions import chi2, norm
 from scipy.sparse import issparse
 import warnings
 import numpy as np
@@ -524,8 +525,9 @@ class BaseDynamics:
         self.connectivities = get_connectivities(adata) if self.fit_connected_states is True else self.fit_connected_states
         self.high_pars_resolution = high_pars_resolution
         self.init_vals = init_vals
+        self.cluster_indices = None
 
-    def initialize_weights(self):
+    def initialize_weights(self, weighted=True, exclude_low_vals=None):
         nonzero_s = np.ravel(self.s > 0)
         nonzero_u = np.ravel(self.u > 0)
         filter_by_s = np.sum(nonzero_s) > .1 * len(self.s)
@@ -537,16 +539,20 @@ class BaseDynamics:
 
         weights = np.array(nonzero, dtype=bool)
         if filter_by_s or filter_by_u:
-            ub_s = np.percentile(self.s[nonzero], self.perc)
-            ub_u = np.percentile(self.u[nonzero], self.perc)
+            ub_s = np.percentile(self.s[nonzero], self.perc) if weighted else np.max(self.s)
+            ub_u = np.percentile(self.u[nonzero], self.perc) if weighted else np.max(self.u)
             if ub_s > 0 and ub_u > 0:
                 if filter_by_s: weights &= np.ravel(self.s <= ub_s)
                 if filter_by_u: weights &= np.ravel(self.u <= ub_u)
 
         self.weights = weights
-        self.std_u = np.std(self.u[weights])
-        self.std_s = np.std(self.s[weights])
+        u, s = self.u[weights], self.s[weights]
+        self.std_u = np.std(u)
+        self.std_s = np.std(s)
         self.recoverable = (np.sum(nonzero_s) > 2) & (np.sum(nonzero_u) > 2)
+
+        if exclude_low_vals:
+            self.weights &= (self.u > np.max(u) / 3) & (self.s > np.max(s) / 3)
 
     def load_pars(self, adata, gene):
         idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
@@ -587,6 +593,8 @@ class BaseDynamics:
         u, s = self.u / scaling, self.s
         if weighted:
             u, s = u[self.weights], s[self.weights]
+        if self.cluster_indices is not None:
+            u, s = u[self.cluster_indices], s[self.cluster_indices]
         return u, s
 
     def get_vars(self, alpha=None, beta=None, gamma=None, scaling=None, t_=None, u0_=None, s0_=None):
@@ -637,6 +645,8 @@ class BaseDynamics:
 
         if weighted and self.weights is not None:
             t, tau, o = t[self.weights], tau[self.weights], o[self.weights]
+        if self.cluster_indices is not None:
+            t, tau, o = t[self.cluster_indices], tau[self.cluster_indices], o[self.cluster_indices]
 
         return t, tau, o
 
@@ -647,15 +657,19 @@ class BaseDynamics:
         return t, t_, alpha, beta, gamma, scaling
 
     def get_dists(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, u0_=None, s0_=None,
-                  refit_time=None, weighted=True):
+                  refit_time=None, weighted=True, exclude_low_vals=None, indices=None):
         u, s = self.get_reads(scaling, weighted=weighted)
 
         alpha, beta, gamma, scaling, t_ = self.get_vars(alpha, beta, gamma, scaling, t_, u0_, s0_)
         t, tau, o = self.get_time_assignment(alpha, beta, gamma, scaling, t_, u0_, s0_, t, refit_time, weighted=weighted)
 
-        if weighted == 'dynamical':
+        idx = None
+        if exclude_low_vals:
             idx = (u > np.max(u) / 3) & (s > np.max(s) / 3)
-            if np.sum(idx) > 0: u, s, t = u[idx], s[idx], t[idx]
+        if indices is not None:
+            idx = indices if idx is None else idx & indices
+        if idx is not None and np.sum(idx) > 0:
+            u, s, t = u[idx], s[idx], t[idx]
 
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
         ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
@@ -687,7 +701,7 @@ class BaseDynamics:
         return self.get_se(t=t, t_=t_, alpha=alpha, beta=beta, gamma=gamma, scaling=scaling, u0_=u0_, s0_=s0_, refit_time=refit_time)
 
     def get_loglikelihood(self, varx=None, noise_model='normal', **kwargs):
-        if 'weighted' not in kwargs: kwargs.update({'weighted': 'dynamical'})
+        if 'exclude_low_vals' not in kwargs: kwargs.update({'exclude_low_vals': True})
         udiff, sdiff, reg = self.get_dists(**kwargs)
 
         distx = udiff ** 2 + sdiff ** 2 + reg ** 2
@@ -707,7 +721,7 @@ class BaseDynamics:
         return loglik
 
     def get_likelihood(self, **kwargs):
-        if 'weighted' not in kwargs: kwargs.update({'weighted': 'dynamical'})
+        if 'exclude_low_vals' not in kwargs: kwargs.update({'exclude_low_vals': True})
         likelihood = np.exp(self.get_loglikelihood(**kwargs))
         return likelihood
 
@@ -723,7 +737,7 @@ class BaseDynamics:
         return likelihood
 
     def get_variance(self, **kwargs):
-        if 'weighted' not in kwargs: kwargs.update({'weighted': 'dynamical'})
+        if 'exclude_low_vals' not in kwargs: kwargs.update({'exclude_low_vals': True})
         udiff, sdiff, reg = self.get_dists(**kwargs)
         distx = udiff ** 2 + sdiff ** 2
         return np.mean(distx) - np.mean(np.sign(sdiff) * np.sqrt(distx)) ** 2
@@ -974,6 +988,87 @@ class BaseDynamics:
         update_axes(ax, fontsize=fontsize, frameon=True)
 
         return ax
+
+    # for differential kinetic test
+    def get_orth_fit(self, orth_beta=None):
+        u, s = self.get_reads(weighted=True)
+        # to calculate beta of orth. regression
+        if orth_beta is None:
+            a = np.sum(s * u)
+            b = np.sum(u ** 2 - s ** 2)
+            orth_beta = (b + ((b ** 2 + 4 * a ** 2) ** .5)) / (2 * a)
+            # print(linreg(u, s), orth_beta) for comparison
+        s_real = np.array((s + (orth_beta * u)) / (1 + orth_beta ** 2))
+        sdiff = np.array(s_real - s) / self.std_s
+        udiff = np.array(orth_beta * s_real - u) / self.std_u * self.scaling
+        return udiff, sdiff, orth_beta
+
+    def get_pval(self, model='dynamical'):
+        # assuming var-scaled udiff, sdiff follow N(0,1), the sum of errors for the cluster follows chi2(df=len(udiff))
+        udiff, sdiff, beta = self.get_orth_fit() if model == 'orthogonal' else self.get_dists()
+        distx = (udiff ** 2 + sdiff ** 2)
+        df, x = len(udiff), np.sum(distx) / self.varx
+        return chi2.sf(df=df, x=x)
+
+    def get_pval_diff_kinetics(self, o_udiff=None, o_sdiff=None, orth_beta=None, save_stats=True):
+        """
+        Calculates the p-value for the likelihood ratio using the asymptotic property of the chi^2 distr.
+
+        Parameters
+        ----------
+        method: "str" in ["sum", "t-test-real", "t-test"]
+            method used for p-value calculation, see the respective method for explanation
+        curr: "bool" array
+            array to point to the points of the cluster(s) of interest for p-val calculation
+            len(curr) = number of points
+        o_udiff, o_sdiff: "float" arrays or None
+            contain the distances to the orthogonal fit for the points in curr
+            to speed up p-value computation for simple fit as get_orth_fit returns the distances for the fitted cluster
+        o_beta: "float"
+            orthogonal line fit beta
+            needed to get o_udiff, o_sdiff for all points when needed
+        save_stats: "bool" (default = True)
+            whether to save all ratios and p-val in MultRecovery
+        Returns
+        -------
+        p-value
+        """
+        d_udiff, d_sdiff, reg = self.get_dists()  # distances to dyn model fit
+        d_distx = np.sum(d_udiff ** 2 + d_sdiff ** 2) / self.varx  # follows chi^2(df=2*len(d_udiff))
+
+        if o_udiff is None:
+            o_udiff, o_sdiff, orth_beta = self.get_orth_fit(orth_beta=orth_beta)
+        o_distx = np.sum(o_udiff ** 2 + o_sdiff ** 2) / self.varx  # follows chi^2(df=2*len(o_udiff))
+
+        df = 2 * len(d_udiff)  # degree of freedom = 2n
+        denom = np.sqrt(2 * df)  # standard dev
+        pval = norm.sf(((d_distx - o_distx) / denom), scale=2)  # (d_distx - o_distx) / denom should follow N(0,2)
+        if False and save_stats:
+            self.ratios.append((d_distx - o_distx) / (2 * denom))
+            self.allpvals.append(pval)
+        return pval
+
+    def get_diff_kinetics(self, clusters, weighted=True, exclude_low_vals=None, **kwargs):
+        # after fitting dyn. model
+        self.initialize_weights(weighted=weighted, exclude_low_vals=exclude_low_vals)
+        self.steady_state_ratio = None
+        self.allpvals, self.ratios = [], []
+        self.varx = self.get_variance()
+
+        if self.weights is not None:
+            clusters = clusters[self.weights]
+
+        cats = clusters.cat.categories
+        mean_dists = [self.get_mse(indices=clusters == c) for c in cats]
+        diff_cluster = cats[np.argmax(mean_dists)]
+        self.cluster_indices = clusters == diff_cluster
+
+        print([(c, np.round(d, 4)) for (c, d) in zip(cats, mean_dists)])
+        print('\n', diff_cluster, '\n',
+              'pval orth:', self.get_pval(model='orthogonal'), '\n',
+              'pval dyn:', self.get_pval(), '\n',
+              'pval differential', self.get_pval_diff_kinetics())
+        self.cluster_indices = None
 
 
 def get_reads(adata, key='fit', scaled=True, use_raw=False):
