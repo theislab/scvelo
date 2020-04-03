@@ -8,6 +8,17 @@ warnings.simplefilter("ignore")
 from ..preprocessing.neighbors import compute_connectivities_umap
 
 
+def round(k, dec=2, as_str=None):
+    if isinstance(k, (list, tuple, np.record, np.ndarray)):
+        return [round(ki, dec) for ki in k]
+    if 'e' in str(k):
+        k_str = str(k).split('e')
+        result = str(np.round(np.float(k_str[0]), dec)) + '1e' + k_str[1]
+        return str(result) if as_str else np.float(result)
+    result = np.round(np.float(k), dec)
+    return str(result) if as_str else result
+
+
 def mean(x, axis=0):
     return x.mean(axis).A1 if issparse(x) else x.mean(axis)
 
@@ -292,7 +303,8 @@ def make_unique_list(key, allow_array=False):
 def test_bimodality(x, bins=30, kde=True, plot=False):
     from scipy.stats import gaussian_kde, norm
 
-    grid = np.linspace(np.min(x), np.percentile(x, 99), bins)
+    lb, ub = np.min(x), np.percentile(x, 99.9)
+    grid = np.linspace(lb, ub if ub <= lb else np.max(x), bins)
     kde_grid = gaussian_kde(x)(grid) if kde else np.histogram(x, bins=grid, density=True)[0]
 
     idx = int(bins / 2) - 2
