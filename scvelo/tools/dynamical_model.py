@@ -116,6 +116,7 @@ class DynamicsRecovery(BaseDynamics):
         self.update()
         self.tau, self.tau_ = self.get_divergence(mode='tau')
         self.likelihood = self.get_likelihood(refit_time=False)
+        self.varx = self.get_variance()
 
     def fit_t_and_alpha(self, **kwargs):
         alpha_vals = self.alpha + np.linspace(-1, 1, num=5) * self.alpha / 10
