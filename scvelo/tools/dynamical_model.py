@@ -50,8 +50,13 @@ class DynamicsRecovery(BaseDynamics):
             alpha, beta, gamma = np.array([alpha, beta, gamma]) * np.array(self.init_vals)
 
         # initialize switching from u quantiles and alpha from s quantiles
-        tstat_u, pval_u, means_u = test_bimodality(u_w, kde=True)
-        tstat_s, pval_s, means_s = test_bimodality(s_w, kde=True)
+        try:
+            tstat_u, pval_u, means_u = test_bimodality(u_w, kde=True)
+            tstat_s, pval_s, means_s = test_bimodality(s_w, kde=True)
+        except:
+            logg.warn('skipping bimodality check for', self.gene)
+            tstat_u, tstat_s, pval_u, pval_s, means_u, means_s = 0, 0, 1, 1, [0, 0], [0, 0]
+
         self.pval_steady = max(pval_u, pval_s)
         self.steady_u = means_u[1]
         self.steady_s = means_s[1]
