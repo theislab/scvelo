@@ -60,6 +60,12 @@ def to_val(key):
     return key[0] if isinstance(key, (list, tuple)) and len(key) == 1 else key
 
 
+def get_kwargs(kwargs, dict_new_kwargs):
+    kwargs = kwargs.copy()
+    kwargs.update(dict_new_kwargs)
+    return kwargs
+
+
 def check_basis(adata, basis):
     if basis in adata.obsm.keys() and 'X_' + basis not in adata.obsm.keys():
         adata.obsm['X_' + basis] = adata.obsm[basis]
@@ -127,6 +133,36 @@ def groups_to_bool(adata, groups, groupby=None):
         groups = None
 
     return groups
+
+
+def gets_vals_from_color_gradients(adata, color=None, **scatter_kwargs):
+    color_gradients = scatter_kwargs.pop('color_gradients')
+    scatter_kwargs.update({'color_gradients': None})
+    if 'colorbar' not in scatter_kwargs or scatter_kwargs['colorbar'] is None:
+        scatter_kwargs.update({'colorbar': False})
+    if 's' not in scatter_kwargs:
+        scatter_kwargs['s'] = default_size(adata) if scatter_kwargs['size'] is None else scatter_kwargs['size']
+    if not any([v in scatter_kwargs for v in ['vmin', 'vmax', 'vmid']]):
+        scatter_kwargs['vmid'] = 0
+    if isinstance(color_gradients, str) and color_gradients in adata.obsm.keys():
+        if color is None: color = color_gradients
+        color_gradients = adata.obsm[color_gradients]
+    elif isinstance(color_gradients, (list, tuple)) and color_gradients[0] in adata.obs.keys():
+        color_gradients = pd.DataFrame(np.stack([adata.obs[c] for c in color_gradients]), columns=color_gradients)
+    if color is None:
+        color = 'clusters_gradients'
+    palette = scatter_kwargs.pop('palette')
+    if palette is None and hasattr(color_gradients, 'colors'):
+        palette = list(color_gradients.colors)
+
+    pd_colgrad = pd.DataFrame(color_gradients)
+    vals = pd_colgrad.values
+    names = color_gradients.names if hasattr(color_gradients, 'names') else pd_colgrad.columns
+
+    adata.obs[color] = pd.Categorical([str(names[i]) for i in np.argmax(vals, 1)], categories=names)
+    _set_colors_for_categorical_obs(adata, color, palette)
+
+    return vals, names, color, scatter_kwargs
 
 
 """get default parameters"""
@@ -409,6 +445,9 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
     from matplotlib.colors import to_hex
     color_key = f"{value_to_plot}_colors"
     valid = True
+
+    if isinstance(palette, str) and palette in adata.uns:
+        palette = adata.uns[palette].values() if isinstance(adata.uns[palette], dict) else adata.uns[palette]
 
     if palette is None and color_key in adata.uns:
         # Check if colors already exist in adata.uns and if they are a valid palette

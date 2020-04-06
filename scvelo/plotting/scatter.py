@@ -8,6 +8,7 @@ from .utils import default_basis, default_color, default_size, default_color_map
 from .utils import unique, make_dense, get_components, get_connectivities, groups_to_bool, interpret_colorkey, get_obs_vector
 from .utils import update_axes, set_label, set_title, set_colorbar, _set_colors_for_categorical_obs, _add_legend
 from .utils import plot_linfit, plot_polyfit, plot_density, plot_outline, plot_rug, plot_velocity_fits, savefig_or_show
+from .utils import rgb_custom_colormap, gets_vals_from_color_gradients, get_kwargs
 
 
 from inspect import signature
@@ -136,35 +137,20 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 if show is False: return ax
 
         elif color_gradients is not None and color_gradients is not False:
-            from .utils import rgb_custom_colormap
-            scatter_kwargs.update({'colorbar': False, 'color_gradients': None})
-            base_kwargs = scatter_kwargs.copy()
-            base_kwargs.update({'s': 0, 'alpha': 0})
-            ax = scatter(adata, color=color, **base_kwargs)
-
-            if 's' not in kwargs:
-                scatter_kwargs['s'] = default_size(adata) if size is None else size
-            if isinstance(color_gradients, str) and color_gradients in adata.obsm.keys():
-                color_gradients = adata.obsm[color_gradients]
-            if 'vmin' not in scatter_kwargs:
-                scatter_kwargs['vmin'] = np.min(color_gradients)
-            if 'vmax' not in scatter_kwargs:
-                scatter_kwargs['vmax'] = np.max(color_gradients)
-
-            sorted_idx = np.argsort(color_gradients, 1)[:, ::-1][:, :2]
+            vals, names, color, scatter_kwargs = gets_vals_from_color_gradients(adata, color, **scatter_kwargs)
             c_colors = {cat: col for (cat, col) in zip(adata.obs[color].cat.categories, adata.uns[color + '_colors'])}
-
-            for id0 in range(color_gradients.shape[1]):
-                for id1 in range(id0 + 1, color_gradients.shape[1]):
-                    if hasattr(color_gradients, 'names'):
-                        c0, c1 = c_colors[color_gradients.names[id0]], c_colors[color_gradients.names[id1]]
-                    else:
-                        c0, c1 = list(c_colors.values())[id0], list(c_colors.values())[id1]
-                    scatter_kwargs.update({'color_map': rgb_custom_colormap([c0, 'white', c1], alpha=[1, 0, 1])})
-                    c_vals = np.array(color_gradients[:, id1] - color_gradients[:, id0]).flatten()
+            ax = scatter(adata, color='grey', **get_kwargs(scatter_kwargs, {'alpha': 0.05}))  # grey background
+            ax = scatter(adata, color=color, ax=ax, **get_kwargs(scatter_kwargs, {'s': 0}))  # set legend
+            sorted_idx = np.argsort(vals, 1)[:, ::-1][:, :2]
+            for id0 in range(len(names)):
+                for id1 in range(id0 + 1, len(names)):
+                    cmap = rgb_custom_colormap([c_colors[names[id0]], 'white', c_colors[names[id1]]], alpha=[1, 0, 1])
+                    scatter_kwargs.update({'color_map': cmap})
+                    c_vals = np.array(vals[:, id1] - vals[:, id0]).flatten()
                     c_bool = np.array([id0 in c and id1 in c for c in sorted_idx])
                     if np.sum(c_bool) > 1:
-                        ax = scatter(adata[c_bool], color=c_vals[c_bool], ax=ax, **scatter_kwargs)
+                        _adata = adata[c_bool] if np.sum(~c_bool) > 0 else adata
+                        ax = scatter(_adata, color=c_vals[c_bool], ax=ax, **scatter_kwargs)
             savefig_or_show(dpi=dpi, save=save, show=show)
             if show is False: return ax
 
