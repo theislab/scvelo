@@ -23,8 +23,8 @@ import pandas as pd
 def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
             colorbar=None, palette=None, size=None, alpha=None, linewidth=None, linecolor=None, perc=None, groups=None,
             sort_order=True, components=None, projection=None, legend_loc=None, legend_fontsize=None, legend_fontweight=None,
-            xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, xlim=None, ylim=None, show_density=None,
-            show_assignments=None, show_linear_fit=None, show_polyfit=None, rug=None, add_text=None, add_text_pos=None,
+            xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, xlim=None, ylim=None, add_density=None,
+            add_assignments=None, add_linfit=None, add_polyfit=None, add_rug=None, add_text=None, add_text_pos=None,
             add_outline=None, outline_width=None, outline_color=None, n_convolve=None, smooth=None, rescale_color=None,
             color_gradients=None, dpi=None, frameon=None, zorder=None, ncols=None, nrows=None, wspace=None, hspace=None,
             show=None, save=None, ax=None, **kwargs):
@@ -48,6 +48,13 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         If `show==False` a `matplotlib.Axis`
     """
     adata = AnnData(np.stack([x, y]).T) if adata is None and (x is not None and y is not None) else adata
+
+    # restore old conventions
+    add_assignments = kwargs.pop('show_assignments', add_assignments)
+    add_linfit = kwargs.pop('show_linear_fit', add_linfit)
+    add_polyfit = kwargs.pop('show_polyfit', add_polyfit)
+    add_density = kwargs.pop('show_density', add_density)
+    add_rug = kwargs.pop('rug', add_rug)
 
     # keys for figures (fkeys) and multiple plots (mkeys)
     fkeys = ['adata', 'show', 'save', 'groups', 'figsize', 'dpi', 'ncols', 'nrows', 'wspace', 'hspace', 'ax', 'kwargs']
@@ -213,7 +220,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 # velocity model fits (full dynamics and steady-state ratios)
                 if any(['gamma' in key or 'alpha' in key for key in adata.var.keys()]):
                     plot_velocity_fits(adata, basis, vkey, use_raw, linewidth, linecolor, legend_loc, legend_fontsize,
-                                       show_assignments, ax=ax)
+                                       add_assignments, ax=ax)
 
             # embedding: set x and y to embedding coordinates
             elif is_embedding:
@@ -350,14 +357,14 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     if ',' in add_outline:
                         add_outline = [a.strip() for a in add_outline.split(',')]
                 idx = groups_to_bool(adata, add_outline, groupby_outline)
-                if idx is not None:
+                if idx is not None and np.sum(idx) > 0:
                     zorder = 2 if zorder is None else zorder + 2
                     if kwargs['s'] is not None: kwargs['s'] *= 1.5
                     x, y = scatter_array[:, 0], scatter_array[:, 1]
                     x, y, c = x[idx], y[idx], c[idx] if not isinstance(c, str) and len(c) == adata.n_obs else c
                     ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
-
-                plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
+                if idx is None or np.sum(idx) > 0:
+                    plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
 
             # set legend if categorical categorical color vals
             if is_categorical(adata, color):
@@ -366,20 +373,22 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                             [patheffects.withStroke(linewidth=True, foreground='w')],
                             add_outline if groups_to_bool(adata, add_outline, color) is not None else groups)
 
-            if show_density:
-                plot_density(x, y, show_density, ax=ax)
+            if add_density:
+                plot_density(x, y, add_density, ax=ax)
 
-            if show_linear_fit or show_linear_fit == 0:
-                if show_linear_fit is True and basis in adata.var_names: show_linear_fit = 0  # without intercept
-                plot_linfit(x, y, show_linear_fit, legend_loc != 'none', linecolor, linewidth, fontsize, ax=ax)
+            if add_linfit:
+                if add_linfit is True and basis in adata.var_names:
+                    add_linfit = 'no_intercept'  # without intercept
+                plot_linfit(x, y, add_linfit, legend_loc != 'none', linecolor, linewidth, fontsize, ax=ax)
 
-            if show_polyfit or show_polyfit == 0:
-                if show_polyfit is 0 or show_polyfit is True and basis in adata.var_names:
-                    x, y, show_polyfit = np.hstack([np.zeros(10), x]), np.hstack([np.zeros(10), y]), True
-                plot_polyfit(x, y, show_polyfit, legend_loc != 'none', linecolor, linewidth, fontsize, ax=ax)
+            if add_polyfit:
+                if add_polyfit is True and basis in adata.var_names:
+                    add_polyfit = 'no_intercept'  # without intercept
+                plot_polyfit(x, y, add_polyfit, legend_loc != 'none', linecolor, linewidth, fontsize, ax=ax)
 
-            if rug:
-                plot_rug(np.ravel(x), color=np.ravel(interpret_colorkey(adata, rug)), ax=ax)
+            if add_rug:
+                rug_color = interpret_colorkey(adata, add_rug if isinstance(add_rug, str) else color)
+                plot_rug(np.ravel(x), color=np.ravel(rug_color), ax=ax)
 
             if add_text:
                 if add_text_pos is None:

@@ -73,16 +73,20 @@ xlim: tuple, e.g. [0,1] or `None` (default: `None`)
     Restrict x-limits of the axis.
 ylim: tuple, e.g. [0,1] or `None` (default: `None`)
     Restrict y-limits of the axis.
-show_density: `bool` or `str` or `None` (default: `None`)
+add_density: `bool` or `str` or `None` (default: `None`)
     Whether to show density of values along x and y axes. Color of the density plot can also be passed as `str`.
-show_assignments: `bool` or `str` or `None` (default: `None`)
-    Whether to show assignments to the model curve. Color of the assignments can also be passed as `str`.
-show_linear_fit: `bool` or `str` or `None` (default: `None`)
-    Whether to show linear regression fit to the data points. Color of the line can also be passed as `str`.
-show_polyfit: `bool` or `str` or `int` or `None` (default: `None`)
-    Whether to show polynomial fit to the data points. Color of the polyfit plot can also be passed as `str`. 
+add_assignments: `bool` or `str` or `None` (default: `None`)
+    Whether to add assignments to the model curve. Color of the assignments can also be passed as `str`.
+add_linfit: `bool` or `str` or `None` (default: `None`)
+    Whether to add linear regression fit to the data points. Color of the line can also be passed as `str`.
+    Fitting with or without an intercept by passing `'intercept'` or `'no_intercept'`. 
+    A colored regression line with intercept is obtained with `'intercept, blue'`.
+add_polyfit: `bool` or `str` or `int` or `None` (default: `None`)
+    Whether to add polynomial fit to the data points. Color of the polyfit plot can also be passed as `str`. 
     The degree of the polynomial fit can be passed as `int` (default is 2 for quadratic fit).
-rug: `str` or `None` (default: `None`)
+    Fitting with or without an intercept by passing `'intercept'` or `'no_intercept'`. 
+    A colored regression line with intercept is obtained with `'intercept, blue'`.
+add_rug: `str` or `None` (default: `None`)
     If categorical observation annotation (e.g. 'clusters') is given, a rugplot is attached to the x-axis showing the 
     distribution of data membership to each of the categories.
 add_text: `str` (default: `None`)

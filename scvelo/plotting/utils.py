@@ -676,13 +676,17 @@ def plot_linfit(x, y, add_linfit=True, add_legend=True, color=None, linewidth=No
     if ax is None: ax = pl.gca()
     idx_valid = ~np.isnan(x + y)
     x, y = x[idx_valid], y[idx_valid]
-    xnew = np.linspace(np.min(x), np.max(x) * 1.02)
-    color = add_linfit if isinstance(add_linfit, str) else color if isinstance(color, str) else 'grey'
 
-    mu_x, mu_y = (0, 0) if add_linfit == 0 else (np.mean(x), np.mean(y))
+    mu_x, mu_y = (0, 0) if isinstance(add_linfit, str) and 'no_intercept' in add_linfit else (np.mean(x), np.mean(y))
     slope = (np.mean(x * y) - mu_x * mu_y) / (np.mean(x ** 2) - mu_x ** 2)
     offset = mu_y - slope * mu_x
 
+    if isinstance(add_linfit, str) and 'intercept' in add_linfit:
+        str_list = [a.strip() for a in add_linfit.split(',')]
+        add_linfit = [a for a in str_list if 'intercept' not in a][0] if ',' in add_linfit else None
+
+    color = add_linfit if isinstance(add_linfit, str) else color if isinstance(color, str) else 'grey'
+    xnew = np.linspace(np.min(x), np.max(x) * 1.02)
     ax.plot(xnew, offset + xnew * slope, linewidth=linewidth, color=color)
     if add_legend:
         ax.text(.05, .95, r'$\rho = $' + str(np.round(pearsonr(x, y)[0], 2)), ha='left', va='top', fontsize=fontsize,
@@ -693,10 +697,17 @@ def plot_polyfit(x, y, add_polyfit=True, add_legend=True, color=None, linewidth=
     if ax is None: ax = pl.gca()
     idx_valid = ~np.isnan(x + y)
     x, y = x[idx_valid], y[idx_valid]
+    if isinstance(add_polyfit, str) and 'no_intercept' in add_polyfit:
+        x, y = np.hstack([np.zeros(10), x]), np.hstack([np.zeros(10), y])
     fit = np.polyfit(x, y, deg=2 if isinstance(add_polyfit, (str, bool)) else add_polyfit)
     f = np.poly1d(fit)
-    xnew = np.linspace(np.min(x), np.max(x), num=100)
+
+    if isinstance(add_polyfit, str) and 'intercept' in add_polyfit:
+        str_list = [a.strip() for a in add_polyfit.split(',')]
+        add_polyfit = [a for a in str_list if 'intercept' not in a][0] if ',' in add_polyfit else None
     color = add_polyfit if isinstance(add_polyfit, str) else color if isinstance(color, str) else 'grey'
+
+    xnew = np.linspace(np.min(x), np.max(x), num=100)
     ax.plot(xnew, f(xnew), color=color, linewidth=linewidth)
 
     if add_legend:
