@@ -659,3 +659,94 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
 
 
 latent_time = recover_latent_time
+
+
+def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, use_raw=None, return_model=None,
+                              add_key='fit', copy=None, **kwargs):
+    """Recovers the full splicing kinetics of specified genes.
+
+    The model infers transcription rates, splicing rates, degradation rates,
+    as well as cell-specific latent time and transcriptional states, estimated iteratively by expectation-maximization.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/69636459-ef862800-1056-11ea-8803-0a787ede5ce9.png
+
+    Arguments
+    ---------
+    data: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    var_names: `str`,  list of `str` (default: `'velocity_genes`)
+        Names of variables/genes to use for the fitting.
+    add_key: `str` (default: `'fit'`)
+        Key to add to parameter names, e.g. 'fit_t' for fitted time.
+    copy: `bool` (default: `None`)
+        Return a copy instead of writing to `adata`.
+
+    Returns
+    -------
+    Returns or updates `adata`
+    """
+    adata = data.copy() if copy else data
+    logg.info('testing for differential kinetics', r=True)
+
+    if 'Ms' not in adata.layers.keys() or 'Mu' not in adata.layers.keys(): use_raw = True
+    if isinstance(var_names, str) and var_names not in adata.var_names:
+        if var_names in adata.var.keys():
+            var_names = adata.var_names[adata.var[var_names].values]
+        elif use_raw or var_names == 'all':
+            var_names = adata.var_names
+        elif '_genes' in var_names:
+            from .velocity import Velocity
+            velo = Velocity(adata, use_raw=use_raw)
+            velo.compute_deterministic(perc=[5, 95])
+            var_names = adata.var_names[velo._velocity_genes]
+            adata.var['fit_r2'] = velo._r2
+        else:
+            raise ValueError('Variable name not found in var keys.')
+
+    var_names = np.array([name for name in make_unique_list(var_names, allow_array=True) if name in adata.var_names])
+    if len(var_names) == 0:
+        raise ValueError('Variable name not found in var keys.')
+    if return_model is None:
+        return_model = len(var_names) < 5
+
+    if groupby is None:
+        groupby = 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else None
+    groupby = adata.obs[groupby] if isinstance(groupby, str) else groupby
+    groups = groupby.cat.categories
+    diff_kinetics, pval_kinetics = read_pars(adata, pars_names=['diff_kinetics', 'pval_kinetics'])
+
+    pvals = pd.DataFrame(adata.varm['fit_pvals_kinetics']).to_numpy() if 'fit_pvals_kinetics' in adata.varm.keys()\
+        else np.zeros((adata.n_vars, len(groups))) * np.nan
+    diff_kinetics = np.array(adata.var['fit_diff_kinetics']) if 'fit_diff_kinetics' in adata.var.keys() \
+        else np.empty(adata.n_vars, dtype='|U16')
+    idx = []
+
+    progress = logg.ProgressReporter(len(var_names))
+    for i, gene in enumerate(var_names):
+        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=True, max_iter=0, **kwargs)
+        if dm.recoverable:
+            dm.differential_kinetic_test(groupby)
+
+            ix = np.where(adata.var_names == gene)[0][0]
+            idx.append(ix)
+            diff_kinetics[ix], pval_kinetics[ix], = dm.diff_kinetics, dm.pval_kinetics
+            pvals[ix] = np.array(dm.pvals_kinetics)
+
+            progress.update()
+        else:
+            logg.warn(dm.gene, 'not recoverable due to insufficient samples.')
+            dm = None
+    progress.finish()
+
+    write_pars(adata, [diff_kinetics, pval_kinetics], pars_names=['diff_kinetics', 'pval_kinetics'])
+    adata.varm[add_key + '_pvals_kinetics'] = np.rec.fromarrays(pvals.T, dtype=[(str(rn), 'float32') for rn in groups]).T
+
+    logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
+    logg.hint('added \n' 
+              '    \'' + add_key + '_diff_kinetics' + '\', clusters displaying differential kinetics (adata.var)\n'
+              '    \'' + add_key + '_pval_kinetics' + '\', p-values of differential kinetics (adata.var)')
+
+    if return_model:
+        logg.info('\noutputs model fit of gene:', dm.gene)
+
+    return dm if return_model else adata if copy else None

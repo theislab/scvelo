@@ -240,6 +240,12 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
     distu, distu_ = (u - ut) / std_u, (u - ut_) / std_u
     dists, dists_ = (s - st) / std_s, (s - st_) / std_s
 
+    if mode == 'unspliced_dists':
+        return distu, distu_
+
+    elif mode == 'outside_of_trajectory':
+        return np.sign(distu) * np.sign(distu_) == 1
+
     distx = distu ** 2 + dists ** 2
     distx_ = distu_ ** 2 + dists_ ** 2
 
@@ -360,12 +366,6 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
         t = tau * (o == 1) + (tau_ + t_) * (o == 0)
         res = [t, tau, o] if mode == 'assign_timepoints' else t
-
-    elif mode == 'unspliced_dists':
-        return distu, distu_
-
-    elif mode == 'outside_of_trajectory':
-        return np.sign(distu) * np.sign(distu_) == 1
 
     elif mode == 'gene_likelihood':
         o = np.argmin(res, axis=0)
@@ -509,7 +509,7 @@ class BaseDynamics:
             self.u0, self.s0 = 0, 0
 
         self.alpha, self.beta, self.gamma, self.scaling, self.t_, self.alpha_ = None, None, None, None, None, None
-        self.u0_, self.s0_, self.weights, self.pars = None, None, None, None
+        self.u0_, self.s0_, self.weights, self.weights_outer, self.pars = None, None, None, None, None
         self.t, self.tau, self.o, self.tau_, self.likelihood, self.loss = None, None, None, None, None, None
 
         self.max_iter = max_iter
@@ -535,6 +535,7 @@ class BaseDynamics:
 
         # for differential kinetic test
         self.cluster_indices, self.clusters, self.cats, self.varx = None, None, None, None
+        self.diff_kinetics, self.pval_kinetics, self.pvals_kinetics, self.orth_beta = None, None, None, None
 
     def initialize_weights(self, weighted=True, exclude_low_vals=None, exclude_inner_vals=None):
         nonzero_s = np.ravel(self.s > 0)
@@ -562,8 +563,9 @@ class BaseDynamics:
 
         if exclude_low_vals:
             self.weights &= (self.u > np.max(u) / 3) & (self.s > np.max(s) / 3)
+        self.weights_outer = np.array(self.weights)
         if exclude_inner_vals:
-            self.weights &= self.get_divergence(mode='outside_of_trajectory')
+            self.weights_outer &= self.get_divergence(mode='outside_of_trajectory')
 
     def load_pars(self, adata, gene):
         idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
@@ -599,15 +601,20 @@ class BaseDynamics:
 
         self.loss = [self.get_loss()]
 
-    def get_reads(self, scaling=None, weighted=False):
+    def get_weights(self, weighted=None, weights_cluster=None):
+        weights = np.array(self.weights_outer if weighted == 'outer' else self.weights)
+        if self.cluster_indices is not None and len(weights) == len(self.cluster_indices):
+            weights &= self.cluster_indices
+        if weights_cluster is not None and len(weights) == len(weights_cluster):
+            weights &= weights_cluster
+        return weights
+
+    def get_reads(self, scaling=None, weighted=None, weights_cluster=None):
         scaling = self.scaling if scaling is None else scaling
         u, s = self.u / scaling, self.s
-        if weighted and self.weights is not None:
-            idx = self.cluster_indices
-            idx = self.weights & idx if idx is not None and len(self.weights) == len(idx) else self.weights
-            u, s = u[idx], s[idx]
-        if self.cluster_indices is not None and len(self.cluster_indices) == len(u):
-                u, s = u[self.cluster_indices], s[self.cluster_indices]
+        if weighted:
+            weights = self.get_weights(weighted=weighted, weights_cluster=weights_cluster)
+            u, s = u[weights], s[weights]
         return u, s
 
     def get_vars(self, alpha=None, beta=None, gamma=None, scaling=None, t_=None, u0_=None, s0_=None):
@@ -627,7 +634,7 @@ class BaseDynamics:
         return res
 
     def get_time_assignment(self, alpha=None, beta=None, gamma=None, scaling=None, t_=None, u0_=None, s0_=None,
-                             t=None, refit_time=None, rescale_factor=None, weighted=False):
+                             t=None, refit_time=None, rescale_factor=None, weighted=None, weights_cluster=None):
         if refit_time is None:
             refit_time = self.refit_time
 
@@ -656,12 +663,9 @@ class BaseDynamics:
         else:
             t, tau, o = self.t, self.tau, self.o
 
-        if weighted and self.weights is not None:
-            idx = self.cluster_indices
-            idx = self.weights & idx if idx is not None and len(self.weights) == len(idx) else self.weights
-            t, tau, o = t[idx], tau[idx], o[idx]
-        if self.cluster_indices is not None and len(self.cluster_indices) == len(t):
-            t, tau, o = t[self.cluster_indices], tau[self.cluster_indices], o[self.cluster_indices]
+        if weighted:
+            weights = self.get_weights(weighted=weighted, weights_cluster=weights_cluster)
+            t, tau, o = t[weights], tau[weights], o[weights]
         return t, tau, o
 
     def get_vals(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, u0_=None, s0_=None,
@@ -671,19 +675,17 @@ class BaseDynamics:
         return t, t_, alpha, beta, gamma, scaling
 
     def get_dists(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, u0_=None, s0_=None,
-                  refit_time=None, weighted=True, exclude_low_vals=None, indices=None, reg=None):
-        u, s = self.get_reads(scaling, weighted=weighted)
+                  refit_time=None, weighted=True, exclude_low_vals=None, weights_cluster=None, reg=None):
+        u, s = self.get_reads(scaling, weighted=weighted, weights_cluster=weights_cluster)
 
         alpha, beta, gamma, scaling, t_ = self.get_vars(alpha, beta, gamma, scaling, t_, u0_, s0_)
-        t, tau, o = self.get_time_assignment(alpha, beta, gamma, scaling, t_, u0_, s0_, t, refit_time, weighted=weighted)
+        t, tau, o = self.get_time_assignment(alpha, beta, gamma, scaling, t_, u0_, s0_, t, refit_time,
+                                             weighted=weighted, weights_cluster=weights_cluster)
 
-        idx = None
         if exclude_low_vals:
             idx = (u > np.max(u) / 3) & (s > np.max(s) / 3)
-        if indices is not None:
-            idx = indices if idx is None else idx & indices
-        if idx is not None and np.sum(idx) > 0:
-            u, s, t = u[idx], s[idx], t[idx]
+            if idx is not None and np.sum(idx) > 0:
+                u, s, t = u[idx], s[idx], t[idx]
 
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
         ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
@@ -1010,39 +1012,39 @@ class BaseDynamics:
         return ax
 
     # for differential kinetic test
-    def initialize_diff_kinetics(self, clusters, weighted=True, exclude_low_vals=None, exclude_inner_vals=None):
+    def initialize_diff_kinetics(self, clusters, **kwargs):
         # after fitting dyn. model
-        #self.varx = self.get_variance()
-        self.initialize_weights(weighted=weighted, exclude_low_vals=exclude_low_vals, exclude_inner_vals=exclude_inner_vals)
+        if self.varx is None:
+            self.varx = self.get_variance()
+        self.initialize_weights(**kwargs)
         self.steady_state_ratio = None
-        self.cluster_indices = None
-        if self.weights is not None:
-            self.clusters = clusters[self.weights]
-        self.cats = pd.Categorical(self.clusters).categories
+        self.clusters = clusters
+        self.cats = pd.Categorical(clusters).categories
 
-    def get_orth_fit(self, orth_beta=None):
-        u, s = self.get_reads(weighted=True)
-        # to calculate beta of orth. regression
+    def get_orth_fit(self, **kwargs):
+        kwargs['weighted'] = True  # include inner vals for orthogonal regression
+        u, s = self.get_reads(**kwargs)
+        a, b = np.sum(s * u), np.sum(u ** 2 - s ** 2)
+        orth_beta = (b + ((b ** 2 + 4 * a ** 2) ** .5)) / (2 * a)
+        return orth_beta
+
+    def get_orth_distx(self, orth_beta=None, **kwargs):
+        if 'weighted' not in kwargs: kwargs['weighted'] = 'outer'
+        u, s = self.get_reads(**kwargs)
         if orth_beta is None:
-            a, b = np.sum(s * u), np.sum(u ** 2 - s ** 2)
-            orth_beta = (b + ((b ** 2 + 4 * a ** 2) ** .5)) / (2 * a)
+            orth_beta = self.get_orth_fit(**kwargs)
         s_real = np.array((s + (orth_beta * u)) / (1 + orth_beta ** 2))
         sdiff = np.array(s_real - s) / self.std_s
         udiff = np.array(orth_beta * s_real - u) / self.std_u * self.scaling
-        return udiff, sdiff, orth_beta
-
-    def get_orth_distx(self, **kwargs):
-        udiff, sdiff, beta = self.get_orth_fit(**kwargs)
         return udiff ** 2 + sdiff ** 2
 
-    def get_pval(self, model='dynamical', indices=None, **kwargs):
+    def get_pval(self, model='dynamical', **kwargs):
         # assuming var-scaled udiff, sdiff follow N(0,1), the sum of errors for the cluster follows chi2(df=2n)
-        if indices is not None: self.cluster_indices = indices
-        distx = self.get_orth_distx(**kwargs) if model == 'orthogonal' else self.get_distx(**kwargs)
-        if indices is not None: self.cluster_indices = None
+        if 'weighted' not in kwargs: kwargs['weighted'] = 'outer'
+        distx = self.get_orth_distx(**kwargs) if model == 'orthogonal' else self.get_distx(**kwargs) / 2
         return chi2.sf(df=2*len(distx), x=np.sum(distx) / self.varx)
 
-    def get_pval_diff_kinetics(self, orth_beta=None, indices=None, min_cells=10):
+    def get_pval_diff_kinetics(self, orth_beta=None, min_cells=10, **kwargs):
         """
         Calculates the p-value for the likelihood ratio using the asymptotic property of the chi^2 distr.
 
@@ -1066,57 +1068,48 @@ class BaseDynamics:
         -------
         p-value
         """
-        if indices is not None: self.cluster_indices = indices
-        if np.sum(self.cluster_indices) < min_cells: return 1
-        distx, orth_distx = self.get_distx(), self.get_orth_distx(orth_beta=orth_beta)
-        if indices is not None: self.cluster_indices = None
-
-        df = 2 * len(distx)
-        pval = norm.sf((np.sum(distx) - np.sum(orth_distx)) / self.varx / np.sqrt(4 * df))  # see derivation above
+        if 'weights_cluster' in kwargs and np.sum(kwargs['weights_cluster']) < min_cells: return 1
+        distx = self.get_distx(weighted='outer', **kwargs) / 2  # due to convolved assignments (tbd)
+        orth_distx = self.get_orth_distx(orth_beta=orth_beta, **kwargs)
+        denom = self.varx * np.sqrt(4 * 2*len(distx))
+        pval = norm.sf((np.sum(distx) - np.sum(orth_distx)) / denom)  # see derivation above
         return pval
 
     def get_cluster_mse(self, clusters=None, **kwargs):
+        if 'weighted' not in kwargs: kwargs['weighted'] = 'outer'
         if self.clusters is None or clusters is not None:
             self.initialize_diff_kinetics(clusters, **kwargs)
-        return [self.get_mse(indices=self.clusters == c) for c in self.cats]
+        return [self.get_mse(weights_cluster=self.clusters == c, **kwargs) for c in self.cats]
 
-    def get_cluster_pvals(self, clusters=None, model=None, **kwargs):
+    def get_cluster_pvals(self, clusters=None, model=None, orth_beta=None, **kwargs):
+        if 'weighted' not in kwargs: kwargs['weighted'] = 'outer'
         if self.clusters is None or clusters is not None:
             self.initialize_diff_kinetics(clusters, **kwargs)
-        return [self.get_pval_diff_kinetics(indices=self.clusters == c) if model is None
-                else self.get_pval(model=model, indices=self.clusters == c) for c in self.cats]
+        return [self.get_pval_diff_kinetics(weights_cluster=self.clusters == c, orth_beta=orth_beta) if model is None
+                else self.get_pval(model=model, weights_cluster=self.clusters == c) for c in self.cats]
 
-    def get_diff_kinetics(self, clusters, as_df=None, min_cells=10, **kwargs):
+    def differential_kinetic_test(self, clusters, as_df=None, min_cells=10, **kwargs):
         # after fitting dyn. model
         if 'weighted' not in kwargs: kwargs['weighted'] = None
         if 'exclude_low_vals' not in kwargs: kwargs['exclude_low_vals'] = None
         if 'exclude_inner_vals' not in kwargs: kwargs['exclude_inner_vals'] = True
+
         self.initialize_diff_kinetics(clusters, **kwargs)
-        n_cells = np.array([np.sum(self.weights & (clusters == c)) for c in self.cats])
+
+        n_cells = np.array([np.sum(self.weights_outer & (clusters == c)) for c in self.cats])
         mse = np.array(self.get_cluster_mse())
         mse[n_cells < min_cells] = 0
-        diff_cluster = self.cats[np.argmax(mse)]
-        self.cluster_indices = self.clusters == diff_cluster
-        pval_dyn_model = self.get_pval()
-        pval = self.get_pval_diff_kinetics()
 
-        if max(pval_dyn_model, pval) < .05 or pval < 1e-2:
-            _, _, orth_beta = self.get_orth_fit()
-            self.pvals = [self.get_pval_diff_kinetics(indices=self.clusters == c, orth_beta=orth_beta) for c in self.cats]
-            self.diff_kinetics = [c for (c, p) in zip(self.cats, self.pvals) if p < 1e-2]
-        else:
-            self.pvals = [self.get_pval_diff_kinetics(indices=self.clusters == c) for c in self.cats]
-        self.cluster_indices = None
+        weights_cluster = self.clusters == self.cats[np.argmax(mse)]
+        self.orth_beta = orth_beta = self.get_orth_fit(weights_cluster=weights_cluster)  # include inner vals
+
+        self.pvals_kinetics = np.array(self.get_cluster_pvals(orth_beta=orth_beta))
+        self.diff_kinetics = ",".join([c for (c, p) in zip(self.cats, self.pvals_kinetics) if p < 1e-2])
+        if np.any(self.pvals_kinetics < 1e-2):
+            self.pval_kinetics = np.max(self.pvals_kinetics[self.pvals_kinetics < 1e-2])
 
         if as_df:
-            df = pd.DataFrame(np.array(round(self.pvals, 2))[None, :], columns=self.cats, index=['pval'])
-
-            #def apply_col(val):
-            #    return 'color: %s' % ('blue' if val < 1e-2 else 'black')
-            #with pd.option_context('display.precision', 2):
-            #df = df.style.apply(apply_col)
-            return df
-        return self.diff_kinetics
+            return pd.DataFrame(np.array(round(self.pvals_kinetics, 2))[None, :], columns=self.cats, index=['pval'])
 
 
 def get_reads(adata, key='fit', scaled=True, use_raw=False):
