@@ -3,7 +3,7 @@ from .. import logging as logg
 from .utils import not_yet_normalized, normalize_per_cell
 from .neighbors import neighbors, get_connectivities, neighbors_to_be_recomputed
 
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, issparse
 import numpy as np
 
 
@@ -124,3 +124,41 @@ def magic_impute(adata, knn=5, t=2, verbose=0, **kwargs):
     magic_operator = magic.MAGIC(verbose=verbose, knn=knn, t=t, **kwargs)
     adata.layers['Ms'] = magic_operator.fit_transform(adata.layers['spliced'])
     adata.layers['Mu'] = magic_operator.transform(adata.layers['unspliced'])
+
+
+def get_moments(adata, layer=None, second_order=None, centered=True):
+    """Computes fisrt or second order moments from a specified layer.
+
+    Arguments
+    ---------
+    adata: `AnnData`
+        Annotated data matrix.
+    layer: `str` (default: `None`)
+        Key of layer with abundances to consider for moment computation.
+    second_order: `bool` (default: `None`)
+        Whether to compute second order (instead of first order) moments from abundances.
+    centered: `bool` (default: `True`)
+        Whether to compute centered or uncentered second order moments (centered = variance).
+    Returns
+    -------
+    Mx: first or second order moments
+    """
+    if 'neighbors' not in adata.uns:
+        raise ValueError('You need to run `pp.neighbors` first to compute a neighborhood graph.')
+    connectivities = get_connectivities(adata)
+    X = adata.X if layer is None else adata.layers[layer]
+    X = csr_matrix(X) if layer in {'spliced', 'unspliced'} else np.array(X) if not issparse(X) else X
+    if not issparse(X):
+        X = X[:, ~np.isnan(X.sum(0))]
+    if second_order:
+        X2 = X.multiply(X) if issparse(X) else X ** 2
+        Mx = csr_matrix.dot(connectivities, X2) if second_order else csr_matrix.dot(connectivities, X)
+        if centered:
+            mu = csr_matrix.dot(connectivities, X)
+            mu2 = mu.multiply(mu) if issparse(mu) else mu ** 2
+            Mx = Mx - mu2
+    else:
+        Mx = csr_matrix.dot(connectivities, X)
+    if issparse(X):
+        Mx = Mx.astype(np.float32).A
+    return Mx
