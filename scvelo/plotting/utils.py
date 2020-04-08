@@ -697,8 +697,11 @@ def plot_polyfit(x, y, add_polyfit=True, add_legend=True, color=None, linewidth=
     if ax is None: ax = pl.gca()
     idx_valid = ~np.isnan(x + y)
     x, y = x[idx_valid], y[idx_valid]
+    lb, ub = np.percentile(x, [.5, 99.5])
+    idx = (x > lb) & (x < ub)
+    x, y = x[idx], y[idx]
     if isinstance(add_polyfit, str) and 'no_intercept' in add_polyfit:
-        x, y = np.hstack([np.zeros(10), x]), np.hstack([np.zeros(10), y])
+        x, y = np.hstack([np.zeros(len(x)), x]), np.hstack([np.zeros(len(x)), y])
     fit = np.polyfit(x, y, deg=2 if isinstance(add_polyfit, (str, bool)) else add_polyfit)
     f = np.poly1d(fit)
 
