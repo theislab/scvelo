@@ -1,3 +1,4 @@
+from . import logging as logg
 from .preprocessing.utils import set_initial_size
 
 import os, re
@@ -5,6 +6,7 @@ import numpy as np
 import pandas as pd
 from urllib.request import urlretrieve
 from pathlib import Path
+from scipy.sparse import issparse
 from anndata import AnnData
 from scanpy import read, read_loom
 
@@ -166,3 +168,99 @@ def merge(adata, ldata, copy=True):
                 raise ValueError('Variable names are not identical.')
 
     return _adata if copy else None
+
+
+def obs_df(adata, keys, layer=None):
+    lookup_keys = [k for k in keys if k in adata.var_names]
+    if len(lookup_keys) < len(keys):
+        logg.warn(f"Keys {[k for k in keys if k not in adata.var_names]} were not found in `adata.var_names`.")
+
+    df = pd.DataFrame(index=adata.obs_names)
+    for l in lookup_keys:
+        df[l] = adata.obs_vector(l, layer=layer)
+    return df
+
+
+def var_df(adata, keys, layer=None):
+    lookup_keys = [k for k in keys if k in adata.obs_names]
+    if len(lookup_keys) < len(keys):
+        logg.warn(f"Keys {[k for k in keys if k not in adata.obs_names]} were not found in `adata.obs_names`.")
+
+    df = pd.DataFrame(index=adata.var_names)
+    for l in lookup_keys:
+        df[l] = adata.var_vector(l, layer=layer)
+    return df
+
+
+def get_df(data, keys=None, layer=None, index=None, columns=None, dropna='all', precision=None):
+    """\
+    Return values for a specific key in data (from obs, var, obsm, varm, obsp, varp, uns, or layers) as a dataframe.
+    Params
+    ------
+    adata
+        AnnData object or a numpy array to get values from.
+    keys
+        Keys from `.var_names`, `obs_names`, `.var`, `.obs`, `.obsm`, `.varm`, `.obsp`, `.varp`, `.uns`, or `.layers`.
+    layer
+        Layer of `adata` to use as expression values.
+    index
+        List to set as index.
+    columns
+        List to set as columns names.
+    dropna
+        Whether to drop columns/rows if they display NaNs all over (dropna='all') or in any entry (dropna='any').
+    precision
+        Set precision for pandas dataframe.
+    Returns
+    -------
+    A dataframe.
+    """
+    if precision is not None:
+        pd.set_option('precision', precision)
+
+    if isinstance(data, AnnData):
+        keys = [keys] if isinstance(keys, str) else keys
+        key = keys[0]
+
+        s_keys = ['obs', 'var', 'obsm', 'varm', 'uns', 'layers']
+        d_keys = [data.obs.keys(), data.var.keys(),
+                      data.obsm.keys(), data.varm.keys(),
+                      data.uns.keys(), data.layers.keys()]
+
+        if hasattr(data, 'obsp') and hasattr(data, 'varp'):
+            s_keys.extend(['obsp', 'varp'])
+            d_keys.extend([data.obsp.keys(), data.varp.keys()])
+
+        if keys is None:
+            df = data.to_df()
+        elif key in data.var_names:
+            df = obs_df(data, keys, layer=layer)
+        elif key in data.obs_names:
+            df = var_df(data, keys, layer=layer)
+        else:
+            s_key = [s for (s, d_key) in zip(s_keys, d_keys) if key in d_key]
+            if len(s_key) == 0:
+                raise ValueError("'" + key + "' not found in any of " + ", ".join(s_keys) + ".")
+            if len(s_key) > 1:
+                logg.warn("'" + key + "' found multiple times in " + ", ".join(s_key) + ".")
+
+            s_key = s_key[-1]
+            df = eval('data.' + s_key)[keys if len(keys) > 1 else key]
+
+            if index is None:
+                index = data.var_names if s_key == 'varm' else data.obs_names if s_key == 'obsm' else None
+    else:
+        df = data
+
+    if issparse(df):
+        df = np.array(df.A)
+    if columns is None and hasattr(df, 'names'):
+        columns = df.names
+
+    df = pd.DataFrame(df, index=index, columns=columns)
+
+    if dropna:
+        df.replace("", np.nan, inplace=True)
+        df.dropna(how=dropna if not isinstance(dropna, str) else 'all', inplace=True)
+
+    return df

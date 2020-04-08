@@ -10,9 +10,10 @@ except (LookupError, ImportError):
     __version__ = version(__name__)
     del version
 
-from .read_load import AnnData, read, read_loom, load, read_csv
+from .read_load import AnnData, read, read_loom, load, read_csv, get_df
 from .preprocessing.neighbors import Neighbors
 from .tools.run import run_all, test
+from .tools.utils import round
 from .tools.velocity import Velocity
 from .tools.velocity_graph import VelocityGraph
 from .plotting.gridspec import GridSpec
@@ -21,7 +22,7 @@ from .settings import set_figure_params
 from . import pp
 from . import tl
 from . import pl
-from . import datasets
 from . import utils
+from . import datasets
 from . import logging
 from . import settings
