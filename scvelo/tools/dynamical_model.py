@@ -663,12 +663,7 @@ latent_time = recover_latent_time
 
 def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, use_raw=None, return_model=None,
                               add_key='fit', copy=None, **kwargs):
-    """Recovers the full splicing kinetics of specified genes.
-
-    The model infers transcription rates, splicing rates, degradation rates,
-    as well as cell-specific latent time and transcriptional states, estimated iteratively by expectation-maximization.
-
-    .. image:: https://user-images.githubusercontent.com/31883718/69636459-ef862800-1056-11ea-8803-0a787ede5ce9.png
+    """Likelihood ratio test to detect regimes / cell types that display differential kientics.
 
     Arguments
     ---------
@@ -676,6 +671,10 @@ def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, us
         Annotated data matrix.
     var_names: `str`,  list of `str` (default: `'velocity_genes`)
         Names of variables/genes to use for the fitting.
+    groupby: `str` (default: `None`)
+        Key of observations grouping to consider, e.g. `'clusters'`.
+    use_raw: `bool` (default: `False`)
+        Whether to use raw data for estimation.
     add_key: `str` (default: `'fit'`)
         Key to add to parameter names, e.g. 'fit_t' for fitted time.
     copy: `bool` (default: `None`)

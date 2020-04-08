@@ -121,7 +121,7 @@ def write_pars(adata, vkey, pars, pars_names, add_key=None):
 
 def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_offset2=False, filter_genes=False, groups=None,
              groupby=None, groups_for_fit=None, constrain_ratio=None, use_raw=False, use_latent_time=None,
-             perc=[5, 95], min_r2=1e-2, min_likelihood=1e-3, r2_adjusted=None, copy=False, **kwargs):
+             perc=[5, 95], min_r2=1e-2, min_likelihood=1e-3, r2_adjusted=None, diff_kinetics=None, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner.
 
     The steady-state model determines velocities by quantifying how observations deviate from a presumed steady-state
@@ -267,6 +267,17 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
     if vkey + '_genes' in adata.var.keys() and np.sum(adata.var[vkey + '_genes']) < 10:
         logg.warn('Too few genes are selected as velocity genes. '
                   'Consider setting a lower threshold for min_r2 or min_likelihood.')
+
+    if diff_kinetics:
+        if not isinstance(diff_kinetics, str): diff_kinetics = 'fit_diff_kinetics'
+        if diff_kinetics in adata.var.keys():
+            clusters = adata.obs.clusters  # store in .uns
+            for i, v in enumerate(adata.var[diff_kinetics].values):
+                if len(v) > 0:
+                    idx = 1 - clusters.isin([a.strip() for a in v.split(',')])
+                    adata.layers[vkey][:, i] *= idx
+                    if mode == 'dynamical':
+                        adata.layers[vkey + '_u'][:, i] *= idx
 
     adata.uns[vkey + '_settings'] = {'mode': mode, 'fit_offset': fit_offset, 'perc': perc}
 
