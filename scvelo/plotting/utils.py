@@ -112,6 +112,15 @@ def get_obs_vector(adata, basis, layer=None, use_raw=None):
 
 
 def groups_to_bool(adata, groups, groupby=None):
+    if groups is not None and not isinstance(groups, str) and len(groups) == 1:
+        groups = groups[0]
+    if isinstance(groups, str):
+        if ':' in groups:
+            groupby, groups = groups.split(':')
+            groups = groups.strip()
+        if ',' in groups:
+            groups = [a.strip() for a in groups.split(',')]
+
     groups = [groups] if isinstance(groups, str) else groups
     groupby = groupby if isinstance(groupby, str) and groupby in adata.obs.keys() \
         else 'clusters' if 'clusters' in adata.obs.keys() \
@@ -240,7 +249,8 @@ def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, fra
             ax.yaxis.set_major_locator(MaxNLocator(nbins=3, integer=True))
             labelsize = int(fontsize * .75) if fontsize is not None else None
             ax.tick_params(axis='both', which='major', labelsize=labelsize)
-        if isinstance(frameon, str):
+        if isinstance(frameon, str) and frameon != 'full':
+            frameon = 'bl' if frameon == 'half' else frameon
             bf, lf, tf, rf = [f in frameon for f in ['bottom', 'left', 'top', 'right']]
             if not np.any([bf, lf, tf, rf]):
                 bf, lf, tf, rf = [f in frameon for f in ['b', 'l', 't', 'r']]

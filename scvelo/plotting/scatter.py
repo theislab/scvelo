@@ -71,8 +71,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         if is_categorical(adata, color):
             vc = adata.obs[color].value_counts()
             groups = [[c] for c in vc[vc > 0].index]
-    elif isinstance(groups, str) and ',' in groups:
-        groups = [g.strip() for g in groups.split(',')]
     if isinstance(add_text, (list, tuple, np.ndarray, np.record)):
         add_text = list(np.array(add_text, dtype=str))
 
@@ -302,17 +300,10 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     c += rescale_color[0] - np.min(c)
                     c *= rescale_color[1] / np.max(c)
 
-            # check if higher value points should be plotted on top
-            if sort_order and not isinstance(c, str) and not is_categorical(adata, color):
-                order = np.argsort(c)
-                x, y, c = x[order], y[order], c[order]
-                # sort order of size if given as vector
-                if isinstance(kwargs['s'], np.ndarray):
-                    kwargs['s'] = np.array(kwargs['s'])[order]
-
+            # set vmid to 0 if color values obtained from velocity expression
             if not np.any([v in kwargs for v in ['vmin', 'vmid', 'vmax']]) \
                     and np.any([isinstance(v, str) and 'velocity' in v and 'time' not in v for v in [color, layer]]):
-                kwargs['vmid'] = 0  # set vmid to 0 if color values obtained from velocity expression
+                kwargs['vmid'] = 0
 
             # introduce vmid by setting vmin and vmax accordingly
             if "vmid" in kwargs:
@@ -323,6 +314,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     kwargs.update({"vmin": vmid - crange, "vmax": vmid + crange})
             # set color to grey for NAN values and for cells that are not in groups
             if groups is not None or is_categorical(adata, color) and np.any(pd.isnull(adata.obs[color])):
+                print(groups)
                 zorder = 0 if zorder is None else zorder
                 ax = scatter(adata, x=x, y=y, basis=basis, layer=layer, color='lightgrey', ax=ax, groups=None, **scatter_kwargs)
                 idx = groups_to_bool(adata, groups, color)
@@ -331,7 +323,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     c = c[idx]
                 if title is None and groups is not None and len(groups) == 1 and isinstance(groups[0], str):
                     title = groups[0]
-                zorder += 1
 
             x, y = np.ravel(x), np.ravel(y)
             if len(x) != len(y):
@@ -344,19 +335,21 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     if not isinstance(color, str) or color != default_color(adata):
                         logg.warn('Invalid color key. Using grey instead.')
 
+            # check if higher value points should be plotted on top
+            if sort_order and not isinstance(c, str) and not is_categorical(adata, color) and len(c) == len(x):
+                order = np.argsort(c)
+                x, y, c = x[order], y[order], c[order]
+                # sort order of size if given as vector
+                if isinstance(kwargs['s'], np.ndarray):
+                    kwargs['s'] = np.array(kwargs['s'])[order]
+
             smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
 
             if add_outline:
-                groupby_outline = color
-                if isinstance(add_outline, str):
-                    if add_outline in adata.var.keys() and basis in adata.var_names:
-                        add_outline = str(adata[:, basis].var[add_outline][0])
-                    if ':' in add_outline:
-                        groupby_outline, add_outline = add_outline.split(':')
-                        add_outline = add_outline.strip()
-                    if ',' in add_outline:
-                        add_outline = [a.strip() for a in add_outline.split(',')]
-                idx = groups_to_bool(adata, add_outline, groupby_outline)
+                if isinstance(groups, str):
+                    if groups in adata.var.keys() and basis in adata.var_names:
+                        groups = str(adata[:, basis].var[groups][0])
+                idx = groups_to_bool(adata, add_outline, color)
                 if idx is not None and np.sum(idx) > 0:
                     zorder = 2 if zorder is None else zorder + 2
                     if kwargs['s'] is not None: kwargs['s'] *= 1.5
