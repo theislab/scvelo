@@ -1,28 +1,30 @@
+# todo: auto-complete and docs wrapper
 from .scatter import scatter
 from .velocity_embedding import velocity_embedding
 from .velocity_embedding_grid import velocity_embedding_grid
 from .velocity_embedding_stream import velocity_embedding_stream
 from .velocity_graph import velocity_graph
-from .docs import doc_scatter, doc_params
+from .utils import hist
 
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
+from functools import partial
 
 
-def _wraps_plot_scatter(wrapper):
-    annots_orig = {k: v for k, v in wrapper.__annotations__.items() if k not in {'self', 'adata', 'kwargs'}}
-    annots = {k: v for k, v in scatter.__annotations__.items()}
+def _wraps_plot(wrapper, func):
+    annots_orig = {k: v for k, v in wrapper.__annotations__.items() if k not in {'self', 'kwargs'}}  # 'adata',
+    annots = {k: v for k, v in func.__annotations__.items()}
     wrapper.__annotations__ = {**annots, **annots_orig}
-    wrapper.__wrapped__ = scatter
+    wrapper.__wrapped__ = func
     return wrapper
 
 
-def _wraps_plot_velocity_embedding(wrapper):
-    annots_orig = {k: v for k, v in wrapper.__annotations__.items() if k not in {'self', 'adata', 'kwargs'}}
-    annots = {k: v for k, v in velocity_embedding.__annotations__.items()}
-    wrapper.__annotations__ = {**annots, **annots_orig}
-    wrapper.__wrapped__ = velocity_embedding
-    return wrapper
+_wraps_plot_scatter = partial(_wraps_plot, func=scatter)
+_wraps_plot_velocity_embedding = partial(_wraps_plot, func=velocity_embedding)
+_wraps_plot_velocity_embedding_grid = partial(_wraps_plot, func=velocity_embedding_grid)
+_wraps_plot_velocity_embedding_stream = partial(_wraps_plot, func=velocity_embedding_stream)
+_wraps_plot_velocity_graph = partial(_wraps_plot, func=velocity_graph)
+_wraps_plot_hist = partial(_wraps_plot, func=hist)
 
 
 def gridspec(ncols=4, nrows=1, figsize=None, dpi=None):
@@ -33,11 +35,19 @@ def gridspec(ncols=4, nrows=1, figsize=None, dpi=None):
 
 class GridSpec:
     def __init__(self, ncols=4, nrows=1, figsize=None, dpi=None, **scatter_kwargs):
-        """\
-        GridSpec
+        """Specifies the geometry of the grid that a subplots can be placed in
 
-        Arguments
-        ---------
+        Example
+
+        .. code:: python
+
+            with scv.GridSpec() as pl:
+                pl.scatter(adata, basis='pca')
+                pl.scatter(adata, basis='umap')
+                pl.hist(adata.obs.initial_size)
+
+        Parameters
+        ----------
         ncols: `int` (default: 4)
             Number of panels per row.
         nrows: `int` (default: 1)
@@ -48,51 +58,64 @@ class GridSpec:
             Figure dpi.
         scatter_kwargs:
             Arguments to be passed to all scatter plots, e.g. `frameon=False`.
-
-        Returns
-        -------
-            If `show==False` a `matplotlib.Axis`
         """
         self.ncols, self.nrows, self.figsize, self.dpi = ncols, nrows, figsize, dpi
         self.scatter_kwargs = scatter_kwargs
         self.scatter_kwargs.update({'show': False})
-        self.initialize_grid()
+        self.get_new_grid()
+        self.new_row = None
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.new_row and self.count < self.max_count:
+            ax = pl.subplot(self.gs[self.max_count - 1])
+            ax.axis('off')
         pl.show()
 
-    def initialize_grid(self):
+    def get_new_grid(self):
         self.gs = gridspec(self.ncols, self.nrows, self.figsize, self.dpi)
         geo = self.gs[0].get_geometry()
-        self.max_count, self.count = geo[0] * geo[1], 0
+        self.max_count, self.count, self.new_row = geo[0] * geo[1], 0, True
 
     def get_ax(self):
+        if self.count >= self.max_count:
+            self.get_new_grid()
         self.count += 1
-        if self.count > self.max_count:
-            self.initialize_grid()
         return pl.subplot(self.gs[self.count - 1])
 
+    def get_kwargs(self, kwargs=None):
+        _kwargs = self.scatter_kwargs.copy()
+        if kwargs is not None:
+            _kwargs.update(kwargs)
+        _kwargs.update({'ax': self.get_ax(), 'show': False})
+        return _kwargs
+
     @_wraps_plot_scatter
-    @doc_params(scatter=doc_scatter)
     def scatter(self, adata, **kwargs):
-        """\
-        Scatter plot along observations or variables axes.
-
-        Parameters
-        ---------
-        adata: :class:`~anndata.AnnData`
-            Annotated data matrix.
-        {scatter}
-
-        Returns
-        -------
-        If `show==False` a `matplotlib.Axis`
-        """
-        return scatter(adata, ax=self.get_ax(), **kwargs, **self.scatter_kwargs)
+        return scatter(adata, **self.get_kwargs(kwargs))
 
     @_wraps_plot_velocity_embedding
     def velocity_embedding(self, adata, **kwargs):
-        return velocity_embedding(adata, ax=self.get_ax(), **kwargs, **self.scatter_kwargs)
+        return velocity_embedding(adata, **self.get_kwargs(kwargs))
+
+    @_wraps_plot_velocity_embedding_grid
+    def velocity_embedding_grid(self, adata, **kwargs):
+        return velocity_embedding_grid(adata, **self.get_kwargs(kwargs))
+
+    @_wraps_plot_velocity_embedding_stream
+    def velocity_embedding_stream(self, adata, **kwargs):
+        return velocity_embedding_stream(adata, **self.get_kwargs(kwargs))
+
+    @_wraps_plot_velocity_graph
+    def velocity_embedding(self, adata, **kwargs):
+        return velocity_embedding(adata, **self.get_kwargs(kwargs))
+
+    @_wraps_plot_velocity_graph
+    def velocity_graph(self, adata, **kwargs):
+        return velocity_graph(adata, **self.get_kwargs(kwargs))
+
+    @_wraps_plot_hist
+    def hist(self, array, **kwargs):
+        return hist(array, **self.get_kwargs(kwargs))

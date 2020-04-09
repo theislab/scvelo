@@ -6,11 +6,38 @@ import numpy as np
 
 def proportions(adata, groupby='clusters', layers=['spliced', 'unspliced', 'ambigious'], highlight='unspliced',
                 add_labels_pie=True, add_labels_bar=True, fontsize=8, figsize=(10, 2), dpi=100, use_raw=True, show=True):
+    """Plot pie chart of spliced/unspliced proprtions.
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    groupby: `str` (default: 'clusters')
+        Key of observations grouping to consider.
+    layers: list of `str`(default: `['spliced#, 'unspliced', 'ambiguous']`)
+        Specify the layers of count matrices for computing proportions.
+    highlight: `str` (default: 'unspliced')
+        Which proportions to highlight in pie chart.
+    add_labels_pie: `bool` (default: True)
+        Whether to add percentage labels in pie chart.
+    add_labels_bar: `bool` (default: True)
+        Whether to add percentage labels in bar chart.
+    fontsize: `float` (default: 8)
+        Label font size.
+    figsize: tuple (default: `(10,2)`)
+        Figure size.
+    dpi: `int` (default: 80)
+        Figure dpi.
+    use_raw : `bool` (default: `True`)
+        Use initial cell sizes before normalization and filtering.
+    show: `bool` (default: True)
+        Show the plot, do not return axis.
+
+    Returns
+    -------
+    Plots the proportions of abundances as pie chart.
     """
-    Parameters
-    ----------
-    """
-    # get counts per cell for each layer
+        # get counts per cell for each layer
     layers_keys = [key for key in layers if key in adata.layers.keys()]
     counts_layers = [sum_var(adata.layers[key]) for key in layers_keys]
     if use_raw:

@@ -84,7 +84,7 @@ def forebrain():
     return adata
 
 
-def pancreatic_endocrinogenesis():
+def pancreas():
     """Pancreatic endocrinogenesis from `Bastidas-Ponce et al. (2019) <https://doi.org/10.1242/dev.173849>`_.
 
     Pancreatic epithelial and Ngn3-Venus fusion (NVF) cells during secondary transition / embryonic day 15.5.
@@ -98,6 +98,9 @@ def pancreatic_endocrinogenesis():
     adata = read(filename, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
     return adata
+
+
+pancreatic_endocrinogenesis = pancreas  # restore old conventions
 
 
 def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_=None, t_max=None,

@@ -127,7 +127,9 @@ def magic_impute(adata, knn=5, t=2, verbose=0, **kwargs):
 
 
 def get_moments(adata, layer=None, second_order=None, centered=True):
-    """Computes fisrt or second order moments from a specified layer.
+    """Computes moments for a specified layer.
+
+    First and second order moments. If centered, that corresponds to means and variances across nearest neighbors.
 
     Arguments
     ---------

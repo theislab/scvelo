@@ -301,8 +301,9 @@ def make_unique_list(key, allow_array=False):
 
 
 def test_bimodality(x, bins=30, kde=True, plot=False):
+    """Test significance of following a bimodal distribution.
+    """
     from scipy.stats import gaussian_kde, norm
-
     lb, ub = np.min(x), np.percentile(x, 99.9)
     grid = np.linspace(lb, ub if ub <= lb else np.max(x), bins)
     kde_grid = gaussian_kde(x)(grid) if kde else np.histogram(x, bins=grid, density=True)[0]
@@ -359,10 +360,12 @@ def corrcoef(x, y, mode='pearsons'):
 
 
 def vcorrcoef(X, y, mode='pearsons', axis=-1):
+    """Pearsons or Spearmans correlation coefficients.
+    """
     if axis == 0:
         if X.ndim > 1: X = np.array(X.T)
         if y.ndim > 1: y = np.array(y.T)
-    if mode == 'spearmans':
+    if mode in {'spearmans', 'spearman'}:
         from scipy.stats.stats import rankdata
         X = np.apply_along_axis(rankdata, axis=-1, arr=X)
         y = np.apply_along_axis(rankdata, axis=-1, arr=y)

@@ -663,7 +663,13 @@ latent_time = recover_latent_time
 
 def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, use_raw=None, return_model=None,
                               add_key='fit', copy=None, **kwargs):
-    """Likelihood ratio test to detect regimes / cell types that display differential kientics.
+    """Test to detect cell types / lineages with different kinetics.
+
+    Likelihood ratio test for differential kinetics to detect clusters/lineages that display
+    kinetic behavior that cannot be sufficiently explained by a single model for the overall dynamics.
+    Each cell type is tested whether an independent fit yields a significantly improved likelihood.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/78930730-dc737200-7aa4-11ea-92f6-269b7609c3a5.png
 
     Arguments
     ---------

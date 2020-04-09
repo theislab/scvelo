@@ -1,8 +1,9 @@
 """Settings
 """
 
-# set global verbosity level to show errors(0), warnings(1), info(2) and hints(3)
 verbosity = 3
+"""Verbosity level (0=errors, 1=warnings, 2=info, 3=hints)
+"""
 
 plot_prefix = 'scvelo_'
 """Global prefix that is appended to figure filenames.
@@ -35,7 +36,7 @@ There is no need to call the matplotlib pl.show() in this case.
 """
 
 writedir = './write/'
-"""Directory where the function scvelo.write writes to by default.
+"""Directory where adata is stored (default './write/').
 """
 
 cachedir = './cache/'
@@ -43,7 +44,7 @@ cachedir = './cache/'
 """
 
 figdir = './figures/'
-"""Directory where plots are saved.
+"""Directory where plots are saved (default './figures/').
 """
 
 max_memory = 15

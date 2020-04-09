@@ -20,7 +20,7 @@ def get_weight(x, y=None, perc=95):
 
 
 def leastsq_NxN(x, y, fit_offset=False, perc=None, constraint_positive_offset=True):
-    """Solution to least squares: gamma = cov(X,Y) / var(X)
+    """Solves least squares X*b=Y for b.
     """
     if perc is not None:
         if not fit_offset and isinstance(perc, (list, tuple)): perc = perc[1]

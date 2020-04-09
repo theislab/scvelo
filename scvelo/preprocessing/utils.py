@@ -24,7 +24,7 @@ def sum_var(A):
 
 
 def show_proportions(adata, layers=['spliced', 'unspliced', 'ambigious'], use_raw=True):
-    """Fraction of spliced/unspliced/ambiguous abundances
+    """Proportions of spliced/unspliced/ambiguous abundances
 
     Arguments
     ---------

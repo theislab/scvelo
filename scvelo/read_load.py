@@ -12,6 +12,8 @@ from scanpy import read, read_loom
 
 
 def load(filename, backup_url=None, **kwargs):
+    """Load a csv, txt, tsv or npy file.
+    """
     numpy_ext = {'npy', 'npz'}
     pandas_ext = {'csv', 'txt', 'tsv'}
 
@@ -193,14 +195,16 @@ def var_df(adata, keys, layer=None):
 
 
 def get_df(data, keys=None, layer=None, index=None, columns=None, dropna='all', precision=None):
-    """\
-    Return values for a specific key in data (from obs, var, obsm, varm, obsp, varp, uns, or layers) as a dataframe.
-    Params
+    """Get dataframe for a specified adata key.
+
+    Return values for specified key (from obs, var, obsm, varm, obsp, varp, uns, or layers) as a dataframe.
+
+    Arguments
     ------
     adata
         AnnData object or a numpy array to get values from.
     keys
-        Keys from `.var_names`, `obs_names`, `.var`, `.obs`, `.obsm`, `.varm`, `.obsp`, `.varp`, `.uns`, or `.layers`.
+        Keys from `.var_names`, `.obs_names`, `.var`, `.obs`, `.obsm`, `.varm`, `.obsp`, `.varp`, `.uns`, or `.layers`.
     layer
         Layer of `adata` to use as expression values.
     index
@@ -208,9 +212,10 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, dropna='all', 
     columns
         List to set as columns names.
     dropna
-        Whether to drop columns/rows if they display NaNs all over (dropna='all') or in any entry (dropna='any').
+        Drop columns/rows that contain NaNs in all (dropna='all') or in any entry (dropna='any').
     precision
         Set precision for pandas dataframe.
+
     Returns
     -------
     A dataframe.

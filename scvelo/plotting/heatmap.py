@@ -9,7 +9,7 @@ from .utils import is_categorical, interpret_colorkey, savefig_or_show, to_list,
     _set_colors_for_categorical_obs, strings_to_categoricals
 
 
-def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis', col_color=None, palette='viridis',
+def heatmap(adata, var_names, sortby='latent_time', xkey='Ms', color_map='viridis', col_color=None, palette='viridis',
             n_convolve=30, standard_scale=0, sort=True, colorbar=None, col_cluster=False, row_cluster=False,
             figsize=(10, 5), font_scale=None, show=True, save=None, ax=None, **kwargs):
     """\
@@ -21,7 +21,7 @@ def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis',
         Annotated data matrix.
     var_names: `str`,  list of `str`
         Names of variables to use for the plot.
-    tkey: `str` (default: `'pseudotime'`)
+    sortby: `str` (default: `'latent_time'`)
         Observation key to extract time data from.
     xkey: `str` (default: `'Ms'`)
         Layer key to extract count data from.
@@ -58,6 +58,7 @@ def heatmap(adata, var_names, tkey='pseudotime', xkey='Ms', color_map='viridis',
     import seaborn as sns
     var_names = [name for name in var_names if name in adata.var_names]
 
+    tkey = kwargs.pop('tkey', sortby)
     time = adata.obs[tkey].values
     time = time[np.isfinite(time)]
 
