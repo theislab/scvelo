@@ -9,4 +9,5 @@ from .velocity_pseudotime import velocity_map, velocity_pseudotime
 from .dynamical_model import DynamicsRecovery, recover_dynamics, align_dynamics
 from .dynamical_model import recover_latent_time, latent_time, differential_kinetic_test
 from scanpy.tools import tsne, umap, diffmap, dpt, louvain
+from .score_genes_cell_cycle import score_genes_cell_cycle
 from .paga import paga

@@ -157,7 +157,7 @@ def gets_vals_from_color_gradients(adata, color=None, **scatter_kwargs):
         if color is None: color = color_gradients
         color_gradients = adata.obsm[color_gradients]
     elif isinstance(color_gradients, (list, tuple)) and color_gradients[0] in adata.obs.keys():
-        color_gradients = pd.DataFrame(np.stack([adata.obs[c] for c in color_gradients]), columns=color_gradients)
+        color_gradients = pd.DataFrame(np.stack([adata.obs[c] for c in color_gradients]).T, columns=color_gradients)
     if color is None:
         color = 'clusters_gradients'
     palette = scatter_kwargs.pop('palette')
