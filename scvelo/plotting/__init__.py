@@ -10,4 +10,5 @@ from .proportions import proportions
 from .utils import hist, plot
 from .simulation import simulation
 from scanpy.plotting import paga_compare, rank_genes_groups
+from .summary import summary
 from .paga import paga
