@@ -349,6 +349,7 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
         texts = []
         for ilabel, label in enumerate(categories):
             x_pos, y_pos = np.nanmedian(scatter_array[obs_vals == label, :], axis=0)
+            if isinstance(label, str): label = label.replace('_', ' ')
             text = ax.text(x_pos, y_pos, label, weight=legend_fontweight, verticalalignment='center',
                            horizontalalignment='center', fontsize=legend_fontsize, path_effects=legend_fontoutline)
             texts.append(text)
@@ -359,6 +360,7 @@ def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_font
 
     else:
         for idx, label in enumerate(categories):
+            if isinstance(label, str): label = label.replace('_', ' ')
             ax.scatter([], [], c=[colors[idx]], label=label)
         ncol = (1 if len(categories) <= 14 else 2 if len(categories) <= 30 else 3)
         if legend_loc == 'upper right':
@@ -744,8 +746,7 @@ def plot_polyfit(x, y, add_polyfit=True, add_legend=True, color=None, linewidth=
 def plot_vlines(adata, basis, vkey, xkey, linewidth=1, linecolor=None, ax=None):
     if ax is None: ax = pl.gca()
     xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
-    vkeys = ['velocity'] if vkey is None else make_unique_list(vkey)
-    fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
+    fits = [fit for fit in make_unique_list(vkey) if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
     linecolor, lines = to_list(linecolor), []
     for i, fit in enumerate(fits):
         linestyle = '--' if 'variance_' + fit in adata.layers.keys() else '-'
@@ -765,6 +766,7 @@ def plot_velocity_fits(adata, basis, vkey=None, use_raw=None, linewidth=None, li
     if use_raw is None: use_raw = 'Ms' not in adata.layers.keys()
 
     # linear fits
+    if vkey is None: vkey = 'dynamics' if 'fit_alpha' in adata.var.keys() else 'velocity'
     lines, fits = plot_vlines(adata, basis, vkey, 'spliced' if use_raw else 'Ms', linewidth, linecolor, ax=ax)
 
     # full dynamic fits

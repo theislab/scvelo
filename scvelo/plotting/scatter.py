@@ -143,7 +143,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         elif color_gradients is not None and color_gradients is not False:
             vals, names, color, scatter_kwargs = gets_vals_from_color_gradients(adata, color, **scatter_kwargs)
             c_colors = {cat: col for (cat, col) in zip(adata.obs[color].cat.categories, adata.uns[color + '_colors'])}
-            ax = scatter(adata, color='grey', **get_kwargs(scatter_kwargs, {'alpha': 0.05}))  # grey background
+            ax = scatter(adata, color='grey', ax=ax, **get_kwargs(scatter_kwargs, {'alpha': 0.05}))  # grey background
             ax = scatter(adata, color=color, ax=ax, **get_kwargs(scatter_kwargs, {'s': 0}))  # set legend
             sorted_idx = np.argsort(vals, 1)[:, ::-1][:, :2]
             for id0 in range(len(names)):
@@ -208,8 +208,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
                 # velocity model fits (full dynamics and steady-state ratios)
                 if any(['gamma' in key or 'alpha' in key for key in adata.var.keys()]):
-                    plot_velocity_fits(adata, basis, vkey, use_raw, linewidth, linecolor, legend_loc_lines, legend_fontsize,
-                                       add_assignments, ax=ax)
+                    plot_velocity_fits(adata, basis, vkey, use_raw, linewidth, linecolor,
+                                       legend_loc_lines, legend_fontsize, add_assignments, ax=ax)
 
             # embedding: set x and y to embedding coordinates
             elif is_embedding:
