@@ -314,7 +314,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     kwargs.update({"vmin": vmid - crange, "vmax": vmid + crange})
             # set color to grey for NAN values and for cells that are not in groups
             if groups is not None or is_categorical(adata, color) and np.any(pd.isnull(adata.obs[color])):
-                print(groups)
                 zorder = 0 if zorder is None else zorder
                 ax = scatter(adata, x=x, y=y, basis=basis, layer=layer, color='lightgrey', ax=ax, groups=None, **scatter_kwargs)
                 idx = groups_to_bool(adata, groups, color)
@@ -346,9 +345,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
 
             if add_outline:
-                if isinstance(groups, str):
-                    if groups in adata.var.keys() and basis in adata.var_names:
-                        groups = str(adata[:, basis].var[groups][0])
+                if isinstance(add_outline, str):
+                    if add_outline in adata.var.keys() and basis in adata.var_names:
+                        add_outline = str(adata[:, basis].var[add_outline][0])
                 idx = groups_to_bool(adata, add_outline, color)
                 if idx is not None and np.sum(idx) > 0:
                     zorder = 2 if zorder is None else zorder + 2

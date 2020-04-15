@@ -728,9 +728,9 @@ def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, us
 
     progress = logg.ProgressReporter(len(var_names))
     for i, gene in enumerate(var_names):
-        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=True, max_iter=0, **kwargs)
+        dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=True, max_iter=0)
         if dm.recoverable:
-            dm.differential_kinetic_test(groupby)
+            dm.differential_kinetic_test(groupby, **kwargs)
 
             ix = np.where(adata.var_names == gene)[0][0]
             idx.append(ix)
