@@ -1,7 +1,7 @@
 from ..tools.velocity_embedding import quiver_autoscale, velocity_embedding
 from ..tools.utils import groups_to_bool
 from .utils import default_basis, default_size, default_color, get_components, savefig_or_show, default_arrow, \
-    make_unique_list, get_basis, velocity_embedding_changed
+    make_unique_list, get_basis, velocity_embedding_changed, get_ax
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -114,7 +114,8 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
         `matplotlib.Axis` if `show==False`
     """
     basis = default_basis(adata) if basis is None else get_basis(adata, basis)
-    vkey = [key for key in adata.layers.keys() if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
+    vkey = [key for key in list(adata.layers.keys()) if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
+    color, color_map = kwargs.pop('c', color), kwargs.pop('cmap', color)
     colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
 
     if V is None:
@@ -166,8 +167,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
         if not show: return ax
 
     else:
-        ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
-
+        ax, show = get_ax(ax, show, figsize, dpi)
         hl, hw, hal = default_arrow(arrow_size)
         scale = 1 / arrow_length if arrow_length is not None else scale if scale is not None else 1
         quiver_kwargs = {"scale": scale, "angles": 'xy', "scale_units": 'xy', "width": .001,

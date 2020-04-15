@@ -1,7 +1,7 @@
 from ..tools.velocity_embedding import velocity_embedding as compute_velocity_embedding
 from ..tools.utils import groups_to_bool
 from .utils import interpret_colorkey, default_basis, default_size, get_components, savefig_or_show, default_color, \
-    default_arrow, make_unique_list, make_unique_valid_list, get_basis, default_color_map, velocity_embedding_changed
+    default_arrow, make_unique_list, make_unique_valid_list, default_color_map, velocity_embedding_changed, get_ax
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -41,9 +41,8 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
     -------
         `matplotlib.Axis` if `show==False`
     """
-    #fkeys = ['adata', 'show', 'save', 'groups', 'figsize', 'dpi', 'ncols', 'wspace', 'hspace', 'ax', 'kwargs']
-
-    vkey = [key for key in adata.layers.keys() if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
+    vkey = [key for key in list(adata.layers.keys()) if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
+    color, color_map = kwargs.pop('c', color), kwargs.pop('cmap', color)
     layers, vkeys, colors = make_unique_list(layer), make_unique_list(vkey), make_unique_list(color, allow_array=True)
     bases = [default_basis(adata) if basis is None else basis for basis in make_unique_valid_list(adata, basis)]
 
@@ -85,9 +84,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
     else:
         if projection == '3d':
             from mpl_toolkits.mplot3d import Axes3D
-            ax = pl.figure(None, figsize, dpi=dpi).gca(projection=projection) if ax is None else ax
-        else:
-            ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
+        ax, show = get_ax(ax, show, figsize, dpi, projection)
 
         color, layer, vkey, basis = colors[0], layers[0], vkeys[0], bases[0]
         color = default_color(adata) if color is None else color

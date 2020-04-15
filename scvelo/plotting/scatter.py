@@ -8,7 +8,7 @@ from .utils import default_basis, default_color, default_size, default_color_map
 from .utils import unique, make_dense, get_components, get_connectivities, groups_to_bool, interpret_colorkey, get_obs_vector
 from .utils import update_axes, set_label, set_title, set_colorbar, _set_colors_for_categorical_obs, _add_legend
 from .utils import plot_linfit, plot_polyfit, plot_density, plot_outline, plot_rug, plot_velocity_fits, savefig_or_show
-from .utils import rgb_custom_colormap, gets_vals_from_color_gradients, get_kwargs
+from .utils import rgb_custom_colormap, gets_vals_from_color_gradients, get_kwargs, get_ax
 
 
 from inspect import signature
@@ -180,16 +180,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                 use_raw = layer is None and adata.raw is not None
             if projection == '3d':
                 from mpl_toolkits.mplot3d import Axes3D
-            else:
-                projection = None
 
-            if ax is None:
-                ax = pl.figure(None, figsize, dpi=dpi).gca(projection=projection)
-                if show is None: show = True
-            elif isinstance(ax, SubplotSpec):
-                geo = ax.get_geometry()
-                if show is None: show = geo[-1] + 1 == geo[0] * geo[1]
-                ax = pl.subplot(ax)
+            ax, show = get_ax(ax, show, figsize, dpi, projection)
 
             # phase portrait: get x and y from .layers (e.g. spliced vs. unspliced) when basis is in var_names
             if basis in adata.var_names:

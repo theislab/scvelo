@@ -1,7 +1,7 @@
 from ..tools.velocity_embedding import velocity_embedding
 from ..tools.utils import groups_to_bool
 from .utils import default_basis, default_size, default_color, get_components, savefig_or_show, make_unique_list, \
-    get_basis, velocity_embedding_changed
+    get_basis, velocity_embedding_changed, get_ax
 from .velocity_embedding_grid import compute_velocity_on_grid
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
@@ -51,7 +51,8 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         `matplotlib.Axis` if `show==False`
     """
     basis = default_basis(adata) if basis is None else get_basis(adata, basis)
-    vkey = [key for key in adata.layers.keys() if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
+    vkey = [key for key in list(adata.layers.keys()) if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
+    color, color_map = kwargs.pop('c', color), kwargs.pop('cmap', color)
     colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
 
     if V is None:
@@ -103,8 +104,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         if not show: return ax
 
     else:
-        ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
-
+        ax, show = get_ax(ax, show, figsize, dpi)
         density = 1 if density is None else density
         stream_kwargs = {"linewidth": linewidth, "density": 2 * density, "zorder": 3,
                          "color": 'k' if arrow_color is None else arrow_color}

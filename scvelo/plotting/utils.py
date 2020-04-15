@@ -12,13 +12,14 @@ from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.colors import is_color_like, ListedColormap, to_rgb, cnames
 from matplotlib.collections import LineCollection
+from matplotlib.gridspec import SubplotSpec
 import matplotlib.transforms as tx
 from matplotlib import rcParams
 from pandas import unique, Index
 from scipy.sparse import issparse
 from scipy.stats import pearsonr
 from cycler import Cycler, cycler
-import collections.abc as cabc
+from collections import abc
 
 
 """helper functions"""
@@ -58,6 +59,17 @@ def to_list(key, max_len=20):
 
 def to_val(key):
     return key[0] if isinstance(key, (list, tuple)) and len(key) == 1 else key
+
+
+def get_ax(ax, show=None, figsize=None, dpi=None, projection=None):
+    if ax is None:
+        ax = pl.figure(None, figsize, dpi=dpi).gca(projection='3d' if projection == '3d' else None)
+        if show is None: show = True
+    elif isinstance(ax, SubplotSpec):
+        geo = ax.get_geometry()
+        if show is None: show = geo[-1] + 1 == geo[0] * geo[1]
+        ax = pl.subplot(ax)
+    return ax, show
 
 
 def get_kwargs(kwargs, dict_new_kwargs):
@@ -494,7 +506,7 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
                 palette = [palette[c] for c in categories]
             # check if palette is a list and convert it to a cycler, thus
             # it doesnt matter if the list is shorter than the categories length:
-            if isinstance(palette, cabc.Sequence):
+            if isinstance(palette, abc.Sequence):
                 if len(palette) < len(categories):
                     logg.warn(
                         "Length of palette colors is smaller than the number of "
@@ -732,7 +744,7 @@ def plot_polyfit(x, y, add_polyfit=True, add_legend=True, color=None, linewidth=
 def plot_vlines(adata, basis, vkey, xkey, linewidth=1, linecolor=None, ax=None):
     if ax is None: ax = pl.gca()
     xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
-    vkeys = adata.layers.keys() if vkey is None else make_unique_list(vkey)
+    vkeys = list(adata.layers.keys()) if vkey is None else make_unique_list(vkey)
     fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
     linecolor, lines = to_list(linecolor), []
     for i, fit in enumerate(fits):
@@ -1086,7 +1098,7 @@ def fraction_timeseries(adata, xkey='clusters', tkey='dpt_pseudotime', bins=30, 
 
 
 def make_unique_list(key, allow_array=False):
-    if isinstance(key, Index): key = key.tolist()
+    if isinstance(key, (Index, abc.KeysView)): key = list(key)
     is_list = isinstance(key, (list, tuple, np.record)) if allow_array else isinstance(key, (list, tuple, np.ndarray, np.record))
     is_list_of_str = is_list and all(isinstance(item, str) for item in key)
     return key if is_list_of_str else key if is_list and len(key) < 20 else [key]
