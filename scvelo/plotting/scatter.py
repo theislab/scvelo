@@ -13,7 +13,6 @@ from .utils import rgb_custom_colormap, gets_vals_from_color_gradients, get_kwar
 
 from inspect import signature
 from matplotlib import rcParams, patheffects
-from matplotlib.gridspec import SubplotSpec
 import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
@@ -22,12 +21,12 @@ import pandas as pd
 @doc_params(scatter=doc_scatter)
 def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
             colorbar=None, palette=None, size=None, alpha=None, linewidth=None, linecolor=None, perc=None, groups=None,
-            sort_order=True, components=None, projection=None, legend_loc=None, legend_fontsize=None, legend_fontweight=None,
-            xlabel=None, ylabel=None, title=None, fontsize=None, figsize=None, xlim=None, ylim=None, add_density=None,
-            add_assignments=None, add_linfit=None, add_polyfit=None, add_rug=None, add_text=None, add_text_pos=None,
-            add_outline=None, outline_width=None, outline_color=None, n_convolve=None, smooth=None, rescale_color=None,
-            color_gradients=None, dpi=None, frameon=None, zorder=None, ncols=None, nrows=None, wspace=None, hspace=None,
-            show=None, save=None, ax=None, **kwargs):
+            sort_order=True, components=None, projection=None, legend_loc=None, legend_loc_lines=None,
+            legend_fontsize=None, legend_fontweight=None, xlabel=None, ylabel=None, title=None, fontsize=None,
+            figsize=None, xlim=None, ylim=None, add_density=None, add_assignments=None, add_linfit=None, add_polyfit=None,
+            add_rug=None, add_text=None, add_text_pos=None, add_outline=None, outline_width=None, outline_color=None,
+            n_convolve=None, smooth=None, rescale_color=None, color_gradients=None, dpi=None, frameon=None, zorder=None,
+            ncols=None, nrows=None, wspace=None, hspace=None, show=None, save=None, ax=None, **kwargs):
     """\
     Scatter plot along observations or variables axes.
 
@@ -209,7 +208,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
 
                 # velocity model fits (full dynamics and steady-state ratios)
                 if any(['gamma' in key or 'alpha' in key for key in adata.var.keys()]):
-                    plot_velocity_fits(adata, basis, vkey, use_raw, linewidth, linecolor, legend_loc, legend_fontsize,
+                    plot_velocity_fits(adata, basis, vkey, use_raw, linewidth, linecolor, legend_loc_lines, legend_fontsize,
                                        add_assignments, ax=ax)
 
             # embedding: set x and y to embedding coordinates

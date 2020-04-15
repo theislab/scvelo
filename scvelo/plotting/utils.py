@@ -744,7 +744,7 @@ def plot_polyfit(x, y, add_polyfit=True, add_legend=True, color=None, linewidth=
 def plot_vlines(adata, basis, vkey, xkey, linewidth=1, linecolor=None, ax=None):
     if ax is None: ax = pl.gca()
     xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
-    vkeys = list(adata.layers.keys()) if vkey is None else make_unique_list(vkey)
+    vkeys = ['velocity'] if vkey is None else make_unique_list(vkey)
     fits = [fit for fit in vkeys if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
     linecolor, lines = to_list(linecolor), []
     for i, fit in enumerate(fits):
@@ -776,7 +776,7 @@ def plot_velocity_fits(adata, basis, vkey=None, use_raw=None, linewidth=None, li
         line, fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments, ax=ax)
         fits.append(fit); lines.append(line)
 
-    if legend_loc is None:
+    if legend_loc is None or legend_loc == 'bottom right':
         legend_loc = 'lower right'
     if len(fits) > 0 and legend_loc and legend_loc != 'none':
         ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize, loc=legend_loc)

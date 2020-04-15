@@ -10,10 +10,10 @@ from matplotlib import rcParams
 from scipy.sparse import issparse
 
 
-def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits='all', layers='all', color=None,
-             color_map=['RdYlGn', 'gnuplot_r'], colorbar=True, perc=[2,98], alpha=.5, size=None, groupby=None,
-             groups=None, legend_loc='none', use_raw=False, fontsize=None, figsize=None, dpi=None, show=True, save=None,
-             ax=None, ncols=None, **kwargs):
+def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits=['velocity', 'dynamics'], layers='all',
+             color=None, color_map=['RdYlGn', 'gnuplot_r'], colorbar=True, perc=[2,98], alpha=.5, size=None, groupby=None,
+             groups=None, legend_loc='none', legend_fontsize=8, use_raw=False, fontsize=None, figsize=None, dpi=None,
+             show=True, save=None, ax=None, ncols=None, **kwargs):
     """Phase and velocity plot for set of genes.
 
     The phase plot shows spliced against unspliced expressions with steady-state fit.
@@ -89,8 +89,8 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
     layers = [vkey, skey] if layers == 'all' else layers
     layers = [layer for layer in layers if layer in adata.layers.keys() or layer == 'X']
 
-    fits = adata.layers.keys() if fits == 'all' else fits
-    fits = [fit for fit in fits if fit + '_gamma' in adata.var.keys()]
+    fits = list(adata.layers.keys()) if fits == 'all' else fits
+    fits = [fit for fit in fits if fit == 'dynamics' or fit + '_gamma' in adata.var.keys()] + ['dynamics']
     stochastic_fits = [fit for fit in fits if 'variance_' + fit in adata.layers.keys()]
 
     nplts = (1 + len(layers) + (mode == 'stochastic') * 2)
@@ -99,10 +99,10 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
     ncols = int(ncols * nplts)
     figsize = rcParams['figure.figsize'] if figsize is None else figsize
     ax = pl.figure(figsize=(figsize[0] * ncols / 2, figsize[1] * nrows / 2), dpi=dpi) if ax is None else ax
-    gs = pl.GridSpec(nrows, ncols, wspace=0.3, hspace=0.5)
+    gs = pl.GridSpec(nrows, ncols, wspace=.5, hspace=.8)
 
     size = default_size(adata) / 2 if size is None else size  # since fontsize is halved in width and height
-    fontsize = rcParams['font.size'] if fontsize is None else fontsize
+    fontsize = rcParams['font.size'] * .8 if fontsize is None else fontsize
     for v, var in enumerate(var_names):
         _adata = adata[:, var]
         s, u = _adata.layers[skey], _adata.layers[ukey]
@@ -113,9 +113,11 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
         cmap = color_map
         if isinstance(color_map, (list, tuple)):
             cmap = color_map[-1] if color in ['X', skey] else color_map[0]
+        if 'xlabel' not in kwargs: kwargs['xlabel'] = 'spliced'
+        if 'ylabel' not in kwargs: kwargs['ylabel'] = 'unspliced'
         scatter(adata, basis=var, color=color, colorbar=colorbar, color_map=cmap, perc=perc, frameon=True, title=var,
-                size=size, use_raw=use_raw, alpha=alpha, fontsize=fontsize, xlabel='spliced', ylabel='unspliced',
-                show=False, ax=ax, save=False, legend_loc='none' if v < len(var_names)-1 else legend_loc, **kwargs)
+                size=size, use_raw=use_raw, alpha=alpha, fontsize=fontsize, vkey=fits, legend_fontsize=legend_fontsize,
+                show=False, ax=ax, save=False, legend_loc_lines='none' if v < len(var_names)-1 else legend_loc, **kwargs)
 
         # velocity and expression plots
         for l, layer in enumerate(layers):
@@ -139,8 +141,9 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
             beta = _adata.var[fit + '_beta'] if fit + '_beta' in adata.var.keys() else 1
             x = np.array(2 * (ss - s**2) - s)
             y = np.array(2 * (us - u * s) + u + 2 * s * offset / beta)
-            scatter(adata, x=x, y=y, color=color, colorbar=colorbar, title=var, fontsize=40/ncols, size=size, perc=perc,
-                    xlabel=r'2 $\Sigma_s - \langle s \rangle$', ylabel=r'2 $\Sigma_{us} + \langle u \rangle$',
+            kwargs['xlabel'] = r'2 $\Sigma_s - \langle s \rangle$'
+            kwargs['ylabel'] = r'2 $\Sigma_{us} + \langle u \rangle$'
+            scatter(adata, x=x, y=y, color=color, colorbar=colorbar, title=var, fontsize=fontsize, size=size, perc=perc,
                     use_raw=use_raw, frameon=True, ax=ax, save=False, show=False, **kwargs)
 
             xnew = np.linspace(np.min(x), np.max(x) * 1.02)
