@@ -10,11 +10,33 @@ def test_einsum():
     assert np.allclose(norm(Ms), np.linalg.norm(Ms, axis=1))
 
 
+def test_neighbors():
+    adata = scv.datasets.simulation(random_seed=0, n_vars=100)
+    scv.pp.filter_and_normalize(adata)
+
+    scv.pp.pca(adata)
+    scv.pp.neighbors(adata)
+    adata_1 = scv.pp.neighbors(adata, method='hnsw', copy=True)
+    adata_2 = scv.pp.neighbors(adata, method='sklearn', copy=True)
+    assert np.all(np.round(adata.obsp['distances'][0].data, 2) == np.round(adata_1.obsp['distances'][0].data, 2))
+    assert np.all(np.round(adata.obsp['distances'][0].data, 2) == np.round(adata_2.obsp['distances'][0].data, 2))
+
+
+def test_dynamical_model():
+    adata = scv.datasets.simulation(random_seed=0, n_vars=10)
+    scv.pp.filter_and_normalize(adata)
+    scv.pp.moments(adata)
+    scv.tl.recover_dynamics(adata, var_names=adata.var_names[0])
+    assert np.round(adata[:, adata.var_names[0]].var['fit_alpha'][0], 4) == 4.7409
+
+
 def test_pipeline():
-    adata = scv.datasets.simulation()
+    adata = scv.datasets.simulation(random_seed=0, n_vars=10)
 
     scv.pp.filter_and_normalize(adata)
     scv.pp.moments(adata)
+
+    scv.tl.recover_dynamics(adata)
     scv.tl.velocity(adata)
     adata.var.velocity_genes = True
 
@@ -22,9 +44,13 @@ def test_pipeline():
     scv.tl.velocity_embedding(adata)
 
     scv.tl.velocity_confidence(adata)
+    scv.tl.latent_time(adata)
+    scv.tl.louvain(adata)
 
-    scv.pl.velocity(adata, adata.var_names[0])
-    scv.pl.velocity_graph(adata)
-
-    scv.pl.velocity_embedding(adata, arrow_length=2, arrow_size=2)
-    scv.pl.velocity_embedding_grid(adata, scale=.5, density=.5)
+    with scv.GridSpec() as pl:
+        pl.velocity_graph(adata, c='louvain')
+        pl.velocity_embedding(adata, arrow_length=3, arrow_size=3, c='latent_time')
+        pl.velocity_embedding_grid(adata, scale=.5, density=.5, c='latent_time')
+        pl.velocity_embedding_stream(adata, c=adata.var_names[0], layer='velocity')
+        pl.scatter(adata, basis=adata.var[0], c='velocity', use_raw=True)
+        pl.hist([adata.obs.initial_size_spliced, adata.obs.initial_size_unspliced])
