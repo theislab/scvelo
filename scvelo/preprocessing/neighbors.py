@@ -108,24 +108,24 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
         logg.switch_verbosity('on', module='scanpy')
 
     adata.uns['neighbors'] = {}
-    adata.uns['neighbors']['params'] = {'n_neighbors': n_neighbors, 'method': method, 'metric': metric, 'n_pcs': n_pcs}
-
     try:
         adata.obsp['distances'] = neighbors.distances
         adata.obsp['connectivities'] = neighbors.connectivities
-        adata.uns['connectivities_key'] = 'connectivities',
-        adata.uns['distances_key'] = 'distances'
+        adata.uns['neighbors']['connectivities_key'] = 'connectivities',
+        adata.uns['neighbors']['distances_key'] = 'distances'
     except:
         adata.uns['neighbors']['distances'] = neighbors.distances
         adata.uns['neighbors']['connectivities'] = neighbors.connectivities
+
     if hasattr(neighbors, 'knn_indices'):
         adata.uns['neighbors']['indices'] = neighbors.knn_indices
+    adata.uns['neighbors']['params'] = {'n_neighbors': n_neighbors, 'method': method, 'metric': metric, 'n_pcs': n_pcs}
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
-        'added to `.uns[\'neighbors\']`\n'
-        '    \'distances\', weighted adjacency matrix\n'
-        '    \'connectivities\', weighted adjacency matrix')
+        'added \n'
+        '    \'distances\' and \'connectivities\', weighted adjacency matrices (adata.obsp)')
+
     return adata if copy else None
 
 
