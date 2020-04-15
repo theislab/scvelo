@@ -16,10 +16,8 @@ def test_neighbors():
 
     scv.pp.pca(adata)
     scv.pp.neighbors(adata)
-    adata_1 = scv.pp.neighbors(adata, method='hnsw', copy=True)
-    adata_2 = scv.pp.neighbors(adata, method='sklearn', copy=True)
-    assert np.all(np.round(adata.obsp['distances'][0].data, 2) == np.round(adata_1.obsp['distances'][0].data, 2))
-    assert np.all(np.round(adata.obsp['distances'][0].data, 2) == np.round(adata_2.obsp['distances'][0].data, 2))
+    adata_ = scv.pp.neighbors(adata, method='sklearn', copy=True)
+    assert np.all(np.round(adata.obsp['distances'][0].data, 2) == np.round(adata_.obsp['distances'][0].data, 2))
 
 
 def test_dynamical_model():
@@ -45,10 +43,9 @@ def test_pipeline():
 
     scv.tl.velocity_confidence(adata)
     scv.tl.latent_time(adata)
-    scv.tl.louvain(adata)
 
     with scv.GridSpec() as pl:
-        pl.velocity_graph(adata, c='louvain')
+        pl.velocity_graph(adata)
         pl.velocity_embedding(adata, arrow_length=3, arrow_size=3, c='latent_time')
         pl.velocity_embedding_grid(adata, scale=.5, density=.5, c='latent_time')
         pl.velocity_embedding_stream(adata, c=adata.var_names[0], layer='velocity')
