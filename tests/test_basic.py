@@ -47,7 +47,7 @@ def test_pipeline():
     with scv.GridSpec() as pl:
         pl.velocity_graph(adata)
         pl.velocity_embedding(adata, arrow_length=3, arrow_size=3, c='latent_time')
-        pl.velocity_embedding_grid(adata, scale=.5, density=.5, c='latent_time')
+        pl.velocity_embedding_grid(adata, scale=.5, density=.5, c='latent_time', cmap='gnuplot')
         pl.velocity_embedding_stream(adata, c=adata.var_names[0], layer='velocity')
-        pl.scatter(adata, basis=adata.var[0], c='velocity', use_raw=True)
+        pl.scatter(adata, basis=adata.var_names[0], c='velocity', use_raw=True)
         pl.hist([adata.obs.initial_size_spliced, adata.obs.initial_size_unspliced])
