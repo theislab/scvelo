@@ -120,11 +120,12 @@ pancreatic_endocrinogenesis = pancreas  # restore old conventions
 
 def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_=None, t_max=None,
                noise_model='normal', noise_level=1, switches=None, random_seed=0):
-    """Simulation of mRNA metabolism with transcription, splicing and degradation.
+    """Simulation of mRNA splicing kinetics.
 
-    Simulated splicing kinetics with varying kinetic parameters: randomly sampled 2,000 log-normally distributed
-    parameters for each reaction rate and time events following the Poisson law.
-    The total time spent in a transcriptional state is varied between two and ten hours.
+
+    Simulated mRNA metabolism with transcription, splicing and degradation.
+    The parameters for each reaction are randomly sampled from a log-normal distribution and time events follow the
+    Poisson law. The total time spent in a transcriptional state is varied between two and ten hours.
 
     .. image:: https://user-images.githubusercontent.com/31883718/79432471-16c0a000-7fcc-11ea-8d62-6971bcf4181a.png
        :width: 600px
