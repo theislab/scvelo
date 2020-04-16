@@ -35,11 +35,18 @@ def toy_data(n_obs=None):
 
 
 def dentategyrus(adjusted=True):
-    """Dentate Gyrus dataset from `Hochgerner et al. (2018) <https://doi.org/10.1038/s41593-017-0056-2>`_.
+    """Dentate Gyrus from `Hochgerner et al. (2018) <https://doi.org/10.1038/s41593-017-0056-2>`_.
 
-    Dentate gyrus is part of the hippocampus involved in learning, episodic memory formation and spatial coding.
-    It is measured using 10X Genomics Chromium and described in Hochgerner et al. (2018).
-    The data consists of 25,919 genes across 3,396 cells and provides several interesting characteristics.
+    Dentate gyrus (DG) is part of the hippocampus involved in learning, episodic memory formation and spatial coding.
+    The experiment from the developing DG comprises two time points (P12 and P35)
+    measured using droplet-based scRNA-seq (10x Genomics Chromium).
+
+    The dominating structure is the granule cell lineage, in which neuroblasts develop into granule cells.
+    Simultaneously, the remaining population forms distinct cell types that are fully differentiated
+    (e.g. Cajal-Retzius cells) or cell types that form a sub-lineage (e.g. GABA cells).
+
+    .. image:: https://user-images.githubusercontent.com/31883718/79433223-255b8700-7fcd-11ea-8ecf-3dc9eb1a6159.png
+       :width: 600px
 
     Returns
     -------
@@ -87,7 +94,15 @@ def forebrain():
 def pancreas():
     """Pancreatic endocrinogenesis from `Bastidas-Ponce et al. (2019) <https://doi.org/10.1242/dev.173849>`_.
 
-    Pancreatic epithelial and Ngn3-Venus fusion (NVF) cells during secondary transition / embryonic day 15.5.
+    Pancreatic epithelial and Ngn3-Venus fusion (NVF) cells during secondary transition
+    with transcriptome profiles sampled from embryonic day 15.5.
+
+    Endocrine cells are derived from endocrine progenitors located in the pancreatic epithelium.
+    Endocrine commitment terminates in four major fates: glucagon- producing α-cells,
+    insulin-producing β-cells, somatostatin-producing δ-cells and ghrelin-producing ε-cells.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png
+       :width: 600px
 
     Returns
     -------
@@ -105,7 +120,14 @@ pancreatic_endocrinogenesis = pancreas  # restore old conventions
 
 def simulation(n_obs=300, n_vars=None, alpha=None, beta=None, gamma=None, alpha_=None, t_max=None,
                noise_model='normal', noise_level=1, switches=None, random_seed=0):
-    """Simulation of mRNA metabolism with transcription, splicing and degradation
+    """Simulation of mRNA metabolism with transcription, splicing and degradation.
+
+    Simulated splicing kinetics with varying kinetic parameters: randomly sampled 2,000 log-normally distributed
+    parameters for each reaction rate and time events following the Poisson law.
+    The total time spent in a transcriptional state is varied between two and ten hours.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/79432471-16c0a000-7fcc-11ea-8d62-6971bcf4181a.png
+       :width: 600px
 
     Returns
     -------
