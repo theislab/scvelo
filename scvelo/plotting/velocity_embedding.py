@@ -42,7 +42,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
         `matplotlib.Axis` if `show==False`
     """
     vkey = [key for key in list(adata.layers.keys()) if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
-    color, color_map = kwargs.pop('c', color), kwargs.pop('cmap', color)
+    color, color_map = kwargs.pop('c', color), kwargs.pop('cmap', color_map)
     layers, vkeys, colors = make_unique_list(layer), make_unique_list(vkey), make_unique_list(color, allow_array=True)
     bases = [default_basis(adata) if basis is None else basis for basis in make_unique_valid_list(adata, basis)]
 

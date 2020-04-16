@@ -52,7 +52,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
     """
     basis = default_basis(adata) if basis is None else get_basis(adata, basis)
     vkey = [key for key in list(adata.layers.keys()) if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
-    color, color_map = kwargs.pop('c', color), kwargs.pop('cmap', color)
+    color, color_map = kwargs.pop('c', color), kwargs.pop('cmap', color_map)
     colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
 
     if V is None:

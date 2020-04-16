@@ -68,6 +68,7 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
 
     """
     basis = default_basis(adata) if basis is None else get_basis(adata, basis)
+    color, color_map = kwargs.pop('c', color), kwargs.pop('cmap', color_map)
 
     if isinstance(groupby, str) and groupby in adata.obs.keys():
         if 'rank_velocity_genes' not in adata.uns.keys() or adata.uns['rank_velocity_genes']['params']['groupby'] != groupby:
