@@ -106,6 +106,3 @@ Settings
    :toctree: .
 
    set_figure_params
-   settings.verbosity
-   settings.figdir
-   settings.writedir
