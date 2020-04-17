@@ -285,6 +285,8 @@ def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, fra
     else:
         ax.set_xlabel('')
         ax.set_ylabel('')
+        ax.get_xaxis().get_major_formatter().set_scientific(False)
+        ax.get_yaxis().get_major_formatter().set_scientific(False)
         ax.tick_params(which='both', bottom=False, left=False, labelbottom=False, labelleft=False)
         ax.set_frame_on(False)
 
