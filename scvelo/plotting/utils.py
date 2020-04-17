@@ -30,9 +30,15 @@ def make_dense(X):
     return np.array(XA)
 
 
+def is_view(adata):
+    return adata.is_view if hasattr(adata, 'is_view') \
+        else adata.isview if hasattr(adata, 'isview') \
+        else adata._isview if hasattr(adata, '_isview') else True
+
+
 def is_categorical(adata, c):
     from pandas.api.types import is_categorical as cat
-    if not adata.is_view: strings_to_categoricals(adata)
+    if not is_view(adata): strings_to_categoricals(adata)
     return isinstance(c, str) and c in adata.obs.keys() and cat(adata.obs[c])
 
 
