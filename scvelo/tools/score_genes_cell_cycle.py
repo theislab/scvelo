@@ -73,5 +73,5 @@ def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kw
     phase[np.all(scores < 0, axis=1)] = 'G1'            # if all scores are negative, it's G1...
 
     adata.obs['phase'] = phase
-    logg.hint('    \'phase\', cell cycle phase (adata.obs)')
+    logg.hint('    \'S_score\' and \'G2M_score\', scores of cell cycle phases (adata.obs)')
     return adata if copy else None

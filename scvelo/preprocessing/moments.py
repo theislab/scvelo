@@ -25,9 +25,9 @@ def moments(data, n_neighbors=30, n_pcs=None, mode='connectivities', method='uma
         or 30 components are used when PCA is computed internally.
     mode: `'connectivities'` or `'distances'`  (default: `'connectivities'`)
         Distance metric to use for moment computation.
-    method : {{'umap', 'gauss', 'hnsw', 'sklearn', `None`}}  (default: `'umap'`)
-        Use 'umap' [McInnes18]_ or 'gauss' (Gauss kernel following [Coifman05]_
-        with adaptive width [Haghverdi16]_) for computing connectivities.
+    method : {{'umap', 'hnsw', 'sklearn', `None`}}  (default: `'umap'`)
+        Method to compute neighbors, only differs in runtime. Connectivities are computed with adaptive kernel width
+        as proposed in Haghverdi et al. 2016 (https://doi.org/10.1038/nmeth.3971).
     use_rep : `None`, `'X'` or any key for `.obsm` (default: None)
         Use the indicated representation. If `None`, the representation is chosen automatically:
         for .n_vars < 50, .X is used, otherwise ‘X_pca’ is used.

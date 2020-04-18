@@ -124,11 +124,11 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
              perc=[5, 95], min_r2=1e-2, min_likelihood=1e-3, r2_adjusted=None, diff_kinetics=None, copy=False, **kwargs):
     """Estimates velocities in a gene-specific manner.
 
-    The steady-state model determines velocities by quantifying how observations deviate from a presumed steady-state
+    The steady-state model [Manno18]_ determines velocities by quantifying how observations deviate from a presumed steady-state
     equilibrium ratio of unspliced to spliced mRNA levels. This steady-state ratio is obtained by performing a
     linear regression restricting the input data to the extreme quantiles. By including second-order moments, the
-    stochastic model exploits not only the balance of of unspliced to spliced mRNA levels but also their covariation.
-    By contrast, the likelihood-based dynamical model solves the full splicing kinetics and generalizes RNA velocity
+    stochastic model [Bergen19]_ exploits not only the balance of of unspliced to spliced mRNA levels but also their covariation.
+    By contrast, the likelihood-based dynamical model [Bergen19]_ solves the full splicing kinetics and generalizes RNA velocity
     estimation to transient systems. It is also capable of capturing non-observed steady states.
 
     .. image:: https://user-images.githubusercontent.com/31883718/69636491-ff057100-1056-11ea-90b7-d04098112ce1.png
@@ -156,7 +156,7 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
     groups_for_fit: `str`, `list` or `np.ndarray` (default: `None`)
         Subset of groups, e.g. [‘g1’, ‘g2’, ‘g3’], to which steady-state fitting shall be restricted.
     constrain_ratio: `float` or tuple of type `float` or None: (default: `None`)
-        Bounds for the steady-state ratio gamma'.
+        Bounds for the steady-state ratio.
     use_raw: `bool` (default: `False`)
         Whether to use raw data for estimation.
     use_latent_time: `bool`or `None` (default: `None)

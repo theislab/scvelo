@@ -1,6 +1,7 @@
 from .. import settings
 from .. import logging as logg
 
+from .utils import get_initial_size
 from scipy.sparse import issparse, coo_matrix
 import numpy as np
 import warnings
@@ -11,12 +12,11 @@ from scanpy import Neighbors
 def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_state=0, method='umap',
               metric='euclidean', metric_kwds={}, num_threads=-1, copy=False):
     """
-    Compute a neighborhood graph of observations [McInnes18]_.
-    The neighbor search efficiency of this heavily relies on UMAP [McInnes18]_,
-    which also provides a method for estimating connectivities of data points -
-    the connectivity of the manifold (`method=='umap'`). If `method=='diffmap'`,
-    connectivities are computed according to [Coifman05]_, in the adaption of
-    [Haghverdi16]_.
+    Compute a neighborhood graph of observations.
+
+    The neighbor graph methods (umap, hnsw, sklearn) only differ in runtime and yield the same result as scanpy [Wolf18]_.
+    Connectivities are computed with adaptive kernel width as proposed in Haghverdi et al. 2016 (doi:10.1038/nmeth.3971).
+
     Parameters
     ----------
     adata
@@ -44,8 +44,9 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
     random_state
         A numpy random seed.
     method : {{'umap', 'hnsw', 'sklearn'}}  (default: `'umap'`)
-        The methods only differ in runtime. Connectivities are computed with adaptive width [Haghverdi16]_).
+        Method to compute neighbors, only differs in runtime.
         The 'hnsw' method is most efficient and requires to `pip install hnswlib`.
+        Connectivities are computed with adaptive kernel width as proposed in Haghverdi et al. 2016 (https://doi.org/10.1038/nmeth.3971).
     metric
         A known metric’s name or a callable that returns a distance.
     metric_kwds
@@ -293,10 +294,10 @@ def compute_connectivities_umap(knn_indices, knn_dists, n_obs, n_neighbors, set_
 
 def remove_duplicate_cells(adata):
     if 'X_pca' not in adata.obsm.keys(): pca(adata)
-    l = list(np.sum(adata.obsm['X_pca'], 1) + adata.obs['n_counts'])
+    l = list(np.sum(adata.obsm['X_pca'], 1) + get_initial_size(adata))
     n_unique_obs = len(set(l))
     if n_unique_obs < adata.n_obs:
         idx = [l.index(x) for x in set(l)]
         logg.info('Removed ', adata.n_obs - n_unique_obs, ' duplicate cells.')
         adata._inplace_subset_obs(idx)
-    neighbors(adata)
+        neighbors(adata)
