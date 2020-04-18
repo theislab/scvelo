@@ -61,6 +61,9 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     scatter_kwargs = {'show': False, 'save': False}
     for key in signature(scatter).parameters:
         if key not in mkeys + fkeys: scatter_kwargs[key] = eval(key)
+    mkwargs = {}
+    for key in mkeys:  # mkwargs[key] = key for key in mkeys
+        mkwargs[key] = eval('{0}[0] if is_list({0}) else {0}'.format(key))
 
     # use c & color and cmap & color_map interchangeably, and plot each group separately if groups is 'all'
     if 'c' in kwargs: color = kwargs.pop('c')
@@ -143,18 +146,20 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         elif color_gradients is not None and color_gradients is not False:
             vals, names, color, scatter_kwargs = gets_vals_from_color_gradients(adata, color, **scatter_kwargs)
             c_colors = {cat: col for (cat, col) in zip(adata.obs[color].cat.categories, adata.uns[color + '_colors'])}
-            ax = scatter(adata, color='grey', ax=ax, **get_kwargs(scatter_kwargs, {'alpha': 0.05}))  # grey background
-            ax = scatter(adata, color=color, ax=ax, **get_kwargs(scatter_kwargs, {'s': 0}))  # set legend
+            mkwargs.pop('color')
+            ax = scatter(adata, color='grey', ax=ax, **mkwargs, **get_kwargs(scatter_kwargs, {'alpha': 0.05}))  # background
+            ax = scatter(adata, color=color, ax=ax, **mkwargs, **get_kwargs(scatter_kwargs, {'s': 0}))  # set legend
             sorted_idx = np.argsort(vals, 1)[:, ::-1][:, :2]
             for id0 in range(len(names)):
                 for id1 in range(id0 + 1, len(names)):
                     cmap = rgb_custom_colormap([c_colors[names[id0]], 'white', c_colors[names[id1]]], alpha=[1, 0, 1])
-                    scatter_kwargs.update({'color_map': cmap})
+                    mkwargs.update({'color_map': cmap})
                     c_vals = np.array(vals[:, id1] - vals[:, id0]).flatten()
                     c_bool = np.array([id0 in c and id1 in c for c in sorted_idx])
                     if np.sum(c_bool) > 1:
                         _adata = adata[c_bool] if np.sum(~c_bool) > 0 else adata
-                        ax = scatter(_adata, color=c_vals[c_bool], ax=ax, **scatter_kwargs)
+                        mkwargs['color'] = c_vals[c_bool]
+                        ax = scatter(_adata, ax=ax, **mkwargs, **scatter_kwargs, **kwargs)
             savefig_or_show(dpi=dpi, save=save, show=show)
             if show is False: return ax
 
@@ -326,6 +331,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                         logg.warn('Invalid color key. Using grey instead.')
 
             # check if higher value points should be plotted on top
+            color_array = c  # store original order of color values
             if sort_order and not isinstance(c, str) and not is_categorical(adata, color) and len(c) == len(x):
                 order = np.argsort(c)
                 x, y, c = x[order], y[order], c[order]
@@ -340,13 +346,13 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
                     if add_outline in adata.var.keys() and basis in adata.var_names:
                         add_outline = str(adata[:, basis].var[add_outline][0])
                 idx = groups_to_bool(adata, add_outline, color)
-                if idx is not None and np.sum(idx) > 0:
+                if idx is not None and np.sum(idx) > 0:  # if anything to be outlined
                     zorder = 2 if zorder is None else zorder + 2
-                    if kwargs['s'] is not None: kwargs['s'] *= 1.5
-                    x, y = scatter_array[:, 0], scatter_array[:, 1]
+                    if kwargs['s'] is not None: kwargs['s'] *= 1.2
+                    x, y, c = scatter_array[:, 0], scatter_array[:, 1], color_array  # restore order of values
                     x, y, c = x[idx], y[idx], c[idx] if not isinstance(c, str) and len(c) == adata.n_obs else c
                     ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
-                if idx is None or np.sum(idx) > 0:
+                if idx is None or np.sum(idx) > 0:  # if all or anything to be outlined
                     plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
 
             # set legend if categorical categorical color vals
