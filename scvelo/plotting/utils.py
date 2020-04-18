@@ -183,7 +183,7 @@ def gets_vals_from_color_gradients(adata, color=None, **scatter_kwargs):
         palette = list(color_gradients.colors)
 
     pd_colgrad = pd.DataFrame(color_gradients)
-    vals = pd_colgrad.values
+    vals = np.clip(pd_colgrad.values, 0, None)
     names = color_gradients.names if hasattr(color_gradients, 'names') else pd_colgrad.columns
 
     adata.obs[color] = pd.Categorical([str(names[i]) for i in np.argmax(vals, 1)], categories=names)
