@@ -636,16 +636,19 @@ def rgb_custom_colormap(colors=['royalblue', 'white', 'forestgreen'], alpha=None
         A ListedColormap
     """
     c = []
+    if 'transparent' in colors:
+        alpha = [1 if i != 'transparent' else 0 for i in colors] if alpha is None else alpha
+        colors = [i if i != 'transparent' else 'white' for i in colors]
+
     for color in colors:
         if isinstance(color, str):
             color = to_rgb(color if color.startswith('#') else cnames[color])
             c.append(color)
+    alpha = np.ones(len(c)) if alpha is None else alpha
 
     vals = np.ones((N, 4))
     ints = len(c) - 1
     n = int(N / ints)
-
-    alpha = np.ones(len(c)) if alpha is None else alpha
 
     for j in range(ints):
         for i in range(3):

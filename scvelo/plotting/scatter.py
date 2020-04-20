@@ -8,7 +8,7 @@ from .utils import default_basis, default_color, default_size, default_color_map
 from .utils import unique, make_dense, get_components, get_connectivities, groups_to_bool, interpret_colorkey, get_obs_vector
 from .utils import update_axes, set_label, set_title, set_colorbar, _set_colors_for_categorical_obs, _add_legend
 from .utils import plot_linfit, plot_polyfit, plot_density, plot_outline, plot_rug, plot_velocity_fits, savefig_or_show
-from .utils import rgb_custom_colormap, gets_vals_from_color_gradients, get_kwargs, get_ax
+from .utils import rgb_custom_colormap, gets_vals_from_color_gradients, get_kwargs, get_ax, is_color_like
 
 
 from inspect import signature
@@ -68,6 +68,8 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     # use c & color and cmap & color_map interchangeably, and plot each group separately if groups is 'all'
     if 'c' in kwargs: color = kwargs.pop('c')
     if 'cmap' in kwargs: color_map = kwargs.pop('cmap')
+    if isinstance(color_map, (list, tuple)) and all([is_color_like(c) or c == 'transparent' for c in color_map]):
+        color_map = rgb_custom_colormap(colors=color_map)
     if isinstance(groups, str) and groups == 'all':
         if color is None:  color = default_color(adata)
         if is_categorical(adata, color):
