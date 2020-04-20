@@ -392,3 +392,15 @@ def convolve(adata, x):
     Y = np.ones(x.shape) * np.nan
     Y[:, idx_valid] = conn.dot(x[:, idx_valid])
     return Y
+
+
+def get_extrapolated_state(adata, vkey='velocity', dt=1, use_raw=None, dropna=True):
+    """Get extrapolated cell state.
+    """
+    S = adata.layers['spliced' if use_raw else 'Ms']
+    if dropna:
+        St = S + dt * adata.layers[vkey]
+        St = St[:, np.isfinite(np.sum(St, 0))]
+    else:
+        St = S + dt * np.nan_to_num(adata.layers[vkey])
+    return St

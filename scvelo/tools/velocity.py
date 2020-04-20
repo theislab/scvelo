@@ -159,7 +159,7 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
         Bounds for the steady-state ratio.
     use_raw: `bool` (default: `False`)
         Whether to use raw data for estimation.
-    use_latent_time: `bool`or `None` (default: `None)
+    use_latent_time: `bool`or `None` (default: `None`)
         Whether to use latent time as a regularization for velocity when using dynamical mode.
     perc: `float` (default: `None`)
         Percentile, e.g. 98, upon for extreme quantile fit (to better capture steady states for velocity estimation).
