@@ -9,7 +9,7 @@ from .utils import is_categorical, interpret_colorkey, savefig_or_show, to_list,
     _set_colors_for_categorical_obs, strings_to_categoricals
 
 
-def heatmap(adata, var_names, sortby='latent_time', xkey='Ms', color_map='viridis', col_color=None, palette='viridis',
+def heatmap(adata, var_names, sortby='latent_time', layer='Ms', color_map='viridis', col_color=None, palette='viridis',
             n_convolve=30, standard_scale=0, sort=True, colorbar=None, col_cluster=False, row_cluster=False,
             figsize=(10, 5), font_scale=None, show=True, save=None, ax=None, **kwargs):
     """\
@@ -23,7 +23,7 @@ def heatmap(adata, var_names, sortby='latent_time', xkey='Ms', color_map='viridi
         Names of variables to use for the plot.
     sortby: `str` (default: `'latent_time'`)
         Observation key to extract time data from.
-    xkey: `str` (default: `'Ms'`)
+    layer: `str` (default: `'Ms'`)
         Layer key to extract count data from.
     color_map: `str` (default: `'viridis'`)
         String denoting matplotlib color map.
@@ -58,11 +58,13 @@ def heatmap(adata, var_names, sortby='latent_time', xkey='Ms', color_map='viridi
     import seaborn as sns
     var_names = [name for name in var_names if name in adata.var_names]
 
-    tkey = kwargs.pop('tkey', sortby)
+    tkey, xkey = kwargs.pop('tkey', sortby), kwargs.pop('xkey', layer)
     time = adata.obs[tkey].values
     time = time[np.isfinite(time)]
 
-    df = pd.DataFrame(adata[:, var_names].layers[xkey][np.argsort(time)], columns=var_names)
+    X = adata[:, var_names].layers[xkey] if xkey in adata.layers.keys() else adata[:, var_names].X
+    if issparse(X): X = X.A
+    df = pd.DataFrame(X[np.argsort(time)], columns=var_names)
 
     if n_convolve is not None:
         weights = np.ones(n_convolve) / n_convolve
