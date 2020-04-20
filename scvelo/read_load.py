@@ -253,7 +253,8 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, dropna='all', 
             df = eval('data.' + s_key)[keys if len(keys) > 1 else key]
 
             if index is None:
-                index = data.var_names if s_key == 'varm' else data.obs_names if s_key == 'obsm' else None
+                index = data.var_names if s_key == 'varm' else data.obs_names if s_key in {'obsm', 'layers'} else None
+            columns = data.var_names if columns is None and s_key == 'layers' else columns
     else:
         df = data
 
@@ -266,6 +267,8 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, dropna='all', 
 
     if dropna:
         df.replace("", np.nan, inplace=True)
-        df.dropna(how=dropna if not isinstance(dropna, str) else 'all', inplace=True)
+        how = dropna if not isinstance(dropna, str) else 'all'
+        df.dropna(how=how, axis=0, inplace=True)
+        df.dropna(how=how, axis=1, inplace=True)
 
     return df
