@@ -7,6 +7,7 @@ import numpy as np
 import warnings
 from scanpy.preprocessing import pca
 from scanpy import Neighbors
+from anndata import AnnData
 
 
 def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_state=0, method='umap',
@@ -77,8 +78,9 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
         elif n_pcs is None and adata.obsm['X_pca'].shape[1] < 10:
             logg.warn('Neighbors are computed on ', adata.obsm['X_pca'].shape[1], ' principal components only.')
 
-        if len(set(np.sum(adata.obsm['X_pca'], 1))) < adata.n_obs:
-            logg.warn('You seem to have duplicate cells in your data. '
+        n_duplicate_cells = len(get_duplicate_cells(adata))
+        if n_duplicate_cells > 0:
+            logg.warn('You seem to have {} duplicate cells in your data.'.format(n_duplicate_cells),
                       'Consider removing these via pp.remove_duplicate_cells.')
 
     logg.info('computing neighbors', r=True)
@@ -292,12 +294,36 @@ def compute_connectivities_umap(knn_indices, knn_dists, n_obs, n_neighbors, set_
     return distances, connectivities.tocsr()
 
 
+def get_duplicate_cells(data):
+    if isinstance(data, AnnData):
+        X = data.X
+        l = list(np.sum(np.abs(data.obsm['X_pca']), 1) + get_initial_size(data))  # proxy
+    else:
+        X = data
+        l = list(np.sum(X, 1).A1 if issparse(X) else np.sum(X, 1))
+
+    l_set = set(l)
+    idx_dup = []
+    if len(l_set) < len(l):
+        idx_dup = np.array([i for i, x in enumerate(l) if l.count(x) > 1])
+
+        X_new = np.array(X[idx_dup].A if issparse(X) else X[idx_dup])
+        sorted_idx = np.lexsort(X_new.T)
+        sorted_data = X_new[sorted_idx, :]
+
+        row_mask = np.invert(np.append([True], np.any(np.diff(sorted_data, axis=0), 1)))
+        idx = sorted_idx[row_mask]
+        idx_dup = idx_dup[idx]
+    return idx_dup
+
+
 def remove_duplicate_cells(adata):
     if 'X_pca' not in adata.obsm.keys(): pca(adata)
-    l = list(np.sum(adata.obsm['X_pca'], 1) + get_initial_size(adata))
-    n_unique_obs = len(set(l))
-    if n_unique_obs < adata.n_obs:
-        idx = [l.index(x) for x in set(l)]
-        logg.info('Removed ', adata.n_obs - n_unique_obs, ' duplicate cells.')
-        adata._inplace_subset_obs(idx)
+    idx_duplicates = get_duplicate_cells(adata)
+    if len(idx_duplicates) > 0:
+        mask = np.ones(adata.n_obs, bool)
+        mask[idx_duplicates] = 0
+        logg.info('Removed', len(idx_duplicates), 'duplicate cells.')
+        adata._inplace_subset_obs(mask)
         neighbors(adata)
+
