@@ -114,7 +114,7 @@ def neighbors(adata, n_neighbors=30, n_pcs=None, use_rep=None, knn=True, random_
     try:
         adata.obsp['distances'] = neighbors.distances
         adata.obsp['connectivities'] = neighbors.connectivities
-        adata.uns['neighbors']['connectivities_key'] = 'connectivities',
+        adata.uns['neighbors']['connectivities_key'] = 'connectivities'
         adata.uns['neighbors']['distances_key'] = 'distances'
     except:
         adata.uns['neighbors']['distances'] = neighbors.distances
