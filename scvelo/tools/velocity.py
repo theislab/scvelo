@@ -193,7 +193,7 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
         mode = 'stochastic'
         logg.warn('Falling back to stochastic model. For the dynamical model run tl.recover_dynamics first.')
 
-    if mode == 'dynamical':
+    if mode in {'dynamical', 'dynamical_residuals'}:
         from .dynamical_model_utils import mRNA, vectorize, get_reads, get_vars, get_divergence
 
         gene_subset = ~np.isnan(adata.var['fit_alpha'].values)
@@ -207,7 +207,15 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
         kwargs_.update(adata.uns['recover_dynamics'])
         kwargs_.update(**kwargs)
 
-        vt, wt = get_divergence(vdata, mode='velocity', **kwargs_)
+        if 'residuals' in mode:
+            u, s = get_reads(vdata, use_raw=adata.uns['recover_dynamics']['use_raw'])
+            if kwargs_['fit_basal_transcription']:
+                u, s = u - u0, s - s0
+            o = vdata.layers['fit_t'] < t_
+            vt = (u * beta - s * gamma)  # ds/dt
+            wt = (alpha * o - beta * u) * scaling  # du/dt
+        else:
+            vt, wt = get_divergence(vdata, mode='velocity', **kwargs_)
 
         vgenes = adata.var.fit_likelihood > min_likelihood
         if min_r2 is not None:
@@ -233,7 +241,7 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
         if filter_genes and len(set(vgenes)) > 1:
             adata._inplace_subset_var(vgenes)
 
-    elif mode in ['steady_state', 'deterministic', 'stochastic']:
+    elif mode in {'steady_state', 'deterministic', 'stochastic'}:
         categories = adata.obs[groupby].cat.categories \
             if groupby is not None and groups is None and groups_for_fit is None else [None]
 

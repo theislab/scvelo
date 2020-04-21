@@ -375,11 +375,13 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
             progress.update()
         else:
             logg.warn(dm.gene, 'not recoverable due to insufficient samples.')
-            dm = None
     progress.finish()
 
     write_pars(adata, [alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0, pval, steady_u, steady_s])
-    adata.layers['fit_t'] = T if conn is None else conn.dot(T)
+    if 'fit_t' in adata.layers.keys():
+        adata.layers['fit_t'][:, idx] = T[:, idx] if conn is None else conn.dot(T[:, idx])
+    else:
+        adata.layers['fit_t'] = T if conn is None else conn.dot(T)
     adata.layers['fit_tau'] = Tau
     adata.layers['fit_tau_'] = Tau_
 
@@ -499,7 +501,7 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
     adata.layers['fit_tau'] = Tau
     adata.layers['fit_tau_'] = Tau_
 
-    if dm is not None:
+    if dm is not None and dm.recoverable:
         dm.m = m[idx]
         dm.alpha, dm.beta, dm.gamma, dm.pars[:3] = np.array([dm.alpha, dm.beta, dm.gamma, dm.pars[:3]]) / dm.m[-1]
         dm.t, dm.tau, dm.t_, dm.pars[4] = np.array([dm.t, dm.tau, dm.t_, dm.pars[4]]) * dm.m[-1]

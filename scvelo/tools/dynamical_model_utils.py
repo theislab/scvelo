@@ -399,7 +399,8 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         o_, o = res == 0, res == 1
         t = tau * o + (tau_ + t_) * o_
         if time_connectivities:
-            if time_connectivities is True: time_connectivities = connectivities
+            if time_connectivities is True:
+                time_connectivities = connectivities
             t = time_connectivities.dot(t)
             o = (res < 2) * (t < t_)
             o_ = (res < 2) * (t >= t_)
@@ -413,6 +414,33 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
         vt = (ut * beta - st * gamma)  # ds/dt
         wt = (alpha - beta * ut) * scaling  # du/dt
+
+        vt, wt = np.clip(vt, -s, None), np.clip(wt, -u * scaling, None)
+
+        res = [vt, wt]
+
+    elif mode == 'velocity_residuals':
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
+        res = np.array([res[0], res[1], res[2], res[3], 1e-6 * np.ones(res[0].shape)]) if res.ndim > 2 \
+            else np.array([res[0], res[1], min_confidence * np.ones(res[0].shape)])
+        if normalized: res = normalize(res, min_confidence=min_confidence)
+        res = np.argmax(res, axis=0)
+        o_, o = res == 0, res == 1
+        t = tau * o + (tau_ + t_) * o_
+        if time_connectivities:
+            if time_connectivities is True:
+                time_connectivities = connectivities
+            t = time_connectivities.dot(t)
+            o = (res < 2) * (t < t_)
+            o_ = (res < 2) * (t >= t_)
+            tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
+            ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
+            ut_, st_ = ut, st
+
+        alpha = alpha * o
+
+        vt = (u * beta - s * gamma)  # ds/dt
+        wt = (alpha - beta * u) * scaling  # du/dt
 
         vt, wt = np.clip(vt, -s, None), np.clip(wt, -u * scaling, None)
 
@@ -540,28 +568,24 @@ class BaseDynamics:
     def initialize_weights(self, weighted=True):
         nonzero_s = np.ravel(self.s > 0)
         nonzero_u = np.ravel(self.u > 0)
-        filter_by_s = np.sum(nonzero_s) > 2
-        filter_by_u = np.sum(nonzero_u) > 2
 
-        nonzero = np.ones(len(self.s), dtype=bool)
-        if filter_by_s: nonzero &= nonzero_s
-        if filter_by_u: nonzero &= nonzero_u
+        weights = np.array(nonzero_s & nonzero_u, dtype=bool)
+        self.recoverable = np.sum(weights) > 2
 
-        weights = np.array(nonzero, dtype=bool)
-        if filter_by_s or filter_by_u:
-            ub_s = np.percentile(self.s[nonzero], self.perc) if weighted else np.max(self.s)
-            ub_u = np.percentile(self.u[nonzero], self.perc) if weighted else np.max(self.u)
-            if ub_s > 0 and ub_u > 0:
-                if filter_by_s: weights &= np.ravel(self.s <= ub_s)
-                if filter_by_u: weights &= np.ravel(self.u <= ub_u)
+        if self.recoverable:
+            ub_s = np.percentile(self.s[weights], self.perc) if weighted else np.max(self.s)
+            ub_u = np.percentile(self.u[weights], self.perc) if weighted else np.max(self.u)
+            if ub_s > 0: weights &= np.ravel(self.s <= ub_s)
+            if ub_u > 0: weights &= np.ravel(self.u <= ub_u)
 
-        self.weights = weights
-        u, s = self.u[weights], self.s[weights]
-        self.std_u = np.std(u)
-        self.std_s = np.std(s)
-        self.recoverable = (np.sum(nonzero_s) > 2) & (np.sum(nonzero_u) > 2)
+            self.weights = weights
+            u, s = self.u[weights], self.s[weights]
+            self.std_u = np.std(u)
+            self.std_s = np.std(s)
 
-        self.weights_upper = np.array(self.weights) & (self.u > np.max(u) / 3) & (self.s > np.max(s) / 3)
+            self.weights_upper = np.array(weights)
+            if np.any(weights):
+                self.weights_upper &= (self.u > np.max(u) / 3) & (self.s > np.max(s) / 3)
 
     def load_pars(self, adata, gene):
         idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
