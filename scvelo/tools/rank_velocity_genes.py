@@ -163,7 +163,7 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='dpt
     return adata if copy else None
 
 
-def rank_velocity_genes(data, vkey='velocity', n_genes=10, groupby=None, match_with=None, resolution=None,
+def rank_velocity_genes(data, vkey='velocity', n_genes=100, groupby=None, match_with=None, resolution=None,
                         min_counts=None, min_r2=None, min_dispersion=None, min_likelihood=None, copy=False):
     """Rank genes for velocity characterizing groups.
 

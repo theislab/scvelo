@@ -301,7 +301,7 @@ def make_unique_list(key, allow_array=False):
 
 
 def test_bimodality(x, bins=30, kde=True, plot=False):
-    """Test significance of following a bimodal distribution.
+    """Test for bimodal distribution.
     """
     from scipy.stats import gaussian_kde, norm
     lb, ub = np.min(x), np.percentile(x, 99.9)
@@ -360,7 +360,18 @@ def corrcoef(x, y, mode='pearsons'):
 
 
 def vcorrcoef(X, y, mode='pearsons', axis=-1):
-    """Pearsons or Spearmans correlation coefficients.
+    """Pearsons/Spearmans correlation coefficients.
+
+    Use Pearsons to test for linear relationship and Spearmans to test for monotonic relationship.
+
+    Arguments
+    ----------
+    X: `np.ndarray`
+        Data vector or matrix
+    y: `np.ndarray`
+        Data vector or matrix
+    mode: 'pearsons' or 'spearmans' (default: `'pearsons'`)
+        Which correlation metric to use.
     """
     if axis == 0:
         if X.ndim > 1: X = np.array(X.T)

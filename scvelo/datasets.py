@@ -35,7 +35,9 @@ def toy_data(n_obs=None):
 
 
 def dentategyrus(adjusted=True):
-    """Dentate Gyrus from `Hochgerner et al. (2018) <https://doi.org/10.1038/s41593-017-0056-2>`_.
+    """Dentate Gyrus key_addzneurogenesis.
+
+    Data from `Hochgerner et al. (2018) <https://doi.org/10.1038/s41593-017-0056-2>`_.
 
     Dentate gyrus (DG) is part of the hippocampus involved in learning, episodic memory formation and spatial coding.
     The experiment from the developing DG comprises two time points (P12 and P35)
@@ -92,7 +94,9 @@ def forebrain():
 
 
 def pancreas():
-    """Pancreatic endocrinogenesis from `Bastidas-Ponce et al. (2019) <https://doi.org/10.1242/dev.173849>`_.
+    """Pancreatic endocrinogenesis
+
+    Data from `Bastidas-Ponce et al. (2019) <https://doi.org/10.1242/dev.173849>`_.
 
     Pancreatic epithelial and Ngn3-Venus fusion (NVF) cells during secondary transition
     with transcriptome profiles sampled from embryonic day 15.5.
