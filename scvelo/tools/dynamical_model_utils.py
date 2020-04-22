@@ -198,7 +198,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
                        std_u=1, std_s=1, normalized=False, mode='distance', assignment_mode=None, var_scale=False,
                        kernel_width=None, fit_steady_states=True, connectivities=None, constraint_time_increments=True,
                        reg_time=None, reg_par=None, min_confidence=None, pval_steady=None, steady_u=None, steady_s=None,
-                       noise_model='chi', time_connectivities=None, **kwargs):
+                       noise_model='chi', time_connectivities=None, clusters=None, **kwargs):
     """Estimates the divergence (avaiable metrics: distance, mse, likelihood, loglikelihood) of ODE to observations
 
     Arguments
@@ -405,7 +405,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         distu = distu * (o == 1) + distu_ * (o == 0)
         dists = dists * (o == 1) + dists_ * (o == 0)
 
-        idx = np.array((u > np.percentile(u, 98, axis=0) / 3) & (s > np.percentile(s, 98, axis=0) / 3), dtype=int)
+        idx = np.array((u > np.percentile(u, 98, axis=0) / 5) & (s > np.percentile(s, 98, axis=0) / 5), dtype=int)
         idx = idx / idx
         distu *= idx
         dists *= idx
@@ -413,10 +413,21 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         distx = distu ** 2 + dists ** 2
         # compute variance / equivalent to np.var(np.sign(sdiff) * np.sqrt(distx))
         varx = np.nanmean(distx, 0) - np.nanmean(np.sign(dists) * np.sqrt(distx), 0) ** 2
-        print(varx)
         n = np.clip(len(distu) - len(distu) * .01, 2, None)
         ll = - 1 / 2 / n * np.nansum(distx, 0) / varx - 1 / 2 * np.log(2 * np.pi * varx)
         res = np.exp(ll)
+
+        if clusters is not None:
+            res = []
+            for cat in clusters.cat.categories:
+                idx_cat = np.array(clusters == cat)
+                distx_cat = distu[idx_cat] ** 2 + dists[idx_cat] ** 2
+                distx_sum = np.nansum(distx_cat, 0)
+                n = np.clip(len(distx_cat) - len(distx_cat) * .01, 2, None)
+                ll = - 1 / 2 / n * distx_sum / varx - 1 / 2 * np.log(2 * np.pi * varx)
+                ll[distx_sum == 0] = np.nan
+                res.append(ll)
+            res = np.exp(res)
 
     elif mode == 'velocity':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)

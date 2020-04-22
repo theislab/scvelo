@@ -509,8 +509,8 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
     return adata if copy else dm
 
 
-def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, min_corr_diffusion=None,
-                        weight_diffusion=None, root_key=None, end_key=None, t_max=None, copy=False):
+def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, min_corr_diffusion=None,
+                weight_diffusion=None, root_key=None, end_key=None, t_max=None, copy=False):
     """Computes a gene-shared latent time.
 
     Gene-specific latent timepoints obtained from the dynamical model are coupled to a universal gene-shared
@@ -660,7 +660,7 @@ def recover_latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence
     return adata if copy else None
 
 
-latent_time = recover_latent_time
+recover_latent_time = latent_time
 
 
 def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, use_raw=None, return_model=None,
@@ -757,3 +757,58 @@ def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, us
         logg.info('\noutputs model fit of gene:', dm.gene)
 
     return dm if return_model else adata if copy else None
+
+
+def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
+    """Rank genes by likelihoods per cluster/regime.
+
+    This ranks genes by their likelihood obtained from the dynamical model grouped by clusters specified in groupby.
+
+    Arguments
+    ----------
+    data : :class:`~anndata.AnnData`
+        Annotated data matrix.
+    n_genes : `int`, optional (default: 100)
+        The number of genes that appear in the returned tables.
+    groupby: `str`, `list` or `np.ndarray` (default: `None`)
+        Key of observations grouping to consider.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to data.
+
+    Returns
+    -------
+    Returns or updates `data` with the attributes
+    rank_dynamical_genes : `.uns`
+        Structured array to be indexed by group id storing the gene
+        names. Ordered according to scores.
+    """
+    from .dynamical_model_utils import get_divergence
+    adata = data.copy() if copy else data
+
+    groupby = groupby if isinstance(groupby, str) and groupby in adata.obs.keys() \
+        else 'clusters' if 'clusters' in adata.obs.keys() \
+        else 'louvain' if 'louvain' in adata.obs.keys() \
+        else 'velocity_clusters' if 'velocity_clusters' in adata.obs.keys() else None
+
+    vdata = adata[:, ~np.isnan(adata.var['fit_alpha'])]
+    groups = vdata.obs[groupby].cat.categories
+
+    ll = get_divergence(vdata, mode='gene_likelihood', use_connectivities=True, clusters=adata.obs[groupby])
+
+    idx_sorted = np.argsort(np.nan_to_num(ll), 1)[:, ::-1][:, :n_genes]
+    rankings_gene_names = vdata.var_names[idx_sorted]
+    rankings_gene_scores = np.sort(np.nan_to_num(ll), 1)[:, ::-1][:, :n_genes]
+
+    key = 'rank_dynamical_genes'
+    if key not in adata.uns.keys(): adata.uns[key] = {}
+
+    adata.uns[key] = \
+        {'names': np.rec.fromarrays([n for n in rankings_gene_names], dtype=[(str(rn), 'U50') for rn in groups]),
+         'scores': np.rec.fromarrays([n.round(2) for n in rankings_gene_scores], dtype=[(str(rn), 'float32') for rn in groups])}
+
+    logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
+    logg.hint(
+        'added \n'
+        '    \'' + key + '\', sorted scores by group ids (adata.uns)')
+
+    return adata if copy else None
