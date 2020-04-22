@@ -367,6 +367,32 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         t = tau * (o == 1) + (tau_ + t_) * (o == 0)
         res = [t, tau, o] if mode == 'assign_timepoints' else t
 
+    elif mode == 'dists':
+        o = np.argmin(res, axis=0)
+
+        tau_ *= (o == 0)
+        tau *= (o == 1)
+
+        if 2 in o: o[o == 2] = 1
+        if 3 in o: o[o == 3] = 0
+
+        distu = distu * (o == 1) + distu_ * (o == 0)
+        dists = dists * (o == 1) + dists_ * (o == 0)
+        res = distu, dists
+
+    elif mode == 'distx':
+        o = np.argmin(res, axis=0)
+
+        tau_ *= (o == 0)
+        tau *= (o == 1)
+
+        if 2 in o: o[o == 2] = 1
+        if 3 in o: o[o == 3] = 0
+
+        distu = distu * (o == 1) + distu_ * (o == 0)
+        dists = dists * (o == 1) + dists_ * (o == 0)
+        res = distu ** 2 + dists ** 2
+
     elif mode == 'gene_likelihood':
         o = np.argmin(res, axis=0)
 
@@ -379,15 +405,17 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         distu = distu * (o == 1) + distu_ * (o == 0)
         dists = dists * (o == 1) + dists_ * (o == 0)
 
-        if True:
-            idx = (u > np.max(u) / 3) & (s > np.max(s) / 3)
-            if np.sum(idx) > 0: distu, dists = distu[idx], dists[idx]
+        idx = np.array((u > np.percentile(u, 98, axis=0) / 3) & (s > np.percentile(s, 98, axis=0) / 3), dtype=int)
+        idx = idx / idx
+        distu *= idx
+        dists *= idx
 
         distx = distu ** 2 + dists ** 2
         # compute variance / equivalent to np.var(np.sign(sdiff) * np.sqrt(distx))
-        varx = np.mean(distx) - np.mean(np.sign(dists) * np.sqrt(distx)) ** 2
+        varx = np.nanmean(distx, 0) - np.nanmean(np.sign(dists) * np.sqrt(distx), 0) ** 2
+        print(varx)
         n = np.clip(len(distu) - len(distu) * .01, 2, None)
-        ll = - 1 / 2 / n * np.sum(distx) / varx - 1 / 2 * np.log(2 * np.pi * varx)
+        ll = - 1 / 2 / n * np.nansum(distx, 0) / varx - 1 / 2 * np.log(2 * np.pi * varx)
         res = np.exp(ll)
 
     elif mode == 'velocity':
