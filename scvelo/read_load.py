@@ -38,8 +38,9 @@ read_csv = load
 
 
 def clean_obs_names(data, base='[AGTCBDHKMNRSVWY]', ID_length=12, copy=False):
-    """Cleans up the obs_names and identifies sample names.
-    For example an obs_name 'samlple1_AGTCdate' is changed to 'AGTC' of the sample 'sample1_date'.
+    """Clean up the obs_names.
+
+    For example an obs_name 'sample1_AGTCdate' is changed to 'AGTC' of the sample 'sample1_date'.
     The sample name is then saved in obs['sample_batch'].
     The genetic codes are identified according to according to https://www.neb.com/tools-and-resources/usage-guidelines/the-genetic-code.
 
@@ -224,6 +225,7 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, dropna='all', 
         pd.set_option('precision', precision)
 
     if isinstance(data, AnnData):
+        keys, key_add = keys.split('/') if isinstance(keys, str) and '/' in keys else (keys, None)
         keys = [keys] if isinstance(keys, str) else keys
         key = keys[0]
 
@@ -251,7 +253,8 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, dropna='all', 
 
             s_key = s_key[-1]
             df = eval('data.' + s_key)[keys if len(keys) > 1 else key]
-
+            if key_add is not None:
+                df = df[key_add]
             if index is None:
                 index = data.var_names if s_key == 'varm' else data.obs_names if s_key in {'obsm', 'layers'} else None
             columns = data.var_names if columns is None and s_key == 'layers' else columns
@@ -272,3 +275,6 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, dropna='all', 
         df.dropna(how=how, axis=1, inplace=True)
 
     return df
+
+
+DataFrame = get_df

@@ -10,7 +10,7 @@ except (LookupError, ImportError):
     __version__ = version(__name__)
     del version
 
-from .read_load import AnnData, read, read_loom, load, read_csv, get_df
+from .read_load import AnnData, read, read_loom, load, read_csv, get_df, DataFrame
 from .preprocessing.neighbors import Neighbors
 from .tools.run import run_all, test
 from .tools.utils import round
