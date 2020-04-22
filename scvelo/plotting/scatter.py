@@ -105,7 +105,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
             ncols = int(np.ceil(len(multikey) / nrows))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
         fig = pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi)
-        gspec = pl.GridSpec(nrows, ncols, fig, hspace=0.25 if hspace is None else hspace, wspace=wspace)
+        gspec = pl.GridSpec(nrows, ncols, fig, hspace=.3 if hspace is None else hspace, wspace=wspace)
 
         ax = []
         for i, gs in enumerate(gspec):

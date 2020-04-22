@@ -100,6 +100,8 @@ def get_basis(adata, basis):
 def to_valid_bases_list(adata, keys):
     if isinstance(keys, pd.DataFrame):
         keys = keys.index
+    if not isinstance(keys, str):
+        keys = list(np.ravel(keys))
     keys = to_list(keys, max_len=np.inf)
     if all(isinstance(item, str) for item in keys):
         for i, key in enumerate(keys):
