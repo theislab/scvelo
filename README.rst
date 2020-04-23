@@ -5,7 +5,7 @@ scVelo - RNA velocity generalized through dynamical modeling
 
 .. raw:: html
 
-    <img src="https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png" width="350px" align="left">
+    <img src="https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png" width="400px" align="left">
 
 
 **scVelo** is a scalable toolkit for RNA velocity analysis in single cells. |br|
@@ -16,6 +16,7 @@ RNA velocity enables the recovery of directed dynamic information by leveraging 
 scVelo generalizes the concept of RNA velocity (`La Manno et al., 2018 <https://doi.org/10.1038/s41586-018-0414-6>`_)
 by relaxing previously made assumptions with a stochastic and a dynamical model that solves the full
 transcriptional dynamics. It thereby adapts RNA velocity to widely varying specifications such as non-stationary populations.
+|br|
 
 scVelo is compatible with scanpy_ and hosts efficient implementations of all RNA velocity models.
 
