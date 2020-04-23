@@ -195,7 +195,7 @@ def var_df(adata, keys, layer=None):
     return df
 
 
-def get_df(data, keys=None, layer=None, index=None, columns=None, dropna='all', precision=None):
+def get_df(data, keys=None, layer=None, index=None, columns=None, sort_values=None, dropna='all', precision=None):
     """Get dataframe for a specified adata key.
 
     Return values for specified key (from obs, var, obsm, varm, obsp, varp, uns, or layers) as a dataframe.
@@ -212,6 +212,8 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, dropna='all', 
         List to set as index.
     columns
         List to set as columns names.
+    sort_values
+        Wether to sort values by first column (sort_values=True) or a specified column (sort_values as string).
     dropna
         Drop columns/rows that contain NaNs in all (dropna='all') or in any entry (dropna='any').
     precision
@@ -273,6 +275,10 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, dropna='all', 
         how = dropna if not isinstance(dropna, str) else 'all'
         df.dropna(how=how, axis=0, inplace=True)
         df.dropna(how=how, axis=1, inplace=True)
+
+    if sort_values:
+        sort_by = sort_values if isinstance(sort_values, str) and sort_values in df.columns else df.columns[0]
+        df = df.sort_values(by=sort_by, ascending=False)
 
     return df
 
