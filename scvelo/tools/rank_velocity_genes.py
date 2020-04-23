@@ -1,6 +1,6 @@
 from .. import settings
 from .. import logging as logg
-from .utils import strings_to_categoricals
+from .utils import strings_to_categoricals, vcorrcoef
 
 from scipy.sparse import issparse
 import numpy as np
@@ -164,7 +164,7 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='dpt
 
 
 def rank_velocity_genes(data, vkey='velocity', n_genes=100, groupby=None, match_with=None, resolution=None,
-                        min_counts=None, min_r2=None, min_dispersion=None, min_likelihood=None, copy=False):
+                        min_counts=None, min_r2=None, min_corr=None, min_dispersion=None, min_likelihood=None, copy=False):
     """Rank genes for velocity characterizing groups.
 
     This applies a differential expression test (Welch t-test with overestimated variance to be conservative) on
@@ -202,6 +202,8 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=100, groupby=None, match_
         Minimum count of genes for consideration.
     min_r2: `float` (default: None)
         Minimum r2 value of genes for consideration.
+    min_corr: `float` (default: None)
+        Minimum Spearmans correlation coefficient between spliced and unspliced.
     min_dispersion: `float` (default: None)
         Minimum dispersion norm value of genes for consideration.
     min_likelihood: `float` between `0` and `1` or `None` (default: `None`)
@@ -226,6 +228,10 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=100, groupby=None, match_
 
     logg.info('ranking velocity genes', r=True)
 
+    if 'spearmans_score' not in adata.var.keys():
+        corr = vcorrcoef(np.array(adata.layers['Ms']).T, np.array(adata.layers['Mu'].T), mode='spearmans')
+        adata.var['spearmans_score'] = np.clip(corr, 0, None)
+
     tmp_filter = ~np.isnan(adata.layers[vkey].sum(0))
     if vkey + '_genes' in adata.var.keys():
         tmp_filter &= np.array(adata.var[vkey + '_genes'].values, dtype=bool)
@@ -240,6 +246,11 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=100, groupby=None, match_
         r2 = adata.var[vkey + '_r2']
         min_r2 = .1 if min_r2 is None else min_r2  # np.percentile(r2[r2 > 0], 50)
         tmp_filter &= (r2 > min_r2)
+
+    if 'spearmans_score' in adata.var.keys():
+        corr = adata.var['spearmans_score']
+        min_corr = .1 if min_corr is None else min_corr  # np.percentile(r2[r2 > 0], 50)
+        tmp_filter &= (corr > min_corr)
 
     if 'dispersions_norm' in adata.var.keys():
         dispersions = adata.var.dispersions_norm
@@ -299,6 +310,7 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=100, groupby=None, match_
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
         'added \n'
-        '    \'' + key + '\', sorted scores by group ids (adata.uns)')
+        '    \'' + key + '\', sorted scores by group ids (adata.uns) \n'
+        '    \'spearmans_score\', spearmans correlation scores (adata.var)')
 
     return adata if copy else None
