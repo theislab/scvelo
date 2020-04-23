@@ -3,9 +3,10 @@
 scVelo - RNA velocity generalized through dynamical modeling
 ============================================================
 
-.. image:: https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png
-   :width: 90px
-   :align: left
+.. raw:: html
+
+    <img src="https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png" width="300px" align="left">
+
 
 **scVelo** is a scalable toolkit for RNA velocity analysis in single cells. |br|
 The methods are based on our preprint
@@ -29,12 +30,12 @@ scVelo's key applications
 - use statistical tests, e.g., to detect different kinetics regimes.
 
 Reference
-^^^^^^^^^
+---------
 Bergen et al. (2019), *Generalizing RNA velocity to transient cell states through dynamical modeling*,
 `biorxiv <https://doi.org/10.1101/820936>`_.
 
 Support
-^^^^^^^
+-------
 Feel free to submit an `issue <https://github.com/theislab/scvelo/issues/new/choose>`_
 or send us an `email <mailto:mail@scvelo.org>`_.
 Your help to improve scVelo is highly appreciated.
