@@ -75,7 +75,7 @@ todo_include_todos = False
 # -- Options for HTML output ----------------------------------------------
 
 html_theme = 'sphinx_rtd_theme'
-html_theme_options = dict(navigation_depth=2)
+html_theme_options = dict(navigation_depth=1, titles_only=True)
 html_context = dict(
     display_github=True,      # Integrate GitHub
     github_user='theislab',   # Username
