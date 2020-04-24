@@ -1,4 +1,4 @@
-|PyPI| |PyPIDownloads| |Docs| |travis|
+|PyPI| |PyPIDownloads| |travis|
 
 scVelo - RNA velocity generalized through dynamical modeling
 ============================================================
