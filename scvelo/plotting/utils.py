@@ -197,8 +197,13 @@ def gets_vals_from_color_gradients(adata, color=None, **scatter_kwargs):
 """get default parameters"""
 
 
-def default_basis(adata):
-    keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
+def default_basis(adata, **kwargs):
+    if 'x' in kwargs and 'y' in kwargs:
+        keys, x, y = ['embedding'], kwargs.pop('x'), kwargs.pop('y')
+        adata.obsm['X_embedding'] = np.stack([x, y]).T
+        if 'velocity_embedding' in adata.obsm.keys(): del adata.obsm['velocity_embedding']
+    else:
+        keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
     if not keys:
         raise ValueError('No basis specified.')
     return keys[-1] if len(keys) > 0 else None

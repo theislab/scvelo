@@ -25,8 +25,6 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    vkey: `str` or `None` (default: `None`)
-        Key for annotations of observations/cells or variables/genes.
     density: `float` (default: 1)
         Amount of velocities to show - 0 none to 1 all
     arrow_size: `float` or 3-tuple for headlength, headwidth and headaxislength (default: 1)
@@ -44,7 +42,7 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
     vkey = [key for key in list(adata.layers.keys()) if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
     color, color_map = kwargs.pop('c', color), kwargs.pop('cmap', color_map)
     layers, vkeys, colors = make_unique_list(layer), make_unique_list(vkey), make_unique_list(color, allow_array=True)
-    bases = [default_basis(adata) if basis is None else basis for basis in make_unique_valid_list(adata, basis)]
+    bases = [default_basis(adata, **kwargs) if basis is None else basis for basis in make_unique_valid_list(adata, basis)]
 
     if V is None:
         for key in vkeys:
@@ -138,8 +136,8 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
             if is_color_like(c[0]): ax.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], color=c, zorder=3, **quiver_kwargs)
             else: ax.quiver(X[:, 0], X[:, 1], V[:, 0], V[:, 1], c, zorder=3, **quiver_kwargs)
 
-        ax = scatter(adata, basis=basis, x=x, y=y, vkey=vkey, layer=layer, color=color, size=size, title=title, ax=ax,
-                     zorder=0, **scatter_kwargs)
+        scatter_kwargs.update({'basis': basis, 'x': x, 'y': y, 'color': color, 'vkey': vkey, 'layer': layer})
+        ax = scatter(adata, size=size, title=title, ax=ax, zorder=0, **scatter_kwargs)
 
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax

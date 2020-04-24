@@ -19,7 +19,7 @@ import pandas as pd
 
 
 @doc_params(scatter=doc_scatter)
-def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
+def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
             colorbar=None, palette=None, size=None, alpha=None, linewidth=None, linecolor=None, perc=None, groups=None,
             sort_order=True, components=None, projection=None, legend_loc=None, legend_loc_lines=None,
             legend_fontsize=None, legend_fontweight=None, xlabel=None, ylabel=None, title=None, fontsize=None,
@@ -38,8 +38,6 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
         x coordinate
     y: `str`, `np.ndarray` or `None` (default: `None`)
         y coordinate
-    vkey: `str` or `None` (default: `None`)
-        Key for annotations of observations/cells or variables/genes.
     {scatter}
 
     Returns
@@ -54,6 +52,7 @@ def scatter(adata=None, x=None, y=None, basis=None, vkey=None, color=None, use_r
     add_polyfit = kwargs.pop('show_polyfit', add_polyfit)
     add_density = kwargs.pop('show_density', add_density)
     add_rug = kwargs.pop('rug', add_rug)
+    basis = kwargs.pop('var_names', basis)
 
     # keys for figures (fkeys) and multiple plots (mkeys)
     fkeys = ['adata', 'show', 'save', 'groups', 'figsize', 'dpi', 'ncols', 'nrows', 'wspace', 'hspace', 'ax', 'kwargs']

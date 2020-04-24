@@ -14,8 +14,10 @@ def doc_params(**kwds):
 
 
 doc_scatter = """\
-basis: `str` (default='umap')
+basis: `str` or list of `str` (default='umap')
     Key for embedding.
+vkey: `str` or list of `str` (default: `None`)
+    Key for velocity / steady-state ratio to be visualized.
 color: `str`,  list of `str` or `None` (default: `None`)
     Key for annotations of observations/cells or variables/genes
 use_raw : `bool` (default: `None`)

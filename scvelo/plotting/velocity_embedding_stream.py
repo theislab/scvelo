@@ -26,8 +26,6 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    vkey: `str` or `None` (default: `None`)
-        Key for annotations of observations/cells or variables/genes.
     density: `float` (default: 1)
         Amount of velocities to show - 0 none to 1 all
     smooth: `float` (default: 0.5)
@@ -50,7 +48,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
     -------
         `matplotlib.Axis` if `show==False`
     """
-    basis = default_basis(adata) if basis is None else get_basis(adata, basis)
+    basis = default_basis(adata, **kwargs) if basis is None else get_basis(adata, basis)
     vkey = [key for key in list(adata.layers.keys()) if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
     color, color_map = kwargs.pop('c', color), kwargs.pop('cmap', color_map)
     colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)

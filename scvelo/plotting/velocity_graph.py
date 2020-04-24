@@ -21,8 +21,6 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    vkey: `str` or `None` (default: `None`)
-        Key for annotations of observations/cells or variables/genes.
     which_graph: `'velocity'` or `'neighbors'` (default: `'velocity'`)
         Whether to show transitions from velocity graph or connectivities from neighbors graph.
     n_neighbors: `int` (default: 10)
@@ -38,7 +36,7 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n
     -------
         `matplotlib.Axis` if `show==False`
     """
-    basis = default_basis(adata) if basis is None else get_basis(adata, basis)
+    basis = default_basis(adata, **kwargs) if basis is None else get_basis(adata, basis)
     kwargs.update({"basis": basis, "title": which_graph + ' graph' if title is None else title,
                    "alpha": alpha, "components": components, "groups": groups, "dpi": dpi, "show": False, "save": None})
     ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, zorder=0, **kwargs)

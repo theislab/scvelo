@@ -79,7 +79,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
                             use_raw=None, layer=None, color_map=None, colorbar=True, palette=None, size=None, alpha=.2,
                             perc=None, sort_order=True, groups=None, components=None, projection='2d', legend_loc='none',
                             legend_fontsize=None, legend_fontweight=None, xlabel=None, ylabel=None, title=None,
-                            fontsize=None, figsize=None, dpi=None, frameon=None,show=True, save=None, ax=None, ncols=None, **kwargs):
+                            fontsize=None, figsize=None, dpi=None, frameon=None, show=True, save=None, ax=None, ncols=None, **kwargs):
     """\
     Scatter plot of velocities on a grid.
 
@@ -87,8 +87,6 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    vkey: `str` or `None` (default: `None`)
-        Key for annotations of observations/cells or variables/genes.
     density: `float` (default: 1)
         Amount of velocities to show - 0 none to 1 all
     arrow_size: `float` or 3-tuple for headlength, headwidth and headaxislength (default: 1)
@@ -113,7 +111,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
     -------
         `matplotlib.Axis` if `show==False`
     """
-    basis = default_basis(adata) if basis is None else get_basis(adata, basis)
+    basis = default_basis(adata, **kwargs) if basis is None else get_basis(adata, basis)
     vkey = [key for key in list(adata.layers.keys()) if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
     color, color_map = kwargs.pop('c', color), kwargs.pop('cmap', color_map)
     colors, layers, vkeys = make_unique_list(color, allow_array=True), make_unique_list(layer), make_unique_list(vkey)
@@ -185,6 +183,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
             pl.plot(curve[:, 0], curve[:, 1], c="k", lw=3, zorder=5)
 
         size = 4 * default_size(adata) if size is None else size
+
         ax = scatter(adata, layer=layer, color=color, size=size, title=title, ax=ax, zorder=0, **scatter_kwargs)
 
         savefig_or_show(dpi=dpi, save=save, show=show)
