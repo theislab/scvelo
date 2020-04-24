@@ -143,3 +143,35 @@
    margin-bottom: 0;
    margin-top: 0;
 }
+
+/* Adjust width of navigation bar on mobile */
+@media screen and (max-width: 768px) {
+	.header-bar {
+		display: none;
+	}
+
+	.wy-nav-content-wrap {
+		margin-left: 0px;
+	}
+
+	.wy-nav-side {
+		width: 300px;
+	}
+
+	.wy-nav-side.shift {
+    	max-width: 320px;
+    }
+
+	/* Fix sidebar adjust */
+	.rst-versions {
+		width: 40%;
+		max-width: 320px;
+	}
+}
+
+/* Handle landscape */
+@media screen and (min-width: 377px) {
+  .wy-nav-content-wrap.shift {
+    left: 320px;
+  }
+}
