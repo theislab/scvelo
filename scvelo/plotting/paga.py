@@ -13,7 +13,7 @@ from scanpy.plotting._tools.paga import paga as scanpy_paga
 
 
 @doc_params(scatter=doc_scatter)
-def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None, threshold=0.2, layout=None,
+def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None, threshold=None, layout=None,
          layout_kwds={}, init_pos=None, root=0, labels=None, single_component=False, solid_edges='connectivities',
          dashed_edges='connectivities', transitions='transitions_confidence', node_size_scale=1, node_size_power=0.5,
          edge_width_scale=.4, min_edge_width=None, max_edge_width=1, arrowsize=15, random_state=0, pos=None,
@@ -45,6 +45,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
     node_colors = colors if node_colors is None else node_colors
     bases = [default_basis(adata) if basis is None else basis for basis in make_unique_valid_list(adata, basis)]
 
+    if threshold is None and 'threshold' in adata.uns['paga']: threshold = adata.uns['paga']['threshold']
     paga_kwargs = {'threshold': threshold, 'layout': layout, 'layout_kwds': layout_kwds, 'init_pos': init_pos,
                    'root': root, 'labels': labels, 'single_component': single_component,
                    'solid_edges': solid_edges, 'dashed_edges': dashed_edges, 'transitions': transitions,
