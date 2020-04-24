@@ -342,7 +342,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
 
             smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
 
-            if add_outline:
+            if isinstance(add_outline, (list, tuple, np.ndarray)) or add_outline:
                 if isinstance(add_outline, str):
                     if add_outline in adata.var.keys() and basis in adata.var_names:
                         add_outline = str(adata[:, basis].var[add_outline][0])
@@ -352,6 +352,9 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                     if kwargs['s'] is not None: kwargs['s'] *= 1.2
                     x, y, c = scatter_array[:, 0], scatter_array[:, 1], color_array  # restore order of values
                     x, y, c = x[idx], y[idx], c[idx] if not isinstance(c, str) and len(c) == adata.n_obs else c
+                    if isinstance(c, np.ndarray) and not isinstance(c[0], str) and 'vmid' not in kwargs:
+                        if 'vmin' not in kwargs: kwargs['vmin'] = np.min(color_array)
+                        if 'vmax' not in kwargs: kwargs['vmax'] = np.max(color_array)
                     ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
                 if idx is None or np.sum(idx) > 0:  # if all or anything to be outlined
                     plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)

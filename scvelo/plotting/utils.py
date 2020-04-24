@@ -147,10 +147,8 @@ def groups_to_bool(adata, groups, groupby=None):
         else 'louvain' if 'louvain' in adata.obs.keys() else None
 
     if isinstance(groups, (list, tuple, np.ndarray, np.record)):
-        if groupby is not None:
+        if groupby is not None and isinstance(groups[0], str):
             groups = np.array([key in groups for key in adata.obs[groupby]])
-        else:
-            raise ValueError('groupby attribute not valid.')
 
     if groupby is not None and groupby in adata.obs.keys():
         c = adata.obs[groupby]
@@ -158,9 +156,7 @@ def groups_to_bool(adata, groups, groupby=None):
             valid = np.array(~pd.isnull(c))
             groups = valid if groups is None or len(groups) != len(c) else groups & valid
 
-    if not isinstance(groups, (list, tuple, np.ndarray, np.record)):
-        groups = None
-
+    groups = np.ravel(groups) if isinstance(groups, (list, tuple, np.ndarray, np.record)) else None
     return groups
 
 
