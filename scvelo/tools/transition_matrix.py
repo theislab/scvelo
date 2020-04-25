@@ -2,6 +2,7 @@ from ..preprocessing.neighbors import get_connectivities, get_neighs
 from .utils import normalize
 
 import numpy as np
+import pandas as pd
 from scipy.spatial.distance import pdist, squareform
 from scipy.sparse import csr_matrix, SparseEfficiencyWarning
 
@@ -10,8 +11,8 @@ warnings.simplefilter('ignore', SparseEfficiencyWarning)
 
 
 def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_transitions=True, scale=10, perc=None,
-                      use_negative_cosines=False, weight_diffusion=0, scale_diffusion=1, weight_indirect_neighbors=None,
-                      n_neighbors=None, vgraph=None):
+                      threshold=None, use_negative_cosines=False, weight_diffusion=0, scale_diffusion=1,
+                      weight_indirect_neighbors=None, n_neighbors=None, vgraph=None):
     """Computes cell-to-cell transition probabilities
 
     .. math::
@@ -92,8 +93,8 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
     if n_neighbors is not None:
         T = T.multiply(get_connectivities(adata, mode='distances', n_neighbors=n_neighbors, recurse_neighbors=True))
 
-    if perc is not None:
-        threshold = np.percentile(T.data, perc)
+    if perc is not None or threshold is not None:
+        if threshold is None: threshold = np.percentile(T.data, perc)
         T.data[T.data < threshold] = 0
         T.eliminate_zeros()
 
@@ -115,3 +116,15 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
         T = normalize(T)
 
     return T
+
+
+def get_forward_transitions(adata, root=0, basis=None, n_steps=100, **kwargs):
+    X = [root]
+    T = transition_matrix(adata, **kwargs)
+    for i in range(n_steps):
+        ix = np.random.choice(T[X[-1]].indices, p=T[X[-1]].data)
+        X.append(ix)
+    X = pd.unique(X)
+    if basis is not None and f'X_{basis}' in adata.obsm.keys():
+        X = adata.obsm[f'X_{basis}'][X].T
+    return X
