@@ -555,6 +555,9 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
     from .velocity_graph import velocity_graph
     from .velocity_pseudotime import velocity_pseudotime
 
+    if 'fit_t' not in adata.layers.keys():
+        raise ValueError('you need to run `tl.recover_dynamics` first.')
+
     if vkey + '_graph' not in adata.uns.keys():
         velocity_graph(adata, approx=True)
 

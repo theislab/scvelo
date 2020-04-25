@@ -121,7 +121,6 @@ class PAGA2(PAGA):
         df = pd.DataFrame(T, index=cats, columns=cats)
         if root is not None:
             df.pop(root)
-        print(np.nanmax(df.values / (df.values > 0), axis=0))
         self.threshold = np.nanmin(np.nanmax(df.values / (df.values > 0), axis=0)) - 1e-6
 
 def paga(
