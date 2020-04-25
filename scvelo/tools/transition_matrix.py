@@ -89,9 +89,6 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
         w = weight_indirect_neighbors
         T = w * T + (1-w) * direct_neighbors.multiply(T)
 
-    if backward: T = T.T
-    T = normalize(T)
-
     if n_neighbors is not None:
         T = T.multiply(get_connectivities(adata, mode='distances', n_neighbors=n_neighbors, recurse_neighbors=True))
 
@@ -99,6 +96,9 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
         threshold = np.percentile(T.data, perc)
         T.data[T.data < threshold] = 0
         T.eliminate_zeros()
+
+    if backward: T = T.T
+    T = normalize(T)
 
     if 'X_' + str(basis) in adata.obsm.keys():
         dists_emb = (T > 0).multiply(squareform(pdist(adata.obsm['X_' + basis])))
