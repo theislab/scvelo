@@ -11,9 +11,10 @@ from scipy.sparse import issparse, csr_matrix
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n_neighbors=10, arrows=None, arrowsize=3,
-                   alpha=.8, perc=90, edge_width=.2, edge_color='grey', edges_on_top=None, color=None, layer=None,
-                   size=None, groups=None, components=None, title=None, dpi=None, show=True, save=None, ax=None, **kwargs):
+def velocity_graph(adata, basis=None, vkey='velocity', which_graph=None, n_neighbors=10, arrows=None, arrowsize=3,
+                   alpha=.8, perc=90, threshold=None, edge_width=.2, edge_color='grey', edges_on_top=None, color=None,
+                   layer=None, size=None, groups=None, components=None, title=None, dpi=None, show=True, save=None,
+                   ax=None, **kwargs):
     """\
     Plot of the velocity graph.
 
@@ -21,7 +22,7 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    which_graph: `'velocity'` or `'neighbors'` (default: `'velocity'`)
+    which_graph: `'velocity_graph'` or `'connectivities'`  (default: `None`)
         Whether to show transitions from velocity graph or connectivities from neighbors graph.
     n_neighbors: `int` (default: 10)
         Number of neighbors to be included for generating connectivity / velocity graph.
@@ -37,31 +38,31 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph='velocity', n
         `matplotlib.Axis` if `show==False`
     """
     basis = default_basis(adata, **kwargs) if basis is None else get_basis(adata, basis)
-    kwargs.update({"basis": basis, "title": which_graph + ' graph' if title is None else title,
+    kwargs.update({"basis": basis, "title": which_graph if title is None else title,
                    "alpha": alpha, "components": components, "groups": groups, "dpi": dpi, "show": False, "save": None})
     ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, zorder=0, **kwargs)
 
     from networkx import Graph, DiGraph
     if which_graph in {'neighbors', 'connectivities'}:
         T = get_neighs(adata, 'connectivities').copy()
-        if perc is not None:
-            threshold = np.percentile(T.data, perc)
+        if perc is not None or threshold is not None:
+            if threshold is None: threshold = np.percentile(T.data, perc)
             T.data[T.data < threshold] = 0
             T.eliminate_zeros()
     elif which_graph in adata.uns.keys():
         T = adata.uns[which_graph].copy()
-        if perc is not None:
-            threshold = np.percentile(T.data, perc)
+        if perc is not None or threshold is not None:
+            if threshold is None: threshold = np.percentile(T.data, perc)
             T.data[T.data < threshold] = 0
             T.eliminate_zeros()
     elif hasattr(adata, 'obsp') and which_graph in adata.obsp.keys():
         T = adata.obsp[which_graph].copy()
-        if perc is not None:
-            threshold = np.percentile(T.data, perc)
+        if perc is not None or threshold is not None:
+            if threshold is None: threshold = np.percentile(T.data, perc)
             T.data[T.data < threshold] = 0
             T.eliminate_zeros()
     else:
-        T = transition_matrix(adata, vkey=vkey, weight_indirect_neighbors=0, n_neighbors=n_neighbors, perc=perc)
+        T = transition_matrix(adata, vkey=vkey, weight_indirect_neighbors=0, n_neighbors=n_neighbors, perc=perc, threshold=threshold)
 
     if groups is not None:
         if issparse(T): T = T.A
