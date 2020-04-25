@@ -76,7 +76,7 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
         else: raise ValueError('No basis specified')
 
     if 'X_' + basis not in adata.obsm_keys():
-        raise ValueError('You need compute the embedding first.')
+        raise ValueError('You need to compute the embedding first.')
 
     if direct_pca_projection and 'pca' in basis:
         logg.warn(
