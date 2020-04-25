@@ -227,14 +227,15 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, sort_values=No
         pd.set_option('precision', precision)
 
     if isinstance(data, AnnData):
+        keys, keys_split = keys.split('*') if isinstance(keys, str) and '*' in keys else (keys, None)
         keys, key_add = keys.split('/') if isinstance(keys, str) and '/' in keys else (keys, None)
         keys = [keys] if isinstance(keys, str) else keys
         key = keys[0]
 
         s_keys = ['obs', 'var', 'obsm', 'varm', 'uns', 'layers']
         d_keys = [data.obs.keys(), data.var.keys(),
-                      data.obsm.keys(), data.varm.keys(),
-                      data.uns.keys(), data.layers.keys()]
+                  data.obsm.keys(), data.varm.keys(),
+                  data.uns.keys(), data.layers.keys()]
 
         if hasattr(data, 'obsp') and hasattr(data, 'varp'):
             s_keys.extend(['obsp', 'varp'])
@@ -247,6 +248,9 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, sort_values=No
         elif key in data.obs_names:
             df = var_df(data, keys, layer=layer)
         else:
+            if keys_split is not None:
+                keys = [k for k in list(data.obs.keys()) + list(data.var.keys()) if key in k and keys_split in k]
+                key = keys[0]
             s_key = [s for (s, d_key) in zip(s_keys, d_keys) if key in d_key]
             if len(s_key) == 0:
                 raise ValueError("'" + key + "' not found in any of " + ", ".join(s_keys) + ".")
@@ -260,6 +264,11 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, sort_values=No
             if index is None:
                 index = data.var_names if s_key == 'varm' else data.obs_names if s_key in {'obsm', 'layers'} else None
             columns = data.var_names if columns is None and s_key == 'layers' else columns
+    elif isinstance(data, pd.DataFrame):
+        if isinstance(keys, str) and '*' in keys:
+            keys, keys_split = keys.split('*')
+            keys = [k for k in data.columns if keys in k and keys_split in k]
+        df = data[keys] if keys is not None else data
     else:
         df = data
 
@@ -272,7 +281,7 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, sort_values=No
 
     if dropna:
         df.replace("", np.nan, inplace=True)
-        how = dropna if not isinstance(dropna, str) else 'all'
+        how = dropna if isinstance(dropna, str) else 'all'
         df.dropna(how=how, axis=0, inplace=True)
         df.dropna(how=how, axis=1, inplace=True)
 
