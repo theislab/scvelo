@@ -21,6 +21,28 @@ g2m_genes_list = \
      'Cenpe', 'Ctcf', 'Nek2', 'G2e3', 'Gas2l3', 'Cbx5', 'Cenpa']
 
 
+def get_phase_marker_genes(adata):
+    """\
+    Return S and G2M phase marker genes.
+
+    Parameters
+    ----------
+    adata
+        The annotated data matrix.
+    phase
+    Returns
+    -------
+    List of S and/or G2M phase marker genes.
+    """
+    name, gene_names = adata.var_names[0], adata.var_names
+    up, low, cap = name.isupper(), name.islower(), name[0].isupper() and name[1:].islower()
+    s_genes_list_ = [x.upper() if up else x.lower() if low else x.capitalize() for x in s_genes_list]
+    g2m_genes_list_ = [x.upper() if up else x.lower() if low else x.capitalize() for x in g2m_genes_list]
+    s_genes = np.array([x for x in s_genes_list_ if x in gene_names])
+    g2m_genes = np.array([x for x in g2m_genes_list_ if x in gene_names])
+    return s_genes, g2m_genes
+
+
 def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kwargs):
     """\
     Score cell cycle genes.
@@ -56,11 +78,9 @@ def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kw
 
     adata = adata.copy() if copy else adata
 
-    gene_names = [name.capitalize() for name in adata.var_names]
-    if s_genes is None:
-        s_genes = [x for x in s_genes_list if x in gene_names]
-    if g2m_genes is None:
-        g2m_genes = [x for x in g2m_genes_list if x in gene_names]
+    s_genes_, g2m_genes_ = get_phase_marker_genes(adata)
+    if s_genes is None: s_genes = s_genes_
+    if g2m_genes is None: g2m_genes = g2m_genes_
 
     ctrl_size = min(len(s_genes), len(g2m_genes))
 
