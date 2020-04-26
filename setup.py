@@ -6,16 +6,9 @@ setup(
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
     python_requires='>=3.6',
-    install_requires=['scanpy>=1.4',
-                      'anndata>=0.7',
-                      'numpy>=1.17',
-                      'scipy>=1.3',
-                      'pandas>=0.23',
-                      'scikit-learn>=0.21.2',
-                      'matplotlib>=3.1.2',
-                      'umap-learn>=0.3.10',
-                      'loompy>=2.0.12'
-                      ],
+    install_requires=[
+        l.strip() for l in Path('requirements.txt').read_text('utf-8').splitlines()
+    ],
     packages=find_packages(),
     author="Volker Bergen",
     author_email="volker.bergen@helmholtz-muenchen.de",
@@ -34,5 +27,6 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
-        'Topic :: Scientific/Engineering :: Visualization']
-    )
+        'Topic :: Scientific/Engineering :: Visualization'
+    ]
+)

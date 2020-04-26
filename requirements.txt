@@ -1,0 +1,16 @@
+# main requirements for single-cell analysis
+anndata>=0.7          # added new attributes `obsp` and `varp` (v0.7)
+scanpy>=1.4.3         # bugfix of temporarily broken neighbors (v1.4.3)
+
+# for reading loom files with spliced/unspliced counts
+loompy>=2.0.12        # introduced sparsity support (v2.0.12)
+
+# for computing neighbor graph connectivities
+umap-learn>=0.3.10    # removed numba warnings (v0.3.10)
+
+# standard requirements for data analysis
+numpy>=1.17           # extension/speedup in .nan_to_num, .exp (v1.17)
+scipy>=1.4.1          # introduced PCA sparsity support (v1.4)
+pandas>=0.23          # merging/sorting extensions (v0.23)
+scikit-learn>=0.21.2  # bugfix in .utils.sparsefuncs (v0.21.2)
+matplotlib>=3.1.2     # several bugfixes (v3.1.2)
