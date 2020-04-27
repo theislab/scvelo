@@ -237,7 +237,7 @@ class DynamicsRecovery(BaseDynamics):
 
 
 default_pars_names = ['alpha', 'beta', 'gamma', 't_', 'scaling', 'std_u', 'std_s', 'likelihood', 'u0', 's0',
-                      'pval_steady', 'steady_u', 'steady_s']
+                      'pval_steady', 'steady_u', 'steady_s', 'variance']
 
 
 def read_pars(adata, pars_names=None, key='fit'):
@@ -342,8 +342,8 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
     if return_model is None:
         return_model = len(var_names) < 5
 
-    alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0, pval, steady_u, steady_s = read_pars(adata)
-    likelihood[np.isnan(likelihood)] = 0
+    alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0, pval, steady_u, steady_s, varx = read_pars(adata)
+    #likelihood[np.isnan(likelihood)] = 0
     idx, L, P = [], [], []
     T = adata.layers['fit_t'] if 'fit_t' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
     Tau = adata.layers['fit_tau'] if 'fit_tau' in adata.layers.keys() else np.zeros(adata.shape) * np.nan
@@ -367,7 +367,7 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
             beta[ix] /= scaling[ix]
             steady_u[ix] *= scaling[ix]
 
-            std_u[ix], std_s[ix], likelihood[ix] = dm.std_u, dm.std_s, dm.likelihood
+            std_u[ix], std_s[ix], likelihood[ix], varx[ix] = dm.std_u, dm.std_s, dm.likelihood, dm.varx
             L.append(dm.loss)
             if plot_results and i < 4:
                 P.append(np.array(dm.pars))
@@ -377,7 +377,7 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
             logg.warn(dm.gene, 'not recoverable due to insufficient samples.')
     progress.finish()
 
-    write_pars(adata, [alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0, pval, steady_u, steady_s])
+    write_pars(adata, [alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood, u0, s0, pval, steady_u, steady_s, varx])
     if 'fit_t' in adata.layers.keys():
         adata.layers['fit_t'][:, idx] = T[:, idx] if conn is None else conn.dot(T[:, idx])
     else:
@@ -496,6 +496,7 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
 
     alpha, beta, gamma, T, t_, Tau, Tau_ = alpha / m, beta / m, gamma / m, T * m, t_ * m, Tau * m, Tau_ * m
 
+    mz[mz == 1] = np.nan
     write_pars(adata, [alpha, beta, gamma, t_, mz], pars_names=['alpha', 'beta', 'gamma', 't_', 'alignment_scaling'])
     adata.layers['fit_t'] = T
     adata.layers['fit_tau'] = Tau
