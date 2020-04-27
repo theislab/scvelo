@@ -263,7 +263,12 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, sort_values=No
                 df = df[key_add]
             if index is None:
                 index = data.var_names if s_key == 'varm' else data.obs_names if s_key in {'obsm', 'layers'} else None
-            columns = data.var_names if columns is None and s_key == 'layers' else columns
+            elif isinstance(index, str) and index in data.obs.keys():
+                index = pd.Categorical(data.obs[index]).categories
+            if columns is None and s_key == 'layers':
+                columns = data.var_names
+            elif isinstance(columns, str) and columns in data.obs.keys():
+                columns = pd.Categorical(data.obs[columns]).categories
     elif isinstance(data, pd.DataFrame):
         if isinstance(keys, str) and '*' in keys:
             keys, keys_split = keys.split('*')
@@ -288,6 +293,11 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, sort_values=No
     if sort_values:
         sort_by = sort_values if isinstance(sort_values, str) and sort_values in df.columns else df.columns[0]
         df = df.sort_values(by=sort_by, ascending=False)
+
+    if df.index[0] in data.var_names: df.var_names = df.index
+    elif df.index[0] in data.obs_names: df.obs_names = df.index
+    if df.columns[0] in data.var_names: df.var_names = df.columns
+    elif df.columns[0] in data.obs_names: df.obs_names = df.columns
 
     return df
 
