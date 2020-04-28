@@ -294,10 +294,12 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, sort_values=No
         sort_by = sort_values if isinstance(sort_values, str) and sort_values in df.columns else df.columns[0]
         df = df.sort_values(by=sort_by, ascending=False)
 
-    if df.index[0] in data.var_names: df.var_names = df.index
-    elif df.index[0] in data.obs_names: df.obs_names = df.index
-    if df.columns[0] in data.var_names: df.var_names = df.columns
-    elif df.columns[0] in data.obs_names: df.obs_names = df.columns
+    if hasattr(data, 'var_names'):
+        if df.index[0] in data.var_names: df.var_names = df.index
+        elif df.columns[0] in data.var_names: df.var_names = df.columns
+    if hasattr(data, 'obs_names'):
+        if df.index[0] in data.obs_names: df.obs_names = df.index
+        elif df.columns[0] in data.obs_names: df.obs_names = df.columns
 
     return df
 
