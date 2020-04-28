@@ -162,8 +162,13 @@ def velocity_pseudotime(adata, vkey='velocity', groupby=None, groups=None, root=
         Velocity pseudotime obtained from velocity graph.
     """
     strings_to_categoricals(adata)
-    root = 'root_cells' if root is None and 'root_cells' in adata.obs.keys() else root
-    end = 'end_points' if end is None and 'end_points' in adata.obs.keys() else end
+    if root is None and 'root_cells' in adata.obs.keys():
+        root0 = adata.obs['root_cells'][0]
+        if not np.isnan(root0) and not isinstance(root0, str): root = 'root_cells'
+    if end is None and 'end_points' in adata.obs.keys():
+        end0 = adata.obs['end_points'][0]
+        if not np.isnan(end0) and not isinstance(end0, str): end = 'end_points'
+
     groupby = 'cell_fate' if groupby is None and 'cell_fate' in adata.obs.keys() else groupby
     if groupby is not None:
         logg.warn('Only set groupby, when you have evident distinct clusters/lineages,'
