@@ -313,6 +313,10 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
     adata = data.copy() if copy else data
     logg.info('recovering dynamics', r=True)
 
+    if len(set(adata.var_names)) != len(adata.var_names):
+        logg.warn('Duplicate var_names found. Making them unique.')
+        adata.var_names_make_unique()
+
     if 'Ms' not in adata.layers.keys() or 'Mu' not in adata.layers.keys(): use_raw = True
     if fit_connected_states is None: fit_connected_states = not use_raw
 
@@ -494,7 +498,12 @@ def align_dynamics(data, t_max=None, dm=None, idx=None, mode=None, remove_outlie
         mz = np.clip(mz, mu - 3 * std, mu + 3 * std)
         m = mz / mz_prev
 
-    alpha, beta, gamma, T, t_, Tau, Tau_ = alpha / m, beta / m, gamma / m, T * m, t_ * m, Tau * m, Tau_ * m
+    if idx is None:
+        alpha, beta, gamma, T, t_, Tau, Tau_ = alpha / m, beta / m, gamma / m, T * m, t_ * m, Tau * m, Tau_ * m
+    else:
+        m_ = m[idx]
+        alpha[idx], beta[idx], gamma[idx] = alpha[idx] / m_, beta[idx] / m_, gamma[idx] / m_
+        T[:, idx], t_[idx], Tau[:, idx], Tau_[:, idx] = T[:, idx] * m_, t_[idx] * m_, Tau[:, idx] * m_, Tau_[:, idx] * m_
 
     mz[mz == 1] = np.nan
     write_pars(adata, [alpha, beta, gamma, t_, mz], pars_names=['alpha', 'beta', 'gamma', 't_', 'alignment_scaling'])

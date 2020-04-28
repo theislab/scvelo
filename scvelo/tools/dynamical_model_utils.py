@@ -1,3 +1,4 @@
+from .. import logging as logg
 from ..preprocessing.moments import get_connectivities
 from .utils import make_dense, round
 
@@ -585,7 +586,11 @@ class BaseDynamics:
 
         self.perc = perc
         self.recoverable = True
-        self.initialize_weights()
+        try:
+            self.initialize_weights()
+        except:
+            self.recoverable = False
+            logg.warn(f'Model for {self.gene} could not be instantiated.')
 
         self.refit_time = fit_time
 
