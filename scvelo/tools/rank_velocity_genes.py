@@ -1,6 +1,7 @@
 from .. import settings
 from .. import logging as logg
 from .utils import strings_to_categoricals, vcorrcoef
+from .velocity_pseudotime import velocity_pseudotime
 
 from scipy.sparse import issparse
 import numpy as np
@@ -53,7 +54,7 @@ def select_groups(adata, groups='all', key='louvain'):
     return groups, groups_masks
 
 
-def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='dpt_pseudotime', resolution=None,
+def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='velocity_pseudotime', resolution=None,
                       min_likelihood=None, copy=False):
     """Computes velocity clusters via louvain on velocities.
 
@@ -78,7 +79,7 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='dpt
         Match the names of the velocity clusters with the names of this key (.obs).
     sort_by: `str` or `None` (default: `'dpt_pseudotime'`)
         Sort velocity clusters by this key (.obs).
-    resolution: `str` or `None` (default: `None`)
+    resolution: `float` (default: 0.7)
         Resolution for louvain modularity.
     min_likelihood: `float` between `0` and `1` or `None` (default: `None`)
         Only rank velocity of genes with a likelihood higher than min_likelihood.
@@ -115,10 +116,8 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='dpt
         min_dispersion = np.percentile(dispersions, 20)
         tmp_filter &= (dispersions > min_dispersion)
 
-    if 'fit_likelihood' in adata.var.keys():
-        l = adata.var['fit_likelihood']
-        min_likelihood = .1 if min_likelihood is None else min_likelihood
-        tmp_filter &= (l > min_likelihood)
+    if 'fit_likelihood' in adata.var.keys() and min_likelihood is not None:
+        tmp_filter &= (adata.var['fit_likelihood'] > min_likelihood)
 
     from .. import AnnData
     vdata = AnnData(adata.layers[vkey][:, tmp_filter])
@@ -132,25 +131,29 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='dpt
     logg.switch_verbosity('off', module='scanpy')
     sc.pp.pca(vdata, n_comps=20, svd_solver='arpack')
     sc.pp.neighbors(vdata, n_pcs=20)
-    sc.tl.louvain(vdata, resolution=resolution)
+    sc.tl.louvain(vdata, resolution=.7 if resolution is None else resolution)
     logg.switch_verbosity('on', module='scanpy')
 
+    if sort_by == 'velocity_pseudotime' and sort_by not in adata.obs.keys():
+        velocity_pseudotime(adata, vkey=vkey)
     if sort_by in vdata.obs.keys():
         vc = vdata.obs['louvain']
         vc_cats = vc.cat.categories
         mean_times = [np.mean(vdata.obs[sort_by][vc == cat]) for cat in vc_cats]
         vdata.obs['louvain'].cat.reorder_categories(vc_cats[np.argsort(mean_times)], inplace=True)
-        vdata.obs['louvain'].cat.categories = np.arange(len(vc_cats))
 
     if isinstance(match_with, str) and match_with in adata.obs.keys():
         from .utils import most_common_in_list
         vc = vdata.obs['louvain']
+        cats_nums = {cat: 0 for cat in adata.obs[match_with].cat.categories}
         for i, cat in enumerate(vc.cat.categories):
             cells_in_cat = np.where(vc == cat)[0]
             new_cat = most_common_in_list(adata.obs[match_with][cells_in_cat])
-            vc = vc.cat.rename_categories({cat: str(new_cat) + ' ' + str(cat)})
+            cats_nums[new_cat] += 1
+            vc = vc.cat.rename_categories({cat: str(new_cat) + ' (' + str(cats_nums[new_cat]) + ')'})
         vdata.obs['louvain'] = vc
-
+    else:
+        vdata.obs['louvain'].cat.categories = np.arange(len(vdata.obs['louvain'].cat.categories))
     adata.obs[vkey + '_clusters'] = vdata.obs['louvain'].copy()
 
     del vdata
