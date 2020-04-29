@@ -265,7 +265,7 @@ def _paga(adata, threshold=None, color=None, layout=None, layout_kwds=None, init
 
     def is_flat(x):
         has_one_per_category = (isinstance(x, cabc.Collection) and len(x) == len(adata.obs[groups_key].cat.categories))
-        return (has_one_per_category or x is None or isinstance(x, str))
+        return has_one_per_category or x is None or isinstance(x, str)
 
     if is_flat(colors):
         colors = [colors]
@@ -462,15 +462,9 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
 
     # count number of connected components
     n_components, labels = scipy.sparse.csgraph.connected_components(adjacency_solid)
-    if n_components > 1 and not single_component:
-        logg.debug(
-            'Graph has more than a single connected component. '
-            'To restrict to this component, pass `single_component=True`.'
-        )
     if n_components > 1 and single_component:
         component_sizes = np.bincount(labels)
-        largest_component = np.where(
-            component_sizes == component_sizes.max())[0][0]
+        largest_component = np.where(component_sizes == component_sizes.max())[0][0]
         adjacency_solid = adjacency_solid.tocsr()[labels == largest_component, :]
         adjacency_solid = adjacency_solid.tocsc()[:, labels == largest_component]
         colors = np.array(colors)[labels == largest_component]
@@ -480,6 +474,16 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
         nx_g_solid = nx.Graph(adjacency_solid)
         if dashed_edges is not None:
             raise ValueError('`single_component` only if `dashed_edges` is `None`.')
+
+    # groups sizes
+    if groups_key is not None and groups_key + '_sizes' in adata.uns:
+        groups_sizes = adata.uns[groups_key + '_sizes']
+    else:
+        groups_sizes = np.ones(len(node_labels))
+    base_scale_scatter = 2000
+    base_pie_size = (base_scale_scatter / (np.sqrt(adjacency_solid.shape[0]) + 10) * node_size_scale)
+    median_group_size = np.median(groups_sizes)
+    groups_sizes = base_pie_size * np.power(groups_sizes / median_group_size, node_size_power)
 
     # edge widths
     base_edge_width = edge_width_scale * 5 * rcParams['lines.linewidth']
@@ -513,7 +517,8 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
         widths = base_edge_width * np.array(widths)
         if min_edge_width is not None or max_edge_width is not None:
             widths = np.clip(widths, min_edge_width, max_edge_width)
-        nx.draw_networkx_edges(g_dir, pos, ax=ax, width=widths, edge_color='k', arrowsize=arrowsize, arrowstyle='-|>')
+        nx.draw_networkx_edges(g_dir, pos, ax=ax, width=widths, edge_color='k',
+                               arrowsize=arrowsize, arrowstyle='-|>', node_size=groups_sizes)
 
     if export_to_gexf:
         if isinstance(colors[0], tuple):
@@ -522,11 +527,7 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
         for count, n in enumerate(nx_g_solid.nodes()):
             nx_g_solid.node[count]['label'] = str(node_labels[count])
             nx_g_solid.node[count]['color'] = str(colors[count])
-            nx_g_solid.node[count]['viz'] = dict(position=dict(
-                x=1000 * pos[count][0],
-                y=1000 * pos[count][1],
-                z=0,
-            ))
+            nx_g_solid.node[count]['viz'] = dict(position=dict(x=1000 * pos[count][0], y=1000 * pos[count][1], z=0))
         filename = settings.writedir / 'paga_graph.gexf'
         logg.warn(f'exporting to {filename}')
         settings.writedir.mkdir(parents=True, exist_ok=True)
@@ -535,16 +536,6 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
     ax.set_frame_on(frameon)
     ax.set_xticks([])
     ax.set_yticks([])
-
-    # groups sizes
-    if groups_key is not None and groups_key + '_sizes' in adata.uns:
-        groups_sizes = adata.uns[groups_key + '_sizes']
-    else:
-        groups_sizes = np.ones(len(node_labels))
-    base_scale_scatter = 2000
-    base_pie_size = (base_scale_scatter / (np.sqrt(adjacency_solid.shape[0]) + 10) * node_size_scale)
-    median_group_size = np.median(groups_sizes)
-    groups_sizes = base_pie_size * np.power(groups_sizes / median_group_size, node_size_power)
 
     if fontsize is None:
         fontsize = rcParams['legend.fontsize']
