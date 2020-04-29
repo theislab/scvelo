@@ -4,6 +4,7 @@ from .preprocessing.utils import set_initial_size
 import os, re
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_categorical_dtype
 from urllib.request import urlretrieve
 from pathlib import Path
 from scipy.sparse import issparse
@@ -263,6 +264,12 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, sort_values=No
                 df = df[key_add]
             if index is None:
                 index = data.var_names if s_key == 'varm' else data.obs_names if s_key in {'obsm', 'layers'} else None
+                if index is None and s_key == 'uns' and hasattr(df, 'shape'):
+                    key_cats = np.array([key for key in data.obs.keys() if is_categorical_dtype(data.obs[key])])
+                    num_cats = [len(data.obs[key].cat.categories) == df.shape[0] for key in key_cats]
+                    if np.sum(num_cats) == 1:
+                        index = data.obs[key_cats[num_cats][0]].cat.categories
+                        if columns is None and len(df.shape) > 1 and df.shape[0] == df.shape[1]: columns = index
             elif isinstance(index, str) and index in data.obs.keys():
                 index = pd.Categorical(data.obs[index]).categories
             if columns is None and s_key == 'layers':
