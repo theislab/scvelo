@@ -60,6 +60,7 @@ Tools (tl)
    tl.rank_velocity_genes
    tl.rank_dynamical_genes
    tl.differential_kinetic_test
+   tl.paga
 
 
 Plotting (pl)
@@ -77,6 +78,7 @@ Plotting (pl)
    pl.proportions
    pl.hist
    pl.heatmap
+   pl.paga
 
 Datasets
 ~~~~~~~~

@@ -4,15 +4,12 @@ from .. import logging as logg
 from .utils import strings_to_categoricals, most_common_in_list
 from .velocity_graph import vals_to_csr
 from .velocity_pseudotime import velocity_pseudotime
+from .rank_velocity_genes import velocity_clusters
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 from pandas.api.types import is_categorical
-
-try: from scanpy.tools.paga import PAGA
-except ImportError:
-    try: from scanpy.tools._paga import PAGA
-    except ImportError: pass
+from scanpy.tools._paga import PAGA
 
 
 def get_igraph_from_adjacency(adjacency, directed=None):
@@ -55,8 +52,18 @@ def get_sparse_from_igraph(graph, weight_attr=None):
         return csr_matrix(shape)
 
 
+def set_row_csr(csr, rows, value=0):
+    """Set all nonzero elements to the given value. Useful to set to 0 mostly.
+    """
+    for row in rows:
+        csr.data[csr.indptr[row]:csr.indptr[row+1]] = value
+    if value == 0:
+        csr.eliminate_zeros()
+
+
 class PAGA_tree(PAGA):
-    def __init__(self, adata, groups=None, vkey=None, use_time_prior=None, minimum_spanning_tree=None):
+    def __init__(self, adata, groups=None, vkey=None, use_time_prior=None, use_root_prior=None,
+                 minimum_spanning_tree=None):
         super().__init__(adata=adata, groups=groups, model='v1.2')
         if groups is None:
             groups = 'clusters' if 'clusters' in adata.obs.keys() \
@@ -64,6 +71,7 @@ class PAGA_tree(PAGA):
         self.groups = groups
         self.vkey = vkey
         self.use_time_prior = use_time_prior
+        self.use_root_prior = use_root_prior
         self.minimum_spanning_tree = minimum_spanning_tree
 
     # overwrite to use flexible vkey
@@ -84,9 +92,11 @@ class PAGA_tree(PAGA):
                 f"but shoud have shape {(self._adata.n_obs, self._adata.n_obs)}"
             )
         import igraph
+        root = None
         clusters = self._adata.obs[self.groups]
         cats = clusters.cat.categories
-        vgraph = (self._adata.uns[vkey] > .1) #* (self._neighbors.distances > 0)
+        vgraph = self._adata.uns[vkey] > .1
+
         if isinstance(self.use_time_prior, str) and self.use_time_prior in self._adata.obs.keys():
             vpt = self._adata.obs[self.use_time_prior].values
             rows, cols, vals = [], [], []
@@ -98,18 +108,26 @@ class PAGA_tree(PAGA):
                 rows.extend([i] * np.sum(idx_bool))
             vgraph = vals_to_csr(vals, rows, cols, shape=vgraph.shape)
 
-        if 'final_cells' in self._adata.obs.keys() and is_categorical(self._adata.obs['final_cells']):
-            final_cells = self._adata.obs['final_cells'].cat.categories
-            if len(final_cells) > 0 and isinstance(final_cells[0], str):
-                vgraph[clusters.values.isin(final_cells)] = 0
+            if 'final_cells' in self._adata.obs.keys() and is_categorical(self._adata.obs['final_cells']):
+                #set_row_csr(vgraph, rows=np.where([isinstance(c, str) for c in self._adata.obs['final_cells']])[0])
+                final_cells = self._adata.obs['final_cells'].cat.categories
+                if isinstance(final_cells[0], str):
+                    set_row_csr(vgraph, rows=np.where(clusters.values.isin(final_cells))[0])
+            if 'end_points' in self._adata.obs.keys() and not is_categorical(self._adata.obs['end_points']):
+                set_row_csr(vgraph, rows=np.where(self._adata.obs['end_points'] > .7)[0])
+
+        if self.use_root_prior and 'root_cells' in self._adata.obs.keys():
+            if is_categorical(self._adata.obs['root_cells']):
+                # set_row_csr(vgraph, rows=np.where([isinstance(c, str) for c in self._adata.obs['root_cells']])[0])
+                root_cells = self._adata.obs['root_cells'].cat.categories
+                if isinstance(root_cells[0], str):
+                    root = most_common_in_list(self._adata.obs['root_cells'])
+                    vgraph[:, np.where(clusters.values == root)[0]] = 0
+                    vgraph.eliminate_zeros()
+            else:
+                vgraph[:, np.where(self._adata.obs['root_cells'] > .7)[0]] = 0
                 vgraph.eliminate_zeros()
-        root = None
-        if 'root_cells' in self._adata.obs.keys() and is_categorical(self._adata.obs['root_cells']):
-            root_cells = self._adata.obs['root_cells'].cat.categories
-            if len(root_cells) > 0 and isinstance(root_cells[0], str):
-                root = most_common_in_list(self._adata.obs['root_cells'])
-                vgraph[:, clusters.values == root] = 0
-                vgraph.eliminate_zeros()
+
         membership = self._adata.obs[self._groups_key].cat.codes.values
         g = get_igraph_from_adjacency(vgraph, directed=True)
         vc = igraph.VertexClustering(g, membership=membership)
@@ -126,6 +144,8 @@ class PAGA_tree(PAGA):
 
         # remove non-confident direct paths if more confident indirect path is found.
         T = transitions_conf.A
+        threshold = max(np.nanmin(np.nanmax(T / (T > 0), axis=0)) - 1e-6, .01)
+        T *= (T > threshold)
         for i in range(len(T)):
             idx = T[i] > 0
             if np.any(idx):
@@ -135,10 +155,11 @@ class PAGA_tree(PAGA):
         if self.minimum_spanning_tree:
             T_tmp = T.copy()
             T_num = T > 0
-            T_sum = T_num.sum(0)
+            T_sum = np.sum(T_num, 0)
+            T_max = np.max(T_tmp)
             for i in range(len(T_tmp)):
                 if T_sum[i] == 1:
-                    T_tmp[np.where(T_num[:, i])[0][0], i] = 1
+                    T_tmp[np.where(T_num[:, i])[0][0], i] = T_max
             from scipy.sparse.csgraph import minimum_spanning_tree
             T_tmp = np.abs(minimum_spanning_tree(-T_tmp).A) > 0
             T = T_tmp * T
@@ -150,16 +171,11 @@ class PAGA_tree(PAGA):
         df = pd.DataFrame(T, index=cats, columns=cats)
         if root is not None:
             df.pop(root)
-        self.threshold = np.nanmin(np.nanmax(df.values / (df.values > 0), axis=0)) - 1e-6
+        self.threshold = max(np.nanmin(np.nanmax(df.values / (df.values > 0), axis=0)) - 1e-6, .01)
 
 
-def paga(
-        adata,
-        groups=None,
-        vkey='velocity',
-        use_time_prior=True,
-        minimum_spanning_tree=True,
-        copy=False):
+def paga(adata, groups=None, vkey='velocity', use_time_prior=True, use_root_prior=None,
+         minimum_spanning_tree=True, copy=False):
     """Mapping out the coarse-grained connectivity structures of complex manifolds [Wolf19]_.
     By quantifying the connectivity of partitions (groups, clusters) of the
     single-cell graph, partition-based graph abstraction (PAGA) generates a much
@@ -177,7 +193,9 @@ def paga(
     vkey: `str` or `None` (default: `None`)
         Key for annotations of observations/cells or variables/genes.
     use_time_prior : `str` or bool, optional (default: True)
-        Obs key for pseudo-time values. If True, 'latent_time' or 'velocity_pseudotime' is used if available.
+        Obs key for pseudo-time values. If True, 'velocity_pseudotime' is used if available.
+    use_root_prior : `str` or bool, optional (default: True)
+        Obs key for root/final states. If True, 'root_cells' and 'final_cells' are used if available.
     minimum_spanning_tree : bool, optional (default: True)
         Whether to prune the tree such that a path from A-to-B is removed if another more confident path exists.
     copy : `bool`, optional (default: `False`)
@@ -193,20 +211,23 @@ def paga(
         The adjacency matrix of the abstracted directed graph, weights correspond to
         confidence in the transitions between partitions.
     """
-    if groups is None:
-        groups = 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else None
-    if use_time_prior and not isinstance(use_time_prior, str):
-        use_time_prior = 'latent_time' if 'latent_time' in adata.obs.keys() else 'velocity_pseudotime'
-        if use_time_prior not in adata.obs.keys():
-            velocity_pseudotime(adata, vkey=vkey)
     if 'neighbors' not in adata.uns:
-        raise ValueError(
-            'You need to run `pp.neighbors` first to compute a neighborhood graph.')
+        raise ValueError('You need to run `pp.neighbors` first to compute a neighborhood graph.')
     adata = adata.copy() if copy else adata
     strings_to_categoricals(adata)
 
+    if groups is None:
+        groups = 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else None
+    elif groups == 'velocity_clusters' and 'velocity_clusters' not in adata.obs.keys():
+        velocity_clusters(adata)
+    if use_time_prior and not isinstance(use_time_prior, str):
+        use_time_prior = 'velocity_pseudotime'
+        if use_time_prior not in adata.obs.keys():
+            velocity_pseudotime(adata, vkey=vkey)
+
     logg.info('running PAGA', r=True)
-    paga = PAGA_tree(adata, groups, vkey=vkey, use_time_prior=use_time_prior, minimum_spanning_tree=minimum_spanning_tree)
+    paga = PAGA_tree(adata, groups, vkey=vkey, use_time_prior=use_time_prior, use_root_prior=use_root_prior,
+                     minimum_spanning_tree=minimum_spanning_tree)
 
     if 'paga' not in adata.uns:
         adata.uns['paga'] = {}
