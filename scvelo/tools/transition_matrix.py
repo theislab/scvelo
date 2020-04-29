@@ -31,7 +31,7 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
         Restrict transition to embedding if specified
     backward: `bool` (default: `False`)
         Whether to use the transition matrix to push forward (`False`) or to pull backward (`True`)
-    self_transitions: `bool` (default: `False`)
+    self_transitions: `bool` (default: `True`)
         Allow transitions from one node to itself.
     scale: `float` (default: 10)
         Scale parameter of gaussian kernel.
