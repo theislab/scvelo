@@ -360,7 +360,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                     plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
 
             # set legend if categorical categorical color vals
-            if is_categorical(adata, color):
+            if is_categorical(adata, color) and len(scatter_array) == adata.n_obs:
                 legend_loc = default_legend_loc(adata, color, legend_loc)
                 _add_legend(adata, ax, color, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
                             [patheffects.withStroke(linewidth=True, foreground='w')],
