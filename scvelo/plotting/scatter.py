@@ -327,13 +327,21 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
             # set color to grey for NAN values and for cells that are not in groups
             if groups is not None or is_categorical(adata, color) and np.any(pd.isnull(adata.obs[color])):
                 zorder = 0 if zorder is None else zorder
-                ax = scatter(adata, x=x, y=y, basis=basis, layer=layer, color='lightgrey', ax=ax, groups=None, **scatter_kwargs)
+                dummy = [scatter_kwargs.pop(key, None) for key in ['groups', 'add_linfit', 'add_polyfit', 'add_density']]
+                ax = scatter(adata, x=x, y=y, basis=basis, layer=layer, color='lightgrey', ax=ax, **scatter_kwargs)
+                if groups is not None and len(groups) == 1:
+                    if isinstance(groups[0], str) and groups[0] in adata.var.keys() and basis in adata.var_names:
+                        groups = str(adata[:, basis].var[groups[0]][0])
                 idx = groups_to_bool(adata, groups, color)
-                x, y = x[idx], y[idx]
-                if not isinstance(c, str) and len(c) == adata.n_obs:
-                    c = c[idx]
-                if title is None and groups is not None and len(groups) == 1 and isinstance(groups[0], str):
-                    title = groups[0]
+                if idx is not None:
+                    if np.sum(idx) > 0:  # if any group to be highlighted
+                        x, y = x[idx], y[idx]
+                        if not isinstance(c, str) and len(c) == adata.n_obs:
+                            c = c[idx]
+                        if title is None and groups is not None and len(groups) == 1 and isinstance(groups[0], str):
+                            title = groups[0]
+                    else:  # if nothing to be highlighted
+                        add_linfit, add_polyfit, add_density = None, None, None
 
             # check if higher value points should be plotted on top
             if sort_order and not isinstance(c, str) and not is_categorical(adata, color) and len(c) == len(x):
@@ -361,6 +369,8 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                     ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
                 if idx is None or np.sum(idx) > 0:  # if all or anything to be outlined
                     plot_outline(x, y, kwargs, outline_width, outline_color, zorder, ax=ax)
+                if idx is not None and np.sum(idx) == 0:  # if nothing to be outlined
+                    add_linfit, add_polyfit, add_density = None, None, None
 
             # set legend if categorical categorical color vals
             if is_categorical(adata, color) and len(scatter_array) == adata.n_obs:
