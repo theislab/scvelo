@@ -310,17 +310,6 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                     crange = max(np.abs(vmid - lb), np.abs(ub - vmid))
                     kwargs.update({"vmin": vmid - crange, "vmax": vmid + crange})
 
-            # set color to grey for NAN values and for cells that are not in groups
-            if groups is not None or is_categorical(adata, color) and np.any(pd.isnull(adata.obs[color])):
-                zorder = 0 if zorder is None else zorder
-                ax = scatter(adata, x=x, y=y, basis=basis, layer=layer, color='lightgrey', ax=ax, groups=None, **scatter_kwargs)
-                idx = groups_to_bool(adata, groups, color)
-                x, y = x[idx], y[idx]
-                if not isinstance(c, str) and len(c) == adata.n_obs:
-                    c = c[idx]
-                if title is None and groups is not None and len(groups) == 1 and isinstance(groups[0], str):
-                    title = groups[0]
-
             x, y = np.ravel(x), np.ravel(y)
             if len(x) != len(y):
                 raise ValueError('x or y do not share the same dimension.')
@@ -332,8 +321,21 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                     if not isinstance(color, str) or color != default_color(adata):
                         logg.warn('Invalid color key. Using grey instead.')
 
+            # store original order of color values
+            color_array, scatter_array = c, np.stack([x, y]).T
+
+            # set color to grey for NAN values and for cells that are not in groups
+            if groups is not None or is_categorical(adata, color) and np.any(pd.isnull(adata.obs[color])):
+                zorder = 0 if zorder is None else zorder
+                ax = scatter(adata, x=x, y=y, basis=basis, layer=layer, color='lightgrey', ax=ax, groups=None, **scatter_kwargs)
+                idx = groups_to_bool(adata, groups, color)
+                x, y = x[idx], y[idx]
+                if not isinstance(c, str) and len(c) == adata.n_obs:
+                    c = c[idx]
+                if title is None and groups is not None and len(groups) == 1 and isinstance(groups[0], str):
+                    title = groups[0]
+
             # check if higher value points should be plotted on top
-            color_array = c  # store original order of color values
             if sort_order and not isinstance(c, str) and not is_categorical(adata, color) and len(c) == len(x):
                 order = np.argsort(c)
                 x, y, c = x[order], y[order], c[order]
