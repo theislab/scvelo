@@ -336,6 +336,8 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
             adata.var['fit_r2'] = velo._r2
         else:
             raise ValueError('Variable name not found in var keys.')
+    if not isinstance(var_names, str):
+        var_names = list(np.ravel(var_names))
 
     var_names = np.array([name for name in make_unique_list(var_names, allow_array=True) if name in adata.var_names])
     if len(var_names) == 0:
@@ -721,6 +723,8 @@ def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, us
             adata.var['fit_r2'] = velo._r2
         else:
             raise ValueError('Variable name not found in var keys.')
+    if not isinstance(var_names, str):
+        var_names = list(np.ravel(var_names))
 
     var_names = [name for name in make_unique_list(var_names, allow_array=True) if name in adata.var_names]
     if len(var_names) == 0:
