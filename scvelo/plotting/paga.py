@@ -139,6 +139,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
         scatter_flag = ax is None
     vkey = [key for key in adata.layers.keys() if 'velocity' in key and '_u' not in key] if vkey == 'all' else vkey
     layers, vkeys, colors = make_unique_list(layer), make_unique_list(vkey), make_unique_list(color, allow_array=True)
+
     node_colors = colors if node_colors is None else node_colors
     bases = [default_basis(adata) if basis is None else basis for basis in make_unique_valid_list(adata, basis)]
     if transitions not in adata.uns['paga']: transitions = None
@@ -196,6 +197,15 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
         _adata = adata[groups_to_bool(adata, groups, groupby=paga_groups)] \
             if groups is not None and paga_groups in adata.obs.keys() else adata
 
+        if isinstance(node_colors, str) and node_colors in adata.obsm.keys():
+            props = dict()
+            for name in adata.obs[paga_groups].cat.categories:
+                mask = (adata.obs[paga_groups] == name).values
+                props[name] = np.nanmean(adata.obsm[node_colors][mask], axis=0)
+            node_colors = adata.obsm[node_colors].colors
+            paga_kwargs['colors'] = {i: dict(zip(node_colors, prop)) for i, prop in enumerate(props.values())}
+            paga_kwargs['colorbar'] = False
+
         if basis in adata.var_names and basis is not None:
             x = adata[:, basis].layers['spliced'] if use_raw else adata[:, basis].layers['Ms']
             y = adata[:, basis].layers['unspliced'] if use_raw else adata[:, basis].layers['Mu']
@@ -219,12 +229,14 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
                     'You need to run `scv.tl.paga` first.')
         paga_kwargs['pos'] = pos
 
-        legend_loc = kwargs.pop('legend_loc', None)
+        legend_loc = kwargs.pop('legend_loc', 'right')
+        if legend_loc is None: legend_loc = 'none'
         kwargs['legend_loc'] = 'none' if legend_loc == 'on data' else legend_loc  # let paga handle 'on data'
         if 'frameon' not in paga_kwargs or not paga_kwargs['frameon']:
             paga_kwargs['frameon'] = False
         kwargs['frameon'] = paga_kwargs['frameon']
-        if title is None: title = f'paga velocity-graph ({str(paga_groups)})'
+        if title is None:
+            title = f'paga ({str(paga_groups)})' if transitions is None else f'paga velocity-graph ({str(paga_groups)})'
 
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
         if scatter_flag and basis is not None:
@@ -233,7 +245,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
                          title=title, ax=ax, save=None, zorder=0, show=False, **kwargs)
         else:
             basis = default_basis(adata)
-            if basis is not None and init_pos is None or isinstance(init_pos, str):
+            if basis is not None and isinstance(init_pos, str):
                 cats = adata.obs[paga_groups].cat.categories
                 X_emb = adata.obsm['X_' + basis]
                 init_pos = np.stack([np.median(X_emb[adata.obs[paga_groups] == c], axis=0) for c in cats])
