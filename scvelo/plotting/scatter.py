@@ -309,6 +309,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                     lb, ub = np.min(c), np.max(c)
                     crange = max(np.abs(vmid - lb), np.abs(ub - vmid))
                     kwargs.update({"vmin": vmid - crange, "vmax": vmid + crange})
+
             # set color to grey for NAN values and for cells that are not in groups
             if groups is not None or is_categorical(adata, color) and np.any(pd.isnull(adata.obs[color])):
                 zorder = 0 if zorder is None else zorder
@@ -362,9 +363,9 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
             # set legend if categorical categorical color vals
             if is_categorical(adata, color) and len(scatter_array) == adata.n_obs:
                 legend_loc = default_legend_loc(adata, color, legend_loc)
+                if not (add_outline is None or groups_to_bool(adata, add_outline, color) is None): groups = add_outline
                 _add_legend(adata, ax, color, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
-                            [patheffects.withStroke(linewidth=True, foreground='w')],
-                            add_outline if groups_to_bool(adata, add_outline, color) is not None else groups)
+                            [patheffects.withStroke(linewidth=True, foreground='w')], groups)
 
             if add_density:
                 plot_density(x, y, add_density, ax=ax)
