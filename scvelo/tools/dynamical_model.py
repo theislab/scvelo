@@ -706,7 +706,6 @@ def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, us
     Returns or updates `adata`
     """
     adata = data.copy() if copy else data
-    logg.info('testing for differential kinetics', r=True)
 
     if 'Ms' not in adata.layers.keys() or 'Mu' not in adata.layers.keys(): use_raw = True
     if isinstance(var_names, str) and var_names not in adata.var_names:
@@ -723,11 +722,19 @@ def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, us
         else:
             raise ValueError('Variable name not found in var keys.')
 
-    var_names = np.array([name for name in make_unique_list(var_names, allow_array=True) if name in adata.var_names])
+    var_names = [name for name in make_unique_list(var_names, allow_array=True) if name in adata.var_names]
     if len(var_names) == 0:
         raise ValueError('Variable name not found in var keys.')
     if return_model is None:
         return_model = len(var_names) < 5
+
+    # fit dynamical model first, if not done yet.
+    var_names_for_fit = adata.var_names[np.isnan(adata.var['fit_alpha'])].intersection(var_names) \
+        if 'fit_alpha' in adata.var.keys() else var_names
+    if len(var_names_for_fit) > 0:
+        recover_dynamics(adata, var_names_for_fit)
+
+    logg.info('testing for differential kinetics', r=True)
 
     if groupby is None:
         groupby = 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else None

@@ -617,10 +617,11 @@ class BaseDynamics:
         self.recoverable = np.sum(weights) > 2
 
         if self.recoverable:
-            ub_s = np.percentile(self.s[weights], self.perc) if weighted else np.max(self.s)
-            ub_u = np.percentile(self.u[weights], self.perc) if weighted else np.max(self.u)
-            if ub_s > 0: weights &= np.ravel(self.s <= ub_s)
-            if ub_u > 0: weights &= np.ravel(self.u <= ub_u)
+            if weighted:
+                ub_s = np.percentile(self.s[weights], self.perc)
+                ub_u = np.percentile(self.u[weights], self.perc)
+                if ub_s > 0: weights &= np.ravel(self.s <= ub_s)
+                if ub_u > 0: weights &= np.ravel(self.u <= ub_u)
 
             self.weights = weights
             u, s = self.u[weights], self.s[weights]
@@ -1072,7 +1073,7 @@ class BaseDynamics:
         # after fitting dyn. model
         if self.varx is None:
             self.varx = self.get_variance()
-        self.initialize_weights()
+        self.initialize_weights(weighted=False)
         self.steady_state_ratio = None
         self.clusters = clusters
         self.cats = pd.Categorical(clusters).categories
