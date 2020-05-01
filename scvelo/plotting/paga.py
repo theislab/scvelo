@@ -57,8 +57,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
     layout_kwds
         Keywords for the layout.
     init_pos
-        Two-column array storing the x and y coordinates for initializing the
-        layout.
+        Two-column array storing the x and y coordinates for initializing the layout.
     random_state
         For layouts with random initialization like `'fr'`, change this to use
         different intial states for the optimization. If `None`, the initial
@@ -243,19 +242,8 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
             if 'alpha' not in kwargs: kwargs['alpha'] = .5
             ax = scatter(adata, basis=basis, x=x, y=y, vkey=vkey, layer=layer, color=paga_groups, size=size,
                          title=title, ax=ax, save=None, zorder=0, show=False, **kwargs)
-        else:
-            basis = default_basis(adata)
-            if basis is not None and isinstance(init_pos, str):
-                cats = adata.obs[paga_groups].cat.categories
-                X_emb = adata.obsm['X_' + basis]
-                init_pos = np.stack([np.median(X_emb[adata.obs[paga_groups] == c], axis=0) for c in cats])
-                paga_kwargs['init_pos'] = init_pos
-                kwargs.update({'alpha': 0, 'color': paga_groups})
-                x, y = np.ones(len(X_emb)) * np.mean(init_pos[:, 0]), np.ones(len(X_emb)) * np.mean(init_pos[:, 1])
-                ax = scatter(adata, x=x, y=y, title=title, ax=ax, save=None, zorder=0, show=False, **kwargs)
 
-        _paga(adata, ax=ax, show=False,  **paga_kwargs,
-                    text_kwds={'zorder': 1000, 'alpha': legend_loc == 'on data'})
+        _paga(adata, ax=ax, show=False,  **paga_kwargs, text_kwds={'zorder': 1000, 'alpha': legend_loc == 'on data'})
 
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
@@ -267,7 +255,7 @@ def _paga(adata, threshold=None, color=None, layout=None, layout_kwds=None, init
                 node_size_scale=1, node_size_power=0.5, edge_width_scale=1, min_edge_width=None, max_edge_width=None,
                 arrowsize=30, title=None, random_state=0, pos=None, normalize_to_color=False, cmap=None, cax=None,
                 colorbar=None, cb_kwds=None, frameon=None, add_pos=True, export_to_gexf=False, use_raw=True,
-                colors=None, groups=None, plot=True, show=None, save=None, ax=None):
+                colors=None, groups=None, plot=True, show=None, save=None, ax=None, **scatter_kwargs):
     """scanpy/_paga with some adjustments for directional graphs. To be moved back to scanpy once finalized.
     """
     from scanpy.plotting._tools.paga import _compute_pos, _utils
@@ -301,6 +289,9 @@ def _paga(adata, threshold=None, color=None, layout=None, layout_kwds=None, init
         root = [list(labels).index(r) for r in root]
 
     # define the adjacency matrices
+    if solid_edges not in adata.uns['paga']:
+        logg.warn(f'{solid_edges} not found, using connectivites instead.')
+        solid_edges = 'connectivities'
     adjacency_solid = adata.uns['paga'][solid_edges].copy()
     adjacency_dashed = None
     if threshold is None:
@@ -314,6 +305,22 @@ def _paga(adata, threshold=None, color=None, layout=None, layout_kwds=None, init
             adjacency_dashed.data[adjacency_dashed.data < threshold] = 0
             adjacency_dashed.eliminate_zeros()
 
+    cats = adata.obs[groups_key].cat.categories
+    if pos is not None:
+        if isinstance(pos, str):
+            if not pos.startswith('X_'): pos = 'X_' + pos
+            pos = np.stack([np.median(adata.obsm[pos][adata.obs[groups_key] == c], axis=0) for c in cats]) \
+                if pos in adata.obsm.keys() else None
+        if len(pos) != len(cats):
+            pos = None
+    elif init_pos is not None:
+        if isinstance(init_pos, str):
+            if not init_pos.startswith('X_'): init_pos = 'X_' + init_pos
+            init_pos = np.stack([np.median(adata.obsm[init_pos][adata.obs[groups_key] == c], axis=0) for c in cats]) \
+                if init_pos in adata.obsm.keys() else None
+        if len(init_pos) != len(cats):
+            init_pos = None
+
     # compute positions
     if pos is None:
         adj_tree = None
@@ -321,6 +328,10 @@ def _paga(adata, threshold=None, color=None, layout=None, layout_kwds=None, init
             adj_tree = adata.uns['paga']['connectivities_tree']
         pos = _compute_pos(adjacency_solid, layout=layout, random_state=random_state, init_pos=init_pos,
                            layout_kwds=layout_kwds, adj_tree=adj_tree, root=root)
+        #pos = adata.uns['paga']['pos']
+
+    scatter_kwargs.update({'alpha': 0, 'color': groups_key})
+    x, y = pos[:, 0], pos[:, 1]
 
     if plot:
         axs, panel_pos, draw_region_width, figure_width = _utils.setup_axes(ax=ax, panels=colors, colorbars=colorbars)
@@ -331,6 +342,7 @@ def _paga(adata, threshold=None, color=None, layout=None, layout_kwds=None, init
         for icolor, c in enumerate(colors):
             if title[icolor] is not None:
                 axs[icolor].set_title(title[icolor])
+            axs[icolor] = scatter(adata, x=x, y=y, title=title[icolor], ax=axs[icolor], save=None, zorder=0, show=False, **scatter_kwargs)
             sct = _paga_graph(adata, axs[icolor], colors=c, solid_edges=solid_edges, dashed_edges=dashed_edges,
                               transitions=transitions, threshold=threshold, adjacency_solid=adjacency_solid,
                               adjacency_dashed=adjacency_dashed, root=root, labels=labels[icolor], fontsize=fontsize,
