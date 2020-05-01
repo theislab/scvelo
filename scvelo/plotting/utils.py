@@ -480,7 +480,11 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
     from matplotlib.colors import to_hex
     color_key = f"{value_to_plot}_colors"
     valid = True
+    categories = adata.obs[value_to_plot].cat.categories
+    length = len(categories)
 
+    if isinstance(palette, str) and 'default' in palette:
+        palette = palettes.default_26 if length <= 28 else palettes.default_64
     if isinstance(palette, str) and palette in adata.uns:
         palette = adata.uns[palette].values() if isinstance(adata.uns[palette], dict) else adata.uns[palette]
 
@@ -490,8 +494,7 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
         color_keys = adata.uns[color_key].values() if isinstance(adata.uns[color_key], dict) else adata.uns[color_key]
         for color in color_keys:
             if not is_color_like(color):
-                # check if the color is a valid R color and translate it
-                # to a valid hex color value
+                # check if the color is a valid R color and translate it to a valid hex color value
                 if color in additional_colors:
                     color = additional_colors[color]
                 else:
@@ -504,9 +507,6 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
         if len(adata.uns[color_key]) < len(adata.obs[value_to_plot].cat.categories):
             valid = False
     elif palette is not None:
-        # Check if given palette is valid
-        categories = adata.obs[value_to_plot].cat.categories
-
         # check is palette given is a valid matplotlib colormap
         if isinstance(palette, str) and palette in pl.colormaps():
             # this creates a palette from a colormap. E.g. 'Accent, Dark2, tab20'
@@ -514,11 +514,10 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
             colors_list = [to_hex(x) for x in cmap(np.linspace(0, 1, len(categories)))]
 
         else:
-            # check if palette is as dict and convert it to an ordered list.
+            # check if palette is as dict and convert it to an ordered list
             if isinstance(palette, dict):
                 palette = [palette[c] for c in categories]
-            # check if palette is a list and convert it to a cycler, thus
-            # it doesnt matter if the list is shorter than the categories length:
+            # check if palette is a list and convert it to a cycler
             if isinstance(palette, abc.Sequence):
                 if len(palette) < len(categories):
                     logg.warn(
@@ -530,8 +529,7 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
                 _color_list = []
                 for color in palette:
                     if not is_color_like(color):
-                        # check if the color is a valid R color and translate it
-                        # to a valid hex color value
+                        # check if the color is a valid R color and translate it to a valid hex color value
                         if color in additional_colors:
                             color = additional_colors[color]
                         else:
@@ -562,9 +560,6 @@ def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
 
     # Set to defaults:
     if not valid:
-        categories = adata.obs[value_to_plot].cat.categories
-        length = len(categories)
-
         # check if default matplotlib palette has enough colors
         if len(rcParams['axes.prop_cycle'].by_key()['color']) >= length:
             cc = rcParams['axes.prop_cycle']()
