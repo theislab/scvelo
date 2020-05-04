@@ -36,8 +36,9 @@ def is_view(adata):
         else adata._isview if hasattr(adata, '_isview') else True
 
 
-def is_categorical(adata, c):
+def is_categorical(adata, c=None):
     from pandas.api.types import is_categorical as cat
+    if c is None: return cat(adata)
     if not is_view(adata): strings_to_categoricals(adata)
     return isinstance(c, str) and c in adata.obs.keys() and cat(adata.obs[c])
 
@@ -219,7 +220,10 @@ def default_color_map(adata, c):
     if isinstance(c, str) and c in adata.obs.keys() and not is_categorical(adata, c): c = adata.obs[c]
     elif isinstance(c, int): cmap = 'viridis_r'
     if len(np.array(c).flatten()) == adata.n_obs:
-        if np.min(c) in [-1, 0, False] and np.max(c) in [1, True]: cmap = 'viridis_r'
+        try:
+            if np.min(c) in [-1, 0, False] and np.max(c) in [1, True]: cmap = 'viridis_r'
+        except:
+            cmap = None
     return cmap
 
 
