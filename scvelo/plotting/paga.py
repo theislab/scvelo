@@ -159,9 +159,6 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
             paga_kwargs[key] = kwargs[key]
     kwargs = {k: v for k, v in kwargs.items() if k in signature(scatter).parameters}
 
-    if isinstance(node_colors, dict):  # has to be disabled
-        paga_kwargs['colorbar'] = False
-
     multikey = colors if len(colors) > 1 else layers if len(layers) > 1 \
         else vkeys if len(vkeys) > 1 else bases if len(bases) > 1 else None
     if multikey is not None:
@@ -195,6 +192,9 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
         paga_groups = adata.uns['paga']['groups']
         _adata = adata[groups_to_bool(adata, groups, groupby=paga_groups)] \
             if groups is not None and paga_groups in adata.obs.keys() else adata
+
+        if isinstance(node_colors, dict):
+            paga_kwargs['colorbar'] = False
 
         if isinstance(node_colors, str) and node_colors in adata.obsm.keys():
             props = dict()
@@ -254,7 +254,7 @@ def _paga(adata, threshold=None, color=None, layout=None, layout_kwds=None, init
                 transitions=None, fontsize=None, fontweight='bold', fontoutline=None, text_kwds=None,
                 node_size_scale=1, node_size_power=0.5, edge_width_scale=1, min_edge_width=None, max_edge_width=None,
                 arrowsize=30, title=None, random_state=0, pos=None, normalize_to_color=False, cmap=None, cax=None,
-                colorbar=None, cb_kwds=None, frameon=None, add_pos=True, export_to_gexf=False, use_raw=True,
+                colorbar=False, cb_kwds=None, frameon=None, add_pos=True, export_to_gexf=False, use_raw=True,
                 colors=None, groups=None, plot=True, show=None, save=None, ax=None, **scatter_kwargs):
     """scanpy/_paga with some adjustments for directional graphs. To be moved back to scanpy once finalized.
     """

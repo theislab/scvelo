@@ -48,7 +48,6 @@ Tools (tl)
    tl.recover_dynamics
    tl.velocity
    tl.velocity_graph
-   tl.transition_matrix
    tl.velocity_embedding
 
    tl.terminal_states
@@ -104,6 +103,7 @@ Utils
    utils.clean_obs_names
    utils.merge
    utils.get_moments
+   utils.get_transition_matrix
    utils.get_extrapolated_state
    utils.leastsq
    utils.vcorrcoef

@@ -299,8 +299,8 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
 
             # set vmid to 0 if color values obtained from velocity expression
             if not np.any([v in kwargs for v in ['vmin', 'vmid', 'vmax']]) \
-                    and np.any([isinstance(v, str) and 'time' not in v
-                                and 'velocity' in v and not v.endswith('confidence') for v in [color, layer]]):
+                    and np.any([isinstance(v, str) and 'time' not in v and
+                                (v.endswith('velocity') or v.endswith('transition')) for v in [color, layer]]):
                 kwargs['vmid'] = 0
 
             # introduce vmid by setting vmin and vmax accordingly
