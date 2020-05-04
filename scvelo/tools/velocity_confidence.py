@@ -37,23 +37,23 @@ def velocity_confidence(data, vkey='velocity', copy=False):
     """
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
-        raise ValueError(
-            'You need to run `tl.velocity` first.')
+        raise ValueError('You need to run `tl.velocity` first.')
 
     V = np.array(adata.layers[vkey])
+
+    tmp_filter = np.invert(np.isnan(np.sum(V, axis=0)))
     if vkey + '_genes' in adata.var.keys():
-        V = V[:, np.array(adata.var[vkey + '_genes'], dtype=bool)]
+        tmp_filter &= np.array(adata.var[vkey + '_genes'], dtype=bool)
+    if 'spearmans_score' in adata.var.keys():
+        tmp_filter &= (adata.var['spearmans_score'].values > .1)
 
-    nans = np.isnan(np.sum(V, axis=0))
-    if np.any(nans):
-        V = V[:, ~nans]
-
-    indices = get_indices(dist=get_neighs(adata, 'distances'))[0]
+    V = V[:, tmp_filter]
 
     V -= V.mean(1)[:, None]
     V_norm = norm(V)
     R = np.zeros(adata.n_obs)
 
+    indices = get_indices(dist=get_neighs(adata, 'distances'))[0]
     for i in range(adata.n_obs):
         Vi_neighs = V[indices[i]]
         Vi_neighs -= Vi_neighs.mean(1)[:, None]
@@ -92,19 +92,19 @@ def velocity_confidence_transition(data, vkey='velocity', scale=10, copy=False):
     """
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
-        raise ValueError(
-            'You need to run `tl.velocity` first.')
+        raise ValueError('You need to run `tl.velocity` first.')
 
+    X = np.array(adata.layers['Ms'])
+    V = np.array(adata.layers[vkey])
+
+    tmp_filter = np.invert(np.isnan(np.sum(V, axis=0)))
     if vkey + '_genes' in adata.var.keys():
-        idx = np.array(adata.var[vkey + '_genes'], dtype=bool)
-        X, V = adata.layers['Ms'][:, idx].copy(), adata.layers[vkey][:, idx].copy()
-    else:
-        X, V = adata.layers['Ms'].copy(), adata.layers[vkey].copy()
+        tmp_filter &= np.array(adata.var[vkey + '_genes'], dtype=bool)
+    if 'spearmans_score' in adata.var.keys():
+        tmp_filter &= (adata.var['spearmans_score'].values > .1)
 
-    nans = np.isnan(np.sum(V, axis=0))
-    if np.any(nans):
-        X = X[:, ~nans]
-        V = V[:, ~nans]
+    V = V[:, tmp_filter]
+    X = X[:, tmp_filter]
 
     T = transition_matrix(adata, vkey=vkey, scale=scale)
     dX = T.dot(X) - X
