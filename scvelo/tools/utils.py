@@ -373,9 +373,13 @@ def vcorrcoef(X, y, mode='pearsons', axis=-1):
     mode: 'pearsons' or 'spearmans' (default: `'pearsons'`)
         Which correlation metric to use.
     """
+    if issparse(X): X = np.array(X.A)
+    if issparse(y): y = np.array(y.A)
     if axis == 0:
         if X.ndim > 1: X = np.array(X.T)
         if y.ndim > 1: y = np.array(y.T)
+    if X.shape[axis] != y.shape[axis]:
+        X = X.T
     if mode in {'spearmans', 'spearman'}:
         from scipy.stats.stats import rankdata
         X = np.apply_along_axis(rankdata, axis=-1, arr=X)
@@ -415,3 +419,9 @@ def get_extrapolated_state(adata, vkey='velocity', dt=1, use_raw=None, dropna=Tr
     else:
         St = S + dt * np.nan_to_num(adata.layers[vkey])
     return St
+
+
+def get_plasticity_score(adata):
+    idx_top_genes = np.argsort(adata.var['gene_count_corr'].values)[::-1][:200]
+    Ms = np.array(adata.layers['Ms'][:, idx_top_genes])
+    return scale(np.mean(Ms / np.max(Ms, axis=0), axis=1))

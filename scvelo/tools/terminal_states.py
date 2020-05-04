@@ -4,7 +4,7 @@ from ..preprocessing.moments import get_connectivities
 from ..preprocessing.neighbors import neighbors, neighbors_to_be_recomputed
 from .velocity_graph import VelocityGraph
 from .transition_matrix import transition_matrix
-from .utils import scale, groups_to_bool, strings_to_categoricals
+from .utils import scale, groups_to_bool, strings_to_categoricals, get_plasticity_score
 
 from scipy.sparse import linalg, csr_matrix, issparse
 import numpy as np
@@ -147,6 +147,20 @@ def eigs(T, k=10, eps=1e-3, perc=None):
     return eigvals, eigvecs
 
 
+def verify_roots(adata, roots):
+    if 'gene_count_corr' in adata.var.keys():
+        p = get_plasticity_score(adata)
+        p_ub, root_ub = p > .5, roots > .9
+        n_right_assignments = np.sum(root_ub * p_ub) / np.sum(p_ub)
+        n_false_assignments = np.sum(root_ub * np.invert(p_ub)) / np.sum(np.invert(p_ub))
+        n_randn_assignments = np.mean(root_ub)
+        if n_right_assignments > 3 * n_randn_assignments:  # mu + 2*mu (std=mu)
+            roots *= p_ub
+        elif n_false_assignments > n_randn_assignments or n_right_assignments < n_randn_assignments:
+            logg.warn('Uncertain or fuzzy root cell identification. Please verify.')
+    return roots
+
+
 def write_to_obs(adata, key, vals, cell_subset=None):
     if cell_subset is None:
         adata.obs[key] = vals
@@ -229,6 +243,7 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
         #roots = csr_matrix.dot(connectivities, (n_neighs_roots > np.nanmax(n_neighs_roots) / 3) * roots)
 
         roots = scale(np.clip(roots, 0, np.percentile(roots, 98)))
+        roots = verify_roots(_adata, roots)
         write_to_obs(adata, 'root_cells', roots, cell_subset)
 
         T = transition_matrix(_adata, vkey=vkey, self_transitions=self_transitions, backward=False, **kwargs)

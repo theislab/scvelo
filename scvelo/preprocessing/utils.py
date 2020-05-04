@@ -96,7 +96,8 @@ def set_initial_size(adata, layers={'spliced', 'unspliced'}):
               if layer in adata.layers.keys() and 'initial_size_' + layer not in adata.obs.keys()]
     for layer in layers:
         adata.obs['initial_size_' + layer] = get_size(adata, layer)
-    if 'initial_size' not in adata.obs.keys(): adata.obs['initial_size'] = get_size(adata)
+    if 'initial_size' not in adata.obs.keys():
+        adata.obs['initial_size'] = get_size(adata)
 
 
 def get_initial_size(adata, layer=None, by_total_size=None):
@@ -273,6 +274,16 @@ def filter_genes_dispersion(data, flavor='seurat', min_disp=None, max_disp=None,
     return adata if copy else None
 
 
+def csr_vcorrcoef(X, y):
+    mu_x = np.ravel(np.mean(X, axis=-1))
+    mu_y = np.ravel(np.mean(y, axis=-1))
+    nom = X.dot(y) - X.dot(np.repeat(mu_y, len(y))) - mu_x * np.sum(y - mu_y)
+    denom_x = np.ravel(np.sum(X.multiply(X), axis=-1)) if issparse(X) else np.sum(X * X, axis=-1)
+    denom_x = denom_x - np.ravel(np.sum(X, axis=-1)) * mu_x + mu_x ** 2
+    denom_y = np.ravel(np.sum(y * y, axis=-1)) - (np.ravel(np.sum(y, axis=-1)) * mu_y) + mu_y ** 2
+    return nom / np.sqrt(denom_x * denom_y)
+
+
 def counts_per_cell_quantile(X, max_proportion_per_cell=.05, counts_per_cell=None):
     if counts_per_cell is None:
         counts_per_cell = sum_var(X)
@@ -357,6 +368,9 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, k
             else:
                 X /= np.array(counts[:, None])
             modified_layers.append(layer)
+            if layer == 'X' and 'gene_count_corr' not in adata.var.keys() and X.shape[-1] > 3e3:
+                try: adata.var['gene_count_corr'] = np.round(csr_vcorrcoef(X.T, np.ravel((X > 0).sum(1))), 4)
+                except: pass
 
     adata.obs['n_counts' if key_n_counts is None else key_n_counts] = get_size(adata)
     if len(modified_layers) > 0:
