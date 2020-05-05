@@ -417,7 +417,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
     elif isinstance(c, str):
         if c in adata.obs.keys():  # color by observation key
             c = adata.obs[c]
-        elif c in adata.var_names:  # color by var in specific layer
+        elif c in adata.var_names or (use_raw and hasattr(adata, 'use_raw') and c in adata.raw.var_names):  # by gene
             if layer in adata.layers.keys():
                 if perc is None and any(l in layer for l in ['spliced', 'unspliced', 'Ms', 'Mu', 'velocity']):
                     perc = [1, 99]  # clip values to ignore extreme outliers since these layers are not logarithmized
