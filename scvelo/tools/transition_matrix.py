@@ -12,7 +12,7 @@ warnings.simplefilter('ignore', SparseEfficiencyWarning)
 
 def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_transitions=True, scale=10, perc=None,
                       threshold=None, use_negative_cosines=False, weight_diffusion=0, scale_diffusion=1,
-                      weight_indirect_neighbors=None, n_neighbors=None, vgraph=None):
+                      weight_indirect_neighbors=None, n_neighbors=None, vgraph=None, basis_constraint=None):
     """Computes cell-to-cell transition probabilities
 
     .. math::
@@ -68,6 +68,13 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
             graph = csr_matrix(adata.uns[vkey + '_graph']).copy()
             if vkey + '_graph_neg' in adata.uns.keys(): graph_neg = adata.uns[vkey + '_graph_neg']
 
+    if basis_constraint is not None and f'X_{basis_constraint}' in adata.obsm.keys():
+        from sklearn.neighbors import NearestNeighbors
+        neighs = NearestNeighbors(n_neighbors=100)
+        neighs.fit(adata.obsm[f'X_{basis_constraint}'])
+        basis_graph = neighs.kneighbors_graph(mode='connectivity') > 0
+        graph = graph.multiply(basis_graph)
+
     if self_transitions:
         confidence = graph.max(1).A.flatten()
         ub = np.percentile(confidence, 98)
@@ -118,13 +125,37 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
     return T
 
 
-def get_forward_transitions(adata, root=0, basis=None, n_steps=100, **kwargs):
-    X = [root]
-    T = transition_matrix(adata, **kwargs)
+def get_cell_transitions(adata, starting_cell=0, basis=None, n_steps=100, backward=False, **kwargs):
+    """Simulate cell transitions
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    starting_cell: `int` (default: `0`)
+        Name of velocity estimates to be used.
+    basis: `str` or `None` (default: `None`)
+        Key for embedding coordinates.s
+    n_steps: `int` (default: `100`)
+        Number of transitions/steps to be simulated.
+    backward: `bool` (default: `False`)
+        Whether to use the transition matrix to push forward (`False`) or to pull backward (`True`)
+    **kwargs:
+        To be passed to tl.transition_matrix.
+    Returns
+    -------
+    Returns embedding coordinates (if basis is specified), else indices of simulated cell transitions.
+    """
+    if isinstance(starting_cell, str) and starting_cell in adata.var_names:
+        starting_cell = np.where(adata.var_names == starting_cell)[0]
+    X = [starting_cell]
+    T = transition_matrix(adata, backward=backward, basis_constraint=basis, self_transitions=False, **kwargs)
     for i in range(n_steps):
         ix = np.random.choice(T[X[-1]].indices, p=T[X[-1]].data)
         X.append(ix)
     X = pd.unique(X)
     if basis is not None and f'X_{basis}' in adata.obsm.keys():
         X = adata.obsm[f'X_{basis}'][X].T
+    if backward:
+        X = np.flip(X, axis=-1)
     return X

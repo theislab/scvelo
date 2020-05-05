@@ -276,6 +276,11 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                 color = palette[0] if palette is not None and len(palette) > 1 else 'gold'
                 zorder -= 1
 
+            # if color is in {'ascending', 'descending'}
+            elif isinstance(color, str):
+                if color == 'ascending': color = np.linspace(0, 1, len(x))
+                elif color == 'descending': color = np.linspace(1, 0, len(x))
+
             # set palette if categorical color vals
             if is_categorical(adata, color):
                 _set_colors_for_categorical_obs(adata, color, palette)

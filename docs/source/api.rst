@@ -104,6 +104,7 @@ Utils
    utils.merge
    utils.get_moments
    utils.get_transition_matrix
+   utils.get_cell_transitions
    utils.get_extrapolated_state
    utils.leastsq
    utils.vcorrcoef
