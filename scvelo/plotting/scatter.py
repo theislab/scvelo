@@ -267,7 +267,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                 y[np.argsort(x)] = np.convolve(y[np.argsort(x)], np.ones(n_convolve) / n_convolve, mode='same')
 
             # if color is set to a cell index, plot that cell on top
-            if isinstance(color, int) or is_list_of_int(color) and len(color) != len(x):
+            if isinstance(color, (int, np.int_)) or is_list_of_int(color) and len(color) != len(x):
                 color = np.array(np.isin(np.arange(len(x)), color), dtype=bool)
                 size = kwargs['s'] * 2 if np.sum(color) == 1 else kwargs['s']
                 if zorder is None: zorder = 10
@@ -292,10 +292,12 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                     c = get_connectivities(adata, n_neighbors=(None if isinstance(smooth, bool) else smooth)).dot(c)
                 # rescale color values to min and max acc. to rescale_color tuple
                 if rescale_color is not None:
-                    if len(rescale_color) != 2:
-                        raise ValueError('rescale_color has to be a tuple with two values, e.g. [0,1].')
-                    c += rescale_color[0] - np.min(c)
-                    c *= rescale_color[1] / np.max(c)
+                    try:
+                        if len(rescale_color) != 2:
+                            raise ValueError('rescale_color has to be a tuple with two values, e.g. [0,1].')
+                        c += rescale_color[0] - np.min(c)
+                        c *= rescale_color[1] / np.max(c)
+                    except: pass
 
             # set vmid to 0 if color values obtained from velocity expression
             if not np.any([v in kwargs for v in ['vmin', 'vmid', 'vmax']]) \
@@ -354,7 +356,10 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
 
             smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
 
-            if isinstance(add_outline, (list, tuple, np.ndarray)) or add_outline:
+            if isinstance(add_outline, (list, tuple, np.ndarray, int, np.int_, str)) or add_outline:
+                if isinstance(add_outline, (int, np.int_)) or is_list_of_int(add_outline) and len(add_outline) != len(x):
+                    add_outline = np.array(np.isin(np.arange(len(x)), add_outline), dtype=bool)
+                    if outline_width is None: outline_width = (.6, .3)
                 if isinstance(add_outline, str):
                     if add_outline in adata.var.keys() and basis in adata.var_names:
                         add_outline = str(adata[:, basis].var[add_outline][0])
