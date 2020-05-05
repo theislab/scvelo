@@ -126,7 +126,7 @@ def magic_impute(adata, knn=5, t=2, verbose=0, **kwargs):
     adata.layers['Mu'] = magic_operator.transform(adata.layers['unspliced'])
 
 
-def get_moments(adata, layer=None, second_order=None, centered=True):
+def get_moments(adata, layer=None, second_order=None, centered=True, mode='connectivities'):
     """Computes moments for a specified layer.
 
     First and second order moments. If centered, that corresponds to means and variances across nearest neighbors.
@@ -141,13 +141,15 @@ def get_moments(adata, layer=None, second_order=None, centered=True):
         Whether to compute second order (instead of first order) moments from abundances.
     centered: `bool` (default: `True`)
         Whether to compute centered or uncentered second order moments (centered = variance).
+    mode: `'connectivities'` or `'distances'`  (default: `'connectivities'`)
+        Distance metric to use for moment computation.
     Returns
     -------
     Mx: first or second order moments
     """
     if 'neighbors' not in adata.uns:
         raise ValueError('You need to run `pp.neighbors` first to compute a neighborhood graph.')
-    connectivities = get_connectivities(adata)
+    connectivities = get_connectivities(adata, mode=mode)
     X = adata.X if layer is None else adata.layers[layer]
     X = csr_matrix(X) if layer in {'spliced', 'unspliced'} else np.array(X) if not issparse(X) else X
     if not issparse(X):

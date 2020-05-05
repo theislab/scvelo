@@ -62,6 +62,7 @@ def velocity_confidence(data, vkey='velocity', copy=False):
     adata.obs[vkey + '_length'] = V_norm.round(2)
     adata.obs[vkey + '_confidence'] = np.clip(R, 0, None)
 
+    logg.hint('added \'' + vkey + '_length\' (adata.obs)')
     logg.hint('added \'' + vkey + '_confidence\' (adata.obs)')
 
     if vkey + '_confidence_transition' not in adata.obs.keys():
