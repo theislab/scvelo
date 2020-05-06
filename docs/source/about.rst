@@ -33,40 +33,57 @@ The combination of velocities across mRNAs can then be used to estimate the futu
 
 RNA velocity estimation can currently be tackled with three existing approaches:
 
-- steady-state / deterministic model (as being used in velocyto)
+- steady-state / deterministic model (using steady-state residuals)
 - stochastic model (using second-order moments),
 - dynamical model (using a likelihood-based framework).
 
 The **steady-state / deterministic model**, as being used in velocyto, estimates velocities as follows: Under the assumption
-that transcriptional phases (induction and repression) endure long enough to reach a steady-state equilibrium
-(active and inactive), velocities are quantified as how the actual observations deviate from the steady-state equilibrium.
+that transcriptional phases (induction and repression) last sufficiently long to reach a steady-state equilibrium
+(active and inactive), velocities are quantified as the deviation of the observed ratio from its steady-state ratio.
 The equilibrium mRNA levels are approximated with a linear regression on the presumed steady states in the lower and upper quantiles.
-This simplification is obtained by assuming of a common splicing rate across genes and steady-state mRNA levels to be
+This simplification makes two fundamental assumptions: a common splicing rate across genes and steady-state mRNA levels to be
 reflected in the data. It can lead to errors in velocity estimates and cellular states as the assumptions are often
 violated, in particular when a population comprises multiple heterogeneous subpopulation dynamics.
 
-The **stochastic model** aims to better capture the steady states,
-obtained by treating transcription, splicing and degradation as probabilistic events,
-thereby incorporating second-order moments. That is, steady state levels are
-approximated not only from mRNA levels, but also from intrinsic expression variability.
+The **stochastic model** aims to better capture the steady states. By treating transcription, splicing and degradation
+as probabilistic events, the resulting Markov process is approximated by moment equations.
+By including second-order moments, it exploits not only the balance of unspliced to spliced
+mRNA levels but also their covariation. It has been demonstrated on the endocrine pancreas that
+stochasticity adds valuable information, overall yielding higher consistency than the deterministic
+model, while remaining as efficient in computation time.
 
 The **dynamical model** (most powerful while computationally most expensive) solves the full dynamics of splicing kinetics
 for each gene. It thereby adapts RNA velocity to widely varying specifications such as non-stationary populations,
-as it does not rely on the restrictions of a common splicing rate or steady states to be sampled.
-The splicing dynamics is solved in a likelihood-based expectation-maximization framework, by iteratively estimating the
-parameters of reaction rates and latent cell-specific variables, i.e. transcriptional state and cell-internal latent time.
-More precisely, four transcriptional states are modeled to account for all possible configurations
-of gene activity: two dynamic transient states (induction and repression) and two steady states (active and inactive)
-potentially reached after each dynamic transition. For each observation per state a model-optimal latent time is computed
-to obtain a mapping onto the learned curve of unspliced/spliced dynamics. The cell-to-curve mapping then yields
-likelihoods of respective state membership, and individual reaction rate parameters via maximizing the overall likelihood.
+as does not rely on the restrictions of a common splicing rate or steady states to be sampled.
 
-This yields more consistent velocity estimates and better identification of transcriptional states.
-The model further enables us to systemically identify dynamics-driving genes in a likelihood-based way,
+The splicing dynamics
+
+.. math::
+   \begin{align}
+   \frac{du(t)}{dt}=&~ \alpha_k(t) - \beta u(t),\\
+   \frac{ds(t)}{dt}=&~ \beta u(t) - \gamma s(t),
+   \end{align}
+
+is solved in a likelihood-based expectation-maximization framework, by iteratively estimating the
+parameters of reaction rates and latent cell-specific variables, i.e. transcriptional state *k* and cell-internal latent time *t*.
+
+It thereby aims to learn the unspliced/spliced phase trajectory.
+Four transcriptional states are modeled to account for all possible configurations of gene activity:
+two dynamic transient states (induction and repression) and two steady states (active and inactive)
+potentially reached after each dynamic transition.
+
+In the expectation step, for a given model estimate of the unspliced/spliced phase trajectory,
+a latent time is assigned to an observed mRNA value by minimizing its distance to the phase trajectory.
+The transcriptional states are then assigned by associating a likelihood to the respective segments on the phase trajectory
+(induction, repression, active and inactive steady states).
+In the maximization step, the overall likelihood is then optimized by updating the parameters of reaction rates.
+
+The model yields more consistent velocity estimates and better identification of transcriptional states.
+It further enables the systematic identification of dynamics-driving genes in a likelihood-based way,
 thereby finding the key drivers that govern cell fate transitions. Moreover, the dynamical model infers a universal
-cell-internal latent time shared across genes that enables relating genes and identifying regimes of transcriptional changes (e.g. branching points).
+cell-internal latent time shared across genes that enables relating genes and identifying regimes of transcriptional changes.
 
-For best results and above-described additional insights we recommend using the superior dynamical model.
+For best results and above-described additional insights, we recommend using the dynamical model.
 If runtime is of importance, the stochastic model is advised to be used as it very efficiently approximates the dynamical model,
 taking few minutes on 30k cells. The dynamical yet can take up to one hour, however, enhancing efficiency is in progress.
 

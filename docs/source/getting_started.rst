@@ -9,8 +9,8 @@ First of all, the input data for scVelo are two count matrices of pre-mature (un
 which can be obtained from standard sequencing protocols, using the `velocyto`_ or `loompy/kallisto`_
 counting pipeline.
 
-scVelo in action
-^^^^^^^^^^^^^^^^
+scVelo workflow at a glance
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Import scvelo as::
 
     import scvelo as scv
