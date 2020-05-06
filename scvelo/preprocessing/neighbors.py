@@ -227,7 +227,8 @@ def verify_neighbors(adata):
     valid = 'neighbors' in adata.uns.keys() and 'params' in adata.uns['neighbors']
     if valid:
         n_neighs = (get_neighs(adata, 'distances') > 0).sum(1)
-        valid = n_neighs.max() * .1 < n_neighs.min()
+        # testing whether the graph is corrupted - the discrepancy should not be more than twice as much
+        valid = n_neighs.min() * 2 > n_neighs.max()
     if not valid:
         logg.warn('The neighbor graph has an unexpected format (e.g. computed outside scvelo) \n'
                   'or is corrupted (e.g. due to subsetting). Consider recomputing with `pp.neighbors`.')
