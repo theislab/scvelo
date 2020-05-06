@@ -1,6 +1,6 @@
 from .. import settings
 from .. import logging as logg
-from ..preprocessing.neighbors import pca, neighbors, neighbors_to_be_recomputed, get_neighs
+from ..preprocessing.neighbors import pca, neighbors, verify_neighbors, get_neighs, get_n_neighs
 from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
 
@@ -68,7 +68,7 @@ class VelocityGraph:
         if 'neighbors' not in adata.uns.keys(): neighbors(adata)
         if np.min((get_neighs(adata, 'distances') > 0).sum(1).A1) == 0:
             raise ValueError('Your neighbor graph seems to be corrupted. Consider recomputing via pp.neighbors.')
-        if n_neighbors is None or n_neighbors <= adata.uns['neighbors']['params']['n_neighbors']:
+        if n_neighbors is None or n_neighbors <= get_n_neighs(adata):
             self.indices = get_indices(dist=get_neighs(adata, 'distances'), n_neighbors=n_neighbors,
                                        mode_neighbors=mode_neighbors)[0]
         else:
@@ -189,7 +189,7 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
         sparse matrix with transition probabilities
     """
     adata = data.copy() if copy else data
-    if neighbors_to_be_recomputed(adata): neighbors(adata)
+    verify_neighbors(adata)
     if vkey not in adata.layers.keys(): velocity(adata, vkey=vkey)
     if sqrt_transform is None: sqrt_transform = variance_stabilization
 

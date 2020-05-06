@@ -215,11 +215,29 @@ def get_neighs(adata, mode='distances'):
     return adata.obsp[mode] if hasattr(adata, 'obsp') and mode in adata.obsp.keys() else adata.uns['neighbors'][mode]
 
 
-def neighbors_to_be_recomputed(adata, n_neighbors=None):
+def get_n_neighs(adata):
+    return adata.uns['neighbors']['params']['n_neighbors'] \
+        if ('neighbors' in adata.uns.keys()
+            and 'params' in adata.uns['neighbors']
+            and 'n_neighbors' in adata.uns['neighbors']['params']) \
+        else 0
+
+
+def verify_neighbors(adata):
+    valid = 'neighbors' in adata.uns.keys() and 'params' in adata.uns['neighbors']
+    if valid:
+        n_neighs = (get_neighs(adata, 'distances') > 0).sum(1)
+        valid = n_neighs.max() * .1 < n_neighs.min()
+    if not valid:
+        logg.warn('The neighbor graph has an unexpected format (e.g. computed outside scvelo) \n'
+                  'or is corrupted (e.g. due to subsetting). Consider recomputing with `pp.neighbors`.')
+
+
+def neighbors_to_be_recomputed(adata, n_neighbors=None):  # deprecated
     # check whether neighbors graph is disrupted or whether graph has insufficient number of neighbors
     invalid_neighs = 'neighbors' not in adata.uns.keys() \
                      or 'params' not in adata.uns['neighbors'] \
-                     or (n_neighbors is not None and n_neighbors > adata.uns['neighbors']['params']['n_neighbors'])
+                     or (n_neighbors is not None and n_neighbors > get_n_neighs(adata))
     if invalid_neighs:
         return True
     else:
@@ -230,7 +248,7 @@ def neighbors_to_be_recomputed(adata, n_neighbors=None):
 def get_connectivities(adata, mode='connectivities', n_neighbors=None, recurse_neighbors=False):
     if 'neighbors' in adata.uns.keys():
         C = get_neighs(adata, mode)
-        if n_neighbors is not None and n_neighbors < adata.uns['neighbors']['params']['n_neighbors']:
+        if n_neighbors is not None and n_neighbors < get_n_neighs(adata):
             C = select_connectivities(C, n_neighbors) if mode == 'connectivities' else select_distances(C, n_neighbors)
         connectivities = C > 0
         with warnings.catch_warnings():
