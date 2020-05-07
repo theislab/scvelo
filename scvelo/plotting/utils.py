@@ -417,7 +417,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
     elif isinstance(c, str):
         if c in adata.obs.keys():  # color by observation key
             c = adata.obs[c]
-        elif c in adata.var_names or (use_raw and hasattr(adata, 'use_raw') and c in adata.raw.var_names):  # by gene
+        elif c in adata.var_names or (use_raw and adata.raw is not None and c in adata.raw.var_names):  # by gene
             if layer in adata.layers.keys():
                 if perc is None and any(l in layer for l in ['spliced', 'unspliced', 'Ms', 'Mu', 'velocity']):
                     perc = [1, 99]  # clip values to ignore extreme outliers since these layers are not logarithmized
@@ -432,7 +432,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
                     logg.warn(layer, 'not found. Using .X instead.')
                 if adata.raw is None and use_raw:
                     raise ValueError("`use_raw` is set to True but AnnData object does not have raw. Please check.")
-                c = adata.raw.obs_vector(c) if use_raw else adata[:, c].X
+                c = adata.raw.obs_vector(c) if use_raw else adata.obs_vector(c)
             c = c.A.flatten() if issparse(c) else c
         elif c in adata.var.keys():  # color by observation key
             c = adata.var[c]

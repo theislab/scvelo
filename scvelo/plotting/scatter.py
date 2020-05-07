@@ -224,9 +224,10 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                 z = X_emb[:, 2] if projection == '3d' and X_emb.shape[1] > 2 else None
 
             elif isinstance(x, str) and isinstance(y, str):
+                var_names = adata.raw.var_names if use_raw and adata.raw is not None else adata.var_names
                 if layer is None:
                     layer = default_xkey(adata, use_raw=use_raw)
-                is_timeseries = y in adata.var_names and x in list(adata.obs.keys()) + list(adata.layers.keys())
+                is_timeseries = y in var_names and x in list(adata.obs.keys()) + list(adata.layers.keys())
                 if xlabel is None: xlabel = x
                 if ylabel is None: ylabel = layer if is_timeseries else y
                 if title is None: title = y if is_timeseries else color
@@ -237,7 +238,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                     y = get_obs_vector(adata, basis=y, layer=layer, use_raw=use_raw)
                 # get x and y from var_names, var or obs
                 else:
-                    if x in adata.var_names and y in adata.var_names:
+                    if x in var_names and y in var_names:
                         if layer in adata.layers.keys():
                             x = adata.obs_vector(x, layer=layer)
                             y = adata.obs_vector(y, layer=layer)
