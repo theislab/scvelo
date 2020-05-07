@@ -20,15 +20,15 @@ To work with the latest development version, install from GitHub_ using::
 
 or::
 
-    git clone git+https://github.com/theislab/scvelo
+    git clone https://github.com/theislab/scvelo
     pip install -e scvelo
 
 
 Dependencies
 ^^^^^^^^^^^^
 
-- `anndata <https://anndata.readthedocs.io/>`_ - object to keep track of data with annotations.
-- `scanpy <https://scanpy.readthedocs.io/>`_ - toolkit for analyzing single-cell data.
+- `anndata <https://anndata.readthedocs.io/>`_ - annotated data object.
+- `scanpy <https://scanpy.readthedocs.io/>`_ - toolkit for single-cell data analysis.
 - `numpy <https://docs.scipy.org/>`_, `scipy <https://docs.scipy.org/>`_, `pandas <https://pandas.pydata.org/>`_, `scikit-learn <https://scikit-learn.org/>`_ and `matplotlib <https://matplotlib.org/>`_.
 
 
