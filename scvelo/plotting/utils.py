@@ -298,7 +298,7 @@ def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, fra
         ax.set_frame_on(False)
 
 
-def set_label(xlabel, ylabel, fontsize=None, basis=None, ax=None):
+def set_label(xlabel, ylabel, fontsize=None, basis=None, ax=None, **kwargs):
     labels, labels_new = np.array(['Ms', 'Mu', 'X']), np.array(['spliced', 'unspliced', 'expression'])
     if xlabel in labels: xlabel = labels_new[xlabel == labels][0]
     if ylabel in labels: ylabel = labels_new[ylabel == labels][0]
@@ -306,12 +306,12 @@ def set_label(xlabel, ylabel, fontsize=None, basis=None, ax=None):
     if basis is not None:
         component_name = ('DC' if 'diffmap' in basis else 'tSNE' if basis == 'tsne' else 'UMAP' if basis == 'umap'
         else 'PC' if basis == 'pca' else basis.replace('draw_graph_', '').upper() if 'draw_graph' in basis else basis)
-        ax.set_xlabel(component_name + '1', fontsize=fontsize)
-        ax.set_ylabel(component_name + '2', fontsize=fontsize)
+        ax.set_xlabel(component_name + '1', fontsize=fontsize, **kwargs)
+        ax.set_ylabel(component_name + '2', fontsize=fontsize, **kwargs)
     if isinstance(xlabel, str):
-        ax.set_xlabel(xlabel.replace('_', ' '), fontsize=fontsize)
+        ax.set_xlabel(xlabel.replace('_', ' '), fontsize=fontsize, **kwargs)
     if isinstance(ylabel, str):
-        ax.set_ylabel(ylabel.replace('_', ' '), fontsize=fontsize, rotation=0 if ylabel.startswith('$') else 90)
+        ax.set_ylabel(ylabel.replace('_', ' '), fontsize=fontsize, rotation=0 if ylabel.startswith('$') else 90, **kwargs)
 
 
 def set_title(title, layer=None, color=None, fontsize=None, ax=None):

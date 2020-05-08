@@ -114,6 +114,8 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                     multi_kwargs[key] = eval('{0}[i * (len({0}) > i)] if is_list({0}) else {0}'.format(key))
                 ax.append(scatter(adata, ax=pl.subplot(gs), **multi_kwargs, **scatter_kwargs, **kwargs))
 
+        if not frameon and isinstance(ylabel, str):  # later makes this a label on the figure rather than axis.
+            set_label(xlabel, ylabel, fontsize, ax=ax[0], fontweight='bold')
         savefig_or_show(dpi=dpi, save=save, show=show)
         if show is False: return ax
 
@@ -231,6 +233,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                 if xlabel is None: xlabel = x
                 if ylabel is None: ylabel = layer if is_timeseries else y
                 if title is None: title = y if is_timeseries else color
+                if legend_loc is None: legend_loc = 'none'
 
                 # gene trend: get x and y as gene (var_names) along obs/layers (e.g. pseudotime)
                 if is_timeseries:
