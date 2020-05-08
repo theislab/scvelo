@@ -125,7 +125,8 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
     return T
 
 
-def get_cell_transitions(adata, starting_cell=0, basis=None, n_steps=100, backward=False, **kwargs):
+def get_cell_transitions(adata, starting_cell=0, basis=None, n_steps=100, n_neighbors=30, backward=False,
+                         random_state=None, **kwargs):
     """Simulate cell transitions
 
     Arguments
@@ -140,18 +141,27 @@ def get_cell_transitions(adata, starting_cell=0, basis=None, n_steps=100, backwa
         Number of transitions/steps to be simulated.
     backward: `bool` (default: `False`)
         Whether to use the transition matrix to push forward (`False`) or to pull backward (`True`)
+    random_state: `int` or `None` (default: `None`)
+        Set to `int` for reproducibility, otherwise `None` for a random seed.
     **kwargs:
         To be passed to tl.transition_matrix.
     Returns
     -------
     Returns embedding coordinates (if basis is specified), else indices of simulated cell transitions.
     """
+    np.random.seed(random_state)
     if isinstance(starting_cell, str) and starting_cell in adata.var_names:
         starting_cell = np.where(adata.var_names == starting_cell)[0]
     X = [starting_cell]
     T = transition_matrix(adata, backward=backward, basis_constraint=basis, self_transitions=False, **kwargs)
     for i in range(n_steps):
-        ix = np.random.choice(T[X[-1]].indices, p=T[X[-1]].data)
+        t = T[X[-1]]
+        indices, p = t.indices, t.data
+        if n_neighbors is not None and n_neighbors < len(p):
+            idx = np.argsort(t.data)[::-1][:n_neighbors]
+            indices, p = indices[idx], p[idx]
+        p /= np.sum(p)
+        ix = np.random.choice(indices, p=p)
         X.append(ix)
     X = pd.unique(X)
     if basis is not None and f'X_{basis}' in adata.obsm.keys():
