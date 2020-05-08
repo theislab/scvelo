@@ -293,7 +293,7 @@ def get_df(data, keys=None, layer=None, index=None, columns=None, sort_values=No
 
     if dropna:
         df.replace("", np.nan, inplace=True)
-        how = dropna if isinstance(dropna, str) else 'all'
+        how = dropna if isinstance(dropna, str) else 'any' if dropna is True else 'all'
         df.dropna(how=how, axis=0, inplace=True)
         df.dropna(how=how, axis=1, inplace=True)
 
