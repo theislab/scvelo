@@ -406,17 +406,15 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         distu = distu * (o == 1) + distu_ * (o == 0)
         dists = dists * (o == 1) + dists_ * (o == 0)
 
-        idx = np.array((u > np.percentile(u, 98, axis=0) / 5) & (s > np.percentile(s, 98, axis=0) / 5), dtype=int)
+        idx = np.array((u > np.max(u, 0) / 5) & (s > np.max(s, 0) / 5), dtype=int)
         idx = idx / idx
         distu *= idx
         dists *= idx
 
         distx = distu ** 2 + dists ** 2
+
         # compute variance / equivalent to np.var(np.sign(sdiff) * np.sqrt(distx))
         varx = np.nanmean(distx, 0) - np.nanmean(np.sign(dists) * np.sqrt(distx), 0) ** 2
-        n = np.clip(len(distu) - len(distu) * .01, 2, None)
-        ll = - 1 / 2 / n * np.nansum(distx, 0) / varx - 1 / 2 * np.log(2 * np.pi * varx)
-        res = np.exp(ll)
 
         if clusters is not None:
             res = []
@@ -424,11 +422,21 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
                 idx_cat = np.array(clusters == cat)
                 distx_cat = distu[idx_cat] ** 2 + dists[idx_cat] ** 2
                 distx_sum = np.nansum(distx_cat, 0)
-                n = np.clip(len(distx_cat) - len(distx_cat) * .01, 2, None)
+
+                # penalize if very low count number
+                n = np.clip(np.sum(np.invert(np.isnan(distx_cat)), 0) - len(distx_cat) * .01, 2, None)
+                distx_sum[n < np.nanmax(n) / 5] = np.nanmax(distx_sum)
+                #varx_ = np.nanmean(distx_cat, 0) - np.nanmean(np.sign(dists[idx_cat]) * np.sqrt(distx_cat), 0) ** 2
+                #varx[n > np.nanmax(n) / 5] = varx_[n > np.nanmax(n) / 5]
+
                 ll = - 1 / 2 / n * distx_sum / varx - 1 / 2 * np.log(2 * np.pi * varx)
                 ll[distx_sum == 0] = np.nan
                 res.append(ll)
             res = np.exp(res)
+        else:
+            n = np.clip(len(distu) - len(distu) * .01, 2, None)
+            ll = - 1 / 2 / n * np.nansum(distx, 0) / varx - 1 / 2 * np.log(2 * np.pi * varx)
+            res = np.exp(ll)
 
     elif mode == 'velocity':
         res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)

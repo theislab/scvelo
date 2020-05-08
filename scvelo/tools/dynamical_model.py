@@ -809,6 +809,8 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
     from .dynamical_model_utils import get_divergence
     adata = data.copy() if copy else data
 
+    logg.info('ranking genes by cluster-specific likelihoods', r=True)
+
     groupby = groupby if isinstance(groupby, str) and groupby in adata.obs.keys() \
         else 'clusters' if 'clusters' in adata.obs.keys() \
         else 'louvain' if 'louvain' in adata.obs.keys() \
