@@ -55,8 +55,9 @@ Your help to improve scVelo is highly appreciated.
    :hidden:
 
    getting_started
+   RNA Velocity Basics <https://scvelo-notebooks.readthedocs.io/VelocityBasics.html>
    Dentate Gyrus <https://scvelo-notebooks.readthedocs.io/DentateGyrus.html>
-   Pancreatic endocrinogenesis <https://scvelo-notebooks.readthedocs.io/Pancreas.html>
+   Endocrine Pancreas <https://scvelo-notebooks.readthedocs.io/Pancreas.html>
 
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
