@@ -23,7 +23,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
          export_to_gexf=False, plot=True, use_raw=None, size=None, groups=None, components=None, figsize=None, dpi=None,
          show=True, save=None, ax=None, ncols=None, scatter_flag=None, **kwargs):
     """\
-    Plot directed PAGA transition tree.
+    Plot PAGA graph with velocity-directed edges.
 
     PAGA graph with connectivities (dashed) and transitions (solid/arrows).
 

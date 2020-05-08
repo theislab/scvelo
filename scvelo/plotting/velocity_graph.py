@@ -12,7 +12,7 @@ from scipy.sparse import issparse, csr_matrix
 
 @doc_params(scatter=doc_scatter)
 def velocity_graph(adata, basis=None, vkey='velocity', which_graph=None, n_neighbors=10, arrows=None, arrowsize=3,
-                   alpha=.8, perc=90, threshold=None, edge_width=.2, edge_color='grey', edges_on_top=None, color=None,
+                   alpha=.8, perc=None, threshold=None, edge_width=.2, edge_color='grey', edges_on_top=None, color=None,
                    layer=None, size=None, groups=None, components=None, title=None, dpi=None, show=True, save=None,
                    ax=None, **kwargs):
     """\
@@ -62,7 +62,9 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph=None, n_neigh
             T.data[T.data < threshold] = 0
             T.eliminate_zeros()
     else:
-        T = transition_matrix(adata, vkey=vkey, weight_indirect_neighbors=0, n_neighbors=n_neighbors, perc=perc, threshold=threshold)
+        if threshold is None: threshold = .05
+        T = transition_matrix(adata, vkey=vkey, weight_indirect_neighbors=0,
+                              n_neighbors=n_neighbors, perc=perc, threshold=threshold)
 
     if groups is not None:
         if issparse(T): T = T.A
