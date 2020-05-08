@@ -882,10 +882,10 @@ def velocity_embedding_changed(adata, basis, vkey):
 """additional plots (linear fit, density, outline, rug)"""
 
 
-def hist(arrays, alpha=.5, bins=50, color=None, colors=None, labels=None, hist=None, kde=None, bw_method=None, xlabel=None,
-         ylabel=None, xlim=None, ylim=None, cutoff=None, xscale=None, yscale=None, fontsize=None, legend_fontsize=None,
-         figsize=None, normed=None, perc=None, exclude_zeros=None, axvline=None, axhline=None, pdf=None, ax=None,
-         dpi=None, show=True, **kwargs):
+def hist(arrays, alpha=.5, bins=50, color=None, colors=None, labels=None, hist=None, kde=None, bw_method=None,
+         xlabel=None, ylabel=None, xlim=None, ylim=None, cutoff=None, xscale=None, yscale=None, xticks=None, yticks=None,
+         fontsize=None, legend_fontsize=None, figsize=None, normed=None, perc=None, exclude_zeros=None,
+         axvline=None, axhline=None, pdf=None, ax=None, dpi=None, show=True, **kwargs):
     """\
     Plot a histogram.
 
@@ -971,7 +971,7 @@ def hist(arrays, alpha=.5, bins=50, color=None, colors=None, labels=None, hist=N
     colors = to_list(colors) if color is None else to_list(color)
     colors = palette if colors is None or len(colors) < len(arrays) else colors
 
-    masked_arrays = np.ma.masked_invalid(np.hstack(arrays))
+    masked_arrays = np.ma.masked_invalid(np.hstack(arrays)).compressed()
     bmin, bmax = masked_arrays.min(), masked_arrays.max()
     if xlim is not None:
         bmin, bmax = max(bmin, xlim[0]), min(bmax, xlim[1])
@@ -1021,6 +1021,22 @@ def hist(arrays, alpha=.5, bins=50, color=None, colors=None, labels=None, hist=N
     if yscale is not None: ax.set_yscale(yscale)
 
     update_axes(ax, xlim, ylim, fontsize, frameon=True)
+
+    if xticks is not None:
+        ax.set_xticks(xticks)
+    if yticks is not None:
+        ax.set_yticks(yticks)
+
+    @pl.FuncFormatter
+    def log_fmt(x, pos):
+        return r'${%.2g}$' % (x)
+
+    if xscale == 'log':
+        if xticks is None:
+            ticks = [a for a in [10**a for a in np.linspace(-10, 10, 21)] if bmin < a < bmax]
+            ax.set_xticks(ticks)
+        ax.xaxis.set_major_formatter(log_fmt)
+        ax.minorticks_off()
 
     pdf = [pdf] if isinstance(pdf, str) else pdf
     if pdf is not None:
