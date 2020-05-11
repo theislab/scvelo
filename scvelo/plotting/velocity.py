@@ -1,7 +1,8 @@
+from .. import settings
 from ..preprocessing.moments import second_order_moments
 from ..tools.rank_velocity_genes import rank_velocity_genes
 from .scatter import scatter
-from .utils import savefig_or_show, default_basis, default_size, get_basis
+from .utils import savefig_or_show, default_basis, default_size, get_basis, get_figure_params
 
 import numpy as np
 import pandas as pd
@@ -99,11 +100,13 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
     nrows = int(np.ceil(len(var_names) / ncols))
     ncols = int(ncols * nplts)
     figsize = rcParams['figure.figsize'] if figsize is None else figsize
+    figsize, dpi = get_figure_params(figsize, dpi, ncols / 2)
     ax = pl.figure(figsize=(figsize[0] * ncols / 2, figsize[1] * nrows / 2), dpi=dpi) if ax is None else ax
     gs = pl.GridSpec(nrows, ncols, wspace=.5, hspace=.8)
 
     size = default_size(adata) / 2 if size is None else size  # since fontsize is halved in width and height
     fontsize = rcParams['font.size'] * .8 if fontsize is None else fontsize
+
     for v, var in enumerate(var_names):
         _adata = adata[:, var]
         s, u = _adata.layers[skey], _adata.layers[ukey]
@@ -124,13 +127,13 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
         for l, layer in enumerate(layers):
             ax = pl.subplot(gs[v * nplts + l + 1])
             title = 'expression' if layer in ['X', skey] else layer
-            _kwargs = {} if title == 'expression' else kwargs
+            #_kwargs = {} if title == 'expression' else kwargs
             cmap = color_map
             if isinstance(color_map, (list, tuple)):
                 cmap = color_map[-1] if layer in ['X', skey] else color_map[0]
             scatter(adata, basis=basis, color=var, layer=layer, colorbar=colorbar, title=title, perc=perc,
                     color_map=cmap, use_raw=use_raw, fontsize=fontsize, size=size, alpha=alpha, frameon=False,
-                    show=False, ax=ax, save=False, **_kwargs)
+                    show=False, ax=ax, save=False, **kwargs)
 
         if mode == 'stochastic':
             ss, us = second_order_moments(_adata)

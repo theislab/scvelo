@@ -6,7 +6,7 @@ import pandas as pd
 from pandas import unique, isnull
 from scipy.sparse import issparse
 from .utils import is_categorical, interpret_colorkey, savefig_or_show, to_list, \
-    _set_colors_for_categorical_obs, strings_to_categoricals
+    set_colors_for_categorical_obs, strings_to_categoricals
 
 
 def heatmap(adata, var_names, sortby='latent_time', layer='Ms', color_map='viridis', col_color=None, palette='viridis',
@@ -86,7 +86,7 @@ def heatmap(adata, var_names, sortby='latent_time', layer='Ms', color_map='virid
                 obs_col = adata.obs[col]
                 adata.obs[col + '_categorical'] = pd.Categorical(np.round(obs_col / np.max(obs_col), 2) * np.max(obs_col))
                 col += '_categorical'
-                _set_colors_for_categorical_obs(adata, col, palette)
+                set_colors_for_categorical_obs(adata, col, palette)
             col_color.append(interpret_colorkey(adata, col)[np.argsort(time)])
 
     if font_scale is not None:

@@ -1,7 +1,7 @@
 from ..tools.velocity_embedding import velocity_embedding
 from ..tools.utils import groups_to_bool
 from .utils import default_basis, default_size, default_color, get_components, savefig_or_show, make_unique_list, \
-    get_basis, velocity_embedding_changed, get_ax
+    get_basis, velocity_embedding_changed, get_ax, get_figure_params
 from .velocity_embedding_grid import compute_velocity_on_grid
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
@@ -86,6 +86,7 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
         ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
         nrows = int(np.ceil(len(multikey) / ncols))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        figsize, dpi = get_figure_params(figsize, dpi, ncols)
         ax = []
         for i, gs in enumerate(
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):

@@ -1,5 +1,6 @@
 from .. import settings
 from .. import logging as logg
+from .. import AnnData
 from ..preprocessing.moments import get_connectivities
 from ..tools.utils import strings_to_categoricals
 from . import palettes
@@ -68,7 +69,18 @@ def to_val(key):
     return key[0] if isinstance(key, (list, tuple)) and len(key) == 1 else key
 
 
+def get_figure_params(figsize, dpi=None, ncols=1):
+    figsize = rcParams['figure.figsize'] if figsize is None else figsize
+    dpi = rcParams['figure.dpi'] if dpi is None else dpi
+    if settings.presenter_view and figsize[0] * ncols * (dpi / 80) > 12:
+        figscale = 12 / (figsize[0] * ncols)
+        figsize = (figsize[0] * figscale, figsize[1] * figscale)
+        dpi = min(80, dpi)
+    return figsize, dpi
+
+
 def get_ax(ax, show=None, figsize=None, dpi=None, projection=None):
+    figsize, _ = get_figure_params(figsize)
     if ax is None:
         ax = pl.figure(None, figsize, dpi=dpi).gca(projection='3d' if projection == '3d' else None)
         if show is None: show = True
@@ -133,6 +145,8 @@ def get_obs_vector(adata, basis, layer=None, use_raw=None):
 
 
 def groups_to_bool(adata, groups, groupby=None):
+    if groups is True:
+        return None
     if groups is not None and not isinstance(groups, str) and len(groups) == 1:
         groups = groups[0]
     if isinstance(groups, str):
@@ -186,7 +200,7 @@ def gets_vals_from_color_gradients(adata, color=None, **scatter_kwargs):
     names = color_gradients.names if hasattr(color_gradients, 'names') else pd_colgrad.columns
 
     adata.obs[color] = pd.Categorical([str(names[i]) for i in np.argmax(vals, 1)], categories=names)
-    _set_colors_for_categorical_obs(adata, color, palette)
+    set_colors_for_categorical_obs(adata, color, palette)
 
     return vals, names, color, scatter_kwargs
 
@@ -337,7 +351,7 @@ def set_frame(ax, frameon):
         ax.set_frame_on(False)
 
 
-def _add_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
+def set_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
                 legend_fontoutline, groups):
     """
     Adds a legend to the given ax with categorial data.
@@ -464,7 +478,7 @@ additional_colors = {
 
 
 # adapted from scanpy
-def _set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
+def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
     """
     Sets the adata.uns[value_to_plot + '_colors'] according to the given palette or default colors.
     Parameters
@@ -791,7 +805,7 @@ def plot_velocity_fits(adata, basis, vkey=None, use_raw=None, linewidth=None, li
         line, fit = show_full_dynamics(adata, basis, 'fit', use_raw, linewidth, show_assignments=show_assignments, ax=ax)
         fits.append(fit); lines.append(line)
 
-    if legend_loc is None or legend_loc == 'bottom right':
+    if legend_loc in {True, None, 'bottom right'}:
         legend_loc = 'lower right'
     if len(fits) > 0 and legend_loc and legend_loc != 'none':
         ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize, loc=legend_loc)

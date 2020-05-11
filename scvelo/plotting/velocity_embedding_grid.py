@@ -1,7 +1,7 @@
 from ..tools.velocity_embedding import quiver_autoscale, velocity_embedding
 from ..tools.utils import groups_to_bool
 from .utils import default_basis, default_size, default_color, get_components, savefig_or_show, default_arrow, \
-    make_unique_list, get_basis, velocity_embedding_changed, get_ax
+    make_unique_list, get_basis, velocity_embedding_changed, get_ax, get_figure_params
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -145,6 +145,7 @@ def velocity_embedding_grid(adata, basis=None, vkey='velocity', density=None, sm
         ncols = len(multikey) if ncols is None else min(len(multikey), ncols)
         nrows = int(np.ceil(len(multikey) / ncols))
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        figsize, dpi = get_figure_params(figsize, dpi, ncols)
         ax = []
         for i, gs in enumerate(
                 pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))):

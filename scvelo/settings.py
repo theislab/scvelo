@@ -63,6 +63,10 @@ categories_to_ignore = ['N/A', 'dontknow', 'no_gate', '?']
 """Categories that are omitted in plotting etc.
 """
 
+presenter_view = None
+"""Set True for maximum width of 12.
+"""
+
 _frameon = False
 """See set_figure_params.
 """

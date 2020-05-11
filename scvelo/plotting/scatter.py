@@ -1,18 +1,8 @@
-from .. import settings
-from .. import logging as logg
-from .. import AnnData
 from .docs import doc_scatter, doc_params
-
-from .utils import is_categorical, is_list, is_list_of_str, is_list_of_list, to_list, to_valid_bases_list, to_val, is_list_of_int
-from .utils import default_basis, default_color, default_size, default_color_map, default_legend_loc, default_xkey, default_ykey
-from .utils import unique, make_dense, get_components, get_connectivities, groups_to_bool, interpret_colorkey, get_obs_vector
-from .utils import update_axes, set_label, set_title, set_colorbar, _set_colors_for_categorical_obs, _add_legend
-from .utils import plot_linfit, plot_polyfit, plot_density, plot_outline, plot_rug, plot_velocity_fits, savefig_or_show
-from .utils import rgb_custom_colormap, gets_vals_from_color_gradients, get_kwargs, get_ax, is_color_like
-
+from .utils import *
 
 from inspect import signature
-from matplotlib import rcParams, patheffects
+from matplotlib import patheffects
 import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
@@ -102,7 +92,13 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
             nrows = int(np.ceil(len(multikey) / ncols))
         else:
             ncols = int(np.ceil(len(multikey) / nrows))
-        figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        if not frameon:
+            if 'legend_loc' in scatter_kwargs and scatter_kwargs['legend_loc'] is None:
+                scatter_kwargs['legend_loc'] = 'none'
+            if 'legend_loc_lines' in scatter_kwargs and scatter_kwargs['legend_loc_lines'] is None:
+                scatter_kwargs['legend_loc_lines'] = 'none'
+
+        figsize, dpi = get_figure_params(figsize, dpi, ncols)
         fig = pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi)
         gspec = pl.GridSpec(nrows, ncols, fig, hspace=.3 if hspace is None else hspace, wspace=wspace)
 
@@ -287,7 +283,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
 
             # set palette if categorical color vals
             if is_categorical(adata, color):
-                _set_colors_for_categorical_obs(adata, color, palette)
+                set_colors_for_categorical_obs(adata, color, palette)
 
             # set color
             if basis in adata.var_names and isinstance(color, str) and color in adata.layers.keys():
@@ -366,7 +362,8 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
             smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
 
             if isinstance(add_outline, (list, tuple, np.ndarray, int, np.int_, str)) or add_outline:
-                if isinstance(add_outline, (int, np.int_)) or is_list_of_int(add_outline) and len(add_outline) != len(x):
+                if add_outline is not True and isinstance(add_outline, (int, np.int_)) \
+                        or is_list_of_int(add_outline) and len(add_outline) != len(x):
                     add_outline = np.array(np.isin(np.arange(len(x)), add_outline), dtype=bool)
                     if outline_width is None: outline_width = (.6, .3)
                 if isinstance(add_outline, str):
@@ -391,7 +388,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
             if is_categorical(adata, color) and len(scatter_array) == adata.n_obs:
                 legend_loc = default_legend_loc(adata, color, legend_loc)
                 if not (add_outline is None or groups_to_bool(adata, add_outline, color) is None): groups = add_outline
-                _add_legend(adata, ax, color, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
+                set_legend(adata, ax, color, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
                             [patheffects.withStroke(linewidth=True, foreground='w')], groups)
 
             if add_density:
