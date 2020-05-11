@@ -12,6 +12,7 @@ import matplotlib.pyplot as pl
 import numpy as np
 from inspect import signature
 import collections.abc as cabc
+import random
 
 
 @doc_params(scatter=doc_scatter)
@@ -153,7 +154,6 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
                    'max_edge_width': max_edge_width, 'arrowsize': arrowsize, 'random_state': random_state,
                    'pos': pos, 'normalize_to_color': normalize_to_color, 'cmap': cmap, 'cax': cax, 'cb_kwds': cb_kwds,
                    'add_pos': add_pos, 'export_to_gexf': export_to_gexf, 'colors': node_colors, 'plot': plot}
-
     for key in kwargs:
         if key in signature(_paga).parameters:
             paga_kwargs[key] = kwargs[key]
@@ -242,11 +242,88 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
             if 'alpha' not in kwargs: kwargs['alpha'] = .5
             ax = scatter(adata, basis=basis, x=x, y=y, vkey=vkey, layer=layer, color=paga_groups, size=size,
                          title=title, ax=ax, save=None, zorder=0, show=False, **kwargs)
-
         _paga(adata, ax=ax, show=False,  **paga_kwargs, text_kwds={'zorder': 1000, 'alpha': legend_loc == 'on data'})
 
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
+
+
+def get_igraph_from_adjacency(adjacency, directed=None):
+    """Get igraph graph from adjacency matrix."""
+    import igraph as ig
+
+    sources, targets = adjacency.nonzero()
+    weights = adjacency[sources, targets]
+    if isinstance(weights, np.matrix):
+        weights = weights.A1
+    g = ig.Graph(directed=directed)
+    g.add_vertices(adjacency.shape[0])  # this adds adjacency.shape[0] vertices
+    g.add_edges(list(zip(sources, targets)))
+    try:
+        g.es['weight'] = weights
+    except:
+        pass
+    if g.vcount() != adjacency.shape[0]:
+        logg.warn(f'The constructed graph has only {g.vcount()} nodes. Your adjacency matrix contained redundant nodes.')
+    return g
+
+
+def _compute_pos(adjacency_solid, layout=None, random_state=0, init_pos=None, adj_tree=None, root=0, layout_kwds=None):
+    import networkx as nx
+    np.random.seed(random_state)
+    random.seed(random_state)
+    nx_g_solid = nx.Graph(adjacency_solid)
+    if layout is None:
+        layout = 'fr'
+    if layout == 'fa':
+        try:
+            from fa2 import ForceAtlas2
+        except:
+            logg.warning(
+                "Package 'fa2' is not installed, falling back to layout 'fr'."
+                'To use the faster and better ForceAtlas2 layout, '
+                "install package 'fa2' (`pip install fa2`)."
+            )
+            layout = 'fr'
+    if layout == 'fa':
+        init_coords = np.random.random((adjacency_solid.shape[0], 2)) if init_pos is None else init_pos.copy()
+        forceatlas2 = ForceAtlas2(outboundAttractionDistribution=False, linLogMode=False, adjustSizes=False,
+                                  edgeWeightInfluence=1.0, jitterTolerance=1.0, barnesHutOptimize=True,
+                                  barnesHutTheta=1.2, multiThreaded=False, scalingRatio=2.0, strongGravityMode=False,
+                                  gravity=1.0, verbose=False)
+        iterations = layout_kwds['maxiter'] if 'maxiter' in layout_kwds \
+            else layout_kwds['iterations'] if 'iterations' in layout_kwds else 500
+        pos_list = forceatlas2.forceatlas2(adjacency_solid, pos=init_coords, iterations=iterations)
+        pos = {n: [p[0], -p[1]] for n, p in enumerate(pos_list)}
+    elif layout == 'eq_tree':
+        nx_g_tree = nx.Graph(adj_tree)
+        from scanpy.plotting._utils import hierarchy_pos
+        pos = hierarchy_pos(nx_g_tree, root)
+        if len(pos) < adjacency_solid.shape[0]:
+            raise ValueError('This is a forest and not a single tree. Try another `layout`, e.g., {\'fr\'}.')
+    else:
+        # igraph layouts
+        g = get_igraph_from_adjacency(adjacency_solid)
+        if 'rt' in layout:
+            g_tree = get_igraph_from_adjacency(adj_tree)
+            pos_list = g_tree.layout(layout, root=root if isinstance(root, list) else [root]).coords
+        elif layout == 'circle':
+            pos_list = g.layout(layout).coords
+        else:
+            if init_pos is None:
+                init_coords = np.random.random((adjacency_solid.shape[0], 2)).tolist()
+            else:
+                init_pos = init_pos.copy()
+                init_pos[:, 1] *= -1  # to be checked
+                init_coords = init_pos.tolist()
+            try:
+                pos_list = g.layout(layout, seed=init_coords, weights='weight', **layout_kwds).coords
+            except AttributeError:  # hack for empty graphs...
+                pos_list = g.layout(layout, seed=init_coords, **layout_kwds).coords
+        pos = {n: [p[0], -p[1]] for n, p in enumerate(pos_list)}
+    if len(pos) == 1: pos[0] = (0.5, 0.5)
+    pos_array = np.array([pos[n] for count, n in enumerate(nx_g_solid)])
+    return pos_array
 
 
 def _paga(adata, threshold=None, color=None, layout=None, layout_kwds=None, init_pos=None, root=0,
@@ -258,7 +335,7 @@ def _paga(adata, threshold=None, color=None, layout=None, layout_kwds=None, init
                 colors=None, groups=None, plot=True, show=None, save=None, ax=None, **scatter_kwargs):
     """scanpy/_paga with some adjustments for directional graphs. To be moved back to scanpy once finalized.
     """
-    from scanpy.plotting._tools.paga import _compute_pos, _utils
+    from scanpy.plotting._utils import setup_axes
     if groups is not None: labels = groups
     if colors is None: colors = color
     groups_key = adata.uns['paga']['groups']
@@ -328,13 +405,12 @@ def _paga(adata, threshold=None, color=None, layout=None, layout_kwds=None, init
             adj_tree = adata.uns['paga']['connectivities_tree']
         pos = _compute_pos(adjacency_solid, layout=layout, random_state=random_state, init_pos=init_pos,
                            layout_kwds=layout_kwds, adj_tree=adj_tree, root=root)
-        #pos = adata.uns['paga']['pos']
 
     scatter_kwargs.update({'alpha': 0, 'color': groups_key})
     x, y = pos[:, 0], pos[:, 1]
 
     if plot:
-        axs, panel_pos, draw_region_width, figure_width = _utils.setup_axes(ax=ax, panels=colors, colorbars=colorbars)
+        axs, panel_pos, draw_region_width, figure_width = setup_axes(ax=ax, panels=colors, colorbars=colorbars)
 
         if len(colors) == 1 and not isinstance(axs, list):
             axs = [axs]
@@ -390,7 +466,7 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
     from matplotlib import patheffects
     from matplotlib.colors import is_color_like
     from pathlib import Path
-    from scanpy.plotting._tools.paga import _utils
+    from scanpy.plotting._utils import add_colors_for_categorical_sample_annotation
     from pandas.api.types import is_categorical_dtype
 
     node_labels = labels  # rename for clarity
@@ -404,7 +480,7 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
     if (colors is None or colors == groups_key) and groups_key is not None:
         if groups_key + '_colors' not in adata.uns \
                 or len(adata.obs[groups_key].cat.categories) != len(adata.uns[groups_key + '_colors']):
-            _utils.add_colors_for_categorical_sample_annotation(adata, groups_key)
+            add_colors_for_categorical_sample_annotation(adata, groups_key)
         colors = adata.uns[groups_key + '_colors']
 
     nx_g_solid = nx.Graph(adjacency_solid)
@@ -477,7 +553,7 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
         norm = 'reference' if normalize_to_color else 'prediction'
         asso_names, asso_matrix = \
             compute_association_matrix_of_groups(adata, prediction=groups_key, reference=colors, normalization=norm)
-        _utils.add_colors_for_categorical_sample_annotation(adata, colors)
+        add_colors_for_categorical_sample_annotation(adata, colors)
         asso_colors = get_associated_colors_of_groups(adata.uns[colors + '_colors'], asso_matrix)
         colors = asso_colors
 
