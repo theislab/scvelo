@@ -236,13 +236,14 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
         kwargs['frameon'] = paga_kwargs['frameon']
         if title is None:
             title = f'paga ({str(paga_groups)})' if transitions is None else f'paga velocity-graph ({str(paga_groups)})'
+        paga_kwargs['title'] = title
 
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
         if scatter_flag and basis is not None:
             if 'alpha' not in kwargs: kwargs['alpha'] = .5
             ax = scatter(adata, basis=basis, x=x, y=y, vkey=vkey, layer=layer, color=paga_groups, size=size,
                          title=title, ax=ax, save=None, zorder=0, show=False, **kwargs)
-        _paga(adata, ax=ax, show=False,  **paga_kwargs, text_kwds={'zorder': 1000, 'alpha': legend_loc == 'on data'})
+        _paga(adata, ax=ax, show=False, text_kwds={'zorder': 1000, 'alpha': legend_loc == 'on data'}, **paga_kwargs)
 
         savefig_or_show(dpi=dpi, save=save, show=show)
         if not show: return ax
