@@ -54,11 +54,17 @@ Your help to improve scVelo is highly appreciated.
    :maxdepth: 1
    :hidden:
 
-   getting_started
+   Getting Started <https://scvelo.readthedocs.io/getting_started.html>
    RNA Velocity Basics <https://scvelo-notebooks.readthedocs.io/VelocityBasics.html>
-   Dentate Gyrus <https://scvelo-notebooks.readthedocs.io/DentateGyrus.html>
-   Endocrine Pancreas <https://scvelo-notebooks.readthedocs.io/Pancreas.html>
+   Dynamical Modeling <https://scvelo-notebooks.readthedocs.io/DynamicalModeling.html>
 
+.. toctree::
+   :caption: Example Datasets
+   :maxdepth: 1
+   :hidden:
+
+   Endocrine Pancreas <https://scvelo-notebooks.readthedocs.io/Pancreas.html>
+   Dentate Gyrus <https://scvelo-notebooks.readthedocs.io/DentateGyrus.html>
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
    :target: https://pypi.org/project/scvelo
