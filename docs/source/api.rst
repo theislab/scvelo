@@ -103,6 +103,7 @@ Tools (tl)
 
    tl.velocity_clusters
    tl.velocity_confidence
+   tl.score_genes_cell_cycle
 
 
 Plotting (pl)

@@ -6,9 +6,7 @@ setup(
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
     python_requires='>=3.6',
-    install_requires=[
-        l.strip() for l in Path('requirements.txt').read_text('utf-8').splitlines()
-    ],
+    install_requires=[l.strip() for l in Path('requirements.txt').read_text('utf-8').splitlines()],
     packages=find_packages(),
     author="Volker Bergen",
     author_email="volker.bergen@helmholtz-muenchen.de",
@@ -26,6 +24,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
         'Topic :: Scientific/Engineering :: Visualization'
     ]
