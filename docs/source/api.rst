@@ -15,7 +15,7 @@ Further, several utilities (``scv.utils.*``) are provided to facilitate data ana
 
 
 Read / Load
-~~~~~~~~~~~
+-----------
 
 .. autosummary::
    :toctree: .
@@ -25,7 +25,9 @@ Read / Load
 
 
 Preprocessing (pp)
-~~~~~~~~~~~~~~~~~~~
+------------------
+
+**Basic preprocessing** (gene selection and normalization)
 
 .. autosummary::
    :toctree: .
@@ -35,52 +37,114 @@ Preprocessing (pp)
    pp.normalize_per_cell
    pp.log1p
    pp.filter_and_normalize
+
+**Moments** (across nearest neighbors in PCA space)
+
+.. autosummary::
+   :toctree: .
+
+   pp.pca
    pp.neighbors
    pp.moments
 
 
 Tools (tl)
-~~~~~~~~~~
+----------
+
+**Clustering and embedding**
+(more at `scanpy-docs <https://scanpy.readthedocs.io/en/stable/api/>`_)
+
+.. autosummary::
+   :toctree: .
+
+   tl.louvain
+   tl.umap
+
+**Velocity estimation**
+
+.. autosummary::
+   :toctree: .
+
+   tl.velocity
+   tl.velocity_graph
+   tl.velocity_embedding
+
+**Dynamical modeling**
 
 .. autosummary::
    :toctree: .
 
    tl.recover_dynamics
-   tl.velocity
-   tl.velocity_graph
-   tl.velocity_embedding
+   tl.differential_kinetic_test
+
+**Dynamical genes**
+
+.. autosummary::
+   :toctree: .
+
+   tl.rank_velocity_genes
+   tl.rank_dynamical_genes
+
+
+**Pseudotime and trajectory inference**
+
+.. autosummary::
+   :toctree: .
 
    tl.terminal_states
-   tl.latent_time
    tl.velocity_pseudotime
+   tl.latent_time
+   tl.paga
+
+**Further tools**
+
+.. autosummary::
+   :toctree: .
 
    tl.velocity_clusters
    tl.velocity_confidence
-   tl.rank_velocity_genes
-   tl.rank_dynamical_genes
-   tl.differential_kinetic_test
-   tl.paga
 
 
 Plotting (pl)
-~~~~~~~~~~~~~
+-------------
+
+**Base scatter plot**
 
 .. autosummary::
    :toctree: .
 
    pl.scatter
-   pl.velocity
-   pl.velocity_graph
+
+**Velocity embeddings**
+
+.. autosummary::
+   :toctree: .
+
    pl.velocity_embedding
    pl.velocity_embedding_grid
    pl.velocity_embedding_stream
-   pl.proportions
-   pl.hist
-   pl.heatmap
+
+**Velocity graph**
+
+.. autosummary::
+   :toctree: .
+
+   pl.velocity
+   pl.velocity_graph
    pl.paga
 
+**Further plotting**
+
+.. autosummary::
+   :toctree: .
+
+   pl.proportions
+   pl.heatmap
+   pl.hist
+
+
 Datasets
-~~~~~~~~
+--------
 
 .. autosummary::
    :toctree: .
@@ -92,27 +156,47 @@ Datasets
 
 
 Utils
-~~~~~
+-----
+
+**Get data by key**
 
 .. autosummary::
    :toctree: .
 
    get_df
-   utils.show_proportions
+
+**Data preparation**
+
+.. autosummary::
+   :toctree: .
+
    utils.cleanup
    utils.clean_obs_names
    utils.merge
+   utils.show_proportions
+
+**Getters**
+
+.. autosummary::
+   :toctree: .
+
    utils.get_moments
    utils.get_transition_matrix
    utils.get_cell_transitions
    utils.get_extrapolated_state
+
+**Least squares and correlation**
+
+.. autosummary::
+   :toctree: .
+
    utils.leastsq
    utils.vcorrcoef
    utils.test_bimodality
 
 
 Settings
-~~~~~~~~
+--------
 
 .. autosummary::
    :toctree: .
