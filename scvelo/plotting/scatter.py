@@ -334,8 +334,10 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
 
             # set color to grey for NAN values and for cells that are not in groups
             if groups is not None or is_categorical(adata, color) and np.any(pd.isnull(adata.obs[color])):
+                if isinstance(groups, (list, tuple, np.record)):
+                    groups = unique(groups)
                 zorder = 0 if zorder is None else zorder
-                dummy = [scatter_kwargs.pop(key, None) for key in ['groups', 'add_linfit', 'add_polyfit', 'add_density']]
+                _ = [scatter_kwargs.pop(key, None) for key in ['groups', 'add_linfit', 'add_polyfit', 'add_density']]
                 ax = scatter(adata, x=x, y=y, basis=basis, layer=layer, color='lightgrey', ax=ax, **scatter_kwargs)
                 if groups is not None and len(groups) == 1:
                     if isinstance(groups[0], str) and groups[0] in adata.var.keys() and basis in adata.var_names:
@@ -362,6 +364,8 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
             smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
 
             if isinstance(add_outline, (list, tuple, np.ndarray, int, np.int_, str)) or add_outline:
+                if isinstance(add_outline, (list, tuple, np.record)):
+                    add_outline = unique(add_outline)
                 if add_outline is not True and isinstance(add_outline, (int, np.int_)) \
                         or is_list_of_int(add_outline) and len(add_outline) != len(x):
                     add_outline = np.array(np.isin(np.arange(len(x)), add_outline), dtype=bool)
