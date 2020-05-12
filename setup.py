@@ -11,7 +11,7 @@ setup(
     author="Volker Bergen",
     author_email="volker.bergen@helmholtz-muenchen.de",
     description='RNA velocity generalized through dynamical modeling',
-    long_description=Path('README.rst').read_text('utf-8'),
+    long_description=Path('pypi.rst').read_text('utf-8'),
     license='BSD',
     url="https://github.com/theislab/scvelo",
     download_url="https://github.com/theislab/scvelo",
