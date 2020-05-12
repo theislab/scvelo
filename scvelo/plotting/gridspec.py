@@ -4,10 +4,9 @@ from .velocity_embedding import velocity_embedding
 from .velocity_embedding_grid import velocity_embedding_grid
 from .velocity_embedding_stream import velocity_embedding_stream
 from .velocity_graph import velocity_graph
-from .utils import hist
+from .utils import hist, get_figure_params
 
 import matplotlib.pyplot as pl
-from matplotlib import rcParams
 from functools import partial
 
 
@@ -28,7 +27,7 @@ _wraps_plot_hist = partial(_wraps_plot, func=hist)
 
 
 def gridspec(ncols=4, nrows=1, figsize=None, dpi=None):
-    if figsize is None: figsize = rcParams['figure.figsize']
+    figsize, dpi = get_figure_params(figsize, dpi, ncols)
     gs = pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))
     return gs
 
