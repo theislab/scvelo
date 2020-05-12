@@ -35,7 +35,7 @@ def toy_data(n_obs=None):
 
 
 def dentategyrus(adjusted=True):
-    """Dentate Gyrus key_addzneurogenesis.
+    """Dentate Gyrus neurogenesis.
 
     Data from `Hochgerner et al. (2018) <https://doi.org/10.1038/s41593-017-0056-2>`_.
 
