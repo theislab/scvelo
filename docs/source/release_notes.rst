@@ -4,6 +4,27 @@
 Release Notes
 =============
 
+
+Version 0.2.0 :small:`May 12, 2020`
+--------------------------------------
+New vignettes:
+- RNA velocity basics
+- Dynamical Modeling
+- Differential Kinetics
+
+Tools:
+
+- `tl.differential_kinetic_test`: introduced a statistical test to detect different kinetic regimes.
+- `tl.rank_dynamical_genes`: introduced a gene ranking by cluster-wise likelihoods.
+- `tl.paga`: introduced directed PAGA graph
+
+Plotting:
+
+- enhancements in `pl.scatter`: linear and polynomical fits, gradient coloring
+- `pl.proportions`: Pie and bar chart of spliced/unspliced proprtions.
+- `GridSpec`: multiplot environment.
+
+
 Version 0.1.20 :small:`Sep 5, 2019`
 -----------------------------------
 Tools:
@@ -13,8 +34,8 @@ Tools:
 
 Plotting:
 
-- enhancements in `pl.scatter`: multiplots, rugplot, linear and polynomical fits, densityplots, etc.
-- `pl.heatmap`: heatmap / clsutermap of genes along time coordinate sorted by expression along dynamics.
+- enhancements in `pl.scatter`: multiplots, rugplot, linear and polynomial fits, density plots, etc.
+- `pl.heatmap`: heatmap / clustermap of genes along time coordinate sorted by expression along dynamics.
 
 Preprocessing:
 
