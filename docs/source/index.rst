@@ -57,6 +57,7 @@ Your help to improve scVelo is highly appreciated.
    Getting Started <https://scvelo.readthedocs.io/getting_started.html>
    RNA Velocity Basics <https://scvelo-notebooks.readthedocs.io/VelocityBasics.html>
    Dynamical Modeling <https://scvelo-notebooks.readthedocs.io/DynamicalModeling.html>
+   Differential Kinetics <https://scvelo-notebooks.readthedocs.io/DifferentialKinetics.html>
 
 .. toctree::
    :caption: Example Datasets
