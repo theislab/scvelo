@@ -11,7 +11,7 @@ from .utils import is_categorical, interpret_colorkey, savefig_or_show, to_list,
 
 def heatmap(adata, var_names, sortby='latent_time', layer='Ms', color_map='viridis', col_color=None, palette='viridis',
             n_convolve=30, standard_scale=0, sort=True, colorbar=None, col_cluster=False, row_cluster=False,
-            figsize=(10, 5), font_scale=None, show=True, save=None, ax=None, **kwargs):
+            figsize=(8, 4), font_scale=None, show=True, save=None, **kwargs):
     """\
     Plot time series for genes as heatmap.
 
@@ -47,8 +47,6 @@ def heatmap(adata, var_names, sortby='latent_time', layer='Ms', color_map='virid
     save: `bool` or `str`, optional (default: `None`)
         If `True` or a `str`, save the figure. A string is appended to the default filename.
         Infer the filetype if ending on {'.pdf', '.png', '.svg'}.
-    ax: `matplotlib.Axes`, optional (default: `None`)
-        A matplotlib axes object. Only works if plotting a single component.
 
     Returns
     -------
@@ -91,10 +89,14 @@ def heatmap(adata, var_names, sortby='latent_time', layer='Ms', color_map='virid
 
     if font_scale is not None:
         sns.set(font_scale=font_scale)
+    if 'dendrogram_ratio' not in kwargs:
+        kwargs['dendrogram_ratio'] = (.1 if row_cluster else 0, .2 if col_cluster else 0)
+    if 'cbar_pos' not in kwargs or not colorbar:
+        kwargs['cbar_pos'] = None
+
     cm = sns.clustermap(df.T, col_colors=col_color, col_cluster=col_cluster, row_cluster=row_cluster, cmap=color_map,
                         xticklabels=False, standard_scale=standard_scale, figsize=figsize, **kwargs)
 
-    if not colorbar: cm.cax.set_visible(False)
     savefig_or_show('heatmap', save=save, show=show)
     if not show: return cm
 
