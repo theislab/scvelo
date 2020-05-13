@@ -8,6 +8,7 @@ Release Notes
 Version 0.2.0 :small:`May 12, 2020`
 --------------------------------------
 New vignettes:
+
 - RNA velocity basics
 - Dynamical Modeling
 - Differential Kinetics
