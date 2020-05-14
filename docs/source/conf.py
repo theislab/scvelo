@@ -25,6 +25,22 @@ import scvelo
 
 logger = logging.getLogger(__name__)
 
+
+# -- Retrieve notebooks ------------------------------------------------
+
+from urllib.request import urlretrieve
+notebooks_url = 'https://github.com/theislab/scvelo_notebooks/raw/master/'
+notebooks = [
+    'VelocityBasics.ipynb',
+    'DynamicalModeling.ipynb',
+    'DifferentialKinetics.ipynb',
+    'Pancreas.ipynb',
+    'DentateGyrus.ipynb',
+]
+for nb in notebooks:
+    urlretrieve(notebooks_url + nb, nb)
+
+
 # -- General configuration ------------------------------------------------
 
 needs_sphinx = '1.7'
@@ -39,6 +55,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.githubpages',
     'sphinx_autodoc_typehints',
+    'nbsphinx',
 ]
 
 
