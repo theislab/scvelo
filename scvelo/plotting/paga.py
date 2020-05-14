@@ -666,7 +666,7 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
         trans2 = ax.transAxes.inverted().transform
         pie_axs = []
         for count, n in enumerate(nx_g_solid.nodes()):
-            pie_size = groups_sizes[count] / base_scale_scatter
+            pie_size = groups_sizes[count] / base_scale_scatter / np.sqrt(node_size_scale)
             x1, y1 = trans(pos[n])     # data coordinates
             xa, ya = trans2((x1, y1))  # axis coordinates
             xa = ax_x_min + (xa - pie_size/2) * ax_len_x
