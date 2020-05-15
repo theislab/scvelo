@@ -38,7 +38,9 @@ notebooks = [
     'DentateGyrus.ipynb',
 ]
 for nb in notebooks:
-    urlretrieve(notebooks_url + nb, nb)
+    try:
+        urlretrieve(notebooks_url + nb, nb)
+    except: pass
 
 
 # -- General configuration ------------------------------------------------
