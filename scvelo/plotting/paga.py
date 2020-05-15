@@ -2,6 +2,7 @@ from .. import settings
 from .. import logging as logg
 
 from ..tools.utils import groups_to_bool
+from ..tools.paga import get_igraph_from_adjacency
 from .utils import default_basis, default_size, savefig_or_show, \
     default_color, make_unique_list, make_unique_valid_list, get_components
 from .scatter import scatter
@@ -249,26 +250,6 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
         if not show: return ax
 
 
-def get_igraph_from_adjacency(adjacency, directed=None):
-    """Get igraph graph from adjacency matrix."""
-    import igraph as ig
-
-    sources, targets = adjacency.nonzero()
-    weights = adjacency[sources, targets]
-    if isinstance(weights, np.matrix):
-        weights = weights.A1
-    g = ig.Graph(directed=directed)
-    g.add_vertices(adjacency.shape[0])  # this adds adjacency.shape[0] vertices
-    g.add_edges(list(zip(sources, targets)))
-    try:
-        g.es['weight'] = weights
-    except:
-        pass
-    if g.vcount() != adjacency.shape[0]:
-        logg.warn(f'The constructed graph has only {g.vcount()} nodes. Your adjacency matrix contained redundant nodes.')
-    return g
-
-
 def _compute_pos(adjacency_solid, layout=None, random_state=0, init_pos=None, adj_tree=None, root=0, layout_kwds=None):
     import networkx as nx
     np.random.seed(random_state)
@@ -278,9 +259,9 @@ def _compute_pos(adjacency_solid, layout=None, random_state=0, init_pos=None, ad
         layout = 'fr'
     if layout == 'fa':
         try:
-            from fa2 import ForceAtlas2
+            import fa2
         except:
-            logg.warning(
+            logg.warn(
                 "Package 'fa2' is not installed, falling back to layout 'fr'."
                 'To use the faster and better ForceAtlas2 layout, '
                 "install package 'fa2' (`pip install fa2`)."
@@ -288,7 +269,7 @@ def _compute_pos(adjacency_solid, layout=None, random_state=0, init_pos=None, ad
             layout = 'fr'
     if layout == 'fa':
         init_coords = np.random.random((adjacency_solid.shape[0], 2)) if init_pos is None else init_pos.copy()
-        forceatlas2 = ForceAtlas2(outboundAttractionDistribution=False, linLogMode=False, adjustSizes=False,
+        forceatlas2 = fa2.ForceAtlas2(outboundAttractionDistribution=False, linLogMode=False, adjustSizes=False,
                                   edgeWeightInfluence=1.0, jitterTolerance=1.0, barnesHutOptimize=True,
                                   barnesHutTheta=1.2, multiThreaded=False, scalingRatio=2.0, strongGravityMode=False,
                                   gravity=1.0, verbose=False)

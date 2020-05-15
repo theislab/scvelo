@@ -14,7 +14,10 @@ from scanpy.tools._paga import PAGA
 
 def get_igraph_from_adjacency(adjacency, directed=None):
     """Get igraph graph from adjacency matrix."""
-    import igraph as ig
+    try:
+        import igraph as ig
+    except ImportError:
+        raise ImportError('To run paga, you need to install `pip install python-igraph`')
     sources, targets = adjacency.nonzero()
     weights = adjacency[sources, targets]
     if isinstance(weights, np.matrix):
@@ -91,7 +94,11 @@ class PAGA_tree(PAGA):
                 f"The passed 'velocity_graph' have shape {self._adata.uns[vkey].shape} "
                 f"but shoud have shape {(self._adata.n_obs, self._adata.n_obs)}"
             )
-        import igraph
+        try:
+            import igraph
+        except ImportError:
+            raise ImportError('To run paga, you need to install `pip install python-igraph`')
+
         root = None
         clusters = self._adata.obs[self.groups]
         cats = clusters.cat.categories
@@ -225,6 +232,11 @@ def paga(adata, groups=None, vkey='velocity', use_time_prior=True, use_root_prio
         use_time_prior = 'velocity_pseudotime'
         if use_time_prior not in adata.obs.keys():
             velocity_pseudotime(adata, vkey=vkey)
+
+    try:
+        import igraph
+    except ImportError:
+        raise ImportError('To run paga, you need to install `pip install python-igraph`')
 
     logg.info('running PAGA', r=True)
     paga = PAGA_tree(adata, groups, vkey=vkey, use_time_prior=use_time_prior, use_root_prior=use_root_prior,
