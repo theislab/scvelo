@@ -57,6 +57,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
     # use c & color and cmap & color_map interchangeably, and plot each group separately if groups is 'all'
     if 'c' in kwargs: color = kwargs.pop('c')
     if 'cmap' in kwargs: color_map = kwargs.pop('cmap')
+    if 'rasterized' not in kwargs: kwargs['rasterized'] = settings._vector_friendly
     if isinstance(color_map, (list, tuple)) and all([is_color_like(c) or c == 'transparent' for c in color_map]):
         color_map = rgb_custom_colormap(colors=color_map)
     if isinstance(groups, str) and groups == 'all':
