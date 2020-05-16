@@ -1074,6 +1074,9 @@ def hist(arrays, alpha=.5, bins=50, color=None, colors=None, labels=None, hist=N
             fits.extend(fit)
         ax.legend(handles=fits, labels=pdf, fontsize=legend_fontsize)
 
+    if rcParams['savefig.transparent']:
+        ax.patch.set_alpha(0)
+
     if not show:
         return ax
     else:
