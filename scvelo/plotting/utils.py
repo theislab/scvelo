@@ -311,6 +311,9 @@ def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, fra
         ax.tick_params(which='both', bottom=False, left=False, labelbottom=False, labelleft=False)
         ax.set_frame_on(False)
 
+    if rcParams['savefig.transparent']:
+        ax.patch.set_alpha(0)
+
 
 def set_label(xlabel, ylabel, fontsize=None, basis=None, ax=None, **kwargs):
     labels, labels_new = np.array(['Ms', 'Mu', 'X']), np.array(['spliced', 'unspliced', 'expression'])
