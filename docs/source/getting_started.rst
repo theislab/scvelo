@@ -69,14 +69,14 @@ The velocities are stored in ``adata.layers`` just like the count matrices.
 The velocities are projected into a lower-dimensional embedding by translating them into likely cell transitions.
 That is, for each velocity vector we find the likely cell transitions that are in accordance with that direction.
 The probabilities of one cell transitioning into another cell are computed using cosine correlation
-(btw. the potential cell transition and the velocity vector) and are stored in a matrix denoted as velocity graph::
+(between the potential cell transition and the velocity vector) and are stored in a matrix denoted as velocity graph::
 
     scv.tl.velocity_graph(adata, **params)
 
 Visualization
 '''''''''''''
 
-Finally the velocities can be projected and visualized in any embedding (e.g. UMAP) on single cell level, as gridlines, or as streamlines::
+Finally, the velocities can be projected and visualized in any embedding (e.g. UMAP) on single cell level, as gridlines, or as streamlines::
 
     scv.pl.velocity_embedding(adata, basis='umap', **params)
     scv.pl.velocity_embedding_grid(adata, basis='umap', **params)

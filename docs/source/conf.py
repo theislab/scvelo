@@ -190,21 +190,23 @@ def get_linenos(obj):
 
 
 project_dir = Path(__file__).parent.parent.parent  # project/docs/source/conf.py/../../.. → project/
-github_url1 = 'https://github.com/{github_user}/{github_repo}/tree/{github_version}'.format_map(html_context)
-github_url2 = 'https://github.com/theislab/anndata/tree/master/anndata'
-github_url3 = 'https://github.com/theislab/scanpy/tree/master'
+github_url_scvelo = 'https://github.com/{github_user}/{github_repo}/tree/{github_version}'.format_map(html_context)
+github_url_read_loom = 'https://github.com/theislab/anndata/tree/master/anndata'
+github_url_read = 'https://github.com/theislab/scanpy/tree/master'
+github_url_scanpy = 'https://github.com/theislab/scanpy/tree/master/scanpy'
 from pathlib import PurePosixPath
 
 
 def modurl(qualname):
     """Get the full GitHub URL for some object’s qualname."""
     obj, module = get_obj_module(qualname)
-    github_url = github_url1
+    github_url = github_url_scvelo
     try:
         path = PurePosixPath(Path(module.__file__).resolve().relative_to(project_dir))
     except ValueError:
         # trying to document something from another package
-        github_url = github_url2 if 'read_loom' in qualname else github_url3
+        github_url = github_url_read_loom if 'read_loom' in qualname \
+            else github_url_read if 'read' in qualname else github_url_scanpy
         path = '/'.join(module.__file__.split('/')[-2:])
     start, end = get_linenos(obj)
     fragment = '#L{}-L{}'.format(start, end) if start and end else ''
