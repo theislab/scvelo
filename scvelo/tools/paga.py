@@ -106,10 +106,12 @@ class PAGA_tree(PAGA):
 
         if isinstance(self.use_time_prior, str) and self.use_time_prior in self._adata.obs.keys():
             vpt = self._adata.obs[self.use_time_prior].values
+            vpt_mean = self._adata.obs.groupby(self.groups)[self.use_time_prior].mean()
+            vpt_means = np.array([vpt_mean[cat] for cat in clusters])
             rows, cols, vals = [], [], []
             for i in range(vgraph.shape[0]):
                 indices = vgraph[i].indices
-                idx_bool = vpt[i] < vpt[indices]
+                idx_bool = (vpt[i] < vpt[indices]) & (vpt_means[indices] > vpt_means[i] - .1)
                 cols.extend(indices[idx_bool])
                 vals.extend(vgraph[i].data[idx_bool])
                 rows.extend([i] * np.sum(idx_bool))
@@ -135,7 +137,7 @@ class PAGA_tree(PAGA):
                 vgraph[:, np.where(self._adata.obs['root_cells'] > .7)[0]] = 0
                 vgraph.eliminate_zeros()
 
-        membership = self._adata.obs[self._groups_key].cat.codes.values
+        membership = self._adata.obs[self.groups].cat.codes.values
         g = get_igraph_from_adjacency(vgraph, directed=True)
         vc = igraph.VertexClustering(g, membership=membership)
         cg_full = vc.cluster_graph(combine_edges='sum')
