@@ -12,7 +12,7 @@ from anndata import AnnData
 from scanpy import read, read_loom
 
 
-def load(filename, backup_url=None, **kwargs):
+def load(filename, backup_url=None, header='infer', **kwargs):
     """Load a csv, txt, tsv or npy file.
     """
     numpy_ext = {'npy', 'npz'}
@@ -29,10 +29,10 @@ def load(filename, backup_url=None, **kwargs):
     ext = Path(filename).suffixes[-1][1:]
 
     if ext in numpy_ext: return np.load(filename, **kwargs)
-    elif ext in pandas_ext: return pd.read_csv(filename, **kwargs)
+    elif ext in pandas_ext: return pd.read_csv(filename, header=header, **kwargs)
     else: raise ValueError('"{}" does not end on a valid extension.\n'
                            'Please, provide one of the available extensions.\n{}\n'
-                           .format(filename, numpy_ext|pandas_ext))
+                           .format(filename, numpy_ext | pandas_ext))
 
 
 read_csv = load
