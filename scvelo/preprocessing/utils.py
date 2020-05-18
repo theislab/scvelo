@@ -400,7 +400,7 @@ def log1p(data, copy=False):
 
 def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=None, min_cells_u=None,
                          min_shared_counts=None, min_shared_cells=None, n_top_genes=None, flavor='seurat', log=True,
-                         copy=False):
+                         copy=False, **kwargs):
     """Filtering, normalization and log transform
 
     Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
@@ -441,6 +441,8 @@ def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=Non
         Take logarithm.
     copy: `bool` (default: `False`)
         Return a copy of `adata` instead of updating it.
+    **kwargs:
+        Keyword arguments passed to pp.normalize_per_cell (e.g. counts_per_cell).
 
     Returns
     -------
@@ -452,8 +454,8 @@ def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=Non
         logg.warn('Could not find spliced / unspliced counts.')
 
     filter_genes(adata, min_counts=min_counts, min_counts_u=min_counts_u, min_cells=min_cells, min_cells_u=min_cells_u,
-                 min_shared_counts=min_shared_counts, min_shared_cells=min_shared_cells,)
-    normalize_per_cell(adata)
+                 min_shared_counts=min_shared_counts, min_shared_cells=min_shared_cells)
+    normalize_per_cell(adata, **kwargs)
     if n_top_genes is not None:
         filter_genes_dispersion(adata, n_top_genes=n_top_genes, flavor=flavor)
 
