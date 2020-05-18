@@ -1,7 +1,7 @@
 from .. import settings
 from ..preprocessing.neighbors import get_neighs
 from ..tools.transition_matrix import transition_matrix
-from .utils import savefig_or_show, default_basis, get_components, get_basis, groups_to_bool
+from .utils import savefig_or_show, default_basis, get_components, get_basis, groups_to_bool, default_size
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -75,7 +75,8 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph=None, n_neigh
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
-        edges = draw_networkx_edges(DiGraph(T) if arrows else Graph(T), X_emb,
+        node_size = (kwargs['size'] if 'size' in kwargs else default_size(adata)) / 4
+        edges = draw_networkx_edges(DiGraph(T) if arrows else Graph(T), X_emb, node_size=node_size,
                                     width=edge_width, edge_color=edge_color, arrowsize=arrowsize, ax=ax)
         if not arrows and not edges_on_top:
             edges.set_zorder(-2)
