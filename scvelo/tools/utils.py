@@ -403,6 +403,8 @@ def convolve(adata, x):
     conn = get_connectivities(adata)
     if isinstance(x, str) and x in adata.layers.keys():
         x = adata.layers[x]
+    if x.ndim == 1:
+        return conn.dot(x)
     idx_valid = ~np.isnan(x.sum(0))
     Y = np.ones(x.shape) * np.nan
     Y[:, idx_valid] = conn.dot(x[:, idx_valid])
