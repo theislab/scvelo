@@ -10,6 +10,9 @@ Install scVelo from PyPI_ using::
 
     pip install -U scvelo
 
+``-U`` is short for ``--upgrade``.
+If you get a ``Permission denied`` error, use ``pip install -U scvelo --user`` instead.
+
 
 Development Version
 ^^^^^^^^^^^^^^^^^^^
@@ -23,18 +26,38 @@ or::
     git clone https://github.com/theislab/scvelo
     pip install -e scvelo
 
+``-e`` is short for ``--editable`` and links the package to the original cloned
+location such that pulled changes are also reflected in the environment.
+
 
 Dependencies
 ^^^^^^^^^^^^
 
 - `anndata <https://anndata.readthedocs.io/>`_ - annotated data object.
-- `scanpy <https://scanpy.readthedocs.io/>`_ - toolkit for single-cell data analysis.
-- `numpy <https://docs.scipy.org/>`_, `scipy <https://docs.scipy.org/>`_, `pandas <https://pandas.pydata.org/>`_, `scikit-learn <https://scikit-learn.org/>`_ and `matplotlib <https://matplotlib.org/>`_.
+- `scanpy <https://scanpy.readthedocs.io/>`_ - toolkit for single-cell analysis.
+- `numpy <https://docs.scipy.org/>`_, `scipy <https://docs.scipy.org/>`_, `pandas <https://pandas.pydata.org/>`_, `scikit-learn <https://scikit-learn.org/>`_, `matplotlib <https://matplotlib.org/>`_.
 
 
-Parts of scVelo require (optional)::
+Parts of scVelo (louvain modularity and directed PAGA) require (optional)::
 
-    conda install -c conda-forge numba pytables louvain
+    pip install louvain python-igraph
+
+
+Using fast neighbor search via `hnswlib <https://github.com/nmslib/hnswlib>`_ further requires (optional)::
+
+    pip install pybind11 hnswlib
+
+
+Jupyter Notebook
+^^^^^^^^^^^^^^^^
+
+To run the tutorials in a notebook locally, please install::
+
+   pip install notebook
+
+and run ``jupyter notebook`` in the terminal. If you get the error ``Not a directory: 'xdg-settings'``,
+use ``jupyter notebook --no-browser`` instead and open the url manually (or use this
+`bugfix <https://github.com/jupyter/notebook/issues/3746#issuecomment-444957821>`_).
 
 
 If you run into issues, do not hesitate to approach us or raise a `GitHub issue`_.
