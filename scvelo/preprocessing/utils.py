@@ -307,7 +307,7 @@ def check_if_valid_dtype(adata, layer='X'):
 
 def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, key_n_counts=None,
                        max_proportion_per_cell=None, use_initial_size=True, layers=['spliced', 'unspliced'],
-                       enforce=False, copy=False):
+                       enforce=None, copy=False):
     """Normalize each cell by total counts over all genes.
 
     Parameters
@@ -371,6 +371,9 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, k
             if layer == 'X' and 'gene_count_corr' not in adata.var.keys() and X.shape[-1] > 3e3:
                 try: adata.var['gene_count_corr'] = np.round(csr_vcorrcoef(X.T, np.ravel((X > 0).sum(1))), 4)
                 except: pass
+        else:
+            logg.warn('Did not normalize {} as it looks processed already. '
+                      'To enforce normalization, set `enforce=True`.'.format(layer))
 
     adata.obs['n_counts' if key_n_counts is None else key_n_counts] = get_size(adata)
     if len(modified_layers) > 0:
