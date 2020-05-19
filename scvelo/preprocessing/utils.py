@@ -293,7 +293,7 @@ def counts_per_cell_quantile(X, max_proportion_per_cell=.05, counts_per_cell=Non
 
 
 def not_yet_normalized(X):
-    return np.allclose((X.data[:10] if issparse(X) else X[:, 0]) % 1, 0, atol=1e-3)
+    return np.allclose(np.ravel(X[:5].data if issparse(X) else X[:5]) % 1, 0, atol=1e-3)
 
 
 def check_if_valid_dtype(adata, layer='X'):
