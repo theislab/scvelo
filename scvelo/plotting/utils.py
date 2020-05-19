@@ -867,8 +867,9 @@ def plot_outline(x, y, kwargs, outline_width=None, outline_color=None, zorder=No
 
     kwargs['edgecolor'] = 'none'
     zord = 0 if zorder is None else zorder
-    ax.scatter(x, y, s=bg_size, marker=".", c=bg_color, rasterized=settings._vector_friendly, zorder=zord - 2, **kwargs)
-    ax.scatter(x, y, s=gp_size, marker=".", c=gp_color, rasterized=settings._vector_friendly, zorder=zord - 1, **kwargs)
+    if 'rasterized' not in kwargs: kwargs['rasterized'] = settings._vector_friendly
+    ax.scatter(x, y, s=bg_size, marker=".", c=bg_color, zorder=zord - 2, **kwargs)
+    ax.scatter(x, y, s=gp_size, marker=".", c=gp_color, zorder=zord - 1, **kwargs)
     # restore size
     kwargs['s'] = s
 
