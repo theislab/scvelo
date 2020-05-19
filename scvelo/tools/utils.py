@@ -75,11 +75,11 @@ def R_squared(residual, total):
 
 
 def cosine_correlation(dX, Vi):
-    dX -= dX.mean(-1)[:, None]
+    dx = dX - dX.mean(-1)[:, None]
     Vi_norm = vector_norm(Vi)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        result = np.zeros(dX.shape[0]) if Vi_norm == 0 else np.einsum('ij, j', dX, Vi) / (norm(dX) * Vi_norm)[None, :]
+        result = np.zeros(dx.shape[0]) if Vi_norm == 0 else np.einsum('ij, j', dx, Vi) / (norm(dx) * Vi_norm)[None, :]
     return result
 
 

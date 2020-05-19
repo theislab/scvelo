@@ -151,8 +151,8 @@ def get_moments(adata, layer=None, second_order=None, centered=True, mode='conne
     if 'neighbors' not in adata.uns:
         raise ValueError('You need to run `pp.neighbors` first to compute a neighborhood graph.')
     connectivities = get_connectivities(adata, mode=mode)
-    X = adata.X if layer is None else adata.layers[layer]
-    X = csr_matrix(X) if layer in {'spliced', 'unspliced'} else np.array(X) if not issparse(X) else X
+    X = adata.X if layer is None else adata.layers[layer] if isinstance(layer, str) else layer
+    X = csr_matrix(X) if isinstance(layer, str) and layer in {'spliced', 'unspliced'} else np.array(X) if not issparse(X) else X
     if not issparse(X):
         X = X[:, ~np.isnan(X.sum(0))]
     if second_order:

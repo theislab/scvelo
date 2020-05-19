@@ -1,7 +1,8 @@
 from .. import settings
 from .. import logging as logg
 from ..preprocessing.neighbors import pca, neighbors, verify_neighbors, get_neighs, get_n_neighs
-from .utils import cosine_correlation, get_indices, get_iterative_indices
+from ..preprocessing.moments import get_moments
+from .utils import cosine_correlation, get_indices, get_iterative_indices, norm
 from .velocity import velocity
 
 from scipy.sparse import coo_matrix, csr_matrix, issparse
@@ -29,7 +30,7 @@ def vals_to_csr(vals, rows, cols, shape, split_negative=False):
 class VelocityGraph:
     def __init__(self, adata, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, sqrt_transform=None,
                  n_recurse_neighbors=None, random_neighbors_at_max=None, gene_subset=None, approx=None, report=False,
-                 mode_neighbors='distances'):
+                 compute_uncertainties=None, mode_neighbors='distances'):
 
         subset = np.ones(adata.n_vars, bool)
         if gene_subset is not None:
@@ -55,6 +56,7 @@ class VelocityGraph:
         else:
             self.X = np.array(X, dtype=np.float32)
             self.V = np.array(V, dtype=np.float32)
+        self.V_raw = np.array(self.V)
 
         self.sqrt_transform = sqrt_transform
         if self.sqrt_transform is None and vkey + '_settings' in adata.uns.keys():
@@ -99,12 +101,18 @@ class VelocityGraph:
             self.t1.cat.categories = self.t0.cat.categories + 1
         else: self.t0 = None
 
-        self.report = report
+        self.compute_uncertainties = compute_uncertainties
+        self.uncertainties = None
         self.self_prob = None
+        self.report = report
+        self.adata = adata
 
     def compute_cosines(self):
-        vals, rows, cols, n_obs = [], [], [], self.X.shape[0]
+        vals, rows, cols, uncertainties, n_obs = [], [], [], [], self.X.shape[0]
         progress = logg.ProgressReporter(n_obs)
+
+        if self.compute_uncertainties:
+            m = get_moments(self.adata, np.sign(self.V_raw), second_order=True)
 
         for i in range(n_obs):
             if self.V[i].max() != 0 or self.V[i].min() != 0:
@@ -123,6 +131,10 @@ class VelocityGraph:
                 if self.sqrt_transform: dX = np.sqrt(np.abs(dX)) * np.sign(dX)
                 val = cosine_correlation(dX, self.V[i])  # 40% of runtime
 
+                if self.compute_uncertainties:
+                    dX /= norm(dX)[:, None]
+                    uncertainties.extend(np.nansum(dX ** 2 * m[i][None, :], 1))
+
                 vals.extend(val)
                 rows.extend(np.ones(len(neighs_idx)) * i)
                 cols.extend(neighs_idx)
@@ -133,6 +145,11 @@ class VelocityGraph:
         vals[np.isnan(vals)] = 0
 
         self.graph, self.graph_neg = vals_to_csr(vals, rows, cols, shape=(n_obs, n_obs), split_negative=True)
+        if self.compute_uncertainties:
+            uncertainties = np.hstack(uncertainties)
+            uncertainties[np.isnan(uncertainties)] = 0
+            self.uncertainties = vals_to_csr(uncertainties, rows, cols, shape=(n_obs, n_obs), split_negative=False)
+            self.uncertainties.eliminate_zeros()
 
         confidence = self.graph.max(1).A.flatten()
         self.self_prob = np.clip(np.percentile(confidence, 98) - confidence, 0, 1)
@@ -140,7 +157,7 @@ class VelocityGraph:
 
 def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, n_recurse_neighbors=None,
                    random_neighbors_at_max=None, sqrt_transform=None, variance_stabilization=None, gene_subset=None,
-                   approx=None, mode_neighbors='distances', copy=False):
+                   compute_uncertainties=None, approx=None, mode_neighbors='distances', copy=False):
     """Computes velocity graph based on cosine similarities.
 
     The cosine similarities are computed between velocities and potential cell state transitions, i.e. it measures how
@@ -174,6 +191,8 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
         Whether to variance-transform the cell states changes and velocities before computing cosine similarities.
     gene_subset: `list` of `str`, subset of adata.var_names or `None`(default: `None`)
         Subset of genes to compute velocity graph on exclusively.
+    compute_uncertainties: `bool` (default: `None`)
+        Whether to compute uncertainties along with cosine correlation.
     approx: `bool` or `None` (default: `None`)
         If True, first 30 pc's are used instead of the full count matrix
     mode_neighbors: 'str' (default: `'distances'`)
@@ -195,8 +214,8 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
 
     vgraph = VelocityGraph(adata, vkey=vkey, xkey=xkey, tkey=tkey, basis=basis, n_neighbors=n_neighbors, approx=approx,
                            n_recurse_neighbors=n_recurse_neighbors, random_neighbors_at_max=random_neighbors_at_max,
-                           sqrt_transform=sqrt_transform, gene_subset=gene_subset, report=True,
-                           mode_neighbors=mode_neighbors)
+                           sqrt_transform=sqrt_transform, gene_subset=gene_subset,
+                           compute_uncertainties=compute_uncertainties, report=True, mode_neighbors=mode_neighbors)
 
     if isinstance(basis, str):
         logg.warn(
@@ -208,6 +227,9 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
 
     adata.uns[vkey+'_graph'] = vgraph.graph
     adata.uns[vkey+'_graph_neg'] = vgraph.graph_neg
+
+    if vgraph.uncertainties is not None:
+        adata.uns[vkey+'_graph_uncertainties'] = vgraph.uncertainties
 
     adata.obs[vkey+'_self_transition'] = vgraph.self_prob
 
