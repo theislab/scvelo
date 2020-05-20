@@ -338,6 +338,7 @@ def normalize_per_cell(data, counts_per_cell_after=None, counts_per_cell=None, k
     Returns or updates `adata` with normalized version of the original `adata.X`, depending on `copy`.
     """
     adata = data.copy() if copy else data
+    if layers is None: layers=['spliced', 'unspliced']
     layers = adata.layers.keys() if layers == 'all' else [layers] if isinstance(layers, str) \
         else [layer for layer in layers if layer in adata.layers.keys()]
     layers = ['X'] + layers
@@ -403,7 +404,7 @@ def log1p(data, copy=False):
 
 def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=None, min_cells_u=None,
                          min_shared_counts=None, min_shared_cells=None, n_top_genes=None, flavor='seurat', log=True,
-                         copy=False, **kwargs):
+                         layers_normalize=None, copy=False, **kwargs):
     """Filtering, normalization and log transform
 
     Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
@@ -442,6 +443,10 @@ def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=Non
         Choose the flavor for computing normalized dispersion. If choosing 'seurat', this expects non-logarithmized data.
     log: `bool` (default: `True`)
         Take logarithm.
+    layers_normalize: list of `str` (default: None)
+        List of layers to be normalized.
+        If set to None, the layers {'X', 'spliced', 'unspliced'} are considered for normalization upon testing whether
+        they have already been normalized (by checking type of entries: int -> unprocessed, float -> processed).
     copy: `bool` (default: `False`)
         Return a copy of `adata` instead of updating it.
     **kwargs:
@@ -458,11 +463,16 @@ def filter_and_normalize(data, min_counts=None, min_counts_u=None, min_cells=Non
 
     filter_genes(adata, min_counts=min_counts, min_counts_u=min_counts_u, min_cells=min_cells, min_cells_u=min_cells_u,
                  min_shared_counts=min_shared_counts, min_shared_cells=min_shared_cells)
-    normalize_per_cell(adata, **kwargs)
+
+    if layers_normalize is not None and 'enforce' not in kwargs: kwargs['enforce'] = True
+    normalize_per_cell(adata, layers=layers_normalize, **kwargs)
+
     if n_top_genes is not None:
         filter_genes_dispersion(adata, n_top_genes=n_top_genes, flavor=flavor)
 
-    log_advised = np.allclose(adata.X[:10].sum(), adata.layers['spliced'][:10].sum()) if 'spliced' in adata.layers.keys() else True
+    log_advised = np.allclose(adata.X[:10].sum(), adata.layers['spliced'][:10].sum()) \
+        if 'spliced' in adata.layers.keys() else True
+
     if log and log_advised: log1p(adata)
 
     if log and log_advised: logg.info('Logarithmized X.')
