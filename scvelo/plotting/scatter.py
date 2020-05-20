@@ -45,7 +45,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
     basis = kwargs.pop('var_names', basis)
 
     # keys for figures (fkeys) and multiple plots (mkeys)
-    fkeys = ['adata', 'show', 'save', 'groups', 'figsize', 'dpi', 'ncols', 'nrows', 'wspace', 'hspace', 'ax', 'kwargs']
+    fkeys = ['adata', 'show', 'save', 'groups', 'dpi', 'ncols', 'nrows', 'wspace', 'hspace', 'ax', 'kwargs']
     mkeys = ['color', 'layer', 'basis', 'components', 'x', 'y', 'xlabel', 'ylabel', 'title', 'color_map', 'add_text']
     scatter_kwargs = {'show': False, 'save': False}
     for key in signature(scatter).parameters:
@@ -99,8 +99,8 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
             if 'legend_loc_lines' in scatter_kwargs and scatter_kwargs['legend_loc_lines'] is None:
                 scatter_kwargs['legend_loc_lines'] = 'none'
 
-        figsize, dpi = get_figure_params(figsize, dpi, ncols)
-        fig = pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi)
+        grid_figsize, dpi = get_figure_params(figsize, dpi, ncols)
+        fig = pl.figure(None, (grid_figsize[0] * ncols, grid_figsize[1] * nrows), dpi=dpi)
         gspec = pl.GridSpec(nrows, ncols, fig, hspace=.3 if hspace is None else hspace, wspace=wspace)
 
         ax = []
@@ -421,7 +421,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
 
             set_label(xlabel, ylabel, fontsize, basis, ax=ax)
             set_title(title, layer, color, fontsize, ax=ax)
-            update_axes(ax, xlim, ylim, fontsize, is_embedding, frameon)
+            update_axes(ax, xlim, ylim, fontsize, is_embedding, frameon, figsize)
 
             if colorbar is not False and not isinstance(c, str) and not is_categorical(adata, color):
                 set_colorbar(smp, ax=ax, labelsize=fontsize * .75 if fontsize is not None else None)

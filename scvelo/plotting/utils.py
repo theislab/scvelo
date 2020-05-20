@@ -273,14 +273,16 @@ def default_arrow(size):
 """set axes parameters (ticks, frame, labels, title, """
 
 
-def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, frameon=None):
+def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, frameon=None, figsize=None):
     if xlim is not None:
         ax.set_xlim(xlim)
     if ylim is not None:
         ax.set_ylim(ylim)
 
     frameon = settings._frameon if frameon is None else frameon
-    if frameon:
+    if isinstance(frameon, str) and frameon == 'artist':
+        set_artist_frame(ax, figsize=figsize)
+    elif frameon:
         if is_embedding:
             ax.tick_params(which='both', bottom=False, left=False, labelbottom=False, labelleft=False)
         else:
@@ -315,6 +317,23 @@ def update_axes(ax, xlim=None, ylim=None, fontsize=None, is_embedding=False, fra
         ax.patch.set_alpha(0)
 
 
+def set_artist_frame(ax, length=.2, figsize=None):
+    ax.tick_params(axis='both', which='both', labelbottom=False, labelleft=False,
+                   bottom=False, left=False, top=False, right=False)
+    for side in ['bottom', 'right', 'top', 'left']:
+        ax.spines[side].set_visible(False)
+    figsize = rcParams['figure.figsize'] if figsize is None else figsize
+    aspect_ratio = figsize[0] / figsize[1]
+    ax.xaxis.set_label_coords(length * .45, -0.035)
+    ax.yaxis.set_label_coords(-0.0175, length * aspect_ratio * .45)
+
+    from mpl_toolkits.axes_grid1.anchored_artists import AnchoredDirectionArrows as arrows
+    arr = arrows(ax.transAxes, 'none', 'none', loc=3, pad=-1, back_length=0, aspect_ratio=aspect_ratio,
+                 arrow_props={'ec': 'none', 'fc': 'k'}, fontsize=0, length=length,
+                 text_props={'ec': 'k', 'fc': 'k', 'lw': .1})
+    ax.add_artist(arr)
+
+
 def set_label(xlabel, ylabel, fontsize=None, basis=None, ax=None, **kwargs):
     labels, labels_new = np.array(['Ms', 'Mu', 'X']), np.array(['spliced', 'unspliced', 'expression'])
     if xlabel in labels: xlabel = labels_new[xlabel == labels][0]
@@ -328,7 +347,8 @@ def set_label(xlabel, ylabel, fontsize=None, basis=None, ax=None, **kwargs):
     if isinstance(xlabel, str):
         ax.set_xlabel(xlabel.replace('_', ' '), fontsize=fontsize, **kwargs)
     if isinstance(ylabel, str):
-        ax.set_ylabel(ylabel.replace('_', ' '), fontsize=fontsize, rotation=0 if ylabel.startswith('$') else 90, **kwargs)
+        ax.set_ylabel(ylabel.replace('_', ' '), fontsize=fontsize,
+                      rotation=0 if ylabel.startswith('$') or len(ylabel) == 1 else 90, **kwargs)
 
 
 def set_title(title, layer=None, color=None, fontsize=None, ax=None):
