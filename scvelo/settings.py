@@ -257,7 +257,9 @@ def set_figure_params(style='scvelo', dpi=100, dpi_save=150, frameon=None, vecto
     """
     try:
         import IPython
-        IPython.core.display.set_matplotlib_formats(ipython_format)
+        if isinstance(ipython_format, str):
+            ipython_format = [ipython_format]
+        IPython.display.set_matplotlib_formats(*ipython_format)
     except:
         pass
     from matplotlib import rcParams
