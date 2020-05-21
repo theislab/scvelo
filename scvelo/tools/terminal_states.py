@@ -123,15 +123,17 @@ def cell_origin(data, groupby='clusters', disconnected_groups=None, self_transit
         '    \'cell_origin_confidence\', confidence of coming from the assigned origin (adata.obs)')
 
 
-def eigs(T, k=10, eps=1e-3, perc=None):
+def eigs(T, k=10, eps=1e-3, perc=None, random_state=None, v0=None):
+    if random_state is not None:
+        np.random.seed(random_state)
+        v0 = np.random.rand(min(T.shape))
     try:
-        eigvals, eigvecs = linalg.eigs(T.T, k=k, which='LR')  # find k eigs with largest real part
-
-        p = np.argsort(eigvals)[::-1]                        # sort in descending order of eigenvalues
+        eigvals, eigvecs = linalg.eigs(T.T, k=k, which='LR', v0=v0)  # find k eigs with largest real part
+        p = np.argsort(eigvals)[::-1]                                # sort in descending order of eigenvalues
         eigvals = eigvals.real[p]
         eigvecs = eigvecs.real[:, p]
 
-        idx = (eigvals >= 1 - eps)                           # select eigenvectors with eigenvalue of 1
+        idx = (eigvals >= 1 - eps)                                   # select eigenvectors with eigenvalue of 1
         eigvals = eigvals[idx]
         eigvecs = np.absolute(eigvecs[:, idx])
 
@@ -170,8 +172,8 @@ def write_to_obs(adata, key, vals, cell_subset=None):
         adata.obs[key] = vals_all
 
 
-def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_transitions=False, eps=1e-3, copy=False,
-                    **kwargs):
+def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_transitions=False, eps=1e-3,
+                    random_state=0, copy=False, **kwargs):
     """Computes terminal states (root and end points).
 
     The end points and root cells are obtained as stationary states of the velocity-inferred transition matrix
@@ -204,6 +206,8 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
         Allow transitions from one node to itself.
     eps: `float` (default: 1e-3)
         Tolerance for eigenvalue selection.
+    random_state: `int` or None (default: 0)
+        Seed used by the random number generator. If `None`, use the `RandomState` instance by `np.random`.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to data.
     **kwargs:
@@ -236,7 +240,7 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
         connectivities = get_connectivities(_adata, 'distances')
 
         T = transition_matrix(_adata, vkey=vkey, self_transitions=self_transitions, backward=True, **kwargs)
-        eigvecs_roots = eigs(T, eps=eps, perc=[2, 98])[1]
+        eigvecs_roots = eigs(T, eps=eps, perc=[2, 98], random_state=random_state)[1]
         roots = csr_matrix.dot(connectivities, eigvecs_roots).sum(1)
         #roots = scale(eigvecs_roots.sum(1))
         #n_neighs_roots = ((connectivities > 0) * 1).dot(roots > 1 - 1e-3)
@@ -247,7 +251,7 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
         write_to_obs(adata, 'root_cells', roots, cell_subset)
 
         T = transition_matrix(_adata, vkey=vkey, self_transitions=self_transitions, backward=False, **kwargs)
-        eigvecs_ends = eigs(T, eps=eps, perc=[2, 98])[1]
+        eigvecs_ends = eigs(T, eps=eps, perc=[2, 98], random_state=random_state)[1]
         ends = csr_matrix.dot(connectivities, eigvecs_ends).sum(1)
         ends = scale(np.clip(ends, 0, np.percentile(ends, 98)))
         write_to_obs(adata, 'end_points', ends, cell_subset)
