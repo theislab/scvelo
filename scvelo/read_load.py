@@ -12,7 +12,7 @@ from anndata import AnnData
 from scanpy import read, read_loom
 
 
-def load(filename, backup_url=None, header='infer', **kwargs):
+def load(filename, backup_url=None, header='infer', index_col='infer', **kwargs):
     """Load a csv, txt, tsv or npy file.
     """
     numpy_ext = {'npy', 'npz'}
@@ -28,11 +28,21 @@ def load(filename, backup_url=None, header='infer', **kwargs):
 
     ext = Path(filename).suffixes[-1][1:]
 
-    if ext in numpy_ext: return np.load(filename, **kwargs)
-    elif ext in pandas_ext: return pd.read_csv(filename, header=header, **kwargs)
-    else: raise ValueError('"{}" does not end on a valid extension.\n'
-                           'Please, provide one of the available extensions.\n{}\n'
-                           .format(filename, numpy_ext | pandas_ext))
+    if ext in numpy_ext:
+        return np.load(filename, **kwargs)
+
+    elif ext in pandas_ext:
+        df = pd.read_csv(filename, header=header, index_col=None if index_col == 'infer' else index_col, **kwargs)
+        if index_col == 'infer' and len(df.columns) > 1:
+            is_int_index = all(np.arange(0, len(df)) == df.iloc[:, 0])
+            is_str_index = (isinstance(df.iloc[0, 0], str) and all([not isinstance(d, str) for d in df.iloc[0, 1:]]))
+            if is_int_index or is_str_index: df.set_index(df.columns[0], inplace=True)
+        return df
+
+    else:
+        raise ValueError('"{}" does not end on a valid extension.\n'
+                         'Please, provide one of the available extensions.\n{}\n'
+                         .format(filename, numpy_ext | pandas_ext))
 
 
 read_csv = load
