@@ -573,15 +573,16 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
     if vkey + '_graph' not in adata.uns.keys():
         velocity_graph(adata, approx=True)
 
+    if root_key is None:
+        keys = [key for key in ['root_cells', 'starting_cells', 'root_states_probs'] if key in adata.obs.keys()]
+        if len(keys) > 0: root_key = keys[0]
     if root_key not in adata.uns.keys() and root_key not in adata.obs.keys():
         root_key = 'root_cells'
     if root_key not in adata.obs.keys():
         terminal_states(adata, vkey=vkey)
     if end_key is None:
-        if 'end_points' in adata.obs.keys():
-            end_key = 'end_points'
-        elif 'final_cells' in adata.obs.keys():
-            end_key = 'final_cells'
+        keys = [key for key in ['end_points', 'final_cells', 'final_states_probs'] if key in adata.obs.keys()]
+        if len(keys) > 0: end_key = keys[0]
 
     t = np.array(adata.layers['fit_t'])
     idx_valid = ~np.isnan(t.sum(0))
