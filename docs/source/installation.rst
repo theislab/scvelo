@@ -38,9 +38,9 @@ Dependencies
 - `numpy <https://docs.scipy.org/>`_, `scipy <https://docs.scipy.org/>`_, `pandas <https://pandas.pydata.org/>`_, `scikit-learn <https://scikit-learn.org/>`_, `matplotlib <https://matplotlib.org/>`_.
 
 
-Parts of scVelo (louvain modularity and directed PAGA) require (optional)::
+Parts of scVelo (directed PAGA and Louvain modularity) require (optional)::
 
-    pip install louvain python-igraph
+    pip install python-igraph louvain
 
 
 Using fast neighbor search via `hnswlib <https://github.com/nmslib/hnswlib>`_ further requires (optional)::
