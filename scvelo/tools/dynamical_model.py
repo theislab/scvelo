@@ -596,11 +596,11 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
     logg.info('computing latent time', r=True)
 
     roots = np.argsort(t_sum)
-    idx_roots = np.array(adata.obs[root_key])
+    idx_roots = np.array(adata.obs[root_key][roots])
     idx_roots[pd.isnull(idx_roots)] = 0
     if np.any([isinstance(ix, str) for ix in idx_roots]):
-        idx_roots = np.array(idx_roots, dtype=bool)
-    idx_roots = idx_roots.astype(int) > 1 - 1e-3
+        idx_roots = np.array([isinstance(ix, str) for ix in idx_roots], dtype=int)
+    idx_roots = idx_roots.astype(np.float) > 1 - 1e-3
     if np.sum(idx_roots) > 0:
         roots = roots[idx_roots]
     else:
@@ -608,11 +608,11 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
 
     if end_key in adata.obs.keys():
         fates = np.argsort(t_sum)[::-1]
-        idx_fates = np.array(adata.obs[end_key])
+        idx_fates = np.array(adata.obs[end_key][fates])
         idx_fates[pd.isnull(idx_fates)] = 0
         if np.any([isinstance(ix, str) for ix in idx_fates]):
-            idx_fates = np.array(idx_fates, dtype=bool)
-        idx_fates = idx_fates.astype(int) > 1 - 1e-3
+            idx_fates = np.array([isinstance(ix, str) for ix in idx_fates], dtype=int)
+        idx_fates = idx_fates.astype(np.float) > 1 - 1e-3
         if np.sum(idx_fates) > 0: fates = fates[idx_fates]
     else:
         fates = [None]
