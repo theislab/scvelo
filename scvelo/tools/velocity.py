@@ -277,11 +277,16 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
                   'Consider setting a lower threshold for min_r2 or min_likelihood.')
 
     if diff_kinetics:
-        if not isinstance(diff_kinetics, str): diff_kinetics = 'fit_diff_kinetics'
+        if not isinstance(diff_kinetics, str):
+            diff_kinetics = 'fit_diff_kinetics'
         if diff_kinetics in adata.var.keys():
-            clusters = adata.obs.clusters  # store in .uns
-            for i, v in enumerate(adata.var[diff_kinetics].values):
-                if len(v) > 0:
+            if diff_kinetics in adata.uns['recover_dynamics']:
+                groupby = adata.uns['recover_dynamics']['fit_diff_kinetics']
+            else:
+                groupby = 'clusters'
+            clusters = adata.obs[groupby]
+            for i, v in enumerate(np.array(adata.var[diff_kinetics].values, dtype=str)):
+                if len(v) > 0 and v != 'nan':
                     idx = 1 - clusters.isin([a.strip() for a in v.split(',')])
                     adata.layers[vkey][:, i] *= idx
                     if mode == 'dynamical':

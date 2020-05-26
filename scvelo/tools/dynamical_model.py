@@ -743,21 +743,26 @@ def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, us
 
     if groupby is None:
         groupby = 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else None
-    groupby = adata.obs[groupby] if isinstance(groupby, str) else groupby
-    groups = groupby.cat.categories
+    clusters = adata.obs[groupby] if isinstance(groupby, str) else groupby
+    groups = clusters.cat.categories
     diff_kinetics, pval_kinetics = read_pars(adata, pars_names=['diff_kinetics', 'pval_kinetics'])
 
-    pvals = pd.DataFrame(adata.varm['fit_pvals_kinetics']).to_numpy() if 'fit_pvals_kinetics' in adata.varm.keys()\
-        else np.zeros((adata.n_vars, len(groups))) * np.nan
-    diff_kinetics = np.array(adata.var['fit_diff_kinetics']) if 'fit_diff_kinetics' in adata.var.keys() \
-        else np.empty(adata.n_vars, dtype='|U16')
+    pvals = None
+    if 'fit_pvals_kinetics' in adata.varm.keys():
+        pvals = pd.DataFrame(adata.varm['fit_pvals_kinetics']).to_numpy()
+    if pvals is None or pvals.shape[1] != len(groups):
+        pvals = np.zeros((adata.n_vars, len(groups))) * np.nan
+    if 'fit_diff_kinetics' in adata.var.keys():
+        diff_kinetics = np.array(adata.var['fit_diff_kinetics'])
+    else:
+        diff_kinetics = np.empty(adata.n_vars, dtype='|U16')
     idx = []
 
     progress = logg.ProgressReporter(len(var_names))
     for i, gene in enumerate(var_names):
         dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=True, max_iter=0)
         if dm.recoverable:
-            dm.differential_kinetic_test(groupby, **kwargs)
+            dm.differential_kinetic_test(clusters, **kwargs)
 
             ix = np.where(adata.var_names == gene)[0][0]
             idx.append(ix)
@@ -772,6 +777,7 @@ def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, us
 
     write_pars(adata, [diff_kinetics, pval_kinetics], pars_names=['diff_kinetics', 'pval_kinetics'])
     adata.varm[add_key + '_pvals_kinetics'] = np.rec.fromarrays(pvals.T, dtype=[(str(rn), 'float32') for rn in groups]).T
+    adata.uns['recover_dynamics']['fit_diff_kinetics'] = groupby
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n' 
