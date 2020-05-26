@@ -45,7 +45,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
     basis = kwargs.pop('var_names', basis)
 
     # keys for figures (fkeys) and multiple plots (mkeys)
-    fkeys = ['adata', 'show', 'save', 'groups', 'dpi', 'ncols', 'nrows', 'wspace', 'hspace', 'ax', 'kwargs']
+    fkeys = ['adata', 'show', 'save', 'groups', 'ncols', 'nrows', 'wspace', 'hspace', 'ax', 'kwargs']
     mkeys = ['color', 'layer', 'basis', 'components', 'x', 'y', 'xlabel', 'ylabel', 'title', 'color_map', 'add_text']
     scatter_kwargs = {'show': False, 'save': False}
     for key in signature(scatter).parameters:
