@@ -326,6 +326,8 @@ def set_artist_frame(ax, length=.2, figsize=None):
     aspect_ratio = figsize[0] / figsize[1]
     ax.xaxis.set_label_coords(length * .45, -0.035)
     ax.yaxis.set_label_coords(-0.0175, length * aspect_ratio * .45)
+    ax.xaxis.label.set_size(ax.xaxis.label.get_size() / 1.2)
+    ax.yaxis.label.set_size(ax.yaxis.label.get_size() / 1.2)
 
     from mpl_toolkits.axes_grid1.anchored_artists import AnchoredDirectionArrows as arrows
     arr = arrows(ax.transAxes, 'none', 'none', loc=3, pad=-1, back_length=0, aspect_ratio=aspect_ratio,
