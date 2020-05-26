@@ -64,8 +64,12 @@ class VelocityGraph:
         if self.sqrt_transform: self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
         self.V -= np.nanmean(self.V, axis=1)[:, None]
 
-        self.n_recurse_neighbors = 1 if n_neighbors is not None \
-            else 2 if n_recurse_neighbors is None else n_recurse_neighbors
+        self.n_recurse_neighbors = n_recurse_neighbors
+        if self.n_recurse_neighbors is None:
+            if n_neighbors is not None or mode_neighbors == 'connectivities':
+                self.n_recurse_neighbors = 1
+            else:
+                self.n_recurse_neighbors = 2
 
         if 'neighbors' not in adata.uns.keys(): neighbors(adata)
         if np.min((get_neighs(adata, 'distances') > 0).sum(1).A1) == 0:
@@ -182,8 +186,9 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
         Basis / Embedding to use.
     n_neighbors: `int` or `None` (default: None)
         Use fixed number of neighbors or do recursive neighbor search (if `None`).
-    n_recurse_neighbors: `int` (default: 2)
-        Number of recursions to be done for neighbors search.
+    n_recurse_neighbors: `int` (default: `None`)
+        Number of recursions for neighbors search.
+        Default: 2 if mode_neighbors is 'distances', 1 if mode_neighbors is 'connectivities'.
     random_neighbors_at_max: `int` or `None` (default: `None`)
         If number of iterative neighbors for an individual cell is higher than this threshold,
         a random selection of such are chosen as reference neighbors.
@@ -239,7 +244,7 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
     else:
         adata.uns[vkey + '_params'] = {}
     adata.uns[vkey + '_params']['mode_neighbors'] = mode_neighbors
-    adata.uns[vkey + '_params']['n_recurse_neighbors'] = n_recurse_neighbors
+    adata.uns[vkey + '_params']['n_recurse_neighbors'] = vgraph.n_recurse_neighbors
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
