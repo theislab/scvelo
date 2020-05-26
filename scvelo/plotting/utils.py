@@ -225,7 +225,10 @@ def default_size(adata):
     return np.mean([adjusted, classic]) if settings._rcParams_style == 'scvelo' else adjusted
 
 
-def default_color(adata):
+def default_color(adata, add_outline=None):
+    if isinstance(add_outline, str) and add_outline in adata.var.keys() \
+            and 'recover_dynamics' in adata.uns.keys() and 'fit_diff_kinetics' in adata.uns['recover_dynamics']:
+        return adata.uns['recover_dynamics']['fit_diff_kinetics']
     return 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else 'grey'
 
 

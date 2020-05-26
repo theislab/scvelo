@@ -167,7 +167,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
         else:
             # set color, color_map, edgecolor, basis, linewidth, frameon, use_raw, projection
             if color is None:
-                color = default_color(adata)
+                color = default_color(adata, add_outline)
             if 'cmap' not in kwargs:
                 kwargs['cmap'] = default_color_map(adata, color) if color_map is None else color_map
             if 's' not in kwargs:
