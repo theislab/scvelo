@@ -292,7 +292,7 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
                     if mode == 'dynamical':
                         adata.layers[vkey + '_u'][:, i] *= idx
 
-    adata.uns[vkey + '_settings'] = {'mode': mode, 'fit_offset': fit_offset, 'perc': perc}
+    adata.uns[vkey + '_params'] = {'mode': mode, 'fit_offset': fit_offset, 'perc': perc}
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n' 

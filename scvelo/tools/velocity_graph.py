@@ -59,8 +59,8 @@ class VelocityGraph:
         self.V_raw = np.array(self.V)
 
         self.sqrt_transform = sqrt_transform
-        if self.sqrt_transform is None and vkey + '_settings' in adata.uns.keys():
-            self.sqrt_transform = adata.uns[vkey + '_settings']['mode'] == 'stochastic'
+        if self.sqrt_transform is None and vkey + '_params' in adata.uns.keys():
+            self.sqrt_transform = adata.uns[vkey + '_params']['mode'] == 'stochastic'
         if self.sqrt_transform: self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
         self.V -= np.nanmean(self.V, axis=1)[:, None]
 
@@ -233,8 +233,13 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
 
     adata.obs[vkey+'_self_transition'] = vgraph.self_prob
 
-    if vkey + '_settings' in adata.uns.keys() and 'embeddings' in adata.uns[vkey + '_settings']:
-        del adata.uns[vkey + '_settings']['embeddings']
+    if vkey + '_params' in adata.uns.keys():
+        if 'embeddings' in adata.uns[vkey + '_params']:
+            del adata.uns[vkey + '_params']['embeddings']
+    else:
+        adata.uns[vkey + '_params'] = {}
+    adata.uns[vkey + '_params']['mode_neighbors'] = mode_neighbors
+    adata.uns[vkey + '_params']['n_recurse_neighbors'] = n_recurse_neighbors
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(

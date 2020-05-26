@@ -131,10 +131,10 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
 
     if autoscale: V_emb /= (3 * quiver_autoscale(X_emb, V_emb))
 
-    if vkey + '_settings' in adata.uns.keys():
-        adata.uns[vkey + '_settings']['embeddings'] = [] if 'embeddings' not in adata.uns[vkey + '_settings'] \
-            else list(adata.uns[vkey + '_settings']['embeddings'])
-        adata.uns[vkey + '_settings']['embeddings'].extend([basis])
+    if vkey + '_params' in adata.uns.keys():
+        adata.uns[vkey + '_params']['embeddings'] = [] if 'embeddings' not in adata.uns[vkey + '_params'] \
+            else list(adata.uns[vkey + '_params']['embeddings'])
+        adata.uns[vkey + '_params']['embeddings'].extend([basis])
 
     vkey += '_' + basis
     adata.obsm[vkey] = V_emb
