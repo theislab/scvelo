@@ -227,8 +227,8 @@ def default_size(adata):
 
 def default_color(adata, add_outline=None):
     if isinstance(add_outline, str) and add_outline in adata.var.keys() \
-            and 'recover_dynamics' in adata.uns.keys() and 'fit_diff_kinetics' in adata.uns['recover_dynamics']:
-        return adata.uns['recover_dynamics']['fit_diff_kinetics']
+            and 'recover_dynamics' in adata.uns.keys() and add_outline in adata.uns['recover_dynamics']:
+        return adata.uns['recover_dynamics'][add_outline]
     return 'clusters' if 'clusters' in adata.obs.keys() else 'louvain' if 'louvain' in adata.obs.keys() else 'grey'
 
 
