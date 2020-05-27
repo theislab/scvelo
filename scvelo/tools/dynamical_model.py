@@ -544,10 +544,11 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
         Only select genes that correlate with velocity pseudotime obtained from diffusion random walk on velocity graph.
     weight_diffusion: `float` or `None` (default: `None`)
         Weight to be applied to couple latent time with diffusion-based velocity pseudotime.
-    root_key: `str` or `None` (default: `None`)
-        Key (.uns, .obs) of root cell to be used. If not set, it obtains root cells from velocity-inferred transition matrix.
+    root_key: `str` or `None` (default: `'root_cells'`)
+        Key (.uns, .obs) of root cell to be used.
+        If not set, it obtains root cells from velocity-inferred transition matrix.
     end_key: `str` or `None` (default: `None`)
-        Key (.obs) of end points to be used. If not set, it obtains end points from velocity-inferred transition matrix.
+        Key (.obs) of end points to be used.
     t_max: `float` or `None` (default: `None`)
         Overall duration of differentiation process. If not set, a splicing duration of 20 hours is used as prior.
     copy: `bool` (default: `False`)
@@ -558,10 +559,9 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
     latent_time: `.obs`
         latent time from learned dynamics for each cell
     """
-
     adata = data.copy() if copy else data
 
-    from .utils import vcorrcoef
+    from .utils import vcorrcoef, scale
     from .dynamical_model_utils import root_time, compute_shared_time
     from .terminal_states import terminal_states
     from .velocity_graph import velocity_graph
@@ -575,25 +575,24 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
 
     if root_key is None:
         keys = [key for key in ['root_cells', 'starting_cells', 'root_states_probs'] if key in adata.obs.keys()]
-        if len(keys) > 0: root_key = keys[0]
+        if len(keys) > 0:
+            root_key = keys[0]
     if root_key not in adata.uns.keys() and root_key not in adata.obs.keys():
         root_key = 'root_cells'
     if root_key not in adata.obs.keys():
         terminal_states(adata, vkey=vkey)
-    if end_key is None:
-        keys = [key for key in ['end_points', 'final_cells', 'final_states_probs'] if key in adata.obs.keys()]
-        if len(keys) > 0: end_key = keys[0]
 
     t = np.array(adata.layers['fit_t'])
     idx_valid = ~np.isnan(t.sum(0))
     if min_likelihood is not None:
         idx_valid &= np.array(adata.var['fit_likelihood'].values >= min_likelihood, dtype=bool)
-
     t = t[:, idx_valid]
     t_sum = np.sum(t, 1)
     conn = get_connectivities(adata)
 
-    logg.info('computing latent time', r=True)
+    logg.info("computing latent time using "
+              f"{root_key if root_key in adata.obs.keys() else ''}"
+              f"{', ' + end_key if end_key in adata.obs.keys() else ''} as prior", r=True)
 
     roots = np.argsort(t_sum)
     idx_roots = np.array(adata.obs[root_key][roots])
@@ -634,17 +633,15 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
         for i, root in enumerate(roots):
             t, t_ = root_time(t, root=root)
             latent_time[i] = compute_shared_time(t)
-        latent_time = np.mean(latent_time, axis=0)
-        latent_time /= np.max(latent_time)
+        latent_time = scale(np.mean(latent_time, axis=0))
 
-        if fates[0] is not None:
-            fates = fates[:4]
-            latent_time_ = np.ones(shape=(len(fates), adata.n_obs))
-            for i, fate in enumerate(fates):
-                t, t_ = root_time(t, root=fate)
-                latent_time_[i] = 1 - compute_shared_time(t)
-            latent_time_ = np.mean(latent_time_, axis=0)
-            latent_time_ /= np.max(latent_time_)
+    if fates[0] is not None:
+        fates = fates[:4]
+        latent_time_ = np.ones(shape=(len(fates), adata.n_obs))
+        for i, fate in enumerate(fates):
+            t, t_ = root_time(t, root=fate)
+            latent_time_[i] = 1 - compute_shared_time(t)
+        latent_time = scale(latent_time + .2 * scale(np.mean(latent_time_, axis=0)))
 
     tl = latent_time
     tc = conn.dot(latent_time)
@@ -663,8 +660,7 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
         conn_new.eliminate_zeros()
         latent_time = conn_new.dot(latent_time)
 
-    latent_time -= np.min(latent_time)
-    latent_time /= np.max(latent_time)
+    latent_time = scale(latent_time)
     if t_max is not None:
         latent_time *= t_max
 
