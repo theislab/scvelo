@@ -590,20 +590,20 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
     t_sum = np.sum(t, 1)
     conn = get_connectivities(adata)
 
-    logg.info("computing latent time using "
-              f"{root_key if root_key in adata.obs.keys() else ''}"
-              f"{', ' + end_key if end_key in adata.obs.keys() else ''} as prior", r=True)
-
-    roots = np.argsort(t_sum)
-    idx_roots = np.array(adata.obs[root_key][roots])
-    idx_roots[pd.isnull(idx_roots)] = 0
-    if np.any([isinstance(ix, str) for ix in idx_roots]):
-        idx_roots = np.array([isinstance(ix, str) for ix in idx_roots], dtype=int)
-    idx_roots = idx_roots.astype(np.float) > 1 - 1e-3
-    if np.sum(idx_roots) > 0:
-        roots = roots[idx_roots]
+    if root_key not in adata.uns.keys():
+        roots = np.argsort(t_sum)
+        idx_roots = np.array(adata.obs[root_key][roots])
+        idx_roots[pd.isnull(idx_roots)] = 0
+        if np.any([isinstance(ix, str) for ix in idx_roots]):
+            idx_roots = np.array([isinstance(ix, str) for ix in idx_roots], dtype=int)
+        idx_roots = idx_roots.astype(np.float) > 1 - 1e-3
+        if np.sum(idx_roots) > 0:
+            roots = roots[idx_roots]
+        else:
+            logg.warn('No root cells detected. Consider specifying root cells to improve latent time prediction.')
     else:
-        logg.warn('No root cells detected. Consider specifying root cells to improve latent time prediction.')
+        roots = [adata.uns[root_key]]
+        root_key = 'root cell ' + str(adata.uns[root_key])
 
     if end_key in adata.obs.keys():
         fates = np.argsort(t_sum)[::-1]
@@ -615,6 +615,9 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
         if np.sum(idx_fates) > 0: fates = fates[idx_fates]
     else:
         fates = [None]
+
+    logg.info(f"computing latent time using {root_key}"
+              f"{', ' + end_key if end_key in adata.obs.keys() else ''} as prior", r=True)
 
     VPT = velocity_pseudotime(adata, vkey, root=roots[0], end=fates[0], return_model=True)
     vpt = VPT.pseudotime
