@@ -1,6 +1,6 @@
 # main requirements for single-cell analysis
 anndata>=0.7          # added new attributes `obsp` and `varp` (v0.7)
-scanpy>=1.4.3         # bugfix of temporarily broken neighbors (v1.4.3)
+scanpy>=1.5           # adapt to new anndata attributes (v1.5)
 
 # for reading loom files with spliced/unspliced counts
 loompy>=2.0.12        # introduced sparsity support (v2.0.12)
