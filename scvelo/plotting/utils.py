@@ -144,23 +144,30 @@ def get_obs_vector(adata, basis, layer=None, use_raw=None):
         else adata.raw.obs_vector(basis) if use_raw else adata.obs_vector(basis)
 
 
-def groups_to_bool(adata, groups, groupby=None):
+def get_groups(adata, groups, groupby=None):
+    if not isinstance(groupby, str) or groupby not in adata.obs.keys():
+        groupby = 'clusters' if 'clusters' in adata.obs.keys() \
+            else 'louvain' if 'louvain' in adata.obs.keys() else None
     if groups is True:
         return None
     if groups is not None and not isinstance(groups, str) and len(groups) == 1:
         groups = groups[0]
     if isinstance(groups, str):
-        if ':' in groups:
+        cats = ['']
+        if is_categorical(adata, groupby):
+            cats = adata.obs[groupby].cat.categories
+        if ':' in groups and not np.any([':' in cat for cat in cats]):
             groupby, groups = groups.split(':')
             groups = groups.strip()
-        if ',' in groups:
+        if ',' in groups and not np.any([',' in cat for cat in cats]):
             groups = [a.strip() for a in groups.split(',')]
+    if isinstance(groups, str):
+        groups = [groups]
+    return groups, groupby
 
-    groups = [groups] if isinstance(groups, str) else groups
-    groupby = groupby if isinstance(groupby, str) and groupby in adata.obs.keys() \
-        else 'clusters' if 'clusters' in adata.obs.keys() \
-        else 'louvain' if 'louvain' in adata.obs.keys() else None
 
+def groups_to_bool(adata, groups, groupby=None):
+    groups, groupby = get_groups(adata, groups, groupby)
     if isinstance(groups, (list, tuple, np.ndarray, np.record)):
         if groupby is not None and isinstance(groups[0], str):
             groups = np.array([key in groups for key in adata.obs[groupby]])
@@ -395,6 +402,7 @@ def set_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_fontw
     colors = np.array(color_keys)[valid_cats]
 
     if groups is not None:
+        groups, groupby = get_groups(adata, groups, value_to_plot)
         # only label groups with the respective color
         groups = [g for g in groups if g in categories]
         colors = [colors[list(categories).index(x)] for x in groups]
