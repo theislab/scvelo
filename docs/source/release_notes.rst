@@ -5,6 +5,14 @@ Release Notes
 =============
 
 
+Version 0.2.1 :small:`May 28, 2020`
+--------------------------------------
+Bugfixes:
+
+- Correct identification of root cells in `tl.latent_time` :smaller:`thanks to M Lange`
+- Correct usage of latent_time prior in `tl.paga` :smaller:`thanks to G Lubatti`
+
+
 Version 0.2.0 :small:`May 12, 2020`
 --------------------------------------
 New vignettes:
