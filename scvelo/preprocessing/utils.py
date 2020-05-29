@@ -55,6 +55,25 @@ def show_proportions(adata, layers=["spliced", "unspliced", "ambigious"], use_ra
     print("Abundance of " + str(layers_keys) + ": " + str(np.round(mean_abundances, 2)))
 
 
+def verify_dtypes(adata):
+    try:
+        _ = adata[:, 0]
+    except:
+        uns = adata.uns
+        adata.uns = {}
+        try:
+            _ = adata[:, 0]
+            logg.warn(
+                "Safely deleted unstructured annotations (adata.uns), \n"
+                "as these do not comply with permissible anndata datatypes."
+            )
+        except:
+            logg.warn(
+                "The data might be corrupted. Please verify all annotation datatypes."
+            )
+            adata.uns = uns
+
+
 def cleanup(data, clean="layers", keep=None, copy=False):
     """Deletes attributes not needed.
 
@@ -74,6 +93,7 @@ def cleanup(data, clean="layers", keep=None, copy=False):
     Returns or updates `adata` with selection of attributes kept.
     """
     adata = data.copy() if copy else data
+    verify_dtypes(adata)
 
     keep = list([keep] if isinstance(keep, str) else {} if keep is None else keep)
     keep.extend(["spliced", "unspliced", "Ms", "Mu", "clusters", "neighbors"])
@@ -102,6 +122,7 @@ def get_size(adata, layer=None):
 
 
 def set_initial_size(adata, layers={"spliced", "unspliced"}):
+    verify_dtypes(adata)
     layers = [
         layer
         for layer in layers
