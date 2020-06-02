@@ -355,12 +355,19 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                         add_linfit, add_polyfit, add_density = None, None, None
 
             # check if higher value points should be plotted on top
-            if sort_order and not isinstance(c, str) and not is_categorical(adata, color) and len(c) == len(x):
-                order = np.argsort(c)
-                x, y, c = x[order], y[order], c[order]
-                # sort order of size if given as vector
-                if isinstance(kwargs['s'], np.ndarray):
-                    kwargs['s'] = np.array(kwargs['s'])[order]
+            if not isinstance(c, str) and len(c) == len(x):
+                order = None
+                if sort_order and not is_categorical(adata, color):
+                    order = np.argsort(c)
+                elif not sort_order and is_categorical(adata, color):
+                    counts = get_value_counts(adata, color)
+                    np.random.seed(0)
+                    order = np.random.choice(np.arange(0, len(x)), len(x),
+                                             replace=False, p=counts / np.sum(counts))
+                if order is not None:
+                    x, y, c = x[order], y[order], c[order]
+                    if isinstance(kwargs['s'], np.ndarray):  # sort sizes if array-type
+                        kwargs['s'] = np.array(kwargs['s'])[order]
 
             smp = ax.scatter(x, y, c=c, alpha=alpha, marker='.', zorder=zorder, **kwargs)
 
