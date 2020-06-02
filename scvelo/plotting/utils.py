@@ -14,6 +14,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.colors import is_color_like, ListedColormap, to_rgb, cnames
 from matplotlib.collections import LineCollection
 from matplotlib.gridspec import SubplotSpec
+from matplotlib import patheffects
 import matplotlib.transforms as tx
 from matplotlib import rcParams
 from pandas import unique, Index
@@ -48,8 +49,14 @@ def is_list(key):
     return isinstance(key, (list, tuple, np.record))
 
 
-def is_list_of_str(key):
-    return isinstance(key, (list, tuple, np.record)) and all(isinstance(item, str) for item in key)
+def is_list_of_str(key, max_len=None):
+    if max_len is not None:
+        return isinstance(key, (list, tuple, np.record, np.ndarray)) \
+               and len(key) < max_len \
+               and all(isinstance(item, str) for item in key)
+    else:
+        return isinstance(key, (list, tuple, np.record)) \
+               and all(isinstance(item, str) for item in key)
 
 
 def is_list_of_list(lst):
@@ -57,11 +64,13 @@ def is_list_of_list(lst):
 
 
 def is_list_of_int(lst):
-    return isinstance(lst, (list, tuple, np.ndarray, np.record)) and all(isinstance(item, (int, np.integer)) for item in lst)
+    return isinstance(lst, (list, tuple, np.ndarray, np.record)) \
+           and all(isinstance(item, (int, np.integer)) for item in lst)
 
 
 def to_list(key, max_len=20):
-    if isinstance(key, Index): key = key.tolist()
+    if isinstance(key, Index) or is_list_of_str(key, max_len):
+        key = list(key)
     return key if is_list(key) and len(key) < max_len else [key]
 
 
@@ -160,7 +169,7 @@ def get_groups(adata, groups, groupby=None):
         groupby = 'clusters' if 'clusters' in adata.obs.keys() \
             else 'louvain' if 'louvain' in adata.obs.keys() else None
     if groups is True:
-        return None
+        return None, groupby
     if groups is not None and not isinstance(groups, str) and len(groups) == 1:
         groups = groups[0]
     if isinstance(groups, str):
@@ -403,6 +412,8 @@ def set_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_fontw
     Adds a legend to the given ax with categorial data.
     """
     # add legend
+    if legend_fontoutline is None:
+        legend_fontoutline = 1
     obs_vals = adata.obs[value_to_plot]
     obs_vals.cat.categories = obs_vals.cat.categories.astype(str)
     color_keys = adata.uns[value_to_plot + '_colors']
@@ -427,7 +438,8 @@ def set_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_fontw
             x_pos, y_pos = np.nanmedian(scatter_array[obs_vals == label, :], axis=0)
             if isinstance(label, str): label = label.replace('_', ' ')
             text = ax.text(x_pos, y_pos, label, weight=legend_fontweight, verticalalignment='center',
-                           horizontalalignment='center', fontsize=legend_fontsize, path_effects=legend_fontoutline)
+                           horizontalalignment='center', fontsize=legend_fontsize,
+                           path_effects=[patheffects.withStroke(linewidth=legend_fontoutline, foreground='w')])
             texts.append(text)
 
         # todo: adjust text positions to minimize overlaps, e.g. using https://github.com/Phlya/adjustText

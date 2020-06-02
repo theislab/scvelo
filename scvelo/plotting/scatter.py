@@ -2,7 +2,6 @@ from .docs import doc_scatter, doc_params
 from .utils import *
 
 from inspect import signature
-from matplotlib import patheffects
 import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
@@ -12,7 +11,7 @@ import pandas as pd
 def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_raw=None, layer=None, color_map=None,
             colorbar=None, palette=None, size=None, alpha=None, linewidth=None, linecolor=None, perc=None, groups=None,
             sort_order=True, components=None, projection=None, legend_loc=None, legend_loc_lines=None,
-            legend_fontsize=None, legend_fontweight=None, xlabel=None, ylabel=None, title=None, fontsize=None,
+            legend_fontsize=None, legend_fontweight=None, legend_fontoutline=None, xlabel=None, ylabel=None, title=None, fontsize=None,
             figsize=None, xlim=None, ylim=None, add_density=None, add_assignments=None, add_linfit=None, add_polyfit=None,
             add_rug=None, add_text=None, add_text_pos=None, add_outline=None, outline_width=None, outline_color=None,
             n_convolve=None, smooth=None, rescale_color=None, color_gradients=None, dpi=None, frameon=None, zorder=None,
@@ -349,6 +348,8 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                         x, y = x[idx], y[idx]
                         if not isinstance(c, str) and len(c) == adata.n_obs:
                             c = c[idx]
+                        if isinstance(kwargs['s'], np.ndarray):
+                            kwargs['s'] = np.array(kwargs['s'])[idx]
                         if title is None and groups is not None and len(groups) == 1 and isinstance(groups[0], str):
                             title = groups[0]
                     else:  # if nothing to be highlighted
@@ -387,6 +388,8 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                     if kwargs['s'] is not None: kwargs['s'] *= 1.2
                     x, y, c = scatter_array[:, 0], scatter_array[:, 1], color_array  # restore order of values
                     x, y, c = x[idx], y[idx], c[idx] if not isinstance(c, str) and len(c) == adata.n_obs else c
+                    if isinstance(kwargs['s'], np.ndarray):
+                        kwargs['s'] = np.array(kwargs['s'])[idx]
                     if isinstance(c, np.ndarray) and not isinstance(c[0], str) and 'vmid' not in kwargs:
                         if 'vmin' not in kwargs: kwargs['vmin'] = np.min(color_array)
                         if 'vmax' not in kwargs: kwargs['vmax'] = np.max(color_array)
@@ -401,8 +404,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                 legend_loc = default_legend_loc(adata, color, legend_loc)
                 if not (add_outline is None or groups_to_bool(adata, add_outline, color) is None): groups = add_outline
                 set_legend(adata, ax, color, legend_loc, scatter_array, legend_fontweight, legend_fontsize,
-                            [patheffects.withStroke(linewidth=True, foreground='w')], groups)
-
+                           legend_fontoutline, groups)
             if add_density:
                 plot_density(x, y, add_density, ax=ax)
 
