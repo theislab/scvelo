@@ -127,7 +127,10 @@ def to_valid_bases_list(adata, keys):
         keys = [key for key in keys if key in valid_keys or key in adata.var_names]
         keys_ = [key for key in keys_ if key not in keys]
         if len(keys_) > 0:
-            logg.warn(', '.join(keys_), 'not found.')
+            msg_embedding = ''
+            if len(keys_) == 1 and keys_[0] in {'diffmap', 'umap', 'tsne'}:
+                msg_embedding = f"You need to run `scv.tl.{keys_[0]}` first."
+            logg.warn(', '.join(keys_), 'not found.', msg_embedding)
     return keys
 
 
@@ -142,6 +145,14 @@ def get_components(components=None, basis=None, projection=None):
 def get_obs_vector(adata, basis, layer=None, use_raw=None):
     return adata.obs_vector(basis, layer=layer) if layer in adata.layers.keys() \
         else adata.raw.obs_vector(basis) if use_raw else adata.obs_vector(basis)
+
+
+def get_value_counts(adata, color):
+    value_counts = adata.obs[color].value_counts()
+    probs = np.array(adata.obs[color])
+    for cat in value_counts.index:
+        probs[probs == cat] = value_counts[cat]
+    return np.array(probs, dtype=np.float32)
 
 
 def get_groups(adata, groups, groupby=None):
