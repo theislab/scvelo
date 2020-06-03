@@ -9,6 +9,7 @@ from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
 from matplotlib import rcParams
+from matplotlib.path import get_path_collection_extents
 import matplotlib.pyplot as pl
 import numpy as np
 from inspect import signature
@@ -634,8 +635,14 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
                     horizontalalignment='center', size=fontsize, fontweight=fontweight, **text_kwds)
     # else pie chart plot
     else:
+
+        def transform_ax_coords(a, b):
+            return trans2(trans((a, b)))
+
         # start with this dummy plot... otherwise strange behavior
-        sct = ax.scatter(pos_array[:, 0], pos_array[:, 1], c='white', edgecolors='face', s=groups_sizes, cmap=cmap)
+        sct = ax.scatter(pos_array[:, 0], pos_array[:, 1], alpha=0, linewidths=0, c='w', edgecolors='face', s=groups_sizes, cmap=cmap)
+        bboxes = getbb(sct, ax)  # bounding boxes around the scatterplot markers
+
         trans = ax.transData.transform
         bbox = ax.get_position().get_points()
         ax_x_min = bbox[0, 0]
@@ -646,12 +653,14 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
         ax_len_y = ax_y_max - ax_y_min
         trans2 = ax.transAxes.inverted().transform
         pie_axs = []
-        for count, n in enumerate(nx_g_solid.nodes()):
-            pie_size = groups_sizes[count] / base_scale_scatter / np.sqrt(node_size_scale)
-            x1, y1 = trans(pos[n])     # data coordinates
-            xa, ya = trans2((x1, y1))  # axis coordinates
-            xa = ax_x_min + (xa - pie_size/2) * ax_len_x
-            ya = ax_y_min + (ya - pie_size/2) * ax_len_y
+        for count, (n, box) in enumerate(zip(nx_g_solid.nodes(), bboxes)):
+            x0, y0 = transform_ax_coords(box.x0, box.y0)
+            x1, y1 = transform_ax_coords(box.x1, box.y1)
+            pie_size = np.sqrt(((x0 - x1) ** 2) + ((y0 - y1) ** 2))
+
+            xa, ya = transform_ax_coords(*pos[n])
+            xa = ax_x_min + (xa - pie_size / 2) * ax_len_x
+            ya = ax_y_min + (ya - pie_size / 2) * ax_len_y
             # clip, the fruchterman layout sometimes places below figure
             if ya < 0: ya = 0
             if xa < 0: xa = 0
@@ -668,10 +677,51 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
             if sum(fracs) < 1:
                 color_single = list(color_single)
                 color_single.append('grey')
-                fracs.append(1-sum(fracs))
-            pie_axs[count].pie(fracs, colors=color_single)
+                fracs.append(1 - sum(fracs))
+            pie_axs[count].pie(fracs, colors=color_single, wedgeprops=dict(linewidth=0, edgecolor="k", antialiased=True))
         if node_labels is not None:
             for ia, a in enumerate(pie_axs):
                 a.text(0.5, 0.5, node_labels[ia], verticalalignment='center', horizontalalignment='center',
                        transform=a.transAxes, size=fontsize, fontweight=fontweight, **text_kwds)
     return sct
+
+
+def getbb(sc, ax):
+    """
+    Function to return a list of bounding boxes in data coordinates for a scatter plot.
+    Directly taken from: https://stackoverflow.com/questions/55005272/get-bounding-boxes-of-individual-elements-of-a-pathcollection-from-plt-scatter
+    """
+    ax.figure.canvas.draw()  # need to draw before the transforms are set.
+    transform = sc.get_transform()
+    transOffset = sc.get_offset_transform()
+    offsets = sc._offsets
+    paths = sc.get_paths()
+    transforms = sc.get_transforms()
+
+    if not transform.is_affine:
+        paths = [transform.transform_path_non_affine(p) for p in paths]
+        transform = transform.get_affine()
+    if not transOffset.is_affine:
+        offsets = transOffset.transform_non_affine(offsets)
+        transOffset = transOffset.get_affine()
+
+    if isinstance(offsets, np.ma.MaskedArray):
+        offsets = offsets.filled(np.nan)
+
+    bboxes = []
+
+    if len(paths) and len(offsets):
+        if len(paths) < len(offsets):
+            # for usual scatters you have one path, but several offsets
+            paths = [paths[0]]*len(offsets)
+        if len(transforms) < len(offsets):
+            # often you may have a single scatter size, but several offsets
+            transforms = [transforms[0]]*len(offsets)
+
+        for p, o, t in zip(paths, offsets, transforms):
+            result = get_path_collection_extents(
+                transform.frozen(), [p], [t],
+                [o], transOffset.frozen())
+            bboxes.append(result.inverse_transformed(ax.transData))
+
+    return bboxes
