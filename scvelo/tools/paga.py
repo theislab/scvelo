@@ -251,7 +251,7 @@ def paga(
     if use_time_prior and not isinstance(use_time_prior, str):
         use_time_prior = "velocity_pseudotime"
         if use_time_prior not in adata.obs.keys():
-            velocity_pseudotime(adata, vkey=vkey)
+            velocity_pseudotime(adata, vkey=vkey, root_key=root_key, end_key=end_key)
 
     logg.info("running PAGA", r=True)
     paga = PAGA_tree(

@@ -619,7 +619,8 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
     logg.info(f"computing latent time using {root_key}"
               f"{', ' + end_key if end_key in adata.obs.keys() else ''} as prior", r=True)
 
-    VPT = velocity_pseudotime(adata, vkey, root=roots[0], end=fates[0], return_model=True)
+    VPT = velocity_pseudotime(adata, vkey,
+                              root_key=roots[0], end_key=fates[0], return_model=True)
     vpt = VPT.pseudotime
 
     if min_corr_diffusion is not None:
