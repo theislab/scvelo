@@ -1,4 +1,5 @@
 import sys
+import os
 import inspect
 import logging
 from pathlib import Path
@@ -21,6 +22,7 @@ matplotlib.use('agg')
 
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent.parent))
+sys.path.insert(0, os.path.abspath('_ext'))
 import scvelo
 
 logger = logging.getLogger(__name__)
@@ -58,6 +60,7 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx_autodoc_typehints',
     'nbsphinx',
+    'edit_on_github',
 ]
 
 
@@ -95,13 +98,8 @@ todo_include_todos = False
 
 html_theme = 'sphinx_rtd_theme'
 html_theme_options = dict(navigation_depth=1, titles_only=True)
-html_context = dict(
-    display_github=True,      # Integrate GitHub
-    github_user='theislab',   # Username
-    github_repo='scvelo',     # Repo name
-    github_version='master',  # Version
-    conf_py_path='/docs/source/',
-)
+github_repo = 'scvelo'
+github_nb_repo = 'scvelo_notebooks'
 html_static_path = ['_static']
 
 
@@ -190,7 +188,7 @@ def get_linenos(obj):
 
 
 project_dir = Path(__file__).parent.parent.parent  # project/docs/source/conf.py/../../.. → project/
-github_url_scvelo = 'https://github.com/{github_user}/{github_repo}/tree/{github_version}'.format_map(html_context)
+github_url_scvelo = 'https://github.com/theislab/scvelo/tree/master'
 github_url_read_loom = 'https://github.com/theislab/anndata/tree/master/anndata'
 github_url_read = 'https://github.com/theislab/scanpy/tree/master'
 github_url_scanpy = 'https://github.com/theislab/scanpy/tree/master/scanpy'
