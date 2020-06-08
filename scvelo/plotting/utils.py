@@ -386,7 +386,6 @@ def set_label(xlabel, ylabel, fontsize=None, basis=None, ax=None, **kwargs):
 def set_title(title, layer=None, color=None, fontsize=None, ax=None):
     if ax is None: ax = pl.gca()
     color = color if isinstance(color, str) and not is_color_like(color) else None
-    title = title if isinstance(title, str) and not is_color_like(title) else None
     if isinstance(title, str):
         title = title.replace('_', ' ')
     elif isinstance(layer, str) and isinstance(color, str):
