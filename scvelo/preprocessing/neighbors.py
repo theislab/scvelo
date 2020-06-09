@@ -281,11 +281,12 @@ def select_connectivities(connectivities, n_neighbors=None):
 
 
 def get_neighs(adata, mode="distances"):
-    return (
-        adata.obsp[mode]
-        if hasattr(adata, "obsp") and mode in adata.obsp.keys()
-        else adata.uns["neighbors"][mode]
-    )
+    if hasattr(adata, "obsp") and mode in adata.obsp.keys():
+        return adata.obsp[mode]
+    elif 'neighbors' in adata.uns.keys() and mode in adata.uns["neighbors"]:
+        return adata.uns["neighbors"][mode]
+    else:
+        raise ValueError("The selected mode is not valid.")
 
 
 def get_n_neighs(adata):
