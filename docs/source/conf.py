@@ -99,7 +99,6 @@ nbsphinx_prolog = r"""
 .. raw:: html
 
     <div class="note">
-      View in the cloud: &nbsp;
       <a href="https://colab.research.google.com/{{ docname|e }}" target="_parent">
       <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
       <a href="https://nbviewer.jupyter.org/{{ docname|e }}" target="_parent">
