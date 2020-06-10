@@ -93,6 +93,19 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 pygments_style = 'sphinx'
 todo_include_todos = False
 
+# Add notebooks prolog to Google Colab and nbviewer
+nbsphinx_prolog = r"""
+{% set docname = 'github/theislab/scvelo_notebooks/blob/master/' + env.doc2path(env.docname, base=None) %}
+.. raw:: html
+
+    <div class="note">
+      View in the cloud: &nbsp;
+      <a href="https://colab.research.google.com/{{ docname|e }}" target="_parent">
+      <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+      <a href="https://nbviewer.jupyter.org/{{ docname|e }}" target="_parent">
+      <img src="https://github.com/theislab/scvelo/raw/master/docs/source/_static/nbviewer-badge.svg" alt="Open In nbviewer"/></a>
+    </div>
+"""
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -114,7 +127,7 @@ htmlhelp_basename = 'scvelodoc'
 latex_documents = [(master_doc, 'scvelo.tex', 'scvelo documentation', 'Volker Bergen', 'manual')]
 man_pages = [(master_doc, 'scvelo', 'scvelo documentation', [author], 1)]
 texinfo_documents = [(master_doc, 'scvelo', 'scvelo documentation', author,
-                      'scvelo', 'RNA Velocity using dynamical modeling', 'Miscellaneous')]
+                      'scvelo', 'RNA Velocity generalized through dynamical modeling', 'Miscellaneous')]
 
 
 # -- generate_options override ------------------------------------------
@@ -187,7 +200,8 @@ def get_linenos(obj):
         return start, start + len(lines) - 1
 
 
-project_dir = Path(__file__).parent.parent.parent  # project/docs/source/conf.py/../../.. → project/
+# set project_dir: project/docs/source/conf.py/../../.. → project/
+project_dir = Path(__file__).parent.parent.parent
 github_url_scvelo = 'https://github.com/theislab/scvelo/tree/master'
 github_url_read_loom = 'https://github.com/theislab/anndata/tree/master/anndata'
 github_url_read = 'https://github.com/theislab/scanpy/tree/master'
@@ -276,8 +290,6 @@ class PrettyTypedField(PyTypedField):
                 if len(fieldtype) == 1 and isinstance(fieldtype[0], nodes.Text):
                     text_node, = fieldtype  # type: nodes.Text
                     head += makerefs(self.typerolename, text_node.astext(), addnodes.literal_emphasis)
-                    #typename = ''.join(n.astext() for n in fieldtype)
-                    #head += makerefs(self.typerolename, typename, addnodes.literal_emphasis)
                 else:
                     head += fieldtype
 
