@@ -373,7 +373,7 @@ def heatmap_deprecated(
                                 else:
                                     groups_axis.set_yticks([])
                         else:
-                            pl.yticks([0], [f"{layer} {var}""])
+                            pl.yticks([0], [f"{layer} {var}"])
                     else:
                         groups_axis.set_yticks([])
 
