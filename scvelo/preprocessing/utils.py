@@ -300,7 +300,7 @@ def filter_genes(
                 logg.info(
                     f"in less than {_min_cells} cells ({layer})."
                     if _min_counts is None
-                    else f"{_min_counts)} counts ({layer}).",
+                    else f"{_min_counts} counts ({layer}).",
                     no_indent=True,
                 )
             if max_cells is not None or max_counts is not None:
