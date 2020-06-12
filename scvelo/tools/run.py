@@ -18,7 +18,7 @@ def run_all(data, basis=None, mode=None, min_counts=30, min_counts_u=20, n_top_g
     velocity_graph(adata)
     if basis is not None: velocity_embedding(adata, basis=basis)
 
-    print('Total time (seconds): ' + str(round(time() - start, 2)))
+    print(f'Total time (seconds): {round(time() - start, 2)}')
 
     return adata if copy else None
 
@@ -51,8 +51,8 @@ def convert_to_adata(vlm, basis=None):
     if hasattr(vlm, 'corrcoef'): adata.uns['velocity_graph'] = vlm.corrcoef
 
     if basis is not None:
-        if hasattr(vlm, 'ts'): adata.obsm['X_' + basis] = vlm.ts
-        if hasattr(vlm, 'delta_embedding'): adata.obsm['velocity_' + basis] = vlm.delta_embedding
+        if hasattr(vlm, 'ts'): adata.obsm[f'X_{basis}'] = vlm.ts
+        if hasattr(vlm, 'delta_embedding'): adata.obsm[f'velocity_{basis}'] = vlm.delta_embedding
 
     return adata
 
@@ -110,9 +110,9 @@ def convert_to_loom(adata, basis=None):
                 self.ra[key] = np.array(adata.var[key].values)
 
             basis = 'umap' if basis is None else basis
-            if isinstance(basis, str) and 'X_' + basis in adata.obsm.keys():
-                if 'X_' + basis in adata.obsm.keys(): self.ts = adata.obsm['X_' + basis]
-                if 'velocity_' + basis in adata.obsm.keys(): self.delta_embedding = adata.obsm['velocity_' + basis]
+            if isinstance(basis, str) and f'X_{basis}' in adata.obsm.keys():
+                if f'X_{basis}' in adata.obsm.keys(): self.ts = adata.obsm[f'X_{basis}']
+                if f'velocity_{basis}' in adata.obsm.keys(): self.delta_embedding = adata.obsm[f'velocity_{basis}']
 
             if 'clusters' in self.ca:
                 self.set_clusters(self.ca['clusters'])
@@ -176,21 +176,21 @@ def convert_to_loom(adata, basis=None):
             start = time()
 
             self.filter_and_normalize(min_counts=min_counts, min_counts_u=min_counts_u, n_top_genes=n_top_genes)
-            print('Preprocessing: ' + str(round(time() - start, 2)))
+            print(f'Preprocessing: {round(time() - start, 2)}')
             timestamp = time()
 
             self.impute(n_pcs=n_pcs, n_neighbors=n_neighbors)
-            print('Imputation: ' + str(round(time() - timestamp, 2)))
+            print(f'Imputation: {round(time() - timestamp, 2)}')
             timestamp = time()
 
             self.velocity_estimation(limit_gamma=limit_gamma, fit_offset=fit_offset)
-            print('Velocity Estimation: ' + str(round(time() - timestamp, 2)))
+            print(f'Velocity Estimation: {round(time() - timestamp, 2)}')
             timestamp = time()
 
             self.velocity_graph(n_neighbors=n_neighbors_graph, transform=transform, expression_scaling=expression_scaling)
-            print('Velocity Graph: ' + str(round(time() - timestamp, 2)))
+            print(f'Velocity Graph: {round(time() - timestamp, 2)}')
 
-            print('Total: ' + str(round(time() - start, 2)))
+            print(f'Total: {round(time() - start, 2)}')
 
     return VelocytoLoom(adata, basis)
 

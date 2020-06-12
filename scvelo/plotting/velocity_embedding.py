@@ -97,14 +97,14 @@ def velocity_embedding(adata, basis=None, vkey='velocity', density=None, arrow_s
             x = adata[:, basis].layers['spliced'] if use_raw else adata[:, basis].layers['Ms']
             y = adata[:, basis].layers['unspliced'] if use_raw else adata[:, basis].layers['Mu']
             dx = adata[:, basis].layers[vkey]
-            dy = adata[:, basis].layers[vkey + '_u'] if vkey + '_u' in adata.layers.keys() else np.zeros(adata.n_obs)
+            dy = adata[:, basis].layers[f'{vkey}_u'] if f'{vkey}_u' in adata.layers.keys() else np.zeros(adata.n_obs)
             X = np.stack([np.ravel(x), np.ravel(y)]).T
             V = np.stack([np.ravel(dx), np.ravel(dy)]).T
         else:
             x = None if X is None else X[:, 0]
             y = None if X is None else X[:, 1]
-            X = _adata.obsm['X_' + basis][:, get_components(components, basis, projection)] if X is None else X[:, :2]
-            V = _adata.obsm[vkey + '_' + basis][:, get_components(components, basis, projection)] if V is None else V[:, :2]
+            X = _adata.obsm[f'X_{basis}'][:, get_components(components, basis, projection)] if X is None else X[:, :2]
+            V = _adata.obsm[f'{vkey}_{basis}'][:, get_components(components, basis, projection)] if V is None else V[:, :2]
 
             hl, hw, hal = default_arrow(arrow_size)
             scale = 1 / arrow_length if arrow_length is not None else scale if scale is not None else 1

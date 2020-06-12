@@ -62,7 +62,7 @@ def dentategyrus(adjusted=True):
 
     if adjusted:
         filename = "data/DentateGyrus/10X43_1.h5ad"
-        url = url_datadir + "data/DentateGyrus/10X43_1.h5ad"
+        url = f"{url_datadir}data/DentateGyrus/10X43_1.h5ad"
         adata = read(filename, backup_url=url, sparse=True, cache=True)
 
     else:
@@ -71,8 +71,8 @@ def dentategyrus(adjusted=True):
         adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
         cleanup(adata, clean="all", keep={"spliced", "unspliced", "ambiguous"})
 
-        url_louvain = url_datadir + "data/DentateGyrus/DG_clusters.npy"
-        url_umap = url_datadir + "data/DentateGyrus/DG_umap.npy"
+        url_louvain = f"{url_datadir}data/DentateGyrus/DG_clusters.npy"
+        url_umap = f"{url_datadir}data/DentateGyrus/DG_umap.npy"
 
         adata.obs["clusters"] = load(
             "./data/DentateGyrus/DG_clusters.npy", url_louvain, allow_pickle=True
@@ -123,7 +123,7 @@ def pancreas():
     Returns `adata` object
     """
     filename = "data/Pancreas/endocrinogenesis_day15.h5ad"
-    url = url_datadir + "data/Pancreas/endocrinogenesis_day15.h5ad"
+    url = f"{url_datadir}data/Pancreas/endocrinogenesis_day15.h5ad"
     adata = read(filename, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
     return adata

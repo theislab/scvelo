@@ -211,7 +211,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
             x = adata[:, basis].layers['spliced'] if use_raw else adata[:, basis].layers['Ms']
             y = adata[:, basis].layers['unspliced'] if use_raw else adata[:, basis].layers['Mu']
         elif basis is not None:
-            X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
+            X_emb = adata.obsm[f'X_{basis}'][:, get_components(components, basis)]
             x, y = X_emb[:, 0], X_emb[:, 1]
 
         if basis is None and pos is None:
@@ -222,7 +222,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
                 categories = list(adata.obs[paga_groups].cat.categories)
                 pos = np.zeros((len(categories), 2))
                 for ilabel, label in enumerate(categories):
-                    X_emb = adata.obsm['X_' + basis][adata.obs[paga_groups] == label, :2]
+                    X_emb = adata.obsm[f'X_{basis}'][adata.obs[paga_groups] == label, :2]
                     x_pos, y_pos = np.median(X_emb, axis=0)
                     pos[ilabel] = [x_pos, y_pos]
             else:
@@ -237,7 +237,7 @@ def paga(adata, basis=None, vkey='velocity', color=None, layer=None, title=None,
             paga_kwargs['frameon'] = False
         kwargs['frameon'] = paga_kwargs['frameon']
         if title is None:
-            title = f'paga ({str(paga_groups)})' if transitions is None else f'paga velocity-graph ({str(paga_groups)})'
+            title = f'paga ({paga_groups})' if transitions is None else f'paga velocity-graph ({paga_groups})'
         paga_kwargs['title'] = title
 
         ax = pl.figure(None, figsize, dpi=dpi).gca() if ax is None else ax
@@ -368,14 +368,14 @@ def _paga(adata, threshold=None, color=None, layout=None, layout_kwds=None, init
     cats = adata.obs[groups_key].cat.categories
     if pos is not None:
         if isinstance(pos, str):
-            if not pos.startswith('X_'): pos = 'X_' + pos
+            if not pos.startswith('X_'): pos = f'X_{pos}'
             pos = np.stack([np.median(adata.obsm[pos][adata.obs[groups_key] == c], axis=0) for c in cats]) \
                 if pos in adata.obsm.keys() else None
         if len(pos) != len(cats):
             pos = None
     elif init_pos is not None:
         if isinstance(init_pos, str):
-            if not init_pos.startswith('X_'): init_pos = 'X_' + init_pos
+            if not init_pos.startswith('X_'): init_pos = f'X_{init_pos}'
             init_pos = np.stack([np.median(adata.obsm[init_pos][adata.obs[groups_key] == c], axis=0) for c in cats]) \
                 if init_pos in adata.obsm.keys() else None
         if len(init_pos) != len(cats):
@@ -454,17 +454,16 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
 
     node_labels = labels  # rename for clarity
     if node_labels is not None and isinstance(node_labels, str) and node_labels != adata.uns['paga']['groups']:
-        raise ValueError('Provide a list of group labels for the PAGA groups {}, not {}.'
-                         .format(adata.uns['paga']['groups'], node_labels))
+        raise ValueError(f"Provide a list of group labels for the PAGA groups {adata.uns['paga']['groups']}, not {node_labels}.")
     groups_key = adata.uns['paga']['groups']
     if node_labels is None:
         node_labels = adata.obs[groups_key].cat.categories
 
     if (colors is None or colors == groups_key) and groups_key is not None:
-        if groups_key + '_colors' not in adata.uns \
-                or len(adata.obs[groups_key].cat.categories) != len(adata.uns[groups_key + '_colors']):
+        if f'{groups_key}_colors' not in adata.uns \
+                or len(adata.obs[groups_key].cat.categories) != len(adata.uns[f'{groups_key}_colors']):
             add_colors_for_categorical_sample_annotation(adata, groups_key)
-        colors = adata.uns[groups_key + '_colors']
+        colors = adata.uns[f'{groups_key}_colors']
 
     nx_g_solid = nx.Graph(adjacency_solid)
     if dashed_edges is not None:
@@ -537,7 +536,7 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
         asso_names, asso_matrix = \
             compute_association_matrix_of_groups(adata, prediction=groups_key, reference=colors, normalization=norm)
         add_colors_for_categorical_sample_annotation(adata, colors)
-        asso_colors = get_associated_colors_of_groups(adata.uns[colors + '_colors'], asso_matrix)
+        asso_colors = get_associated_colors_of_groups(adata.uns[ f'{colors}_colors'], asso_matrix)
         colors = asso_colors
 
     if len(colors) < len(node_labels):
@@ -559,8 +558,8 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
             raise ValueError('`single_component` only if `dashed_edges` is `None`.')
 
     # groups sizes
-    if groups_key is not None and groups_key + '_sizes' in adata.uns:
-        groups_sizes = adata.uns[groups_key + '_sizes']
+    if groups_key is not None and f'{groups_key}_sizes' in adata.uns:
+        groups_sizes = adata.uns[f'{groups_key}_sizes']
     else:
         groups_sizes = np.ones(len(node_labels))
     base_scale_scatter = 2000
@@ -608,8 +607,8 @@ def _paga_graph(adata, ax, solid_edges=None, dashed_edges=None, adjacency_solid=
             from matplotlib.colors import rgb2hex
             colors = [rgb2hex(c) for c in colors]
         for count, n in enumerate(nx_g_solid.nodes()):
-            nx_g_solid.node[count]['label'] = str(node_labels[count])
-            nx_g_solid.node[count]['color'] = str(colors[count])
+            nx_g_solid.node[count]['label'] = f"{node_labels[count]}"
+            nx_g_solid.node[count]['color'] = f"{colors[count]}"
             nx_g_solid.node[count]['viz'] = dict(position=dict(x=1000 * pos[count][0], y=1000 * pos[count][1], z=0))
         filename = settings.writedir / 'paga_graph.gexf'
         logg.warn(f'exporting to {filename}')

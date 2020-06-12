@@ -13,7 +13,7 @@ def get_dynamics(adata, key='fit', extrapolate=False, sorted=False, t=None):
         tmax = t_ + tau_inv(u0_ * 1e-4, u0=u0_, alpha=0, beta=beta)
         t = np.concatenate([np.linspace(0, t_, num=500), t_ + np.linspace(0, tmax, num=500)])
     elif t is None or t is True:
-        t = adata.obs[key + '_t'].values if key == 'true' else adata.layers[key + '_t']
+        t = adata.obs[f'{key}_t'].values if key == 'true' else adata.layers[f'{key}_t']
 
     tau, alpha, u0, s0 = vectorize(np.sort(t) if sorted else t, t_, alpha, beta, gamma)
     ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
@@ -23,7 +23,7 @@ def get_dynamics(adata, key='fit', extrapolate=False, sorted=False, t=None):
 
 def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=None, t=None):
     idx = np.where(adata.var_names == basis)[0][0] if isinstance(basis, str) else basis
-    key = 'fit' if key + '_gamma' not in adata.var_keys() else key
+    key = 'fit' if f'{key}_gamma' not in adata.var_keys() else key
     alpha, beta, gamma, scaling, t_ = get_vars(adata[:, basis], key=key)
 
     if 'fit_u0' in adata.var.keys():
@@ -32,7 +32,7 @@ def compute_dynamics(adata, basis, key='true', extrapolate=None, sort=True, t_=N
         u0_offset, s0_offset = 0, 0
 
     if t is None or isinstance(t, bool) or len(t) < adata.n_obs:
-        t = adata.obs[key + '_t'].values if key == 'true' else adata.layers[key + '_t'][:, idx]
+        t = adata.obs[f'{key}_t'].values if key == 'true' else adata.layers[f'{key}_t'][:, idx]
 
     if extrapolate:
         u0_ = unspliced(t_, 0, alpha, beta)
@@ -67,7 +67,7 @@ def show_full_dynamics(adata, basis, key='true', use_raw=False, linewidth=1, sho
         line, = ax.plot(st, ut, color=color, linewidth=linewidth, label=label)
 
         idx = np.where(adata.var_names == basis)[0][0]
-        beta, gamma = adata.var[key + '_beta'][idx], adata.var[key + '_gamma'][idx]
+        beta, gamma = adata.var[f'{key}_beta'][idx], adata.var[f'{key}_gamma'][idx]
         xnew = np.linspace(np.min(st), np.max(st))
         ynew = gamma / beta * (xnew - np.min(xnew)) + np.min(ut)
         ax.plot(xnew, ynew, color=color, linestyle='--', linewidth=linewidth)

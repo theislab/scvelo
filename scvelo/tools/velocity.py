@@ -55,7 +55,7 @@ class Velocity:
             min_r2 = np.percentile(self._r2, 80)
             self._velocity_genes = self._r2 > min_r2
             logg.warn('You seem to have very low signal in splicing dynamics.\n'
-                      'The correlation threshold has been reduced to', str(np.round(min_r2,4)), '\n'
+                      f'The correlation threshold has been reduced to {np.round(min_r2,4)}\n'
                       'Please be cautious when interpretating results.')
 
     def compute_stochastic(self, fit_offset=False, fit_offset2=False, mode=None, perc=None):
@@ -114,7 +114,7 @@ def write_residuals(adata, vkey, residual=None, cell_subset=None):
 
 def write_pars(adata, vkey, pars, pars_names, add_key=None):
     for i, key in enumerate(pars_names):
-        key = vkey + key + '_' + add_key if add_key is not None else vkey + key
+        key = f"{vkey}{key}_{add_key}" if add_key is not None else f"{vkey}{key}"
         if len(set(pars[i])) > 1: adata.var[key] = pars[i]
         elif key in adata.var.keys(): del adata.var[key]
 
@@ -229,14 +229,14 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
         lb, ub = np.nanpercentile(adata.var.fit_scaling, [10, 90])
         vgenes = vgenes & (adata.var.fit_scaling > np.min([lb, .03])) & (adata.var.fit_scaling < np.max([ub, 3]))
 
-        adata.var[vkey + '_genes'] = vgenes
+        adata.var[f'{vkey}_genes'] = vgenes
 
         adata.layers[vkey] = np.ones(adata.shape) * np.nan
         adata.layers[vkey][:, gene_subset] = vt
 
 
-        adata.layers[vkey + '_u'] = np.ones(adata.shape) * np.nan
-        adata.layers[vkey + '_u'][:, gene_subset] = wt
+        adata.layers[f'{vkey}_u'] = np.ones(adata.shape) * np.nan
+        adata.layers[f'{vkey}_u'][:, gene_subset] = wt
 
         if filter_genes and len(set(vgenes)) > 1:
             adata._inplace_subset_var(vgenes)
@@ -263,7 +263,7 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
                 velo.compute_stochastic(fit_offset, fit_offset2, mode, perc=perc)
 
             write_residuals(adata, vkey, velo._residual, cell_subset)
-            write_residuals(adata, 'variance_' + vkey, velo._residual2, cell_subset)
+            write_residuals(adata, f'variance_{vkey}', velo._residual2, cell_subset)
             write_pars(adata, vkey, velo.get_pars(), velo.get_pars_names(), add_key=cat)
 
             if filter_genes and len(set(velo._velocity_genes)) > 1:
@@ -272,7 +272,7 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
     else:
         raise ValueError('Mode can only be one of these: steady_state, deterministic, stochastic or dynamical.')
 
-    if vkey + '_genes' in adata.var.keys() and np.sum(adata.var[vkey + '_genes']) < 10:
+    if f'{vkey}_genes' in adata.var.keys() and np.sum(adata.var[f'{vkey}_genes']) < 10:
         logg.warn('Too few genes are selected as velocity genes. '
                   'Consider setting a lower threshold for min_r2 or min_likelihood.')
 
@@ -290,13 +290,13 @@ def velocity(data, vkey='velocity', mode='stochastic', fit_offset=False, fit_off
                     idx = 1 - clusters.isin([a.strip() for a in v.split(',')])
                     adata.layers[vkey][:, i] *= idx
                     if mode == 'dynamical':
-                        adata.layers[vkey + '_u'][:, i] *= idx
+                        adata.layers[f'{vkey}_u'][:, i] *= idx
 
-    adata.uns[vkey + '_params'] = {'mode': mode, 'fit_offset': fit_offset, 'perc': perc}
+    adata.uns[f'{vkey}_params'] = {'mode': mode, 'fit_offset': fit_offset, 'perc': perc}
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n' 
-              '    \'' + vkey + '\', velocity vectors for each individual cell (adata.layers)')
+              f'    \'{vkey}\', velocity vectors for each individual cell (adata.layers)')
 
     return adata if copy else None
 
@@ -324,17 +324,17 @@ def velocity_genes(data, vkey='velocity', min_r2=0.01, highly_variable=None, cop
         genes to be used for further velocity analysis (velocity graph and embedding)
     """
     adata = data.copy() if copy else data
-    if vkey + '_genes' not in adata.var.keys(): velocity(data, vkey)
+    if f'{vkey}_genes' not in adata.var.keys(): velocity(data, vkey)
     vgenes = np.ones(adata.n_vars, dtype=bool)
 
     if min_r2 is not None:
-        vgenes &= (adata.var[vkey + '_r2'] > min_r2)
+        vgenes &= (adata.var[f'{vkey}_r2'] > min_r2)
 
     if highly_variable and 'highly_variable' in adata.var.keys():
         vgenes &= adata.var['highly_variable'].values
 
-    adata.var[vkey + '_genes'] = vgenes
+    adata.var[f'{vkey}_genes'] = vgenes
 
-    logg.info('Number of obtained velocity_genes:', np.sum(adata.var[vkey + '_genes']))
+    logg.info('Number of obtained velocity_genes:', np.sum(adata.var[f'{vkey}_genes']))
 
     return adata if copy else None
