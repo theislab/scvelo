@@ -25,6 +25,7 @@ Thumbs.db
 .ipynb_checkpoints/
 .directory
 /.idea/
+.vscode/
 
 # Docs build
 docs/build
