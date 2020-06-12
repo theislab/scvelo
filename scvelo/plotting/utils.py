@@ -836,7 +836,7 @@ def plot_vlines(adata, basis, vkey, xkey, linewidth=1, linecolor=None, ax=None):
     for i, fit in enumerate(fits):
         linestyle = '--' if f'variance_{fit}' in adata.layers.keys() else '-'
         gamma = adata[:, basis].var[f'{fit}_gamma'].values if f'{fit}_gamma' in adata.var.keys() else 1
-        beta = adata[:, basis].var[f'{fit}_beta'].values if fit f'{fit}_beta' in adata.var.keys() else 1
+        beta = adata[:, basis].var[f'{fit}_beta'].values if f'{fit}_beta' in adata.var.keys() else 1
         offset = adata[:, basis].var[f'{fit}_offset'].values if f'{fit}_offset' in adata.var.keys() else 0
         line, = ax.plot(xnew, gamma / beta * xnew + offset / beta, linestyle=linestyle, linewidth=linewidth,
                         c=linecolor[i] if len(linecolor) > i and linecolor[i] is not None else 'k' if i == 0 else None)
