@@ -42,7 +42,7 @@ def select_groups(adata, groups='all', key='louvain'):
     """Get subset of groups in adata.obs[key].
     """
     strings_to_categoricals(adata)
-    if isinstance(groups, list) and isinstance(groups[0], int): groups = [str(n) for n in groups]
+    if isinstance(groups, list) and isinstance(groups[0], int): groups = [f"{n}" for n in groups]
     categories = adata.obs[key].cat.categories
     groups_masks = np.array([categories[i] == adata.obs[key].values for i, name in enumerate(categories)])
     if groups == 'all':
@@ -97,8 +97,8 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='vel
     logg.info('computing velocity clusters', r=True)
 
     tmp_filter = ~np.isnan(adata.layers[vkey].sum(0))
-    if vkey + '_genes' in adata.var.keys():
-        tmp_filter &= np.array(adata.var[vkey + '_genes'].values, dtype=bool)
+    if f'{vkey}_genes' in adata.var.keys():
+        tmp_filter &= np.array(adata.var[f'{vkey}_genes'].values, dtype=bool)
 
     if 'unspliced' in adata.layers.keys():
         n_counts = (adata.layers['unspliced'] > 0).sum(0)
@@ -150,18 +150,18 @@ def velocity_clusters(data, vkey='velocity', match_with='clusters', sort_by='vel
             cells_in_cat = np.where(vc == cat)[0]
             new_cat = most_common_in_list(adata.obs[match_with][cells_in_cat])
             cats_nums[new_cat] += 1
-            vc = vc.cat.rename_categories({cat: str(new_cat) + ' (' + str(cats_nums[new_cat]) + ')'})
+            vc = vc.cat.rename_categories({cat: f"{new_cat} ({cats_nums[new_cat]})"})
         vdata.obs['louvain'] = vc
     else:
         vdata.obs['louvain'].cat.categories = np.arange(len(vdata.obs['louvain'].cat.categories))
-    adata.obs[vkey + '_clusters'] = vdata.obs['louvain'].copy()
+    adata.obs[f'{vkey}_clusters'] = vdata.obs['louvain'].copy()
 
     del vdata
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
         'added \n'
-        '    \'' + vkey + '_clusters\', clusters based on modularity on velocity field (adata.obs)')
+        f'    \'{vkey}_clusters\', clusters based on modularity on velocity field (adata.obs)')
 
     return adata if copy else None
 
@@ -227,7 +227,7 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=100, groupby=None, match_
 
     if groupby is None or groupby == 'velocity_clusters':
         velocity_clusters(adata, vkey=vkey, match_with=match_with, resolution=resolution, min_likelihood=min_likelihood)
-        groupby = vkey + '_clusters'
+        groupby = f'{vkey}_clusters'
 
     logg.info('ranking velocity genes', r=True)
 
@@ -236,8 +236,8 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=100, groupby=None, match_
         adata.var['spearmans_score'] = np.clip(corr, 0, None)
 
     tmp_filter = ~np.isnan(adata.layers[vkey].sum(0))
-    if vkey + '_genes' in adata.var.keys():
-        tmp_filter &= np.array(adata.var[vkey + '_genes'].values, dtype=bool)
+    if f'{vkey}_genes' in adata.var.keys():
+        tmp_filter &= np.array(adata.var[f'{vkey}_genes'].values, dtype=bool)
 
     if 'unspliced' in adata.layers.keys():
         n_counts = (adata.layers['unspliced'] > 0).sum(0)
@@ -245,8 +245,8 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=100, groupby=None, match_
         min_counts = min(50, np.percentile(n_counts, 50)) if min_counts is None else min_counts
         tmp_filter &= np.ravel(n_counts > min_counts)
 
-    if vkey + '_r2' in adata.var.keys():
-        r2 = adata.var[vkey + '_r2']
+    if f'{vkey}_r2' in adata.var.keys():
+        r2 = adata.var[f'{vkey}_r2']
         min_r2 = .1 if min_r2 is None else min_r2  # np.percentile(r2[r2 > 0], 50)
         tmp_filter &= (r2 > min_r2)
 
@@ -306,14 +306,14 @@ def rank_velocity_genes(data, vkey='velocity', n_genes=100, groupby=None, match_
     if key not in adata.uns.keys(): adata.uns[key] = {}
 
     adata.uns[key] = \
-        {'names': np.rec.fromarrays([n for n in rankings_gene_names], dtype=[(str(rn), 'U50') for rn in groups]),
-         'scores': np.rec.fromarrays([n.round(2) for n in rankings_gene_scores], dtype=[(str(rn), 'float32') for rn in groups]),
+        {'names': np.rec.fromarrays([n for n in rankings_gene_names], dtype=[(f"{rn}", 'U50') for rn in groups]),
+         'scores': np.rec.fromarrays([n.round(2) for n in rankings_gene_scores], dtype=[(f"{rn}", 'float32') for rn in groups]),
          'params': {'groupby': groupby, 'reference': 'rest', 'method': 't-test_overestim_var', 'use_raw': True}}
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
         'added \n'
-        '    \'' + key + '\', sorted scores by group ids (adata.uns) \n'
+        f'    \'{key}\', sorted scores by group ids (adata.uns) \n'
         '    \'spearmans_score\', spearmans correlation scores (adata.var)')
 
     return adata if copy else None

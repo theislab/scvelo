@@ -873,8 +873,8 @@ class BaseDynamics:
                              vmin=None, vmax=None, horizontal_ylabels=True, show_path=False, show=True,
                              return_color_scale=False, **kwargs):
         from ..plotting.utils import update_axes
-        x_var = eval('self.' + xkey)
-        y_var = eval('self.' + ykey)
+        x_var = eval(f'self.{xkey}')
+        y_var = eval(f'self.{ykey}')
 
         x = np.linspace(-x_sight, x_sight, num=num) * x_var + x_var
         y = np.linspace(-y_sight, y_sight, num=num) * y_var + y_var
@@ -893,8 +893,8 @@ class BaseDynamics:
         if vmin is None: vmin = np.min(log_zp)
         if vmax is None: vmax = np.max(log_zp)
 
-        x_label = r'$'+'\\'+xkey+'$' if xkey in ['gamma', 'alpha', 'beta'] else xkey
-        y_label = r'$' + '\\' + ykey + '$' if ykey in ['gamma', 'alpha', 'beta'] else ykey
+        x_label = r'$' + f'\\{xkey}$' if xkey in ['gamma', 'alpha', 'beta'] else xkey
+        y_label = r'$' + f'\\{ykey}$' if ykey in ['gamma', 'alpha', 'beta'] else ykey
 
         if ax is None:
             figsize = rcParams['figure.figsize'] if figsize is None else figsize
@@ -926,7 +926,7 @@ class BaseDynamics:
     def plot_profile_hist(self, xkey='gamma', sight=.5, num=20, dpi=None, fontsize=12, ax=None, figsize=None,
                           color_map='RdGy', vmin=None, vmax=None, show=True):
         from ..plotting.utils import update_axes
-        x_var = eval('self.' + xkey)
+        x_var = eval(f'self.{xkey}')
 
         x = np.linspace(-sight, sight, num=num) * x_var + x_var
 
@@ -943,7 +943,7 @@ class BaseDynamics:
         if vmin is None: vmin = np.min(log_zp)
         if vmax is None: vmax = np.max(log_zp)
 
-        x_label = r'$'+'\\'+xkey+'$' if xkey in ['gamma', 'alpha', 'beta'] else xkey
+        x_label = r'$' + f'\\{xkey}$' if xkey in ['gamma', 'alpha', 'beta'] else xkey
         figsize = rcParams['figure.figsize'] if figsize is None else figsize
         if ax is None:
             fig = pl.figure(figsize=(figsize[0], figsize[1]), dpi=dpi)
@@ -1186,28 +1186,28 @@ def get_reads(adata, key='fit', scaled=True, use_raw=False):
     if 'Ms' not in adata.layers.keys(): use_raw = True
     s = make_dense(adata.layers['spliced' if use_raw else 'Ms'])
     u = make_dense(adata.layers['unspliced'if use_raw else 'Mu'])
-    if scaled: u /= adata.var[key + '_scaling'].values
+    if scaled: u /= adata.var[f'{key}_scaling'].values
     return u, s
 
 
 def get_vars(adata, scaled=True, key='fit'):
-    alpha = adata.var[key + '_alpha'].values if key + '_alpha' in adata.var.keys() else 1
-    beta = adata.var[key + '_beta'].values if key + '_beta' in adata.var.keys() else 1
-    gamma = adata.var[key + '_gamma'].values
-    scaling = adata.var[key + '_scaling'].values if key + '_scaling' in adata.var.keys() else 1
-    t_ = adata.var[key + '_t_'].values
+    alpha = adata.var[f'{key}_alpha'].values if f'{key}_alpha' in adata.var.keys() else 1
+    beta = adata.var[f'{key}_beta'].values if f'{key}_beta' in adata.var.keys() else 1
+    gamma = adata.var[f'{key}_gamma'].values
+    scaling = adata.var[f'{key}_scaling'].values if f'{key}_scaling' in adata.var.keys() else 1
+    t_ = adata.var[f'{key}_t_'].values
     return alpha, beta * scaling if scaled else beta, gamma, scaling, t_
 
 
 def get_latent_vars(adata, scaled=True, key='fit'):
-    scaling = adata.var[key + '_scaling'].values
-    std_u = adata.var[key + '_std_u'].values
-    std_s = adata.var[key + '_std_s'].values
-    u0 = adata.var[key + '_u0'].values
-    s0 = adata.var[key + '_s0'].values
-    pval_steady = adata.var[key + '_pval_steady'].values if key + '_pval_steady' in adata.var.keys() else None
-    steady_u = adata.var[key + '_steady_u'].values if key + '_steady_u' in adata.var.keys() else None
-    steady_s = adata.var[key + '_steady_s'].values if key + '_steady_s' in adata.var.keys() else None
+    scaling = adata.var[f'{key}_scaling'].values
+    std_u = adata.var[f'{key}_std_u'].values
+    std_s = adata.var[f'{key}_std_s'].values
+    u0 = adata.var[f'{key}_u0'].values
+    s0 = adata.var[f'{key}_s0'].values
+    pval_steady = adata.var[f'{key}_pval_steady'].values if f'{key}_pval_steady' in adata.var.keys() else None
+    steady_u = adata.var[f'{key}_steady_u'].values if f'{key}_steady_u' in adata.var.keys() else None
+    steady_s = adata.var[f'{key}_steady_s'].values if f'{key}_steady_s' in adata.var.keys() else None
     return std_u, std_s, u0 / scaling if scaled else u0, s0, pval_steady, steady_u, steady_s
 
 

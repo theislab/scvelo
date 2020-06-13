@@ -36,10 +36,10 @@ def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False
         cell_subset = np.array(
             [label in clusters_list for label in adata.obs["clusters"]]
         )
-        X_emb = adata[cell_subset].obsm["X_" + basis][:, :n_comps]
+        X_emb = adata[cell_subset].obsm[f"X_{basis}"][:, :n_comps]
     else:
         cell_subset = None
-        X_emb = adata.obsm["X_" + basis][:, :n_comps]
+        X_emb = adata.obsm[f"X_{basis}"][:, :n_comps]
 
     n_obs, n_dim = X_emb.shape
 
@@ -225,7 +225,7 @@ def velocity_pseudotime(
         vpt = VPT(data, n_dcs=n_dcs, **kwargs)
 
         if use_velocity_graph:
-            T = data.uns[vkey + "_graph"] - data.uns[vkey + "_graph_neg"]
+            T = data.uns[f"{vkey}_graph"] - data.uns[f"{vkey}_graph_neg"]
             vpt._connectivities = T + T.T
 
         vpt.compute_transitions()
@@ -250,18 +250,18 @@ def velocity_pseudotime(
         else:
             vpt.indices = vpt.pseudotime.argsort()
 
-        if vkey + "_pseudotime" not in adata.obs.keys():
+        if f"{vkey}_pseudotime" not in adata.obs.keys():
             pseudotime = np.empty(adata.n_obs)
             pseudotime[:] = np.nan
         else:
-            pseudotime = adata.obs[vkey + "_pseudotime"].values
+            pseudotime = adata.obs[f"{vkey}_pseudotime"].values
         pseudotime[cell_subset] = vpt.pseudotime
-        adata.obs[vkey + "_pseudotime"] = np.array(pseudotime, dtype=np.float64)
+        adata.obs[f"{vkey}_pseudotime"] = np.array(pseudotime, dtype=np.float64)
 
         if save_diffmap:
             diffmap = np.empty(shape=(adata.n_obs, n_dcs))
             diffmap[:] = np.nan
             diffmap[cell_subset] = vpt.eigen_basis
-            adata.obsm["X_diffmap_" + groups] = diffmap
+            adata.obsm[f"X_diffmap_{groups}"] = diffmap
 
     return vpt if return_model else None

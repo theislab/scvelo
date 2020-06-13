@@ -48,25 +48,25 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
     n_neighbors:`int` (default: None)
         Number of nearest neighbors to consider around each cell.
     vgraph: csr matrix or `None` (default: `None`)
-        Sparse velocity graph representation to use instead of adata.uns[vkey + '_graph'].
+        Sparse velocity graph representation to use instead of adata.uns[f'{vkey}_graph'].
 
     Returns
     -------
     Returns sparse matrix with transition probabilities.
     """
-    if vkey+'_graph' not in adata.uns:
+    if f'{vkey}_graph' not in adata.uns:
         raise ValueError('You need to run `tl.velocity_graph` first to compute cosine correlations.')
 
     graph_neg = None
     if vgraph is not None:
         graph = vgraph.copy()
     else:
-        if hasattr(adata, 'obsp') and vkey + '_graph' in adata.obsp.keys():
-            graph = csr_matrix(adata.obsp[vkey + '_graph']).copy()
-            if vkey + '_graph_neg' in adata.obsp.keys(): graph_neg = adata.obsp[vkey + '_graph_neg']
+        if hasattr(adata, 'obsp') and f'{vkey}_graph' in adata.obsp.keys():
+            graph = csr_matrix(adata.obsp[f'{vkey}_graph']).copy()
+            if f'{vkey}_graph_neg' in adata.obsp.keys(): graph_neg = adata.obsp[f'{vkey}_graph_neg']
         else:
-            graph = csr_matrix(adata.uns[vkey + '_graph']).copy()
-            if vkey + '_graph_neg' in adata.uns.keys(): graph_neg = adata.uns[vkey + '_graph_neg']
+            graph = csr_matrix(adata.uns[f'{vkey}_graph']).copy()
+            if f'{vkey}_graph_neg' in adata.uns.keys(): graph_neg = adata.uns[f'{vkey}_graph_neg']
 
     if basis_constraint is not None and f'X_{basis_constraint}' in adata.obsm.keys():
         from sklearn.neighbors import NearestNeighbors
@@ -83,7 +83,7 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
 
     T = np.expm1(graph * scale)  # equivalent to np.exp(graph.A * scale) - 1
     if graph_neg is not None:
-        graph_neg = adata.uns[vkey + '_graph_neg']
+        graph_neg = adata.uns[f'{vkey}_graph_neg']
         if use_negative_cosines:
             T -= np.expm1(-graph_neg * scale)
         else:
@@ -108,8 +108,8 @@ def transition_matrix(adata, vkey='velocity', basis=None, backward=False, self_t
     if backward: T = T.T
     T = normalize(T)
 
-    if 'X_' + str(basis) in adata.obsm.keys():
-        dists_emb = (T > 0).multiply(squareform(pdist(adata.obsm['X_' + basis])))
+    if f'X_{basis}' in adata.obsm.keys():
+        dists_emb = (T > 0).multiply(squareform(pdist(adata.obsm[f'X_{basis}'])))
         scale_diffusion *= dists_emb.data.mean()
         
         diffusion_kernel = dists_emb.copy()

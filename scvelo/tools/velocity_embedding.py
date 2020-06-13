@@ -71,11 +71,11 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
     adata = data.copy() if copy else data
 
     if basis is None:
-        keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
+        keys = [key for key in ['pca', 'tsne', 'umap'] if f'X_{key}' in adata.obsm.keys()]
         if len(keys) > 0: basis = 'pca' if direct_pca_projection else keys[-1]
         else: raise ValueError('No basis specified')
 
-    if 'X_' + basis not in adata.obsm_keys():
+    if f'X_{basis}' not in adata.obsm_keys():
         raise ValueError('You need to compute the embedding first.')
 
     if direct_pca_projection and 'pca' in basis:
@@ -88,8 +88,8 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
 
     V = np.array(adata.layers[vkey])
     vgenes = np.ones(adata.n_vars, dtype=bool)
-    if vkey + '_genes' in adata.var.keys():
-        vgenes &= np.array(adata.var[vkey + '_genes'], dtype=bool)
+    if f'{vkey}_genes' in adata.var.keys():
+        vgenes &= np.array(adata.var[f'{vkey}_genes'], dtype=bool)
     vgenes &= ~ np.isnan(V.sum(0))
     V = V[:, vgenes]
 
@@ -97,11 +97,11 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
         PCs = adata.varm['PCs'] if all_comps else adata.varm['PCs'][:, :2]
         PCs = PCs[vgenes]
 
-        X_emb = adata.obsm['X_' + basis]
+        X_emb = adata.obsm[f'X_{basis}']
         V_emb = (V - V.mean(0)).dot(PCs)
 
     else:
-        X_emb = adata.obsm['X_' + basis] if all_comps else adata.obsm['X_' + basis][:, :2]
+        X_emb = adata.obsm[f'X_{basis}'] if all_comps else adata.obsm[f'X_{basis}'][:, :2]
         V_emb = np.zeros(X_emb.shape)
 
         T = transition_matrix(adata, vkey=vkey, scale=scale, self_transitions=self_transitions,
@@ -131,18 +131,18 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
 
     if autoscale: V_emb /= (3 * quiver_autoscale(X_emb, V_emb))
 
-    if vkey + '_params' in adata.uns.keys():
-        adata.uns[vkey + '_params']['embeddings'] = [] if 'embeddings' not in adata.uns[vkey + '_params'] \
-            else list(adata.uns[vkey + '_params']['embeddings'])
-        adata.uns[vkey + '_params']['embeddings'].extend([basis])
+    if f'{vkey}_params' in adata.uns.keys():
+        adata.uns[f'{vkey}_params']['embeddings'] = [] if 'embeddings' not in adata.uns[f'{vkey}_params'] \
+            else list(adata.uns[f'{vkey}_params']['embeddings'])
+        adata.uns[f'{vkey}_params']['embeddings'].extend([basis])
 
-    vkey += '_' + basis
+    vkey += f'_{basis}'
     adata.obsm[vkey] = V_emb
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
         'added\n'
-        '    \'' + vkey + '\', embedded velocity vectors (adata.obsm)')
+        f'    \'{vkey}\', embedded velocity vectors (adata.obsm)')
 
     return adata if copy else None
 

@@ -92,8 +92,8 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
     layers = [layer for layer in layers if layer in adata.layers.keys() or layer == 'X']
 
     fits = list(adata.layers.keys()) if fits == 'all' else fits
-    fits = [fit for fit in fits if fit == 'dynamics' or fit + '_gamma' in adata.var.keys()] + ['dynamics']
-    stochastic_fits = [fit for fit in fits if 'variance_' + fit in adata.layers.keys()]
+    fits = [fit for fit in fits if fit == 'dynamics' or f'{fit}_gamma' in adata.var.keys()] + ['dynamics']
+    stochastic_fits = [fit for fit in fits if f'variance_{fit}' in adata.layers.keys()]
 
     nplts = (1 + len(layers) + (mode == 'stochastic') * 2)
     ncols = 1 if ncols is None else ncols
@@ -141,8 +141,8 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
             fit = stochastic_fits[0]
 
             ax = pl.subplot(gs[v * nplts + len(layers) + 1])
-            offset = _adata.var[fit + '_offset'] if fit + '_offset' in adata.var.keys() else 0
-            beta = _adata.var[fit + '_beta'] if fit + '_beta' in adata.var.keys() else 1
+            offset = _adata.var[f'{fit}_offset'] if f'{fit}_offset' in adata.var.keys() else 0
+            beta = _adata.var[f'{fit}_beta'] if f'{fit}_beta' in adata.var.keys() else 1
             x = np.array(2 * (ss - s**2) - s)
             y = np.array(2 * (us - u * s) + u + 2 * s * offset / beta)
             kwargs['xlabel'] = r'2 $\Sigma_s - \langle s \rangle$'
@@ -152,9 +152,9 @@ def velocity(adata, var_names=None, basis=None, vkey='velocity', mode=None, fits
 
             xnew = np.linspace(np.min(x), np.max(x) * 1.02)
             for fit in stochastic_fits:
-                gamma = _adata.var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
-                beta = _adata.var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
-                offset2 = _adata.var[fit + '_offset2'].values if fit + '_offset2' in adata.var.keys() else 0
+                gamma = _adata.var[f'{fit}_gamma'].values if f'{fit}_gamma' in adata.var.keys() else 1
+                beta = _adata.var[f'{fit}_beta'].values if f'{fit}_beta' in adata.var.keys() else 1
+                offset2 = _adata.var[f'{fit}_offset2'].values if f'{fit}_offset2' in adata.var.keys() else 0
 
                 pl.plot(xnew, gamma / beta * xnew + offset2 / beta, c='k', linestyle='--')
 

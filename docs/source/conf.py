@@ -21,7 +21,7 @@ import matplotlib  # noqa
 matplotlib.use('agg')
 
 HERE = Path(__file__).parent
-sys.path.insert(0, str(HERE.parent.parent))
+sys.path.insert(0, f"{HERE.parent.parent}")
 sys.path.insert(0, os.path.abspath('_ext'))
 import scvelo
 
@@ -220,8 +220,8 @@ def modurl(qualname):
             else github_url_read if 'read' in qualname else github_url_scanpy
         path = '/'.join(module.__file__.split('/')[-2:])
     start, end = get_linenos(obj)
-    fragment = '#L{}-L{}'.format(start, end) if start and end else ''
-    return '{}/{}{}'.format(github_url, path, fragment)
+    fragment = f'#L{start}-L{end}' if start and end else ''
+    return f'{github_url}/{path}{fragment}'
 
 
 def api_image(qualname: str) -> Optional[str]:
@@ -250,7 +250,7 @@ def format_annotation(annotation):
     if getattr(annotation, '__origin__', None) is Mapping:
         return ':class:`~typing.Mapping`'
     if inspect.isclass(annotation):
-        full_name = '{}.{}'.format(annotation.__module__, annotation.__qualname__)
+        full_name = f'{annotation.__module__}.{annotation.__qualname__}'
         override = qualname_overrides.get(full_name)
         if override is not None:
             return f':py:class:`~{qualname_overrides[full_name]}`'

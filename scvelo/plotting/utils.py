@@ -107,9 +107,9 @@ def get_kwargs(kwargs, dict_new_kwargs):
 
 
 def check_basis(adata, basis):
-    if basis in adata.obsm.keys() and 'X_' + basis not in adata.obsm.keys():
-        adata.obsm['X_' + basis] = adata.obsm[basis]
-        logg.info('Renamed', '\'' + basis + '\'', 'to convention', '\'X_' + basis + '\' (adata.obsm).')
+    if basis in adata.obsm.keys() and f'X_{basis}' not in adata.obsm.keys():
+        adata.obsm[f'X_{basis}'] = adata.obsm[basis]
+        logg.info('Renamed', f'\'{basis}\'', 'to convention', f'\'X_{basis}\' (adata.obsm).')
 
 
 def get_basis(adata, basis):
@@ -226,7 +226,7 @@ def gets_vals_from_color_gradients(adata, color=None, **scatter_kwargs):
     vals = np.clip(pd_colgrad.values, 0, None)
     names = color_gradients.names if hasattr(color_gradients, 'names') else pd_colgrad.columns
 
-    adata.obs[color] = pd.Categorical([str(names[i]) for i in np.argmax(vals, 1)], categories=names)
+    adata.obs[color] = pd.Categorical([f"{names[i]}" for i in np.argmax(vals, 1)], categories=names)
     set_colors_for_categorical_obs(adata, color, palette)
 
     return vals, names, color, scatter_kwargs
@@ -241,7 +241,7 @@ def default_basis(adata, **kwargs):
         adata.obsm['X_embedding'] = np.stack([x, y]).T
         if 'velocity_embedding' in adata.obsm.keys(): del adata.obsm['velocity_embedding']
     else:
-        keys = [key for key in ['pca', 'tsne', 'umap'] if 'X_' + key in adata.obsm.keys()]
+        keys = [key for key in ['pca', 'tsne', 'umap'] if f'X_{key}' in adata.obsm.keys()]
     if not keys:
         raise ValueError('No basis specified.')
     return keys[-1] if len(keys) > 0 else None
@@ -374,8 +374,8 @@ def set_label(xlabel, ylabel, fontsize=None, basis=None, ax=None, **kwargs):
     if basis is not None:
         component_name = ('DC' if 'diffmap' in basis else 'tSNE' if basis == 'tsne' else 'UMAP' if basis == 'umap'
         else 'PC' if basis == 'pca' else basis.replace('draw_graph_', '').upper() if 'draw_graph' in basis else basis)
-        ax.set_xlabel(component_name + '1', fontsize=fontsize, **kwargs)
-        ax.set_ylabel(component_name + '2', fontsize=fontsize, **kwargs)
+        ax.set_xlabel(f'{component_name}1', fontsize=fontsize, **kwargs)
+        ax.set_ylabel(f'{component_name}2', fontsize=fontsize, **kwargs)
     if isinstance(xlabel, str):
         ax.set_xlabel(xlabel.replace('_', ' '), fontsize=fontsize, **kwargs)
     if isinstance(ylabel, str):
@@ -389,7 +389,7 @@ def set_title(title, layer=None, color=None, fontsize=None, ax=None):
     if isinstance(title, str):
         title = title.replace('_', ' ')
     elif isinstance(layer, str) and isinstance(color, str):
-        title = (color + ' ' + layer).replace('_', ' ')
+        title = f"{color}  {layer}".replace('_', ' ')
     elif isinstance(color, str):
         title = color.replace('_', ' ')
     else:
@@ -415,7 +415,7 @@ def set_legend(adata, ax, value_to_plot, legend_loc, scatter_array, legend_fontw
         legend_fontoutline = 1
     obs_vals = adata.obs[value_to_plot]
     obs_vals.cat.categories = obs_vals.cat.categories.astype(str)
-    color_keys = adata.uns[value_to_plot + '_colors']
+    color_keys = adata.uns[f'{value_to_plot}_colors']
     if isinstance(color_keys, dict):
         color_keys = np.array([color_keys[c] for c in obs_vals.cat.categories])
     valid_cats = np.where(obs_vals.value_counts()[obs_vals.cat.categories] > 0)[0]
@@ -473,12 +473,12 @@ def get_colors(adata, c):
     if is_color_like(c):
         return c
     else:
-        if c + '_colors' not in adata.uns.keys():
+        if f'{c}_colors' not in adata.uns.keys():
             palette = default_palette(None)
             palette = adjust_palette(palette, length=len(adata.obs[c].cat.categories))
-            adata.uns[c + '_colors'] = palette[:len(adata.obs[c].cat.categories)].by_key()['color']
-        cluster_ix = adata.obs[c].values if isinstance(adata.uns[c + '_colors'], dict) else adata.obs[c].cat.codes.values
-        return np.array([adata.uns[c + '_colors'][cluster_ix[i]]
+            adata.uns[f'{c}_colors'] = palette[:len(adata.obs[c].cat.categories)].by_key()['color']
+        cluster_ix = adata.obs[c].values if isinstance(adata.uns[f'{c}_colors'], dict) else adata.obs[c].cat.codes.values
+        return np.array([adata.uns[f'{c}_colors'][cluster_ix[i]]
                          if cluster_ix[i] != -1 else 'lightgrey' for i in range(adata.n_obs)])
 
 
@@ -538,7 +538,7 @@ additional_colors = {
 # adapted from scanpy
 def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
     """
-    Sets the adata.uns[value_to_plot + '_colors'] according to the given palette or default colors.
+    Sets the adata.uns[f'{value_to_plot}_colors'] according to the given palette or default colors.
     Parameters
     ----------
     adata
@@ -629,7 +629,7 @@ def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
                 cc = palette()
                 colors_list = [to_hex(next(cc)['color']) for x in range(len(categories))]
         if valid:
-            adata.uns[value_to_plot + '_colors'] = colors_list
+            adata.uns[f'{value_to_plot}_colors'] = colors_list
     else:
         # No valid palette exists or was given
         valid = False
@@ -653,7 +653,7 @@ def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
                     "'grey' color will be used for all categories."
                 )
 
-        adata.uns[value_to_plot + '_colors'] = palette[:length]
+        adata.uns[f'{value_to_plot}_colors'] = palette[:length]
 
 
 def set_colorbar(smp, ax, orientation='vertical', labelsize=None):
@@ -744,7 +744,7 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
                     save = save.replace(try_ext, '')
                     break
         # append it
-        writekey = (writekey + '_' if writekey is not None and len(writekey) > 0 else '') + save
+        writekey = f'{writekey}_{save}' if writekey is not None and len(writekey) > 0 else save
         save = True
     save = settings.autosave if save is None else save
     show = settings.autoshow if show is None else show
@@ -798,7 +798,7 @@ def plot_linfit(x, y, add_linfit=True, add_legend=True, color=None, linewidth=No
     xnew = np.linspace(np.min(x), np.max(x) * 1.02)
     ax.plot(xnew, offset + xnew * slope, linewidth=linewidth, color=color)
     if add_legend:
-        ax.text(.05, .95, r'$\rho = $' + str(np.round(pearsonr(x, y)[0], 2)), ha='left', va='top', fontsize=fontsize,
+        ax.text(.05, .95, r'$\rho = $' + f"{np.round(pearsonr(x, y)[0], 2)}", ha='left', va='top', fontsize=fontsize,
                 transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
 
 
@@ -824,24 +824,24 @@ def plot_polyfit(x, y, add_polyfit=True, add_legend=True, color=None, linewidth=
 
     if add_legend:
         R2 = np.sum((f(x) - np.mean(y)) ** 2) / np.sum((y - np.mean(y)) ** 2)
-        ax.text(.05, .95, r'$R^2 = $' + str(np.round(R2, 2)), ha='left', va='top', fontsize=fontsize,
+        ax.text(.05, .95, r'$R^2 = $' + f"{np.round(R2, 2)}", ha='left', va='top', fontsize=fontsize,
                 transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
 
 
 def plot_vlines(adata, basis, vkey, xkey, linewidth=1, linecolor=None, ax=None):
     if ax is None: ax = pl.gca()
     xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
-    fits = [fit for fit in make_unique_list(vkey) if all(['velocity' in fit, fit + '_gamma' in adata.var.keys()])]
+    fits = [fit for fit in make_unique_list(vkey) if all(['velocity' in fit, f'{fit}_gamma' in adata.var.keys()])]
     linecolor, lines = to_list(linecolor), []
     for i, fit in enumerate(fits):
-        linestyle = '--' if 'variance_' + fit in adata.layers.keys() else '-'
-        gamma = adata[:, basis].var[fit + '_gamma'].values if fit + '_gamma' in adata.var.keys() else 1
-        beta = adata[:, basis].var[fit + '_beta'].values if fit + '_beta' in adata.var.keys() else 1
-        offset = adata[:, basis].var[fit + '_offset'].values if fit + '_offset' in adata.var.keys() else 0
+        linestyle = '--' if f'variance_{fit}' in adata.layers.keys() else '-'
+        gamma = adata[:, basis].var[f'{fit}_gamma'].values if f'{fit}_gamma' in adata.var.keys() else 1
+        beta = adata[:, basis].var[f'{fit}_beta'].values if f'{fit}_beta' in adata.var.keys() else 1
+        offset = adata[:, basis].var[f'{fit}_offset'].values if f'{fit}_offset' in adata.var.keys() else 0
         line, = ax.plot(xnew, gamma / beta * xnew + offset / beta, linestyle=linestyle, linewidth=linewidth,
                         c=linecolor[i] if len(linecolor) > i and linecolor[i] is not None else 'k' if i == 0 else None)
         lines.append(line)
-        fits[i] = 'steady-state ratio ({})'.format(fit) if len(fits) > 1 else 'steady-state ratio'
+        fits[i] = f'steady-state ratio ({fit})' if len(fits) > 1 else 'steady-state ratio'
     return lines, fits
 
 
@@ -943,11 +943,11 @@ def plot_rug(x, height=.03, color=None, ax=None, **kwargs):
 
 
 def velocity_embedding_changed(adata, basis, vkey):
-    if 'X_' + basis not in adata.obsm.keys(): changed = False
+    if f'X_{basis}' not in adata.obsm.keys(): changed = False
     else:
-        changed = vkey + '_' + basis not in adata.obsm_keys()
-        if vkey + '_params' in adata.uns.keys():
-            sett = adata.uns[vkey + '_params']
+        changed = f"{vkey}_{basis}" not in adata.obsm_keys()
+        if f'{vkey}_params' in adata.uns.keys():
+            sett = adata.uns[f'{vkey}_params']
             changed |= 'embeddings' not in sett or basis not in sett['embeddings']
     return changed
 
@@ -1123,8 +1123,8 @@ def hist(arrays, alpha=.5, bins=50, color=None, colors=None, labels=None, hist=N
             if '(' in pd:  # used passed parameters
                 args, pd = eval(pd[pd.rfind('('):]), pd[:pd.rfind('(')]
             else:  # fit parameters
-                args = eval('stats.' + pd + '.fit(x_vals)')
-            pd_vals = eval('stats.' + pd + '.pdf(lnspc, *args)')
+                args = eval(f'stats.{pd}.fit(x_vals)')
+            pd_vals = eval(f'stats.{pd}.pdf(lnspc, *args)')
             logg.info('Fitting', pd, np.round(args, 4), '.')
             fit = ax.plot(lnspc, pd_vals, label=pd, color=colors[i])
             fits.extend(fit)
@@ -1191,7 +1191,7 @@ def fraction_timeseries(adata, xkey='clusters', tkey='dpt_pseudotime', bins=30, 
     if title is not None:
         pl.title(title, fontsize=fontsize)
     pl.xlabel(tkey if xlabel is None else xlabel, fontsize=fontsize)
-    pl.ylabel(xkey + ' fractions' if ylabel is None else ylabel, fontsize=fontsize)
+    pl.ylabel(f'{xkey} fractions' if ylabel is None else ylabel, fontsize=fontsize)
     pl.xlim(adata.obs[tkey].values.min(), adata.obs[tkey].values.max())
     pl.ylim(0, 1)
 

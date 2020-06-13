@@ -89,7 +89,7 @@ class PAGA_tree(PAGA):
             raise ImportError(
                 "To run paga, you need to install `pip install python-igraph`"
             )
-        vkey = self.vkey + "_graph"
+        vkey = f"{self.vkey}_graph"
         if vkey not in self._adata.uns:
             raise ValueError(
                 "The passed AnnData needs to have an `uns` annotation "
@@ -270,7 +270,7 @@ def paga(
     paga.compute_connectivities()
     adata.uns["paga"]["connectivities"] = paga.connectivities
     adata.uns["paga"]["connectivities_tree"] = paga.connectivities_tree
-    adata.uns[groups + "_sizes"] = np.array(paga.ns)
+    adata.uns[f"{groups}_sizes"] = np.array(paga.ns)
 
     paga.compute_transitions()
     adata.uns["paga"]["transitions_confidence"] = paga.transitions_confidence

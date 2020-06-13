@@ -39,4 +39,4 @@ def pseudotime(adata, gene_list, ckey='velocity', reverse=False):
         ax.yaxis.set_major_locator(MaxNLocator(nbins=3))
 
         pl.ylabel(gene)
-        pl.title('Colored by ' + ckey)
+        pl.title(f'Colored by {ckey}')
