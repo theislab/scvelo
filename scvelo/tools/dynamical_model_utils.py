@@ -873,8 +873,8 @@ class BaseDynamics:
                              vmin=None, vmax=None, horizontal_ylabels=True, show_path=False, show=True,
                              return_color_scale=False, **kwargs):
         from ..plotting.utils import update_axes
-        x_var = eval(f'self.{xkey}')
-        y_var = eval(f'self.{ykey}')
+        x_var = getattr(self, xkey)
+        y_var = getattr(self, ykey)
 
         x = np.linspace(-x_sight, x_sight, num=num) * x_var + x_var
         y = np.linspace(-y_sight, y_sight, num=num) * y_var + y_var
@@ -926,7 +926,7 @@ class BaseDynamics:
     def plot_profile_hist(self, xkey='gamma', sight=.5, num=20, dpi=None, fontsize=12, ax=None, figsize=None,
                           color_map='RdGy', vmin=None, vmax=None, show=True):
         from ..plotting.utils import update_axes
-        x_var = eval(f'self.{xkey}')
+        x_var = getattr(self, xkey)
 
         x = np.linspace(-sight, sight, num=num) * x_var + x_var
 

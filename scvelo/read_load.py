@@ -340,7 +340,7 @@ def get_df(
                 )
 
             s_key = s_key[-1]
-            df = eval(f"data.{s_key}")[keys if len(keys) > 1 else key]
+            df = getattr(data, s_key)[keys if len(keys) > 1 else key]
             if key_add is not None:
                 df = df[key_add]
             if index is None:
