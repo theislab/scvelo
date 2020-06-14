@@ -1,4 +1,4 @@
-|PyPI| |PyPIDownloads| |travis|
+|PyPI| |PyPIDownloads| |travis| |black|
 
 scVelo - RNA velocity generalized through dynamical modeling
 ============================================================
@@ -54,6 +54,9 @@ Your help to improve scVelo is highly appreciated.
 
 .. |travis| image:: https://travis-ci.org/theislab/scvelo.svg?branch=master
    :target: https://travis-ci.org/theislab/scvelo
+
+.. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/psf/black
 
 .. _scanpy: https://scanpy.readthedocs.io
 
