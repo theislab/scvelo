@@ -257,9 +257,9 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
         write_to_obs(adata, 'end_points', ends, cell_subset)
 
         n_roots, n_ends = eigvecs_roots.shape[1], eigvecs_ends.shape[1]
-        groups_str = ' (' + groups + ')' if isinstance(groups, str) else ''
-        roots_str = str(n_roots) + ' region' + ('s' if n_roots > 1 else '')
-        ends_str = str(n_ends) + ' region' + ('s' if n_ends > 1 else '')
+        groups_str = f' ({groups})' if isinstance(groups, str) else ''
+        roots_str = f"{n_roots} {'regions' if n_roots > 1 else 'region'}"
+        ends_str = f"{n_ends} {'regions' if n_ends > 1 else 'region'}"
 
         logg.info('    identified', roots_str, 'of root cells and', ends_str, 'of end points', groups_str)
 

@@ -74,7 +74,7 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph=None, n_neigh
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
+        X_emb = adata.obsm[f'X_{basis}'][:, get_components(components, basis)]
         node_size = (kwargs['size'] if 'size' in kwargs else default_size(adata)) / 4
         edges = draw_networkx_edges(DiGraph(T) if arrows else Graph(T), X_emb, node_size=node_size,
                                     width=edge_width, edge_color=edge_color, arrowsize=arrowsize, ax=ax)

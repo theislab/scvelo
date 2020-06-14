@@ -11,12 +11,12 @@ from ..preprocessing.neighbors import compute_connectivities_umap
 def round(k, dec=2, as_str=None):
     if isinstance(k, (list, tuple, np.record, np.ndarray)):
         return [round(ki, dec) for ki in k]
-    if 'e' in str(k):
-        k_str = str(k).split('e')
-        result = str(np.round(np.float(k_str[0]), dec)) + '1e' + k_str[1]
-        return str(result) if as_str else np.float(result)
+    if 'e' in f"{k}":
+        k_str = f"{k}".split('e')
+        result = f"{np.round(np.float(k_str[0]), dec)}1e{k_str[1]}"
+        return f"{result}" if as_str else np.float(result)
     result = np.round(np.float(k), dec)
-    return str(result) if as_str else result
+    return f"{result}" if as_str else result
 
 
 def mean(x, axis=0):
@@ -236,7 +236,7 @@ def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):
         map_groups = map_coarse
 
     if key_added is None:
-        key_added = key + '_coarse'
+        key_added = f'{key}_coarse'
 
     from pandas.api.types import CategoricalDtype
     adata.obs[key_added] = adata.obs[key].map(map_groups).astype(CategoricalDtype())
@@ -246,8 +246,8 @@ def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):
     # map_colors is passed
     if map_colors is not None:
         old_colors = None
-        if key + '_colors' in adata.uns:
-            old_colors = adata.uns[key + '_colors']
+        if f'{key}_colors' in adata.uns:
+            old_colors = adata.uns[f'{key}_colors']
         new_colors = []
         for group in adata.obs[key_added].cat.categories:
             if group in map_colors:
@@ -255,12 +255,12 @@ def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):
             elif group in old_categories and old_colors is not None:
                 new_colors.append(old_colors[old_categories.get_loc(group)])
             else:
-                raise ValueError('You didn\'t specify a color for {}.'.format(group))
-        adata.uns[key_added + '_colors'] = new_colors
+                raise ValueError(f'You didn\'t specify a color for {group}.')
+        adata.uns[f'{key_added}_colors'] = new_colors
 
     # map_colors is not passed
-    elif key + '_colors' in adata.uns:
-        old_colors = adata.uns[key + '_colors']
+    elif f'{key}_colors' in adata.uns:
+        old_colors = adata.uns[f'{key}_colors']
         inverse_map_groups = {g: [] for g in new_categories}
         for old_group in old_categories:
             inverse_map_groups[map_groups[old_group]].append(old_group)
@@ -270,7 +270,7 @@ def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):
             old_group = adata.obs[key][adata.obs[key].isin(
                 inverse_map_groups[group])].value_counts().index[0]
             new_colors.append(old_colors[old_categories.get_loc(old_group)])
-        adata.uns[key_added + '_colors'] = new_colors
+        adata.uns[f'{key_added}_colors'] = new_colors
 
 
 def cutoff_small_velocities(adata, vkey='velocity', key_added='velocity_cut', frac_of_max=.5, use_raw=False):

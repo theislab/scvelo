@@ -726,7 +726,7 @@ class DynamicsRecovery(BaseDynamics):
 def read_pars(adata, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling'], key='fit'):
     pars = []
     for name in pars_names:
-        pkey = key + '_' + name
+        pkey = f'{key}_{name}'
         par = adata.var[pkey].values if pkey in adata.var.keys() else np.zeros(adata.n_vars) * np.nan
         pars.append(par)
     return pars
@@ -734,7 +734,7 @@ def read_pars(adata, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling'], key
 
 def write_pars(adata, pars, pars_names=['alpha', 'beta', 'gamma', 't_', 'scaling'], add_key='fit'):
     for i, name in enumerate(pars_names):
-        adata.var[add_key + '_' + name] = pars[i]
+        adata.var[f'{add_key}_{name}'] = pars[i]
 
 
 def recover_dynamics_deprecated(data, var_names='velocity_genes', max_iter=10, learning_rate=None, t_max=None, use_raw=False,
@@ -811,7 +811,7 @@ def recover_dynamics_deprecated(data, var_names='velocity_genes', max_iter=10, l
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n' 
-              '    \'' + add_key + '_pars' + '\', fitted parameters for splicing dynamics (adata.var)')
+              f'    \'{add_key}_pars\', fitted parameters for splicing dynamics (adata.var)')
 
     if plot_results:  # Plot Parameter Stats
         n_rows, n_cols = len(var_names[:4]), 6

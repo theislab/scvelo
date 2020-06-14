@@ -72,7 +72,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
     basis = to_valid_bases_list(adata, basis)
 
     # get multikey (with more than one element)
-    multikeys = eval('[' + ','.join(mkeys) + ']')
+    multikeys = eval(f"[{','.join(mkeys)}]")
     if is_list_of_list(groups): multikeys.append(groups)
     key_lengths = np.array([len(key) if is_list(key) else 1 for key in multikeys])
     multikey = multikeys[np.where(key_lengths > 1)[0][0]] if np.max(key_lengths) > 1 else None
@@ -144,7 +144,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
 
         elif color_gradients is not None and color_gradients is not False:
             vals, names, color, scatter_kwargs = gets_vals_from_color_gradients(adata, color, **scatter_kwargs)
-            c_colors = {cat: col for (cat, col) in zip(adata.obs[color].cat.categories, adata.uns[color + '_colors'])}
+            c_colors = {cat: col for (cat, col) in zip(adata.obs[color].cat.categories, adata.uns[f'{color}_colors'])}
             mkwargs.pop('color')
             ax = scatter(adata, color='grey', ax=ax, **mkwargs, **get_kwargs(scatter_kwargs, {'alpha': 0.05}))  # background
             ax = scatter(adata, color=color, ax=ax, **mkwargs, **get_kwargs(scatter_kwargs, {'s': 0}))  # set legend
@@ -217,7 +217,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
 
             # embedding: set x and y to embedding coordinates
             elif is_embedding:
-                X_emb = adata.obsm['X_' + basis][:, get_components(components, basis)]
+                X_emb = adata.obsm[f'X_{basis}'][:, get_components(components, basis)]
                 x, y = X_emb[:, 0], X_emb[:, 1]
                 z = X_emb[:, 2] if projection == '3d' and X_emb.shape[1] > 2 else None
 
@@ -341,7 +341,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                 ax = scatter(adata, x=x, y=y, basis=basis, layer=layer, color='lightgrey', ax=ax, **scatter_kwargs)
                 if groups is not None and len(groups) == 1:
                     if isinstance(groups[0], str) and groups[0] in adata.var.keys() and basis in adata.var_names:
-                        groups = str(adata[:, basis].var[groups[0]][0])
+                        groups = f"{adata[:, basis].var[groups[0]][0]}"
                 idx = groups_to_bool(adata, groups, color)
                 if idx is not None:
                     if np.sum(idx) > 0:  # if any group to be highlighted
@@ -381,7 +381,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
                     if outline_width is None: outline_width = (.6, .3)
                 if isinstance(add_outline, str):
                     if add_outline in adata.var.keys() and basis in adata.var_names:
-                        add_outline = str(adata[:, basis].var[add_outline][0])
+                        add_outline = f"{adata[:, basis].var[add_outline][0]}"
                 idx = groups_to_bool(adata, add_outline, color)
                 if idx is not None and np.sum(idx) > 0:  # if anything to be outlined
                     zorder = 2 if zorder is None else zorder + 2
@@ -425,7 +425,7 @@ def scatter(adata=None, basis=None, x=None, y=None, vkey=None, color=None, use_r
             if add_text:
                 if add_text_pos is None:
                     add_text_pos = [.05, .95]
-                ax.text(add_text_pos[0], add_text_pos[1], str(add_text), ha='left', va='top', fontsize=fontsize,
+                ax.text(add_text_pos[0], add_text_pos[1], f"{add_text}", ha='left', va='top', fontsize=fontsize,
                         transform=ax.transAxes, bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.2))
 
             set_label(xlabel, ylabel, fontsize, basis, ax=ax)
@@ -547,11 +547,10 @@ def draw_graph(adata, layout=None, **kwargs):
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
     if layout is None:
-        layout = str(adata.uns['draw_graph']['params']['layout'])
-    basis = 'draw_graph_' + layout
-    if 'X_' + basis not in adata.obsm_keys():
-        raise ValueError('Did not find {} in adata.obs. Did you compute layout {}?'
-                         .format('draw_graph_' + layout, layout))
+        layout = f"{adata.uns['draw_graph']['params']['layout']}"
+    basis = f"draw_graph_{layout}"
+    if f'X_{basis}' not in adata.obsm_keys():
+        raise ValueError(f"Did not find draw_graph_{layout} in adata.obs. Did you compute layout {layout}?")
     return scatter(adata, basis=basis, **kwargs)
 
 

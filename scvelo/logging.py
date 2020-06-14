@@ -94,7 +94,7 @@ def msg(
             settings._previous_time = get_time()
         if time:
             elapsed = get_passed_time()
-            msg = msg + ("({})".format(_sec_to_str(elapsed)),)
+            msg = msg + (f"({_sec_to_str(elapsed)})",)
             _write_log(*msg, end=end)
         if memory:
             _write_log(get_memory_usage(), end=end)
@@ -119,7 +119,7 @@ def _write_log(*msg, end="\n"):
     else:
         out = ""
         for s in msg:
-            out += str(s) + " "
+            out += f"{s} "
         with open(logfile, "a") as f:
             f.write(out + end)
 
@@ -178,7 +178,7 @@ def get_latest_pypi_version():
 
     try:  # needs to work offline as well
         result = check_output(["pip", "search", "scvelo"])
-        return str(result.split()[-1])[2:-1]
+        return f"{result.split()[-1]}"[2:-1]
     except CalledProcessError:
         return "0.0.0"
 
@@ -242,7 +242,7 @@ def switch_verbosity(mode="on", module=None):
     elif module == "scanpy":
         from scanpy import settings
     else:
-        exec("from " + module + " import settings")
+        exec(f"from {module} import settings")
 
     if mode == "on" and hasattr(settings, "tmp_verbosity"):
         settings.verbosity = settings.tmp_verbosity
@@ -271,7 +271,7 @@ class ProgressReporter:
         ):
             self.timestamp = get_time()
             percent = int(self.count * 100 / self.total)
-            stdout.write("\r" + "... %d%%" % percent)
+            stdout.write(f"\r... {percent}%")
             stdout.flush()
 
     def finish(self):

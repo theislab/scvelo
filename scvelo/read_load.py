@@ -19,7 +19,7 @@ def load(filename, backup_url=None, header="infer", index_col="infer", **kwargs)
     pandas_ext = {"csv", "txt", "tsv"}
 
     if not os.path.exists(filename) and backup_url is None:
-        raise FileNotFoundError("Did not find file {}.".format(filename))
+        raise FileNotFoundError(f"Did not find file {filename}.")
 
     elif not os.path.exists(filename):
         d = os.path.dirname(filename)
@@ -50,10 +50,8 @@ def load(filename, backup_url=None, header="infer", index_col="infer", **kwargs)
 
     else:
         raise ValueError(
-            "'{}' does not end on a valid extension.\n"
-            "Please, provide one of the available extensions.\n{}\n".format(
-                filename, numpy_ext | pandas_ext
-            )
+            f"'{filename}' does not end on a valid extension.\n"
+            f"Please, provide one of the available extensions.\n{numpy_ext | pandas_ext}\n"
         )
 
 
@@ -334,15 +332,15 @@ def get_df(
             s_key = [s for (s, d_key) in zip(s_keys, d_keys) if key in d_key]
             if len(s_key) == 0:
                 raise ValueError(
-                    "'" + key + "' not found in any of " + ", ".join(s_keys) + "."
+                    f"'{key}' not found in any of {', '.join(s_keys)}."
                 )
             if len(s_key) > 1:
                 logg.warn(
-                    "'" + key + "' found multiple times in " + ", ".join(s_key) + "."
+                    f"'{key}' found multiple times in {', '.join(s_key)}."
                 )
 
             s_key = s_key[-1]
-            df = eval("data." + s_key)[keys if len(keys) > 1 else key]
+            df = getattr(data, s_key)[keys if len(keys) > 1 else key]
             if key_add is not None:
                 df = df[key_add]
             if index is None:

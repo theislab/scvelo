@@ -81,8 +81,8 @@ def neighbors(
     if use_rep is None:
         use_rep = "X" if adata.n_vars < 50 or n_pcs == 0 else "X_pca"
         n_pcs = None if use_rep == "X" else n_pcs
-    elif use_rep not in adata.obsm.keys() and "X_" + use_rep in adata.obsm.keys():
-        use_rep = "X_" + use_rep
+    elif use_rep not in adata.obsm.keys() and f"X_{use_rep}" in adata.obsm.keys():
+        use_rep = f"X_{use_rep}"
 
     if use_rep == "X_pca":
         if (

@@ -43,10 +43,10 @@ def summary(adata, basis='umap', color='clusters', n_top_genes=12, var_names=Non
 
         if top_genes is not None:
             for gene in top_genes:
-                text = r'$L=$ ' + str(np.round(adata[:, gene].var.fit_likelihood[0], 2))
+                text = r'$L=$ ' + f"{np.round(adata[:, gene].var.fit_likelihood[0], 2)}"
                 pl.scatter(adata, basis=gene, add_text=text, **kwargs)
 
         if var_names is not None:
             for gene in var_names:
-                text = r'$L=$ ' + str(np.round(adata[:, gene].var.fit_likelihood[0], 2))
+                text = r'$L=$ ' + f"{np.round(adata[:, gene].var.fit_likelihood[0], 2)}"
                 pl.scatter(adata, basis=gene, add_text=text, **kwargs)
