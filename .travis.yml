@@ -7,9 +7,11 @@ python:
 install:
   - pip install docutils
   - pip install -e .
+  - pip install black>=19.10b0
 
 env: MPLBACKEND=Agg
 
 script:
+  - black --line-length=100 --check .
   - pytest
   - rst2html.py --halt=2 README.rst >/dev/null
