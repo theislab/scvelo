@@ -33,9 +33,7 @@ def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False
     from rpy2.robjects.packages import importr
 
     if clusters_list is not None:
-        cell_subset = np.array(
-            [label in clusters_list for label in adata.obs["clusters"]]
-        )
+        cell_subset = np.array([label in clusters_list for label in adata.obs["clusters"]])
         X_emb = adata[cell_subset].obsm[f"X_{basis}"][:, :n_comps]
     else:
         cell_subset = None
@@ -90,20 +88,12 @@ class VPT(DPT):
         if density_normalize:
             q = np.asarray(T.sum(axis=0))
             q += q == 0
-            Q = (
-                spdiags(1.0 / q, 0, T.shape[0], T.shape[0])
-                if issparse(T)
-                else np.diag(1.0 / q)
-            )
+            Q = spdiags(1.0 / q, 0, T.shape[0], T.shape[0]) if issparse(T) else np.diag(1.0 / q)
             K = Q.dot(T).dot(Q)
         else:
             K = T
         z = np.sqrt(np.asarray(K.sum(axis=0)))
-        Z = (
-            spdiags(1.0 / z, 0, K.shape[0], K.shape[0])
-            if issparse(K)
-            else np.diag(1.0 / z)
-        )
+        Z = spdiags(1.0 / z, 0, K.shape[0], K.shape[0]) if issparse(K) else np.diag(1.0 / z)
         self._transitions_sym = Z.dot(K).dot(Z)
 
     def compute_eigen(self, n_comps=10, sym=None, sort="decrease"):
@@ -135,7 +125,7 @@ def velocity_pseudotime(
     use_velocity_graph=True,
     save_diffmap=None,
     return_model=None,
-    **kwargs
+    **kwargs,
 ):
     """Computes a pseudotime based on the velocity graph.
 
@@ -200,18 +190,14 @@ def velocity_pseudotime(
         if not np.isnan(end0) and not isinstance(end0, str):
             end_key = "end_points"
 
-    groupby = (
-        "cell_fate" if groupby is None and "cell_fate" in adata.obs.keys() else groupby
-    )
+    groupby = "cell_fate" if groupby is None and "cell_fate" in adata.obs.keys() else groupby
     if groupby is not None:
         logg.warn(
             "Only set groupby, when you have evident distinct clusters/lineages,"
             " each with an own root and end point."
         )
     categories = (
-        adata.obs[groupby].cat.categories
-        if groupby is not None and groups is None
-        else [None]
+        adata.obs[groupby].cat.categories if groupby is not None and groups is None else [None]
     )
     for cat in categories:
         groups = cat if cat is not None else groups

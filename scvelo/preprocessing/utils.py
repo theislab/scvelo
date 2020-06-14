@@ -48,8 +48,7 @@ def show_proportions(adata, layers=["spliced", "unspliced", "ambigious"], use_ra
     counts_per_cell_sum += counts_per_cell_sum == 0
 
     mean_abundances = [
-        np.mean(counts_per_cell / counts_per_cell_sum)
-        for counts_per_cell in counts_layers
+        np.mean(counts_per_cell / counts_per_cell_sum) for counts_per_cell in counts_layers
     ]
 
     print(f"Abundance of {layers_keys}: {np.round(mean_abundances, 2)}")
@@ -68,9 +67,7 @@ def verify_dtypes(adata):
                 "as these do not comply with permissible anndata datatypes."
             )
         except:
-            logg.warn(
-                "The data might be corrupted. Please verify all annotation datatypes."
-            )
+            logg.warn("The data might be corrupted. Please verify all annotation datatypes.")
             adata.uns = uns
 
 
@@ -126,8 +123,7 @@ def set_initial_size(adata, layers={"spliced", "unspliced"}):
     layers = [
         layer
         for layer in layers
-        if layer in adata.layers.keys()
-        and f"initial_size_{layer}" not in adata.obs.keys()
+        if layer in adata.layers.keys() and f"initial_size_{layer}" not in adata.obs.keys()
     ]
     for layer in layers:
         adata.obs[f"initial_size_{layer}"] = get_size(adata, layer)
@@ -160,25 +156,9 @@ def get_initial_size(adata, layer=None, by_total_size=None):
 
 
 def filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
-    counts = (
-        sum_obs(X)
-        if (min_counts is not None or max_counts is not None)
-        else sum_obs(X > 0)
-    )
-    lb = (
-        min_counts
-        if min_counts is not None
-        else min_cells
-        if min_cells is not None
-        else -np.inf
-    )
-    ub = (
-        max_counts
-        if max_counts is not None
-        else max_cells
-        if max_cells is not None
-        else np.inf
-    )
+    counts = sum_obs(X) if (min_counts is not None or max_counts is not None) else sum_obs(X > 0)
+    lb = min_counts if min_counts is not None else min_cells if min_cells is not None else -np.inf
+    ub = max_counts if max_counts is not None else max_cells if max_cells is not None else np.inf
     return (lb <= counts) & (counts <= ub), counts
 
 
@@ -240,9 +220,7 @@ def filter_genes(
     # set initial cell sizes before filtering
     set_initial_size(adata)
 
-    layers = [
-        layer for layer in ["spliced", "unspliced"] if layer in adata.layers.keys()
-    ]
+    layers = [layer for layer in ["spliced", "unspliced"] if layer in adata.layers.keys()]
     if min_shared_counts is not None or min_shared_cells is not None:
         layers.extend(["shared"])
 
@@ -274,9 +252,7 @@ def filter_genes(
             X = adata.layers[layer]
         else:  # shared counts/cells
             Xs, Xu = adata.layers["spliced"], adata.layers["unspliced"]
-            nonzeros = (
-                (Xs > 0).multiply(Xu > 0) if issparse(Xs) else (Xs > 0) * (Xu > 0)
-            )
+            nonzeros = (Xs > 0).multiply(Xu > 0) if issparse(Xs) else (Xs > 0) * (Xu > 0)
             X = (
                 nonzeros.multiply(Xs) + nonzeros.multiply(Xu)
                 if issparse(nonzeros)
@@ -370,8 +346,7 @@ def filter_genes_dispersion(
     set_initial_size(adata)
     if n_top_genes is not None and adata.n_vars < n_top_genes:
         logg.info(
-            "Skip filtering by dispersion since number "
-            "of variables are less than `n_top_genes`"
+            "Skip filtering by dispersion since number " "of variables are less than `n_top_genes`"
         )
     else:
         if flavor == "svr":
@@ -412,26 +387,16 @@ def csr_vcorrcoef(X, y):
     mu_x = np.ravel(np.mean(X, axis=-1))
     mu_y = np.ravel(np.mean(y, axis=-1))
     nom = X.dot(y) - X.dot(np.repeat(mu_y, len(y))) - mu_x * np.sum(y - mu_y)
-    denom_x = (
-        np.ravel(np.sum(X.multiply(X), axis=-1))
-        if issparse(X)
-        else np.sum(X * X, axis=-1)
-    )
+    denom_x = np.ravel(np.sum(X.multiply(X), axis=-1)) if issparse(X) else np.sum(X * X, axis=-1)
     denom_x = denom_x - np.ravel(np.sum(X, axis=-1)) * mu_x + mu_x ** 2
-    denom_y = (
-        np.ravel(np.sum(y * y, axis=-1))
-        - (np.ravel(np.sum(y, axis=-1)) * mu_y)
-        + mu_y ** 2
-    )
+    denom_y = np.ravel(np.sum(y * y, axis=-1)) - (np.ravel(np.sum(y, axis=-1)) * mu_y) + mu_y ** 2
     return nom / np.sqrt(denom_x * denom_y)
 
 
 def counts_per_cell_quantile(X, max_proportion_per_cell=0.05, counts_per_cell=None):
     if counts_per_cell is None:
         counts_per_cell = sum_var(X)
-    gene_subset = np.all(
-        X <= counts_per_cell[:, None] * max_proportion_per_cell, axis=0
-    )
+    gene_subset = np.all(X <= counts_per_cell[:, None] * max_proportion_per_cell, axis=0)
     if issparse(X):
         gene_subset = gene_subset.A1
     return sum_var(X[:, gene_subset])
@@ -505,9 +470,7 @@ def normalize_per_cell(
         if counts_per_cell not in adata.obs.keys():
             set_initial_size(adata, layers)
         counts_per_cell = (
-            adata.obs[counts_per_cell].values
-            if counts_per_cell in adata.obs.keys()
-            else None
+            adata.obs[counts_per_cell].values if counts_per_cell in adata.obs.keys() else None
         )
 
     for layer in layers:
@@ -522,15 +485,11 @@ def normalize_per_cell(
                 if use_initial_size
                 else get_size(adata, layer)
             )
-            if max_proportion_per_cell is not None and (
-                0 < max_proportion_per_cell < 1
-            ):
+            if max_proportion_per_cell is not None and (0 < max_proportion_per_cell < 1):
                 counts = counts_per_cell_quantile(X, max_proportion_per_cell, counts)
             # equivalent to sc.pp.normalize_per_cell(X, counts_per_cell_after, counts)
             counts_after = (
-                np.median(counts)
-                if counts_per_cell_after is None
-                else counts_per_cell_after
+                np.median(counts) if counts_per_cell_after is None else counts_per_cell_after
             )
 
             counts_after += counts_after == 0
@@ -542,11 +501,7 @@ def normalize_per_cell(
             else:
                 X /= np.array(counts[:, None])
             modified_layers.append(layer)
-            if (
-                layer == "X"
-                and "gene_count_corr" not in adata.var.keys()
-                and X.shape[-1] > 3e3
-            ):
+            if layer == "X" and "gene_count_corr" not in adata.var.keys() and X.shape[-1] > 3e3:
                 try:
                     adata.var["gene_count_corr"] = np.round(
                         csr_vcorrcoef(X.T, np.ravel((X > 0).sum(1))), 4
@@ -580,11 +535,7 @@ def log1p(data, copy=False):
     Returns or updates `adata` depending on `copy`.
     """
     adata = data.copy() if copy else data
-    X = (
-        (adata.X.data if issparse(adata.X) else adata.X)
-        if isinstance(adata, AnnData)
-        else adata
-    )
+    X = (adata.X.data if issparse(adata.X) else adata.X) if isinstance(adata, AnnData) else adata
     np.log1p(X, out=X)
     return adata if copy else None
 
@@ -712,11 +663,7 @@ def recipe_velocity(
     from .moments import moments
 
     filter_and_normalize(
-        adata,
-        min_counts=min_counts,
-        min_counts_u=min_counts_u,
-        n_top_genes=n_top_genes,
-        log=log,
+        adata, min_counts=min_counts, min_counts_u=min_counts_u, n_top_genes=n_top_genes, log=log,
     )
     moments(adata, n_neighbors=n_neighbors, n_pcs=n_pcs)
     return adata if copy else None

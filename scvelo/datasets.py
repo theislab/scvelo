@@ -77,9 +77,7 @@ def dentategyrus(adjusted=True):
         adata.obs["clusters"] = load(
             "./data/DentateGyrus/DG_clusters.npy", url_louvain, allow_pickle=True
         )
-        adata.obsm["X_umap"] = load(
-            "./data/DentateGyrus/DG_umap.npy", url_umap, allow_pickle=True
-        )
+        adata.obsm["X_umap"] = load("./data/DentateGyrus/DG_umap.npy", url_umap, allow_pickle=True)
 
         adata.obs["clusters"] = pd.Categorical(adata.obs["clusters"])
 
@@ -174,12 +172,8 @@ def simulation(
     def simulate_dynamics(tau, alpha, beta, gamma, u0, s0, noise_model, noise_level):
         ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
         if noise_model == "normal":  # add noise
-            ut += np.random.normal(
-                scale=noise_level * np.percentile(ut, 99) / 10, size=len(ut)
-            )
-            st += np.random.normal(
-                scale=noise_level * np.percentile(st, 99) / 10, size=len(st)
-            )
+            ut += np.random.normal(scale=noise_level * np.percentile(ut, 99) / 10, size=len(ut))
+            st += np.random.normal(scale=noise_level * np.percentile(st, 99) / 10, size=len(st))
         ut, st = np.clip(ut, 0, None), np.clip(st, 0, None)
         return ut, st
 
@@ -217,18 +211,12 @@ def simulation(
 
     def cycle(array, n_vars=None):
         if isinstance(array, (np.ndarray, list, tuple)):
-            return (
-                array if n_vars is None else array * int(np.ceil(n_vars / len(array)))
-            )
+            return array if n_vars is None else array * int(np.ceil(n_vars / len(array)))
         else:
             return [array] if n_vars is None else [array] * n_vars
 
     # switching time point obtained as fraction of t_max rounded down
-    switches = (
-        cycle([0.4, 0.7, 1, 0.1], n_vars)
-        if switches is None
-        else cycle(switches, n_vars)
-    )
+    switches = cycle([0.4, 0.7, 1, 0.1], n_vars) if switches is None else cycle(switches, n_vars)
     t_ = np.array([np.max(t[t < t_i * t_max]) for t_i in switches])
 
     noise_level = cycle(noise_level, len(switches) if n_vars is None else n_vars)
@@ -249,14 +237,7 @@ def simulation(
             U[:, i], S[:, i] = simulate_gillespie(alpha_vec, beta, gamma)
         else:
             U[:, i], S[:, i] = simulate_dynamics(
-                tau,
-                alpha_vec,
-                beta_i,
-                gamma_i,
-                u0_vec,
-                s0_vec,
-                noise_model,
-                noise_level[i],
+                tau, alpha_vec, beta_i, gamma_i, u0_vec, s0_vec, noise_model, noise_level[i],
             )
 
     obs = {"true_t": t.round(2)}

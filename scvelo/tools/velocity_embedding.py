@@ -10,18 +10,38 @@ import warnings
 
 def quiver_autoscale(X_emb, V_emb):
     import matplotlib.pyplot as pl
+
     scale_factor = np.abs(X_emb).max()  # just so that it handles very large values
     fig, ax = pl.subplots()
-    Q = ax.quiver(X_emb[:, 0] / scale_factor, X_emb[:, 1] / scale_factor,
-                  V_emb[:, 0], V_emb[:, 1], angles='xy', scale_units='xy', scale=None)
+    Q = ax.quiver(
+        X_emb[:, 0] / scale_factor,
+        X_emb[:, 1] / scale_factor,
+        V_emb[:, 0],
+        V_emb[:, 1],
+        angles="xy",
+        scale_units="xy",
+        scale=None,
+    )
     Q._init()
     fig.clf()
     pl.close(fig)
     return Q.scale / scale_factor
 
 
-def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transitions=True, use_negative_cosines=True,
-                       direct_pca_projection=None, retain_scale=False, autoscale=True, all_comps=True, T=None, copy=False):
+def velocity_embedding(
+    data,
+    basis=None,
+    vkey="velocity",
+    scale=10,
+    self_transitions=True,
+    use_negative_cosines=True,
+    direct_pca_projection=None,
+    retain_scale=False,
+    autoscale=True,
+    all_comps=True,
+    T=None,
+    copy=False,
+):
     """Projects the single cell velocities into any embedding.
 
     Given normalized difference of the embedding positions
@@ -71,41 +91,53 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
     adata = data.copy() if copy else data
 
     if basis is None:
-        keys = [key for key in ['pca', 'tsne', 'umap'] if f'X_{key}' in adata.obsm.keys()]
-        if len(keys) > 0: basis = 'pca' if direct_pca_projection else keys[-1]
-        else: raise ValueError('No basis specified')
+        keys = [key for key in ["pca", "tsne", "umap"] if f"X_{key}" in adata.obsm.keys()]
+        if len(keys) > 0:
+            basis = "pca" if direct_pca_projection else keys[-1]
+        else:
+            raise ValueError("No basis specified")
 
-    if f'X_{basis}' not in adata.obsm_keys():
-        raise ValueError('You need to compute the embedding first.')
+    if f"X_{basis}" not in adata.obsm_keys():
+        raise ValueError("You need to compute the embedding first.")
 
-    if direct_pca_projection and 'pca' in basis:
+    if direct_pca_projection and "pca" in basis:
         logg.warn(
-            'Directly projecting velocities into PCA space is only for exploratory analysis on principal components.\n'
-            '         It does not reflect the actual velocity field from high dimensional gene expression space.\n'
-            '         To visualize velocities, consider using the velocity graph setting `direct_pca_projection=False`.\n')
+            "Directly projecting velocities into PCA space is only for exploratory analysis on principal components.\n"
+            "         It does not reflect the actual velocity field from high dimensional gene expression space.\n"
+            "         To visualize velocities, consider using the velocity graph setting `direct_pca_projection=False`.\n"
+        )
 
-    logg.info('computing velocity embedding', r=True)
+    logg.info("computing velocity embedding", r=True)
 
     V = np.array(adata.layers[vkey])
     vgenes = np.ones(adata.n_vars, dtype=bool)
-    if f'{vkey}_genes' in adata.var.keys():
-        vgenes &= np.array(adata.var[f'{vkey}_genes'], dtype=bool)
-    vgenes &= ~ np.isnan(V.sum(0))
+    if f"{vkey}_genes" in adata.var.keys():
+        vgenes &= np.array(adata.var[f"{vkey}_genes"], dtype=bool)
+    vgenes &= ~np.isnan(V.sum(0))
     V = V[:, vgenes]
 
-    if direct_pca_projection and 'pca' in basis:
-        PCs = adata.varm['PCs'] if all_comps else adata.varm['PCs'][:, :2]
+    if direct_pca_projection and "pca" in basis:
+        PCs = adata.varm["PCs"] if all_comps else adata.varm["PCs"][:, :2]
         PCs = PCs[vgenes]
 
-        X_emb = adata.obsm[f'X_{basis}']
+        X_emb = adata.obsm[f"X_{basis}"]
         V_emb = (V - V.mean(0)).dot(PCs)
 
     else:
-        X_emb = adata.obsm[f'X_{basis}'] if all_comps else adata.obsm[f'X_{basis}'][:, :2]
+        X_emb = adata.obsm[f"X_{basis}"] if all_comps else adata.obsm[f"X_{basis}"][:, :2]
         V_emb = np.zeros(X_emb.shape)
 
-        T = transition_matrix(adata, vkey=vkey, scale=scale, self_transitions=self_transitions,
-                              use_negative_cosines=use_negative_cosines) if T is None else T
+        T = (
+            transition_matrix(
+                adata,
+                vkey=vkey,
+                scale=scale,
+                self_transitions=self_transitions,
+                use_negative_cosines=use_negative_cosines,
+            )
+            if T is None
+            else T
+        )
         T.setdiag(0)
         T.eliminate_zeros()
 
@@ -117,32 +149,35 @@ def velocity_embedding(data, basis=None, vkey='velocity', scale=10, self_transit
             for i in range(adata.n_obs):
                 indices = T[i].indices
                 dX = X_emb[indices] - X_emb[i, None]  # shape (n_neighbors, 2)
-                if not retain_scale: dX /= norm(dX)[:, None]
+                if not retain_scale:
+                    dX /= norm(dX)[:, None]
                 dX[np.isnan(dX)] = 0  # zero diff in a steady-state
                 probs = TA[i, indices] if densify else T[i].data
                 V_emb[i] = probs.dot(dX) - probs.mean() * dX.sum(0)  # probs.sum() / len(indices)
 
         if retain_scale:
-            X = adata.layers['Ms'] if 'Ms' in adata.layers.keys() else adata.layers['spliced']
+            X = adata.layers["Ms"] if "Ms" in adata.layers.keys() else adata.layers["spliced"]
             delta = T.dot(X[:, vgenes]) - X[:, vgenes]
-            if issparse(delta): delta = delta.A
+            if issparse(delta):
+                delta = delta.A
             cos_proj = (V * delta).sum(1) / norm(delta)
             V_emb *= np.clip(cos_proj[:, None] * 10, 0, 1)
 
-    if autoscale: V_emb /= (3 * quiver_autoscale(X_emb, V_emb))
+    if autoscale:
+        V_emb /= 3 * quiver_autoscale(X_emb, V_emb)
 
-    if f'{vkey}_params' in adata.uns.keys():
-        adata.uns[f'{vkey}_params']['embeddings'] = [] if 'embeddings' not in adata.uns[f'{vkey}_params'] \
-            else list(adata.uns[f'{vkey}_params']['embeddings'])
-        adata.uns[f'{vkey}_params']['embeddings'].extend([basis])
+    if f"{vkey}_params" in adata.uns.keys():
+        adata.uns[f"{vkey}_params"]["embeddings"] = (
+            []
+            if "embeddings" not in adata.uns[f"{vkey}_params"]
+            else list(adata.uns[f"{vkey}_params"]["embeddings"])
+        )
+        adata.uns[f"{vkey}_params"]["embeddings"].extend([basis])
 
-    vkey += f'_{basis}'
+    vkey += f"_{basis}"
     adata.obsm[vkey] = V_emb
 
-    logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
-    logg.hint(
-        'added\n'
-        f'    \'{vkey}\', embedded velocity vectors (adata.obsm)')
+    logg.info("    finished", time=True, end=" " if settings.verbosity > 2 else "\n")
+    logg.hint("added\n" f"    '{vkey}', embedded velocity vectors (adata.obsm)")
 
     return adata if copy else None
-

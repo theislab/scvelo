@@ -126,9 +126,7 @@ def clean_obs_names(data, base="[AGTCBDHKMNRSVWY]", ID_length=12, copy=False):
     adata.obs_names = newIDs
     if len(prefixes[0]) > 0 and len(np.unique(prefixes)) > 1:
         adata.obs["sample_batch"] = (
-            pd.Categorical(prefixes)
-            if len(np.unique(prefixes)) < adata.n_obs
-            else prefixes
+            pd.Categorical(prefixes) if len(np.unique(prefixes)) < adata.n_obs else prefixes
         )
 
     adata.obs_names_make_unique()
@@ -152,15 +150,9 @@ def merge(adata, ldata, copy=True):
     adata.var_names_make_unique()
     ldata.var_names_make_unique()
 
-    if (
-        "spliced" in ldata.layers.keys()
-        and "initial_size_spliced" not in ldata.obs.keys()
-    ):
+    if "spliced" in ldata.layers.keys() and "initial_size_spliced" not in ldata.obs.keys():
         set_initial_size(ldata)
-    elif (
-        "spliced" in adata.layers.keys()
-        and "initial_size_spliced" not in adata.obs.keys()
-    ):
+    elif "spliced" in adata.layers.keys() and "initial_size_spliced" not in adata.obs.keys():
         set_initial_size(adata)
 
     common_obs = pd.unique(adata.obs_names.intersection(ldata.obs_names))
@@ -295,9 +287,7 @@ def get_df(
         keys, keys_split = (
             keys.split("*") if isinstance(keys, str) and "*" in keys else (keys, None)
         )
-        keys, key_add = (
-            keys.split("/") if isinstance(keys, str) and "/" in keys else (keys, None)
-        )
+        keys, key_add = keys.split("/") if isinstance(keys, str) and "/" in keys else (keys, None)
         keys = [keys] if isinstance(keys, str) else keys
         key = keys[0]
 
@@ -331,13 +321,9 @@ def get_df(
                 key = keys[0]
             s_key = [s for (s, d_key) in zip(s_keys, d_keys) if key in d_key]
             if len(s_key) == 0:
-                raise ValueError(
-                    f"'{key}' not found in any of {', '.join(s_keys)}."
-                )
+                raise ValueError(f"'{key}' not found in any of {', '.join(s_keys)}.")
             if len(s_key) > 1:
-                logg.warn(
-                    f"'{key}' found multiple times in {', '.join(s_key)}."
-                )
+                logg.warn(f"'{key}' found multiple times in {', '.join(s_key)}.")
 
             s_key = s_key[-1]
             df = getattr(data, s_key)[keys if len(keys) > 1 else key]
@@ -353,23 +339,14 @@ def get_df(
                 )
                 if index is None and s_key == "uns" and hasattr(df, "shape"):
                     key_cats = np.array(
-                        [
-                            key
-                            for key in data.obs.keys()
-                            if is_categorical_dtype(data.obs[key])
-                        ]
+                        [key for key in data.obs.keys() if is_categorical_dtype(data.obs[key])]
                     )
                     num_cats = [
-                        len(data.obs[key].cat.categories) == df.shape[0]
-                        for key in key_cats
+                        len(data.obs[key].cat.categories) == df.shape[0] for key in key_cats
                     ]
                     if np.sum(num_cats) == 1:
                         index = data.obs[key_cats[num_cats][0]].cat.categories
-                        if (
-                            columns is None
-                            and len(df.shape) > 1
-                            and df.shape[0] == df.shape[1]
-                        ):
+                        if columns is None and len(df.shape) > 1 and df.shape[0] == df.shape[1]:
                             columns = index
             elif isinstance(index, str) and index in data.obs.keys():
                 index = pd.Categorical(data.obs[index]).categories

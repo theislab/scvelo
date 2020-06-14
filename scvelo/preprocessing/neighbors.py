@@ -122,9 +122,7 @@ def neighbors(
         )
         neighbors.fit(X if n_pcs is None else X[:, :n_pcs])
         knn_distances, neighbors.knn_indices = neighbors.kneighbors()
-        knn_distances, neighbors.knn_indices = set_diagonal(
-            knn_distances, neighbors.knn_indices
-        )
+        knn_distances, neighbors.knn_indices = set_diagonal(knn_distances, neighbors.knn_indices)
         neighbors.distances, neighbors.connectivities = compute_connectivities_umap(
             neighbors.knn_indices, knn_distances, X.shape[0], n_neighbors=n_neighbors
         )
@@ -178,8 +176,7 @@ def neighbors(
 
     logg.info("    finished", time=True, end=" " if settings.verbosity > 2 else "\n")
     logg.hint(
-        "added \n"
-        "    'distances' and 'connectivities', weighted adjacency matrices (adata.obsp)"
+        "added \n" "    'distances' and 'connectivities', weighted adjacency matrices (adata.obsp)"
     )
 
     return adata if copy else None
@@ -208,9 +205,7 @@ class FastNeighbors:
         ns, dim = X.shape
 
         knn = hnswlib.Index(space=metric, dim=dim)
-        knn.init_index(
-            max_elements=ns, ef_construction=ef_c, M=M, random_seed=random_state
-        )
+        knn.init_index(max_elements=ns, ef_construction=ef_c, M=M, random_seed=random_state)
         knn.add_items(X)
         knn.set_ef(ef)
 
@@ -234,12 +229,9 @@ def set_diagonal(knn_distances, knn_indices, remove_diag=False):
         knn_distances = knn_distances[:, 1:]
         knn_indices = knn_indices[:, 1:].astype(int)
     elif knn_distances[0, 0] != 0:
-        knn_distances = np.hstack(
-            [np.zeros(len(knn_distances))[:, None], knn_distances]
-        )
+        knn_distances = np.hstack([np.zeros(len(knn_distances))[:, None], knn_distances])
         knn_indices = np.array(
-            np.hstack([np.arange(len(knn_indices), dtype=int)[:, None], knn_indices]),
-            dtype=int,
+            np.hstack([np.arange(len(knn_indices), dtype=int)[:, None], knn_indices]), dtype=int,
         )
     return knn_distances, knn_indices
 
@@ -247,9 +239,7 @@ def set_diagonal(knn_distances, knn_indices, remove_diag=False):
 def select_distances(dist, n_neighbors=None):
     D = dist.copy()
     n_counts = (D > 0).sum(1).A1 if issparse(D) else (D > 0).sum(1)
-    n_neighbors = (
-        n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
-    )
+    n_neighbors = n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
     rows = np.where(n_counts > n_neighbors)[0]
     cumsum_neighs = np.insert(n_counts.cumsum(), 0, 0)
     dat = D.data
@@ -265,9 +255,7 @@ def select_distances(dist, n_neighbors=None):
 def select_connectivities(connectivities, n_neighbors=None):
     C = connectivities.copy()
     n_counts = (C > 0).sum(1).A1 if issparse(C) else (C > 0).sum(1)
-    n_neighbors = (
-        n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
-    )
+    n_neighbors = n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
     rows = np.where(n_counts > n_neighbors)[0]
     cumsum_neighs = np.insert(n_counts.cumsum(), 0, 0)
     dat = C.data
@@ -283,7 +271,7 @@ def select_connectivities(connectivities, n_neighbors=None):
 def get_neighs(adata, mode="distances"):
     if hasattr(adata, "obsp") and mode in adata.obsp.keys():
         return adata.obsp[mode]
-    elif 'neighbors' in adata.uns.keys() and mode in adata.uns["neighbors"]:
+    elif "neighbors" in adata.uns.keys() and mode in adata.uns["neighbors"]:
         return adata.uns["neighbors"][mode]
     else:
         raise ValueError("The selected mode is not valid.")
@@ -330,9 +318,7 @@ def neighbors_to_be_recomputed(adata, n_neighbors=None):  # deprecated
         return n_neighs.max() * 0.1 > n_neighs.min()
 
 
-def get_connectivities(
-    adata, mode="connectivities", n_neighbors=None, recurse_neighbors=False
-):
+def get_connectivities(adata, mode="connectivities", n_neighbors=None, recurse_neighbors=False):
     if "neighbors" in adata.uns.keys():
         C = get_neighs(adata, mode)
         if n_neighbors is not None and n_neighbors < get_n_neighs(adata):
@@ -377,12 +363,7 @@ def get_csr_from_indices(knn_indices, knn_dists, n_obs, n_neighbors):
 
 
 def compute_connectivities_umap(
-    knn_indices,
-    knn_dists,
-    n_obs,
-    n_neighbors,
-    set_op_mix_ratio=1.0,
-    local_connectivity=1.0,
+    knn_indices, knn_dists, n_obs, n_neighbors, set_op_mix_ratio=1.0, local_connectivity=1.0,
 ):
     """\
     This is from umap.fuzzy_simplicial_set [McInnes18]_.

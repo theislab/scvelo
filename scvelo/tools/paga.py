@@ -86,9 +86,7 @@ class PAGA_tree(PAGA):
         try:
             import igraph
         except ImportError:
-            raise ImportError(
-                "To run paga, you need to install `pip install python-igraph`"
-            )
+            raise ImportError("To run paga, you need to install `pip install python-igraph`")
         vkey = f"{self.vkey}_graph"
         if vkey not in self._adata.uns:
             raise ValueError(
@@ -113,7 +111,7 @@ class PAGA_tree(PAGA):
             rows, cols, vals = [], [], []
             for i in range(vgraph.shape[0]):
                 indices = vgraph[i].indices
-                idx_bool = (vpt[i] < vpt[indices])
+                idx_bool = vpt[i] < vpt[indices]
                 idx_bool &= vpt_means[indices] > vpt_means[i] - 0.1
                 cols.extend(indices[idx_bool])
                 vals.extend(vgraph[i].data[idx_bool])
@@ -225,15 +223,11 @@ def paga(
         confidence in the transitions between partitions.
     """
     if "neighbors" not in adata.uns:
-        raise ValueError(
-            "You need to run `pp.neighbors` first to compute a neighborhood graph."
-        )
+        raise ValueError("You need to run `pp.neighbors` first to compute a neighborhood graph.")
     try:
         import igraph
     except ImportError:
-        raise ImportError(
-            "To run paga, you need to install `pip install python-igraph`"
-        )
+        raise ImportError("To run paga, you need to install `pip install python-igraph`")
 
     adata = adata.copy() if copy else adata
     strings_to_categoricals(adata)

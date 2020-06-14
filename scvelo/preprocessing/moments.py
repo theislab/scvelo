@@ -60,9 +60,7 @@ def moments(
     if n_neighbors is not None and n_neighbors > get_n_neighs(adata):
         if use_rep is None:
             use_rep = "X_pca"
-        neighbors(
-            adata, n_neighbors=n_neighbors, use_rep=use_rep, n_pcs=n_pcs, method=method
-        )
+        neighbors(adata, n_neighbors=n_neighbors, use_rep=use_rep, n_pcs=n_pcs, method=method)
     verify_neighbors(adata)
 
     if "spliced" not in adata.layers.keys() or "unspliced" not in adata.layers.keys():
@@ -74,9 +72,7 @@ def moments(
         )
 
         adata.layers["Ms"] = (
-            csr_matrix.dot(connectivities, csr_matrix(adata.layers["spliced"]))
-            .astype(np.float32)
-            .A
+            csr_matrix.dot(connectivities, csr_matrix(adata.layers["spliced"])).astype(np.float32).A
         )
         adata.layers["Mu"] = (
             csr_matrix.dot(connectivities, csr_matrix(adata.layers["unspliced"]))
@@ -85,13 +81,8 @@ def moments(
         )
         # if renormalize: normalize_per_cell(adata, layers={'Ms', 'Mu'}, enforce=True)
 
-        logg.info(
-            "    finished", time=True, end=" " if settings.verbosity > 2 else "\n"
-        )
-        logg.hint(
-            "added \n"
-            "    'Ms' and 'Mu', moments of un/spliced abundances (adata.layers)"
-        )
+        logg.info("    finished", time=True, end=" " if settings.verbosity > 2 else "\n")
+        logg.hint("added \n" "    'Ms' and 'Mu', moments of un/spliced abundances (adata.layers)")
     return adata if copy else None
 
 
@@ -109,9 +100,7 @@ def second_order_moments(adata, adjusted=False):
     Mus: Second order moments for spliced with unspliced abundances
     """
     if "neighbors" not in adata.uns:
-        raise ValueError(
-            "You need to run `pp.neighbors` first to compute a neighborhood graph."
-        )
+        raise ValueError("You need to run `pp.neighbors` first to compute a neighborhood graph.")
 
     connectivities = get_connectivities(adata)
     s, u = csr_matrix(adata.layers["spliced"]), csr_matrix(adata.layers["unspliced"])
@@ -138,9 +127,7 @@ def second_order_moments_u(adata):
     Muu: Second order moments for unspliced abundances
     """
     if "neighbors" not in adata.uns:
-        raise ValueError(
-            "You need to run `pp.neighbors` first to compute a neighborhood graph."
-        )
+        raise ValueError("You need to run `pp.neighbors` first to compute a neighborhood graph.")
 
     connectivities = get_connectivities(adata)
     u = csr_matrix(adata.layers["unspliced"])
@@ -150,9 +137,7 @@ def second_order_moments_u(adata):
 
 
 def magic_impute(adata, knn=5, t=2, verbose=0, **kwargs):
-    logg.info(
-        "To be used carefully. Magic has not yet been tested for this application."
-    )
+    logg.info("To be used carefully. Magic has not yet been tested for this application.")
     import magic
 
     magic_operator = magic.MAGIC(verbose=verbose, knn=knn, t=t, **kwargs)
@@ -160,9 +145,7 @@ def magic_impute(adata, knn=5, t=2, verbose=0, **kwargs):
     adata.layers["Mu"] = magic_operator.transform(adata.layers["unspliced"])
 
 
-def get_moments(
-    adata, layer=None, second_order=None, centered=True, mode="connectivities"
-):
+def get_moments(adata, layer=None, second_order=None, centered=True, mode="connectivities"):
     """Computes moments for a specified layer.
 
     First and second order moments.
@@ -185,17 +168,9 @@ def get_moments(
     Mx: first or second order moments
     """
     if "neighbors" not in adata.uns:
-        raise ValueError(
-            "You need to run `pp.neighbors` first to compute a neighborhood graph."
-        )
+        raise ValueError("You need to run `pp.neighbors` first to compute a neighborhood graph.")
     connectivities = get_connectivities(adata, mode=mode)
-    X = (
-        adata.X
-        if layer is None
-        else adata.layers[layer]
-        if isinstance(layer, str)
-        else layer
-    )
+    X = adata.X if layer is None else adata.layers[layer] if isinstance(layer, str) else layer
     X = (
         csr_matrix(X)
         if isinstance(layer, str) and layer in {"spliced", "unspliced"}

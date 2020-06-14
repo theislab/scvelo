@@ -28,20 +28,46 @@ def vals_to_csr(vals, rows, cols, shape, split_negative=False):
 
 
 class VelocityGraph:
-    def __init__(self, adata, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, sqrt_transform=None,
-                 n_recurse_neighbors=None, random_neighbors_at_max=None, gene_subset=None, approx=None, report=False,
-                 compute_uncertainties=None, mode_neighbors='distances'):
+    def __init__(
+        self,
+        adata,
+        vkey="velocity",
+        xkey="Ms",
+        tkey=None,
+        basis=None,
+        n_neighbors=None,
+        sqrt_transform=None,
+        n_recurse_neighbors=None,
+        random_neighbors_at_max=None,
+        gene_subset=None,
+        approx=None,
+        report=False,
+        compute_uncertainties=None,
+        mode_neighbors="distances",
+    ):
 
         subset = np.ones(adata.n_vars, bool)
         if gene_subset is not None:
-            subset &= adata.var_names.isin(gene_subset) if len(adata.var_names.isin(gene_subset)) > 0 else gene_subset
-        elif f'{vkey}_genes' in adata.var.keys():
-            subset &= np.array(adata.var[f'{vkey}_genes'].values, dtype=bool)
+            subset &= (
+                adata.var_names.isin(gene_subset)
+                if len(adata.var_names.isin(gene_subset)) > 0
+                else gene_subset
+            )
+        elif f"{vkey}_genes" in adata.var.keys():
+            subset &= np.array(adata.var[f"{vkey}_genes"].values, dtype=bool)
 
-        xkey = xkey if xkey in adata.layers.keys() else 'spliced'
+        xkey = xkey if xkey in adata.layers.keys() else "spliced"
 
-        X = np.array(adata.layers[xkey].A[:, subset] if issparse(adata.layers[xkey]) else adata.layers[xkey][:, subset])
-        V = np.array(adata.layers[vkey].A[:, subset] if issparse(adata.layers[vkey]) else adata.layers[vkey][:, subset])
+        X = np.array(
+            adata.layers[xkey].A[:, subset]
+            if issparse(adata.layers[xkey])
+            else adata.layers[xkey][:, subset]
+        )
+        V = np.array(
+            adata.layers[vkey].A[:, subset]
+            if issparse(adata.layers[vkey])
+            else adata.layers[vkey][:, subset]
+        )
 
         nans = np.isnan(np.sum(V, axis=0))
         if np.any(nans):
@@ -49,7 +75,7 @@ class VelocityGraph:
             V = V[:, ~nans]
 
         if approx is True and X.shape[1] > 100:
-            X_pca, PCs, _, _ = pca(X,  n_comps=30, svd_solver='arpack', return_info=True)
+            X_pca, PCs, _, _ = pca(X, n_comps=30, svd_solver="arpack", return_info=True)
             self.X = np.array(X_pca, dtype=np.float32)
             self.V = (V - V.mean(0)).dot(PCs.T)
             self.V[V.sum(1) == 0] = 0
@@ -59,43 +85,60 @@ class VelocityGraph:
         self.V_raw = np.array(self.V)
 
         self.sqrt_transform = sqrt_transform
-        if self.sqrt_transform is None and f'{vkey}_params' in adata.uns.keys():
-            self.sqrt_transform = adata.uns[f'{vkey}_params']['mode'] == 'stochastic'
-        if self.sqrt_transform: self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
+        if self.sqrt_transform is None and f"{vkey}_params" in adata.uns.keys():
+            self.sqrt_transform = adata.uns[f"{vkey}_params"]["mode"] == "stochastic"
+        if self.sqrt_transform:
+            self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
         self.V -= np.nanmean(self.V, axis=1)[:, None]
 
         self.n_recurse_neighbors = n_recurse_neighbors
         if self.n_recurse_neighbors is None:
-            if n_neighbors is not None or mode_neighbors == 'connectivities':
+            if n_neighbors is not None or mode_neighbors == "connectivities":
                 self.n_recurse_neighbors = 1
             else:
                 self.n_recurse_neighbors = 2
 
-        if 'neighbors' not in adata.uns.keys(): neighbors(adata)
-        if np.min((get_neighs(adata, 'distances') > 0).sum(1).A1) == 0:
-            raise ValueError('Your neighbor graph seems to be corrupted. Consider recomputing via pp.neighbors.')
+        if "neighbors" not in adata.uns.keys():
+            neighbors(adata)
+        if np.min((get_neighs(adata, "distances") > 0).sum(1).A1) == 0:
+            raise ValueError(
+                "Your neighbor graph seems to be corrupted. Consider recomputing via pp.neighbors."
+            )
         if n_neighbors is None or n_neighbors <= get_n_neighs(adata):
-            self.indices = get_indices(dist=get_neighs(adata, 'distances'), n_neighbors=n_neighbors,
-                                       mode_neighbors=mode_neighbors)[0]
+            self.indices = get_indices(
+                dist=get_neighs(adata, "distances"),
+                n_neighbors=n_neighbors,
+                mode_neighbors=mode_neighbors,
+            )[0]
         else:
-            if basis is None: basis = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()][-1]
-            elif f'X_{basis}' in adata.obsm.keys(): basis = f'X_{basis}'
+            if basis is None:
+                basis = [key for key in ["X_pca", "X_tsne", "X_umap"] if key in adata.obsm.keys()][
+                    -1
+                ]
+            elif f"X_{basis}" in adata.obsm.keys():
+                basis = f"X_{basis}"
 
             if isinstance(approx, str) and approx in adata.obsm.keys():
                 from sklearn.neighbors import NearestNeighbors
+
                 neighs = NearestNeighbors(n_neighbors=n_neighbors + 1)
                 neighs.fit(adata.obsm[approx])
-                self.indices = neighs.kneighbors_graph(mode='connectivity').indices.reshape((-1, n_neighbors + 1))
+                self.indices = neighs.kneighbors_graph(mode="connectivity").indices.reshape(
+                    (-1, n_neighbors + 1)
+                )
             else:
                 from .. import Neighbors
+
                 neighs = Neighbors(adata)
                 neighs.compute_neighbors(n_neighbors=n_neighbors, use_rep=basis, n_pcs=10)
                 self.indices = get_indices(dist=neighs.distances, mode_neighbors=mode_neighbors)[0]
 
         self.max_neighs = random_neighbors_at_max
 
-        self.graph = adata.uns[f'{vkey}_graph'] if f'{vkey}_graph' in adata.uns.keys() else []
-        self.graph_neg = adata.uns[f'{vkey}_graph_neg'] if f'{vkey}_graph_neg' in adata.uns.keys() else []
+        self.graph = adata.uns[f"{vkey}_graph"] if f"{vkey}_graph" in adata.uns.keys() else []
+        self.graph_neg = (
+            adata.uns[f"{vkey}_graph_neg"] if f"{vkey}_graph_neg" in adata.uns.keys() else []
+        )
 
         if tkey in adata.obs.keys():
             self.t0 = adata.obs[tkey].copy()
@@ -103,7 +146,8 @@ class VelocityGraph:
             self.t0.cat.categories = np.arange(init, len(self.t0.cat.categories))
             self.t1 = self.t0.copy()
             self.t1.cat.categories = self.t0.cat.categories + 1
-        else: self.t0 = None
+        else:
+            self.t0 = None
 
         self.compute_uncertainties = compute_uncertainties
         self.uncertainties = None
@@ -120,7 +164,9 @@ class VelocityGraph:
 
         for i in range(n_obs):
             if self.V[i].max() != 0 or self.V[i].min() != 0:
-                neighs_idx = get_iterative_indices(self.indices, i, self.n_recurse_neighbors, self.max_neighs)
+                neighs_idx = get_iterative_indices(
+                    self.indices, i, self.n_recurse_neighbors, self.max_neighs
+                )
 
                 if self.t0 is not None:
                     t0, t1 = self.t0[i], self.t1[i]
@@ -132,7 +178,8 @@ class VelocityGraph:
                             neighs_idx = np.unique(np.concatenate([neighs_idx, t1_idx]))
 
                 dX = self.X[neighs_idx] - self.X[i, None]  # 60% of runtime
-                if self.sqrt_transform: dX = np.sqrt(np.abs(dX)) * np.sign(dX)
+                if self.sqrt_transform:
+                    dX = np.sqrt(np.abs(dX)) * np.sign(dX)
                 val = cosine_correlation(dX, self.V[i])  # 40% of runtime
 
                 if self.compute_uncertainties:
@@ -142,26 +189,46 @@ class VelocityGraph:
                 vals.extend(val)
                 rows.extend(np.ones(len(neighs_idx)) * i)
                 cols.extend(neighs_idx)
-                if self.report: progress.update()
-        if self.report: progress.finish()
+                if self.report:
+                    progress.update()
+        if self.report:
+            progress.finish()
 
         vals = np.hstack(vals)
         vals[np.isnan(vals)] = 0
 
-        self.graph, self.graph_neg = vals_to_csr(vals, rows, cols, shape=(n_obs, n_obs), split_negative=True)
+        self.graph, self.graph_neg = vals_to_csr(
+            vals, rows, cols, shape=(n_obs, n_obs), split_negative=True
+        )
         if self.compute_uncertainties:
             uncertainties = np.hstack(uncertainties)
             uncertainties[np.isnan(uncertainties)] = 0
-            self.uncertainties = vals_to_csr(uncertainties, rows, cols, shape=(n_obs, n_obs), split_negative=False)
+            self.uncertainties = vals_to_csr(
+                uncertainties, rows, cols, shape=(n_obs, n_obs), split_negative=False
+            )
             self.uncertainties.eliminate_zeros()
 
         confidence = self.graph.max(1).A.flatten()
         self.self_prob = np.clip(np.percentile(confidence, 98) - confidence, 0, 1)
 
 
-def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_neighbors=None, n_recurse_neighbors=None,
-                   random_neighbors_at_max=None, sqrt_transform=None, variance_stabilization=None, gene_subset=None,
-                   compute_uncertainties=None, approx=None, mode_neighbors='distances', copy=False):
+def velocity_graph(
+    data,
+    vkey="velocity",
+    xkey="Ms",
+    tkey=None,
+    basis=None,
+    n_neighbors=None,
+    n_recurse_neighbors=None,
+    random_neighbors_at_max=None,
+    sqrt_transform=None,
+    variance_stabilization=None,
+    gene_subset=None,
+    compute_uncertainties=None,
+    approx=None,
+    mode_neighbors="distances",
+    copy=False,
+):
     """Computes velocity graph based on cosine similarities.
 
     The cosine similarities are computed between velocities and potential cell state transitions, i.e. it measures how
@@ -214,41 +281,54 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
     """
     adata = data.copy() if copy else data
     verify_neighbors(adata)
-    if vkey not in adata.layers.keys(): velocity(adata, vkey=vkey)
-    if sqrt_transform is None: sqrt_transform = variance_stabilization
+    if vkey not in adata.layers.keys():
+        velocity(adata, vkey=vkey)
+    if sqrt_transform is None:
+        sqrt_transform = variance_stabilization
 
-    vgraph = VelocityGraph(adata, vkey=vkey, xkey=xkey, tkey=tkey, basis=basis, n_neighbors=n_neighbors, approx=approx,
-                           n_recurse_neighbors=n_recurse_neighbors, random_neighbors_at_max=random_neighbors_at_max,
-                           sqrt_transform=sqrt_transform, gene_subset=gene_subset,
-                           compute_uncertainties=compute_uncertainties, report=True, mode_neighbors=mode_neighbors)
+    vgraph = VelocityGraph(
+        adata,
+        vkey=vkey,
+        xkey=xkey,
+        tkey=tkey,
+        basis=basis,
+        n_neighbors=n_neighbors,
+        approx=approx,
+        n_recurse_neighbors=n_recurse_neighbors,
+        random_neighbors_at_max=random_neighbors_at_max,
+        sqrt_transform=sqrt_transform,
+        gene_subset=gene_subset,
+        compute_uncertainties=compute_uncertainties,
+        report=True,
+        mode_neighbors=mode_neighbors,
+    )
 
     if isinstance(basis, str):
         logg.warn(
-            f'The velocity graph is computed on {basis} embedding coordinates. Consider computing \n'
-            '         the graph in an unbiased manner on full expression space by not specifying basis.\n')
+            f"The velocity graph is computed on {basis} embedding coordinates. Consider computing \n"
+            "         the graph in an unbiased manner on full expression space by not specifying basis.\n"
+        )
 
-    logg.info('computing velocity graph', r=True)
+    logg.info("computing velocity graph", r=True)
     vgraph.compute_cosines()
 
-    adata.uns[f'{vkey}_graph'] = vgraph.graph
-    adata.uns[f'{vkey}_graph_neg'] = vgraph.graph_neg
+    adata.uns[f"{vkey}_graph"] = vgraph.graph
+    adata.uns[f"{vkey}_graph_neg"] = vgraph.graph_neg
 
     if vgraph.uncertainties is not None:
-        adata.uns[f'{vkey}_graph_uncertainties'] = vgraph.uncertainties
+        adata.uns[f"{vkey}_graph_uncertainties"] = vgraph.uncertainties
 
-    adata.obs[f'{vkey}_self_transition'] = vgraph.self_prob
+    adata.obs[f"{vkey}_self_transition"] = vgraph.self_prob
 
-    if f'{vkey}_params' in adata.uns.keys():
-        if 'embeddings' in adata.uns[f'{vkey}_params']:
-            del adata.uns[f'{vkey}_params']['embeddings']
+    if f"{vkey}_params" in adata.uns.keys():
+        if "embeddings" in adata.uns[f"{vkey}_params"]:
+            del adata.uns[f"{vkey}_params"]["embeddings"]
     else:
-        adata.uns[f'{vkey}_params'] = {}
-    adata.uns[f'{vkey}_params']['mode_neighbors'] = mode_neighbors
-    adata.uns[f'{vkey}_params']['n_recurse_neighbors'] = vgraph.n_recurse_neighbors
+        adata.uns[f"{vkey}_params"] = {}
+    adata.uns[f"{vkey}_params"]["mode_neighbors"] = mode_neighbors
+    adata.uns[f"{vkey}_params"]["n_recurse_neighbors"] = vgraph.n_recurse_neighbors
 
-    logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
-    logg.hint(
-        'added \n'
-        f'    \'{vkey}_graph\', sparse matrix with cosine correlations (adata.uns)')
+    logg.info("    finished", time=True, end=" " if settings.verbosity > 2 else "\n")
+    logg.hint("added \n" f"    '{vkey}_graph', sparse matrix with cosine correlations (adata.uns)")
 
     return adata if copy else None

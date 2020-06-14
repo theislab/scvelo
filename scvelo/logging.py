@@ -186,9 +186,7 @@ def get_latest_pypi_version():
 def check_if_latest_version():
     from . import __version__
 
-    latest_version = timeout(
-        get_latest_pypi_version, timeout_duration=2, default="0.0.0"
-    )
+    latest_version = timeout(get_latest_pypi_version, timeout_duration=2, default="0.0.0")
     if __version__.rsplit(".dev")[0] < latest_version.rsplit(".dev")[0]:
         warn(
             "There is a newer scvelo version available on PyPI:\n",
@@ -203,8 +201,7 @@ def print_version():
     from . import __version__
 
     _write_log(
-        f"Running scvelo {__version__} "
-        f"(python {python_version()}) on {get_date_string()}.",
+        f"Running scvelo {__version__} " f"(python {python_version()}) on {get_date_string()}.",
     )
     check_if_latest_version()
 

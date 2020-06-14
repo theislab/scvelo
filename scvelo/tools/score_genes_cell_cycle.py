@@ -4,21 +4,108 @@ import pandas as pd
 import numpy as np
 
 
-s_genes_list = \
-    ['Mcm5', 'Pcna', 'Tyms', 'Fen1', 'Mcm2', 'Mcm4', 'Rrm1', 'Ung', 'Gins2',
-     'Mcm6', 'Cdca7', 'Dtl', 'Prim1', 'Uhrf1', 'Mlf1ip', 'Hells', 'Rfc2',
-     'Rpa2', 'Nasp', 'Rad51ap1', 'Gmnn', 'Wdr76', 'Slbp', 'Ccne2', 'Ubr7',
-     'Pold3', 'Msh2', 'Atad2', 'Rad51', 'Rrm2', 'Cdc45', 'Cdc6', 'Exo1', 'Tipin',
-     'Dscc1', 'Blm', 'Casp8ap2', 'Usp1', 'Clspn', 'Pola1', 'Chaf1b', 'Brip1', 'E2f8']
+s_genes_list = [
+    "Mcm5",
+    "Pcna",
+    "Tyms",
+    "Fen1",
+    "Mcm2",
+    "Mcm4",
+    "Rrm1",
+    "Ung",
+    "Gins2",
+    "Mcm6",
+    "Cdca7",
+    "Dtl",
+    "Prim1",
+    "Uhrf1",
+    "Mlf1ip",
+    "Hells",
+    "Rfc2",
+    "Rpa2",
+    "Nasp",
+    "Rad51ap1",
+    "Gmnn",
+    "Wdr76",
+    "Slbp",
+    "Ccne2",
+    "Ubr7",
+    "Pold3",
+    "Msh2",
+    "Atad2",
+    "Rad51",
+    "Rrm2",
+    "Cdc45",
+    "Cdc6",
+    "Exo1",
+    "Tipin",
+    "Dscc1",
+    "Blm",
+    "Casp8ap2",
+    "Usp1",
+    "Clspn",
+    "Pola1",
+    "Chaf1b",
+    "Brip1",
+    "E2f8",
+]
 
-g2m_genes_list = \
-    ['Hmgb2', 'Cdk1', 'Nusap1', 'Ube2c', 'Birc5', 'Tpx2', 'Top2a', 'Ndc80',
-     'Cks2', 'Nuf2', 'Cks1b', 'Mki67', 'Tmpo', 'Cenpf', 'Tacc3', 'Fam64a',
-     'Smc4', 'Ccnb2', 'Ckap2l', 'Ckap2', 'Aurkb', 'Bub1', 'Kif11', 'Anp32e',
-     'Tubb4b', 'Gtse1', 'Kif20b', 'Hjurp', 'Cdca3', 'Hn1', 'Cdc20', 'Ttk',
-     'Cdc25c', 'Kif2c', 'Rangap1', 'Ncapd2', 'Dlgap5', 'Cdca2', 'Cdca8',
-     'Ect2', 'Kif23', 'Hmmr', 'Aurka', 'Psrc1', 'Anln', 'Lbr', 'Ckap5',
-     'Cenpe', 'Ctcf', 'Nek2', 'G2e3', 'Gas2l3', 'Cbx5', 'Cenpa']
+g2m_genes_list = [
+    "Hmgb2",
+    "Cdk1",
+    "Nusap1",
+    "Ube2c",
+    "Birc5",
+    "Tpx2",
+    "Top2a",
+    "Ndc80",
+    "Cks2",
+    "Nuf2",
+    "Cks1b",
+    "Mki67",
+    "Tmpo",
+    "Cenpf",
+    "Tacc3",
+    "Fam64a",
+    "Smc4",
+    "Ccnb2",
+    "Ckap2l",
+    "Ckap2",
+    "Aurkb",
+    "Bub1",
+    "Kif11",
+    "Anp32e",
+    "Tubb4b",
+    "Gtse1",
+    "Kif20b",
+    "Hjurp",
+    "Cdca3",
+    "Hn1",
+    "Cdc20",
+    "Ttk",
+    "Cdc25c",
+    "Kif2c",
+    "Rangap1",
+    "Ncapd2",
+    "Dlgap5",
+    "Cdca2",
+    "Cdca8",
+    "Ect2",
+    "Kif23",
+    "Hmmr",
+    "Aurka",
+    "Psrc1",
+    "Anln",
+    "Lbr",
+    "Ckap5",
+    "Cenpe",
+    "Ctcf",
+    "Nek2",
+    "G2e3",
+    "Gas2l3",
+    "Cbx5",
+    "Cenpa",
+]
 
 
 def get_phase_marker_genes(adata):
@@ -36,8 +123,12 @@ def get_phase_marker_genes(adata):
     """
     name, gene_names = adata.var_names[0], adata.var_names
     up, low, cap = name.isupper(), name.islower(), name[0].isupper() and name[1:].islower()
-    s_genes_list_ = [x.upper() if up else x.lower() if low else x.capitalize() for x in s_genes_list]
-    g2m_genes_list_ = [x.upper() if up else x.lower() if low else x.capitalize() for x in g2m_genes_list]
+    s_genes_list_ = [
+        x.upper() if up else x.lower() if low else x.capitalize() for x in s_genes_list
+    ]
+    g2m_genes_list_ = [
+        x.upper() if up else x.lower() if low else x.capitalize() for x in g2m_genes_list
+    ]
     s_genes = np.array([x for x in s_genes_list_ if x in gene_names])
     g2m_genes = np.array([x for x in g2m_genes_list_ if x in gene_names])
     return s_genes, g2m_genes
@@ -73,25 +164,31 @@ def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kw
     **phase** : `adata.obs`, dtype `object`
         The cell cycle phase (`S`, `G2M` or `G1`) for each cell.
     """
-    logg.info('calculating cell cycle phase')
+    logg.info("calculating cell cycle phase")
     from scanpy.tools._score_genes import score_genes
 
     adata = adata.copy() if copy else adata
 
     s_genes_, g2m_genes_ = get_phase_marker_genes(adata)
-    if s_genes is None: s_genes = s_genes_
-    if g2m_genes is None: g2m_genes = g2m_genes_
+    if s_genes is None:
+        s_genes = s_genes_
+    if g2m_genes is None:
+        g2m_genes = g2m_genes_
 
     ctrl_size = min(len(s_genes), len(g2m_genes))
 
-    score_genes(adata, gene_list=s_genes, score_name='S_score', ctrl_size=ctrl_size, **kwargs)  # add s-score
-    score_genes(adata, gene_list=g2m_genes, score_name='G2M_score', ctrl_size=ctrl_size, **kwargs)  # add g2m-score
-    scores = adata.obs[['S_score', 'G2M_score']]
+    score_genes(
+        adata, gene_list=s_genes, score_name="S_score", ctrl_size=ctrl_size, **kwargs
+    )  # add s-score
+    score_genes(
+        adata, gene_list=g2m_genes, score_name="G2M_score", ctrl_size=ctrl_size, **kwargs
+    )  # add g2m-score
+    scores = adata.obs[["S_score", "G2M_score"]]
 
-    phase = pd.Series('S', index=scores.index)          # default phase is S
-    phase[scores.G2M_score > scores.S_score] = 'G2M'    # if G2M is higher than S, it's G2M
-    phase[np.all(scores < 0, axis=1)] = 'G1'            # if all scores are negative, it's G1...
+    phase = pd.Series("S", index=scores.index)  # default phase is S
+    phase[scores.G2M_score > scores.S_score] = "G2M"  # if G2M is higher than S, it's G2M
+    phase[np.all(scores < 0, axis=1)] = "G1"  # if all scores are negative, it's G1...
 
-    adata.obs['phase'] = phase
-    logg.hint('    \'S_score\' and \'G2M_score\', scores of cell cycle phases (adata.obs)')
+    adata.obs["phase"] = phase
+    logg.hint("    'S_score' and 'G2M_score', scores of cell cycle phases (adata.obs)")
     return adata if copy else None

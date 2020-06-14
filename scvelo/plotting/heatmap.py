@@ -29,7 +29,7 @@ def heatmap(
     font_scale=None,
     show=True,
     save=None,
-    **kwargs
+    **kwargs,
 ):
     """\
     Plot time series for genes as heatmap.
@@ -81,11 +81,7 @@ def heatmap(
     time = adata.obs[tkey].values
     time = time[np.isfinite(time)]
 
-    X = (
-        adata[:, var_names].layers[xkey]
-        if xkey in adata.layers.keys()
-        else adata[:, var_names].X
-    )
+    X = adata[:, var_names].layers[xkey] if xkey in adata.layers.keys() else adata[:, var_names].X
     if issparse(X):
         X = X.A
     df = pd.DataFrame(X[np.argsort(time)], columns=var_names)
@@ -169,7 +165,7 @@ def heatmap_deprecated(
     show=True,
     save=None,
     ax=None,
-    **kwargs
+    **kwargs,
 ):
 
     """\
@@ -238,9 +234,7 @@ def heatmap_deprecated(
         var_names = var_names[:, 0]
     var_names = [name for name in var_names if name in adata.var_names]
     if len(var_names) == 0:
-        raise ValueError(
-            "The specified var_names are all not" "contained in the adata.var_names."
-        )
+        raise ValueError("The specified var_names are all not" "contained in the adata.var_names.")
 
     if layers is None:
         layers = ["X"]
@@ -248,9 +242,7 @@ def heatmap_deprecated(
         layers = [layers]
     layers = [layer for layer in layers if layer in adata.layers.keys() or layer == "X"]
     if len(layers) == 0:
-        raise ValueError(
-            "The selected layers are not contained" "in adata.layers.keys()."
-        )
+        raise ValueError("The selected layers are not contained" "in adata.layers.keys().")
     if not use_raw:
         layers = np.array(layers)
         if "X" in layers:
@@ -261,13 +253,9 @@ def heatmap_deprecated(
             layers[np.array([layer == "unspliced" for layer in layers])] = "Ms"
         layers = list(layers)
     if "Ms" in layers and "Ms" not in adata.layers.keys():
-        raise ValueError(
-            "Moments have to be computed before" "using this plot function."
-        )
+        raise ValueError("Moments have to be computed before" "using this plot function.")
     if "Mu" in layers and "Mu" not in adata.layers.keys():
-        raise ValueError(
-            "Moments have to be computed before" "using this plot function."
-        )
+        raise ValueError("Moments have to be computed before" "using this plot function.")
     layers = unique(layers)
 
     # Number of rows to plot
@@ -286,9 +274,7 @@ def heatmap_deprecated(
     if groupby is not None:
         # catch
         if groupby not in adata.obs_keys():
-            raise ValueError(
-                "The selected groupby is not contained" "in adata.obs_keys()."
-            )
+            raise ValueError("The selected groupby is not contained" "in adata.obs_keys().")
         if groups is None:  # Then use everything of that obs
             groups = unique(adata.obs.clusters.values)
 
@@ -301,9 +287,7 @@ def heatmap_deprecated(
                         [
                             ax_bounds[0] + igroup * ax_bounds[2] / len(groups),
                             ax_bounds[1]
-                            + ax_bounds[3]
-                            * (tot_len - ivar * len(layers) - ilayer - 1)
-                            / tot_len,
+                            + ax_bounds[3] * (tot_len - ivar * len(layers) - ilayer - 1) / tot_len,
                             ax_bounds[2] / len(groups),
                             (ax_bounds[3] - ax_bounds[3] / tot_len * len(annotations))
                             / (len(var_names) * len(layers)),
@@ -318,10 +302,7 @@ def heatmap_deprecated(
                     idx_var = [vn in var_names for vn in adata.var_names]
                     idx_pt = np.array(adata.obs.velocity_pseudotime).argsort()
                     idx_pt = idx_pt[
-                        np.array(
-                            isnull(np.array(dat.obs.velocity_pseudotime)[idx_pt])
-                            == False
-                        )
+                        np.array(isnull(np.array(dat.obs.velocity_pseudotime)[idx_pt]) == False)
                     ]
 
                     if layer == "X":
@@ -344,10 +325,7 @@ def heatmap_deprecated(
 
                     # plot
                     im = groups_axis.imshow(
-                        laydat,
-                        aspect="auto",
-                        interpolation="nearest",
-                        cmap=color_map[ilayer],
+                        laydat, aspect="auto", interpolation="nearest", cmap=color_map[ilayer],
                     )
 
                     # Frames
@@ -392,8 +370,7 @@ def heatmap_deprecated(
                     anno_axis = pl.axes(
                         [
                             ax_bounds[0] + igroup * ax_bounds[2] / len(groups),
-                            ax_bounds[1]
-                            + ax_bounds[3] / tot_len * (len(annotations) - ianno - 1),
+                            ax_bounds[1] + ax_bounds[3] / tot_len * (len(annotations) - ianno - 1),
                             ax_bounds[2] / len(groups),
                             ax_bounds[3] / tot_len,
                         ]
@@ -412,9 +389,7 @@ def heatmap_deprecated(
                         Y, aspect="auto", interpolation="nearest", cmap=color_map_anno
                     )
                     if igroup == 0:
-                        anno_axis.set_yticklabels(
-                            ["", anno, ""]
-                        )  # , fontsize=ytick_fontsize)
+                        anno_axis.set_yticklabels(["", anno, ""])  # , fontsize=ytick_fontsize)
                         anno_axis.tick_params(axis="both", which="both", length=0)
                     else:
                         anno_axis.set_yticklabels([])
@@ -433,9 +408,7 @@ def heatmap_deprecated(
                     [
                         ax_bounds[0],
                         ax_bounds[1]
-                        + ax_bounds[3]
-                        * (tot_len - ivar * len(layers) - ilayer - 1)
-                        / tot_len,
+                        + ax_bounds[3] * (tot_len - ivar * len(layers) - ilayer - 1) / tot_len,
                         ax_bounds[2],
                         (ax_bounds[3] - ax_bounds[3] / tot_len * len(annotations))
                         / (len(var_names) * len(layers)),
@@ -444,11 +417,7 @@ def heatmap_deprecated(
                 # Get data to fill
                 dat = adata[:, var]
                 idx = np.array(dat.obs.velocity_pseudotime).argsort()
-                idx = idx[
-                    np.array(
-                        isnull(np.array(dat.obs.velocity_pseudotime)[idx]) == False
-                    )
-                ]
+                idx = idx[np.array(isnull(np.array(dat.obs.velocity_pseudotime)[idx]) == False)]
 
                 if layer == "X":
                     laydat = dat.X
@@ -464,10 +433,7 @@ def heatmap_deprecated(
 
                 # plot
                 im = groups_axis.imshow(
-                    laydat,
-                    aspect="auto",
-                    interpolation="nearest",
-                    cmap=color_map[ilayer],
+                    laydat, aspect="auto", interpolation="nearest", cmap=color_map[ilayer],
                 )
                 imlist.append(im)
 
@@ -504,8 +470,7 @@ def heatmap_deprecated(
                 anno_axis = pl.axes(
                     [
                         ax_bounds[0],
-                        ax_bounds[1]
-                        + ax_bounds[3] / tot_len * (len(annotations) - ianno - 1),
+                        ax_bounds[1] + ax_bounds[3] / tot_len * (len(annotations) - ianno - 1),
                         ax_bounds[2],
                         ax_bounds[3] / tot_len,
                     ]
@@ -519,9 +484,7 @@ def heatmap_deprecated(
                     a = np.array(a).T
                     Y = a.reshape(1, len(idx), 3)
                 else:
-                    Y = np.array(interpret_colorkey(dat, anno)[idx]).reshape(
-                        1, len(idx)
-                    )
+                    Y = np.array(interpret_colorkey(dat, anno)[idx]).reshape(1, len(idx))
                 img = anno_axis.imshow(
                     Y, aspect="auto", interpolation="nearest", cmap=color_map_anno
                 )
@@ -560,12 +523,7 @@ def heatmap_deprecated(
                     cb.set_ticks([])
         else:
             cbaxes = pl.axes(
-                [
-                    ax_bounds[0] + ax_bounds[2] + 0.01,
-                    ax_bounds[1],
-                    0.02,
-                    ax_bounds[3] * 0.3,
-                ]
+                [ax_bounds[0] + ax_bounds[2] + 0.01, ax_bounds[1], 0.02, ax_bounds[3] * 0.3,]
             )
             cb = pl.colorbar(mappable=im, cax=cbaxes)
             cb.set_ticks([cb.vmin, cb.vmax])

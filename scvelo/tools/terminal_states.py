@@ -10,7 +10,14 @@ from scipy.sparse import linalg, csr_matrix, issparse
 import numpy as np
 
 
-def cell_fate(data, groupby='clusters', disconnected_groups=None, self_transitions=False, n_neighbors=None, copy=False):
+def cell_fate(
+    data,
+    groupby="clusters",
+    disconnected_groups=None,
+    self_transitions=False,
+    n_neighbors=None,
+    copy=False,
+):
     """Computes individual cell endpoints
 
     Arguments
@@ -37,37 +44,46 @@ def cell_fate(data, groupby='clusters', disconnected_groups=None, self_transitio
         confidence of transitioning to the assigned fate
     """
     adata = data.copy() if copy else data
-    logg.info('computing cell fates', r=True)
+    logg.info("computing cell fates", r=True)
 
     n_neighbors = 10 if n_neighbors is None else n_neighbors
     _adata = adata.copy()
     vgraph = VelocityGraph(_adata, n_neighbors=n_neighbors, approx=True, n_recurse_neighbors=1)
     vgraph.compute_cosines()
-    _adata.uns['velocity_graph'] = vgraph.graph
-    _adata.uns['velocity_graph_neg'] = vgraph.graph_neg
+    _adata.uns["velocity_graph"] = vgraph.graph
+    _adata.uns["velocity_graph_neg"] = vgraph.graph_neg
 
     T = transition_matrix(_adata, self_transitions=self_transitions)
     I = np.eye(_adata.n_obs)
     fate = np.linalg.inv(I - T)
-    if issparse(T): fate = fate.A
+    if issparse(T):
+        fate = fate.A
     cell_fates = np.array(_adata.obs[groupby][fate.argmax(1)])
     if disconnected_groups is not None:
         idx = _adata.obs[groupby].isin(disconnected_groups)
         cell_fates[idx] = _adata.obs[groupby][idx]
 
-    adata.obs['cell_fate'] = cell_fates
-    adata.obs['cell_fate_confidence'] = fate.max(1) / fate.sum(1)
+    adata.obs["cell_fate"] = cell_fates
+    adata.obs["cell_fate_confidence"] = fate.max(1) / fate.sum(1)
     strings_to_categoricals(adata)
 
-    logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
+    logg.info("    finished", time=True, end=" " if settings.verbosity > 2 else "\n")
     logg.hint(
-        'added\n'
-        '    \'cell_fate\', most likely cell fate (adata.obs)\n'
-        '    \'cell_fate_confidence\', confidence of transitioning to the assigned fate (adata.obs)')
+        "added\n"
+        "    'cell_fate', most likely cell fate (adata.obs)\n"
+        "    'cell_fate_confidence', confidence of transitioning to the assigned fate (adata.obs)"
+    )
     return adata if copy else None
 
 
-def cell_origin(data, groupby='clusters', disconnected_groups=None, self_transitions=False, n_neighbors=None, copy=False):
+def cell_origin(
+    data,
+    groupby="clusters",
+    disconnected_groups=None,
+    self_transitions=False,
+    n_neighbors=None,
+    copy=False,
+):
     """Computes individual cell root points
 
         Arguments
@@ -94,33 +110,35 @@ def cell_origin(data, groupby='clusters', disconnected_groups=None, self_transit
             confidence of coming from assigned origin
         """
     adata = data.copy() if copy else data
-    logg.info('computing cell fates', r=True)
+    logg.info("computing cell fates", r=True)
 
     n_neighbors = 10 if n_neighbors is None else n_neighbors
     _adata = adata.copy()
     vgraph = VelocityGraph(_adata, n_neighbors=n_neighbors, approx=True, n_recurse_neighbors=1)
     vgraph.compute_cosines()
-    _adata.uns['velocity_graph'] = vgraph.graph
-    _adata.uns['velocity_graph_neg'] = vgraph.graph_neg
+    _adata.uns["velocity_graph"] = vgraph.graph
+    _adata.uns["velocity_graph_neg"] = vgraph.graph_neg
 
     T = transition_matrix(_adata, self_transitions=self_transitions, backward=True)
     I = np.eye(_adata.n_obs)
     fate = np.linalg.inv(I - T)
-    if issparse(T): fate = fate.A
+    if issparse(T):
+        fate = fate.A
     cell_fates = np.array(_adata.obs[groupby][fate.argmax(1)])
     if disconnected_groups is not None:
         idx = _adata.obs[groupby].isin(disconnected_groups)
         cell_fates[idx] = _adata.obs[groupby][idx]
 
-    adata.obs['cell_origin'] = cell_fates
-    adata.obs['cell_origin_confidence'] = fate.max(1) / fate.sum(1)
+    adata.obs["cell_origin"] = cell_fates
+    adata.obs["cell_origin_confidence"] = fate.max(1) / fate.sum(1)
     strings_to_categoricals(adata)
 
-    logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
+    logg.info("    finished", time=True, end=" " if settings.verbosity > 2 else "\n")
     logg.hint(
-        'added\n'
-        '    \'cell_origin\', most likely cell origin (adata.obs)\n'
-        '    \'cell_origin_confidence\', confidence of coming from the assigned origin (adata.obs)')
+        "added\n"
+        "    'cell_origin', most likely cell origin (adata.obs)\n"
+        "    'cell_origin_confidence', confidence of coming from the assigned origin (adata.obs)"
+    )
 
 
 def eigs(T, k=10, eps=1e-3, perc=None, random_state=None, v0=None):
@@ -128,12 +146,14 @@ def eigs(T, k=10, eps=1e-3, perc=None, random_state=None, v0=None):
         np.random.seed(random_state)
         v0 = np.random.rand(min(T.shape))
     try:
-        eigvals, eigvecs = linalg.eigs(T.T, k=k, which='LR', v0=v0)  # find k eigs with largest real part
-        p = np.argsort(eigvals)[::-1]                                # sort in descending order of eigenvalues
+        eigvals, eigvecs = linalg.eigs(
+            T.T, k=k, which="LR", v0=v0
+        )  # find k eigs with largest real part
+        p = np.argsort(eigvals)[::-1]  # sort in descending order of eigenvalues
         eigvals = eigvals.real[p]
         eigvecs = eigvecs.real[:, p]
 
-        idx = (eigvals >= 1 - eps)                                   # select eigenvectors with eigenvalue of 1
+        idx = eigvals >= 1 - eps  # select eigenvectors with eigenvalue of 1
         eigvals = eigvals[idx]
         eigvecs = np.absolute(eigvecs[:, idx])
 
@@ -150,16 +170,16 @@ def eigs(T, k=10, eps=1e-3, perc=None, random_state=None, v0=None):
 
 
 def verify_roots(adata, roots):
-    if 'gene_count_corr' in adata.var.keys():
+    if "gene_count_corr" in adata.var.keys():
         p = get_plasticity_score(adata)
-        p_ub, root_ub = p > .5, roots > .9
+        p_ub, root_ub = p > 0.5, roots > 0.9
         n_right_assignments = np.sum(root_ub * p_ub) / np.sum(p_ub)
         n_false_assignments = np.sum(root_ub * np.invert(p_ub)) / np.sum(np.invert(p_ub))
         n_randn_assignments = np.mean(root_ub)
         if n_right_assignments > 3 * n_randn_assignments:  # mu + 2*mu (std=mu)
             roots *= p_ub
         elif n_false_assignments > n_randn_assignments or n_right_assignments < n_randn_assignments:
-            logg.warn('Uncertain or fuzzy root cell identification. Please verify.')
+            logg.warn("Uncertain or fuzzy root cell identification. Please verify.")
     return roots
 
 
@@ -172,8 +192,17 @@ def write_to_obs(adata, key, vals, cell_subset=None):
         adata.obs[key] = vals_all
 
 
-def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_transitions=False, eps=1e-3,
-                    random_state=0, copy=False, **kwargs):
+def terminal_states(
+    data,
+    vkey="velocity",
+    groupby=None,
+    groups=None,
+    self_transitions=False,
+    eps=1e-3,
+    random_state=0,
+    copy=False,
+    **kwargs,
+):
     """Computes terminal states (root and end points).
 
     The end points and root cells are obtained as stationary states of the velocity-inferred transition matrix
@@ -224,48 +253,59 @@ def terminal_states(data, vkey='velocity', groupby=None, groups=None, self_trans
     adata = data.copy() if copy else data
     verify_neighbors(adata)
 
-    logg.info('computing terminal states', r=True)
+    logg.info("computing terminal states", r=True)
 
     strings_to_categoricals(adata)
 
-    groupby = 'cell_fate' if groupby is None and 'cell_fate' in adata.obs.keys() else groupby
+    groupby = "cell_fate" if groupby is None and "cell_fate" in adata.obs.keys() else groupby
     if groupby is not None:
-        logg.warn('Only set groupby, when you have evident distinct clusters/lineages,'
-                  ' each with an own root and end point.')
-    categories = adata.obs[groupby].cat.categories if groupby is not None and groups is None else [None]
+        logg.warn(
+            "Only set groupby, when you have evident distinct clusters/lineages,"
+            " each with an own root and end point."
+        )
+    categories = (
+        adata.obs[groupby].cat.categories if groupby is not None and groups is None else [None]
+    )
     for cat in categories:
         groups = cat if cat is not None else groups
         cell_subset = groups_to_bool(adata, groups=groups, groupby=groupby)
         _adata = adata if groups is None else adata[cell_subset]
-        connectivities = get_connectivities(_adata, 'distances')
+        connectivities = get_connectivities(_adata, "distances")
 
-        T = transition_matrix(_adata, vkey=vkey, self_transitions=self_transitions, backward=True, **kwargs)
+        T = transition_matrix(
+            _adata, vkey=vkey, self_transitions=self_transitions, backward=True, **kwargs
+        )
         eigvecs_roots = eigs(T, eps=eps, perc=[2, 98], random_state=random_state)[1]
         roots = csr_matrix.dot(connectivities, eigvecs_roots).sum(1)
-        #roots = scale(eigvecs_roots.sum(1))
-        #n_neighs_roots = ((connectivities > 0) * 1).dot(roots > 1 - 1e-3)
-        #roots = csr_matrix.dot(connectivities, (n_neighs_roots > np.nanmax(n_neighs_roots) / 3) * roots)
+        # roots = scale(eigvecs_roots.sum(1))
+        # n_neighs_roots = ((connectivities > 0) * 1).dot(roots > 1 - 1e-3)
+        # roots = csr_matrix.dot(connectivities, (n_neighs_roots > np.nanmax(n_neighs_roots) / 3) * roots)
 
         roots = scale(np.clip(roots, 0, np.percentile(roots, 98)))
         roots = verify_roots(_adata, roots)
-        write_to_obs(adata, 'root_cells', roots, cell_subset)
+        write_to_obs(adata, "root_cells", roots, cell_subset)
 
-        T = transition_matrix(_adata, vkey=vkey, self_transitions=self_transitions, backward=False, **kwargs)
+        T = transition_matrix(
+            _adata, vkey=vkey, self_transitions=self_transitions, backward=False, **kwargs
+        )
         eigvecs_ends = eigs(T, eps=eps, perc=[2, 98], random_state=random_state)[1]
         ends = csr_matrix.dot(connectivities, eigvecs_ends).sum(1)
         ends = scale(np.clip(ends, 0, np.percentile(ends, 98)))
-        write_to_obs(adata, 'end_points', ends, cell_subset)
+        write_to_obs(adata, "end_points", ends, cell_subset)
 
         n_roots, n_ends = eigvecs_roots.shape[1], eigvecs_ends.shape[1]
-        groups_str = f' ({groups})' if isinstance(groups, str) else ''
+        groups_str = f" ({groups})" if isinstance(groups, str) else ""
         roots_str = f"{n_roots} {'regions' if n_roots > 1 else 'region'}"
         ends_str = f"{n_ends} {'regions' if n_ends > 1 else 'region'}"
 
-        logg.info('    identified', roots_str, 'of root cells and', ends_str, 'of end points', groups_str)
+        logg.info(
+            "    identified", roots_str, "of root cells and", ends_str, "of end points", groups_str
+        )
 
-    logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
+    logg.info("    finished", time=True, end=" " if settings.verbosity > 2 else "\n")
     logg.hint(
-        'added\n'
-        '    \'root_cells\', root cells of Markov diffusion process (adata.obs)\n'
-        '    \'end_points\', end points of Markov diffusion process (adata.obs)')
+        "added\n"
+        "    'root_cells', root cells of Markov diffusion process (adata.obs)\n"
+        "    'end_points', end points of Markov diffusion process (adata.obs)"
+    )
     return adata if copy else None
