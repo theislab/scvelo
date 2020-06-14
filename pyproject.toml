@@ -1,3 +1,20 @@
 [build-system]
 requires = ['setuptools', 'setuptools_scm', 'wheel']
 build-backend = 'setuptools.build_meta'
+
+[tool.black]
+line-length = 100
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
