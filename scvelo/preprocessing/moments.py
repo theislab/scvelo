@@ -344,7 +344,7 @@ class MomentGenerator:
 
         first_moments = self.get_first_moment()
         for layer in self.layers:
-            self.adata.layers[layer]["moments"] = first_moments[layer]
+            self.adata.layers[layer]["first_moment"] = first_moments[layer]
 
         logg.info(
             "    finished", time=True, end=" " if settings.verbosity > 2 else "\n"
