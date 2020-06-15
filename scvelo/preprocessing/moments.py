@@ -1,3 +1,8 @@
+from dataclasses import dataclass
+from typing import List, Optional
+
+from anndata import AnnData
+
 from .. import settings
 from .. import logging as logg
 from .utils import not_yet_normalized, normalize_per_cell
@@ -221,3 +226,128 @@ def get_moments(
     if issparse(X):
         Mx = Mx.astype(np.float32).A
     return Mx
+
+
+# TODO: Implement method to calculate second order moments
+@dataclass(init=False)
+class MomentGenerator:
+    def __init__(
+        self,
+        data: AnnData,
+        n_neighbors: int = 30,
+        n_pcs: Optional[int] = None,
+        mode: str = "connectivities",
+        method: str = "umap",
+        use_rep: Optional[str] = None,
+        copy: bool = False,
+        layers: Optional[List[str]] = None,
+    ):
+        """Computes moments for velocity estimation.
+
+        First-/second-order moments are computed for each cell across its nearest neighbors,
+        where the neighbor graph is obtained from euclidean distances in PCA space.
+
+        Arguments
+        ---------
+        data: :class:`~anndata.AnnData`
+            Annotated data matrix.
+        n_neighbors: `int` (default: 30)
+            Number of neighbors to use.
+        n_pcs: `int` (default: None)
+            Number of principal components to use.
+            If not specified, the full space is used of a pre-computed PCA,
+            or 30 components are used when PCA is computed internally.
+        mode: `'connectivities'` or `'distances'`  (default: `'connectivities'`)
+            Distance metric to use for moment computation.
+        method : {{'umap', 'hnsw', 'sklearn', `None`}}  (default: `'umap'`)
+            Method to compute neighbors, only differs in runtime.
+            Connectivities are computed with adaptive kernel width as proposed in
+            Haghverdi et al. 2016 (https://doi.org/10.1038/nmeth.3971).
+        use_rep : `None`, `'X'` or any key for `.obsm` (default: None)
+            Use the indicated representation. If `None`, the representation is chosen
+            automatically: for .n_vars < 50, .X is used, otherwise ‘X_pca’ is used.
+        copy: `bool` (default: `False`)
+            Return a copy instead of writing to adata.
+        layers: `List[str]` (default: None)
+            List of layers to compute moments for.
+        """
+
+        self.adata = data.copy() if copy else data
+        self.copy = copy
+        self.n_neighbors = n_neighbors
+        self.n_pcs = n_pcs
+        self.mode = mode
+        self.method = method
+        self.use_rep = "X_pca" if use_rep is None else use_rep
+        if layers is None:
+            self.layers = self.adata.layers.keys()
+        else:
+            # TODO: Add warning if provided layers do not exist
+            self.layers = set(layers).intersection(self.adata.layers.keys())
+
+    def __call__(self):
+        return self.set_moments()
+
+    def _normalize(self):
+        """Normalize data
+        """
+
+        if any(
+            [
+                not_yet_normalized(self.adata.layers[layer]["raw"])
+                for layer in self.layers
+            ]
+        ):
+            normalize_per_cell(self.adata)
+
+    def set_neighbors(self):
+        """Set neigbors in `self.adata`
+        """
+
+        if self.n_neighbors is not None and self.n_neighbors > get_n_neighs(self.adata):
+            neighbors(
+                self.adata,
+                n_neighbors=self.n_neighbors,
+                use_rep=self.use_rep,
+                n_pcs=self.n_pcs,
+                method=self.method,
+            )
+        verify_neighbors(self.adata)
+
+    def get_first_moment(self) -> List[np.array]:
+        """Calculate first order moments.
+        """
+
+        logg.info(f"computing first moments based on {self.mode}", r=True)
+
+        connectivities = get_connectivities(
+            self.adata, self.mode, n_neighbors=self.n_neighbors, recurse_neighbors=False
+        )
+
+        return {
+            layer: (
+                csr_matrix.dot(
+                    connectivities, csr_matrix(self.adata.layers[layer]["raw"])
+                )
+                .astype(np.float32)
+                .A
+            )
+            for layer in self.layers
+        }
+
+    def get_second_moment(self):
+        raise NotImplementedError
+
+    def set_moments(self) -> Optional[AnnData]:
+        self._normalize()
+        self.set_neighbors()
+
+        first_moments = self.get_first_moment()
+        for layer in self.layers:
+            self.adata.layer[layer]["moments"] = first_moments["layer"]
+
+        logg.info(
+            "    finished", time=True, end=" " if settings.verbosity > 2 else "\n"
+        )
+
+        return self.adata if self.copy else None
