@@ -331,13 +331,9 @@ def get_df(
                 key = keys[0]
             s_key = [s for (s, d_key) in zip(s_keys, d_keys) if key in d_key]
             if len(s_key) == 0:
-                raise ValueError(
-                    f"'{key}' not found in any of {', '.join(s_keys)}."
-                )
+                raise ValueError(f"'{key}' not found in any of {', '.join(s_keys)}.")
             if len(s_key) > 1:
-                logg.warn(
-                    f"'{key}' found multiple times in {', '.join(s_key)}."
-                )
+                logg.warn(f"'{key}' found multiple times in {', '.join(s_key)}.")
 
             s_key = s_key[-1]
             df = getattr(data, s_key)[keys if len(keys) > 1 else key]
