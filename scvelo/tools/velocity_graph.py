@@ -35,8 +35,8 @@ class VelocityGraph:
         subset = np.ones(adata.n_vars, bool)
         if gene_subset is not None:
             subset &= adata.var_names.isin(gene_subset) if len(adata.var_names.isin(gene_subset)) > 0 else gene_subset
-        elif vkey + '_genes' in adata.var.keys():
-            subset &= np.array(adata.var[vkey + '_genes'].values, dtype=bool)
+        elif f'{vkey}_genes' in adata.var.keys():
+            subset &= np.array(adata.var[f'{vkey}_genes'].values, dtype=bool)
 
         xkey = xkey if xkey in adata.layers.keys() else 'spliced'
 
@@ -59,8 +59,8 @@ class VelocityGraph:
         self.V_raw = np.array(self.V)
 
         self.sqrt_transform = sqrt_transform
-        if self.sqrt_transform is None and vkey + '_params' in adata.uns.keys():
-            self.sqrt_transform = adata.uns[vkey + '_params']['mode'] == 'stochastic'
+        if self.sqrt_transform is None and f'{vkey}_params' in adata.uns.keys():
+            self.sqrt_transform = adata.uns[f'{vkey}_params']['mode'] == 'stochastic'
         if self.sqrt_transform: self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
         self.V -= np.nanmean(self.V, axis=1)[:, None]
 
@@ -79,7 +79,7 @@ class VelocityGraph:
                                        mode_neighbors=mode_neighbors)[0]
         else:
             if basis is None: basis = [key for key in ['X_pca', 'X_tsne', 'X_umap'] if key in adata.obsm.keys()][-1]
-            elif 'X_' + basis in adata.obsm.keys(): basis = 'X_' + basis
+            elif f'X_{basis}' in adata.obsm.keys(): basis = f'X_{basis}'
 
             if isinstance(approx, str) and approx in adata.obsm.keys():
                 from sklearn.neighbors import NearestNeighbors
@@ -94,8 +94,8 @@ class VelocityGraph:
 
         self.max_neighs = random_neighbors_at_max
 
-        self.graph = adata.uns[vkey + '_graph'] if vkey + '_graph' in adata.uns.keys() else []
-        self.graph_neg = adata.uns[vkey + '_graph_neg'] if vkey + '_graph_neg' in adata.uns.keys() else []
+        self.graph = adata.uns[f'{vkey}_graph'] if f'{vkey}_graph' in adata.uns.keys() else []
+        self.graph_neg = adata.uns[f'{vkey}_graph_neg'] if f'{vkey}_graph_neg' in adata.uns.keys() else []
 
         if tkey in adata.obs.keys():
             self.t0 = adata.obs[tkey].copy()
@@ -224,31 +224,31 @@ def velocity_graph(data, vkey='velocity', xkey='Ms', tkey=None, basis=None, n_ne
 
     if isinstance(basis, str):
         logg.warn(
-            'The velocity graph is computed on ' + basis + 'embedding coordinates. Consider computing \n'
+            f'The velocity graph is computed on {basis} embedding coordinates. Consider computing \n'
             '         the graph in an unbiased manner on full expression space by not specifying basis.\n')
 
     logg.info('computing velocity graph', r=True)
     vgraph.compute_cosines()
 
-    adata.uns[vkey+'_graph'] = vgraph.graph
-    adata.uns[vkey+'_graph_neg'] = vgraph.graph_neg
+    adata.uns[f'{vkey}_graph'] = vgraph.graph
+    adata.uns[f'{vkey}_graph_neg'] = vgraph.graph_neg
 
     if vgraph.uncertainties is not None:
-        adata.uns[vkey+'_graph_uncertainties'] = vgraph.uncertainties
+        adata.uns[f'{vkey}_graph_uncertainties'] = vgraph.uncertainties
 
-    adata.obs[vkey+'_self_transition'] = vgraph.self_prob
+    adata.obs[f'{vkey}_self_transition'] = vgraph.self_prob
 
-    if vkey + '_params' in adata.uns.keys():
-        if 'embeddings' in adata.uns[vkey + '_params']:
-            del adata.uns[vkey + '_params']['embeddings']
+    if f'{vkey}_params' in adata.uns.keys():
+        if 'embeddings' in adata.uns[f'{vkey}_params']:
+            del adata.uns[f'{vkey}_params']['embeddings']
     else:
-        adata.uns[vkey + '_params'] = {}
-    adata.uns[vkey + '_params']['mode_neighbors'] = mode_neighbors
-    adata.uns[vkey + '_params']['n_recurse_neighbors'] = vgraph.n_recurse_neighbors
+        adata.uns[f'{vkey}_params'] = {}
+    adata.uns[f'{vkey}_params']['mode_neighbors'] = mode_neighbors
+    adata.uns[f'{vkey}_params']['n_recurse_neighbors'] = vgraph.n_recurse_neighbors
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
         'added \n'
-        '    \'' + vkey + '_graph\', sparse matrix with cosine correlations (adata.uns)')
+        f'    \'{vkey}_graph\', sparse matrix with cosine correlations (adata.uns)')
 
     return adata if copy else None

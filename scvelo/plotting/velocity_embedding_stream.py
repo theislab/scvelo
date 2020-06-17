@@ -64,8 +64,8 @@ def velocity_embedding_stream(adata, basis=None, vkey='velocity', density=None, 
     if X_grid is None or V_grid is None:
         _adata = adata[groups_to_bool(adata, groups, groupby=color)] \
             if groups is not None and color in adata.obs.keys() else adata
-        X_emb = np.array(_adata.obsm['X_' + basis][:, get_components(components, basis)]) if X is None else X[:, :2]
-        V_emb = np.array(_adata.obsm[vkey + '_' + basis][:, get_components(components, basis)]) if V is None else V[:, :2]
+        X_emb = np.array(_adata.obsm[f'X_{basis}'][:, get_components(components, basis)]) if X is None else X[:, :2]
+        V_emb = np.array(_adata.obsm[f'{vkey}_{basis}'][:, get_components(components, basis)]) if V is None else V[:, :2]
         X_grid, V_grid = compute_velocity_on_grid(X_emb=X_emb, V_emb=V_emb, density=1, smooth=smooth, min_mass=min_mass,
                                                   n_neighbors=n_neighbors, autoscale=False, adjust_for_stream=True,
                                                   cutoff_perc=cutoff_perc)

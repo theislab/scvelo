@@ -243,7 +243,7 @@ default_pars_names = ['alpha', 'beta', 'gamma', 't_', 'scaling', 'std_u', 'std_s
 def read_pars(adata, pars_names=None, key='fit'):
     pars = []
     for name in (default_pars_names if pars_names is None else pars_names):
-        pkey = key + '_' + name
+        pkey = f'{key}_{name}'
         par = adata.var[pkey].values if pkey in adata.var.keys() else np.zeros(adata.n_vars) * np.nan
         pars.append(par)
     return pars
@@ -251,7 +251,7 @@ def read_pars(adata, pars_names=None, key='fit'):
 
 def write_pars(adata, pars, pars_names=None, add_key='fit'):
     for i, name in enumerate(default_pars_names if pars_names is None else pars_names):
-        adata.var[add_key + '_' + name] = pars[i]
+        adata.var[f'{add_key}_{name}'] = pars[i]
 
 
 def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_iter=10, assignment_mode='projection',
@@ -407,7 +407,7 @@ def recover_dynamics(data, var_names='velocity_genes', n_top_genes=None, max_ite
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n' 
-              '    \'' + add_key + '_pars' + '\', fitted parameters for splicing dynamics (adata.var)')
+              f'    \'{add_key}_pars\', fitted parameters for splicing dynamics (adata.var)')
 
     if plot_results:  # Plot Parameter Stats
         n_rows, n_cols = len(var_names[:4]), 6
@@ -570,7 +570,7 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
     if 'fit_t' not in adata.layers.keys():
         raise ValueError('you need to run `tl.recover_dynamics` first.')
 
-    if vkey + '_graph' not in adata.uns.keys():
+    if f'{vkey}_graph' not in adata.uns.keys():
         velocity_graph(adata, approx=True)
 
     if root_key is None:
@@ -603,7 +603,7 @@ def latent_time(data, vkey='velocity', min_likelihood=.1, min_confidence=.75, mi
             logg.warn('No root cells detected. Consider specifying root cells to improve latent time prediction.')
     else:
         roots = [adata.uns[root_key]]
-        root_key = 'root cell ' + str(adata.uns[root_key])
+        root_key = f'root cell {adata.uns[root_key]}'
 
     if end_key in adata.obs.keys():
         fates = np.argsort(t_sum)[::-1]
@@ -776,13 +776,13 @@ def differential_kinetic_test(data, var_names='velocity_genes', groupby=None, us
     progress.finish()
 
     write_pars(adata, [diff_kinetics, pval_kinetics], pars_names=['diff_kinetics', 'pval_kinetics'])
-    adata.varm[add_key + '_pvals_kinetics'] = np.rec.fromarrays(pvals.T, dtype=[(str(rn), 'float32') for rn in groups]).T
+    adata.varm[f"{add_key}_pvals_kinetics"] = np.rec.fromarrays(pvals.T, dtype=[(f"{rn}", 'float32') for rn in groups]).T
     adata.uns['recover_dynamics']['fit_diff_kinetics'] = groupby
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint('added \n' 
-              '    \'' + add_key + '_diff_kinetics' + '\', clusters displaying differential kinetics (adata.var)\n'
-              '    \'' + add_key + '_pval_kinetics' + '\', p-values of differential kinetics (adata.var)')
+              f'    \'{add_key}_diff_kinetics\', clusters displaying differential kinetics (adata.var)\n'
+              f'    \'{add_key}_pval_kinetics\', p-values of differential kinetics (adata.var)')
 
     if return_model:
         logg.info('\noutputs model fit of gene:', dm.gene)
@@ -836,12 +836,12 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
     if key not in adata.uns.keys(): adata.uns[key] = {}
 
     adata.uns[key] = \
-        {'names': np.rec.fromarrays([n for n in rankings_gene_names], dtype=[(str(rn), 'U50') for rn in groups]),
-         'scores': np.rec.fromarrays([n.round(2) for n in rankings_gene_scores], dtype=[(str(rn), 'float32') for rn in groups])}
+        {'names': np.rec.fromarrays([n for n in rankings_gene_names], dtype=[(f"{rn}", 'U50') for rn in groups]),
+         'scores': np.rec.fromarrays([n.round(2) for n in rankings_gene_scores], dtype=[(f"{rn}", 'float32') for rn in groups])}
 
     logg.info('    finished', time=True, end=' ' if settings.verbosity > 2 else '\n')
     logg.hint(
         'added \n'
-        '    \'' + key + '\', sorted scores by group ids (adata.uns)')
+        f'    \'{key}\', sorted scores by group ids (adata.uns)')
 
     return adata if copy else None

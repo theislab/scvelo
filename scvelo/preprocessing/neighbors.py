@@ -81,8 +81,8 @@ def neighbors(
     if use_rep is None:
         use_rep = "X" if adata.n_vars < 50 or n_pcs == 0 else "X_pca"
         n_pcs = None if use_rep == "X" else n_pcs
-    elif use_rep not in adata.obsm.keys() and "X_" + use_rep in adata.obsm.keys():
-        use_rep = "X_" + use_rep
+    elif use_rep not in adata.obsm.keys() and f"X_{use_rep}" in adata.obsm.keys():
+        use_rep = f"X_{use_rep}"
 
     if use_rep == "X_pca":
         if (
@@ -283,7 +283,7 @@ def select_connectivities(connectivities, n_neighbors=None):
 def get_neighs(adata, mode="distances"):
     if hasattr(adata, "obsp") and mode in adata.obsp.keys():
         return adata.obsp[mode]
-    elif 'neighbors' in adata.uns.keys() and mode in adata.uns["neighbors"]:
+    elif "neighbors" in adata.uns.keys() and mode in adata.uns["neighbors"]:
         return adata.uns["neighbors"][mode]
     else:
         raise ValueError("The selected mode is not valid.")

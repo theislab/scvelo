@@ -92,7 +92,7 @@ def proportions(adata, groupby='clusters', layers=['spliced', 'unspliced', 'ambi
                 r, g, b, _ = color
                 text_color = 'white' if r * g * b < 0.5 else 'darkgrey'
                 for y, (x, c) in enumerate(zip(xpos, widths)):
-                    ax2.text(x, y, '{:.0f}%'.format(c * 100), ha='center', va='center',
+                    ax2.text(x, y, f'{(c * 100):.0f}%', ha='center', va='center',
                              color=text_color, fontsize=fontsize, fontweight='bold')
 
         ax2.legend(ncol=len(layers_keys), bbox_to_anchor=(0, 1), loc='lower left', fontsize=fontsize)

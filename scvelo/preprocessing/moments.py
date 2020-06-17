@@ -73,7 +73,7 @@ def moments(
     if "spliced" not in adata.layers.keys() or "unspliced" not in adata.layers.keys():
         logg.warn("Skipping moments, because un/spliced counts were not found.")
     else:
-        logg.info("computing moments based on " + str(mode), r=True)
+        logg.info(f"computing moments based on {mode}", r=True)
         connectivities = get_connectivities(
             adata, mode, n_neighbors=n_neighbors, recurse_neighbors=False
         )

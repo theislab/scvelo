@@ -109,7 +109,7 @@ def heatmap(
         for i, col in enumerate(col_colors):
             if not is_categorical(adata, col):
                 obs_col = adata.obs[col]
-                adata.obs[col + "_categorical"] = pd.Categorical(
+                adata.obs[f"{col}_categorical"] = pd.Categorical(
                     np.round(obs_col / np.max(obs_col), 2) * np.max(obs_col)
                 )
                 col += "_categorical"
@@ -373,13 +373,13 @@ def heatmap_deprecated(
                                 else:
                                     groups_axis.set_yticks([])
                         else:
-                            pl.yticks([0], [layer + " " + var])
+                            pl.yticks([0], [f"{layer} {var}"])
                     else:
                         groups_axis.set_yticks([])
 
                     groups_axis.set_xticks([])
                     if ilayer == 0 and ivar == 0:
-                        groups_axis.set_title(str(group))
+                        groups_axis.set_title(f"{group}")
                     groups_axis.grid(False)
 
                     # handle needed as mappable for colorbar
@@ -496,7 +496,7 @@ def heatmap_deprecated(
                         else:
                             groups_axis.set_yticks([])
                 else:
-                    pl.yticks([0], [layer + " " + var])
+                    pl.yticks([0], [f"{layer} {var}"])
 
         # further annotations bars
         if annotations is not None:

@@ -52,7 +52,7 @@ def show_proportions(adata, layers=["spliced", "unspliced", "ambigious"], use_ra
         for counts_per_cell in counts_layers
     ]
 
-    print("Abundance of " + str(layers_keys) + ": " + str(np.round(mean_abundances, 2)))
+    print(f"Abundance of {layers_keys}: {np.round(mean_abundances, 2)}")
 
 
 def verify_dtypes(adata):
@@ -127,10 +127,10 @@ def set_initial_size(adata, layers={"spliced", "unspliced"}):
         layer
         for layer in layers
         if layer in adata.layers.keys()
-        and "initial_size_" + layer not in adata.obs.keys()
+        and f"initial_size_{layer}" not in adata.obs.keys()
     ]
     for layer in layers:
-        adata.obs["initial_size_" + layer] = get_size(adata, layer)
+        adata.obs[f"initial_size_{layer}"] = get_size(adata, layer)
     if "initial_size" not in adata.obs.keys():
         adata.obs["initial_size"] = get_size(adata)
 
@@ -138,15 +138,15 @@ def set_initial_size(adata, layers={"spliced", "unspliced"}):
 def get_initial_size(adata, layer=None, by_total_size=None):
     if by_total_size:
         sizes = [
-            adata.obs["initial_size_" + layer]
+            adata.obs[f"initial_size_{layer}"]
             for layer in {"spliced", "unspliced"}
-            if "initial_size_" + layer in adata.obs.keys()
+            if f"initial_size_{layer}" in adata.obs.keys()
         ]
         return np.sum(sizes, axis=0)
     elif layer in adata.layers.keys():
         return (
-            np.array(adata.obs["initial_size_" + layer])
-            if "initial_size_" + layer in adata.obs.keys()
+            np.array(adata.obs[f"initial_size_{layer}"])
+            if f"initial_size_{layer}" in adata.obs.keys()
             else get_size(adata, layer)
         )
     elif layer is None or layer == "X":
@@ -295,19 +295,19 @@ def filter_genes(
 
         s = np.sum(~gene_subset)
         if s > 0:
-            logg.info("Filtered out {} genes that are detected".format(s), end=" ")
+            logg.info(f"Filtered out {s} genes that are detected", end=" ")
             if _min_cells is not None or _min_counts is not None:
                 logg.info(
-                    f"in less than {str(_min_cells)} cells ({str(layer)})."
+                    f"in less than {_min_cells} cells ({layer})."
                     if _min_counts is None
-                    else f"{str(_min_counts)} counts ({str(layer)}).",
+                    else f"{_min_counts} counts ({layer}).",
                     no_indent=True,
                 )
             if max_cells is not None or max_counts is not None:
                 logg.info(
-                    f"in more than {str(_max_cells)} cells ({str(layer)})."
+                    f"in more than {_max_cells} cells ({layer})."
                     if _max_counts is None
-                    else f"{str(_max_counts)} counts ({str(layer)}).",
+                    else f"{_max_counts} counts ({layer}).",
                     no_indent=True,
                 )
 
@@ -555,13 +555,13 @@ def normalize_per_cell(
                     pass
         else:
             logg.warn(
-                "Did not normalize {} as it looks processed already. "
-                "To enforce normalization, set `enforce=True`.".format(layer)
+                f"Did not normalize {layer} as it looks processed already. "
+                "To enforce normalization, set `enforce=True`."
             )
 
     adata.obs["n_counts" if key_n_counts is None else key_n_counts] = get_size(adata)
     if len(modified_layers) > 0:
-        logg.info("Normalized count data:", ", ".join(modified_layers) + ".")
+        logg.info("Normalized count data:", f"{', '.join(modified_layers)}.")
 
     return adata if copy else None
 
