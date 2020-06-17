@@ -289,14 +289,14 @@ class MomentGenerator:
         return self.set_moments()
 
     def _normalize(self):
-        """Normalize data
+        """Normalize data.
         """
 
         if any([not_yet_normalized(self.adata.layers[layer]) for layer in self.layers]):
             normalize_per_cell(self.adata)
 
     def set_neighbors(self):
-        """Set neigbors in `self.adata`
+        """Set neigbors in `self.adata`.
         """
 
         if self.n_neighbors is not None and self.n_neighbors > get_n_neighs(self.adata):
