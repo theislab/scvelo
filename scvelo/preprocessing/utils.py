@@ -121,7 +121,9 @@ def get_size(adata, layer=None):
     return sum_var(X)
 
 
-def set_initial_size(adata, layers={"spliced", "unspliced"}):
+def set_initial_size(adata, layers=None):
+    if layers is None:
+        layers = ["spliced", "unspliced"]
     verify_dtypes(adata)
     layers = [
         layer
@@ -194,6 +196,7 @@ def filter_genes(
     max_cells_u=None,
     min_shared_counts=None,
     min_shared_cells=None,
+    retain_genes=None,
     copy=False,
 ):
     """Filter genes based on number of cells or counts.
@@ -228,6 +231,8 @@ def filter_genes(
         Minimum number of counts (both unspliced and spliced) required for a gene.
     min_shared_cells: `int`, optional (default: `None`)
         Minimum number of cells required to be expressed (both unspliced and spliced).
+    retain_genes: `list`, optional (default: `None`)
+        List of gene names to be retained independent of thresholds.
     copy : `bool`, optional (default: `False`)
         Determines whether a copy is returned.
 
@@ -291,6 +296,11 @@ def filter_genes(
         if _min_cells is not None or _max_cells is not None:
             gene_subset &= filter(X, min_cells=_min_cells, max_cells=_max_cells)[0]
 
+        if retain_genes is not None:
+            if isinstance(retain_genes, str):
+                retain_genes = [retain_genes]
+            gene_subset |= adata.var_names.isin(retain_genes)
+
         adata._inplace_subset_var(gene_subset)
 
         s = np.sum(~gene_subset)
@@ -323,7 +333,9 @@ def filter_genes_dispersion(
     max_mean=None,
     n_bins=20,
     n_top_genes=None,
+    retain_genes=None,
     log=True,
+    subset=True,
     copy=False,
 ):
     """Extract highly variable genes.
@@ -355,8 +367,13 @@ def filter_genes_dispersion(
         about this if you set `settings.verbosity = 4`.
     n_top_genes : `int` or `None` (default: `None`)
         Number of highly-variable genes to keep.
+    retain_genes: `list`, optional (default: `None`)
+        List of gene names to be retained independent of thresholds.
     log : `bool`, optional (default: `True`)
         Use the logarithm of the mean to variance ratio.
+    subset : `bool`, optional (default: `True`)
+        Keep highly-variable genes only (if True) else write a bool
+        array for highly-variable genes while keeping all genes.
     copy : `bool`, optional (default: `False`)
         If an :class:`~anndata.AnnData` is passed, determines whether a copy
         is returned.
@@ -390,7 +407,8 @@ def filter_genes_dispersion(
             clf.fit(log_mu[:, None], log_cv)
             score = log_cv - clf.predict(log_mu[:, None])
             nth_score = np.sort(score)[::-1][n_top_genes]
-            adata._inplace_subset_var(score >= nth_score)
+            adata.var["highly_variable"] = score >= nth_score
+
         else:
             from scanpy.preprocessing import filter_genes_dispersion
 
@@ -404,7 +422,17 @@ def filter_genes_dispersion(
                 n_bins=n_bins,
                 n_top_genes=n_top_genes,
                 log=log,
+                subset=False,
             )
+
+        if subset:
+            gene_subset = adata.var["highly_variable"]
+            if retain_genes is not None:
+                if isinstance(retain_genes, str):
+                    retain_genes = [retain_genes]
+                gene_subset = gene_subset | adata.var_names.isin(retain_genes)
+            adata._inplace_subset_var(gene_subset)
+
     return adata if copy else None
 
 
@@ -457,7 +485,7 @@ def normalize_per_cell(
     key_n_counts=None,
     max_proportion_per_cell=None,
     use_initial_size=True,
-    layers=["spliced", "unspliced"],
+    layers=None,
     enforce=None,
     copy=False,
 ):
@@ -481,7 +509,7 @@ def normalize_per_cell(
         a specific proportion of cell size, e.g. 0.05.
     use_initial_size : `bool` (default: `True`)
         Whether to use initial cell sizes oder actual cell sizes.
-    layers : `str` or `list` (default: `{'spliced', 'unspliced'}`)
+    layers : `str` or `list` (default: `['spliced', 'unspliced']`)
         Keys for layers to be also considered for normalization.
     copy : `bool`, optional (default: `False`)
         If an :class:`~anndata.AnnData` is passed, determines whether a copy
@@ -598,6 +626,7 @@ def filter_and_normalize(
     min_shared_counts=None,
     min_shared_cells=None,
     n_top_genes=None,
+    retain_genes=None,
     flavor="seurat",
     log=True,
     layers_normalize=None,
@@ -638,6 +667,8 @@ def filter_and_normalize(
         Minimum number of cells required to be expressed (both unspliced and spliced).
     n_top_genes: `int` (default: `None`)
         Number of genes to keep.
+    retain_genes: `list`, optional (default: `None`)
+        List of gene names to be retained independent of thresholds.
     flavor: {'seurat', 'cell_ranger', 'svr'}, optional (default: 'seurat')
         Choose the flavor for computing normalized dispersion.
         If choosing 'seurat', this expects non-logarithmized data.
@@ -670,6 +701,7 @@ def filter_and_normalize(
         min_cells_u=min_cells_u,
         min_shared_counts=min_shared_counts,
         min_shared_cells=min_shared_cells,
+        retain_genes=retain_genes,
     )
 
     if layers_normalize is not None and "enforce" not in kwargs:
@@ -677,7 +709,9 @@ def filter_and_normalize(
     normalize_per_cell(adata, layers=layers_normalize, **kwargs)
 
     if n_top_genes is not None:
-        filter_genes_dispersion(adata, n_top_genes=n_top_genes, flavor=flavor)
+        filter_genes_dispersion(
+            adata, n_top_genes=n_top_genes, retain_genes=retain_genes, flavor=flavor
+        )
 
     log_advised = (
         np.allclose(adata.X[:10].sum(), adata.layers["spliced"][:10].sum())
