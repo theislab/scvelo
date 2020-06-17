@@ -113,7 +113,7 @@ class PAGA_tree(PAGA):
             rows, cols, vals = [], [], []
             for i in range(vgraph.shape[0]):
                 indices = vgraph[i].indices
-                idx_bool = (vpt[i] < vpt[indices])
+                idx_bool = vpt[i] < vpt[indices]
                 idx_bool &= vpt_means[indices] > vpt_means[i] - 0.1
                 cols.extend(indices[idx_bool])
                 vals.extend(vgraph[i].data[idx_bool])

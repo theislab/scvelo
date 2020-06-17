@@ -135,7 +135,7 @@ def velocity_pseudotime(
     use_velocity_graph=True,
     save_diffmap=None,
     return_model=None,
-    **kwargs
+    **kwargs,
 ):
     """Computes a pseudotime based on the velocity graph.
 

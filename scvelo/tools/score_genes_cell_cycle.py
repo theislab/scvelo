@@ -35,9 +35,14 @@ def get_phase_marker_genes(adata):
     List of S and/or G2M phase marker genes.
     """
     name, gene_names = adata.var_names[0], adata.var_names
-    up, low, cap = name.isupper(), name.islower(), name[0].isupper() and name[1:].islower()
-    s_genes_list_ = [x.upper() if up else x.lower() if low else x.capitalize() for x in s_genes_list]
-    g2m_genes_list_ = [x.upper() if up else x.lower() if low else x.capitalize() for x in g2m_genes_list]
+    up, low = name.isupper(), name.islower()
+    s_genes_list_ = [
+        x.upper() if up else x.lower() if low else x.capitalize() for x in s_genes_list
+    ]
+    g2m_genes_list_ = [
+        x.upper() if up else x.lower() if low else x.capitalize()
+        for x in g2m_genes_list
+    ]
     s_genes = np.array([x for x in s_genes_list_ if x in gene_names])
     g2m_genes = np.array([x for x in g2m_genes_list_ if x in gene_names])
     return s_genes, g2m_genes
@@ -47,8 +52,8 @@ def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kw
     """\
     Score cell cycle genes.
 
-    Calculates scores and assigns a cell cycle phase (G1, S, G2M) using the
-    list of cell cycle genes defined in Tirosh et al, 2015 (https://doi.org/10.1126/science.aad0501).
+    Calculates scores and assigns a cell cycle phase (G1, S, G2M) using the list of cell
+    cycle genes defined in Tirosh et al, 2015 (https://doi.org/10.1126/science.aad0501).
 
     Parameters
     ----------
@@ -73,25 +78,28 @@ def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kw
     **phase** : `adata.obs`, dtype `object`
         The cell cycle phase (`S`, `G2M` or `G1`) for each cell.
     """
-    logg.info('calculating cell cycle phase')
+    logg.info("calculating cell cycle phase")
     from scanpy.tools._score_genes import score_genes
 
     adata = adata.copy() if copy else adata
 
     s_genes_, g2m_genes_ = get_phase_marker_genes(adata)
-    if s_genes is None: s_genes = s_genes_
-    if g2m_genes is None: g2m_genes = g2m_genes_
+    if s_genes is None:
+        s_genes = s_genes_
+    if g2m_genes is None:
+        g2m_genes = g2m_genes_
 
     ctrl_size = min(len(s_genes), len(g2m_genes))
 
-    score_genes(adata, gene_list=s_genes, score_name='S_score', ctrl_size=ctrl_size, **kwargs)  # add s-score
-    score_genes(adata, gene_list=g2m_genes, score_name='G2M_score', ctrl_size=ctrl_size, **kwargs)  # add g2m-score
-    scores = adata.obs[['S_score', 'G2M_score']]
+    kwargs.update({"ctrl_size": ctrl_size})
+    score_genes(adata, gene_list=s_genes, score_name="S_score", **kwargs)
+    score_genes(adata, gene_list=g2m_genes, score_name="G2M_score", **kwargs)
+    scores = adata.obs[["S_score", "G2M_score"]]
 
-    phase = pd.Series('S', index=scores.index)          # default phase is S
-    phase[scores.G2M_score > scores.S_score] = 'G2M'    # if G2M is higher than S, it's G2M
-    phase[np.all(scores < 0, axis=1)] = 'G1'            # if all scores are negative, it's G1...
+    phase = pd.Series("S", index=scores.index)          # default phase is S
+    phase[scores.G2M_score > scores.S_score] = "G2M"    # G2M, if G2M is higher than S
+    phase[np.all(scores < 0, axis=1)] = "G1"            # G1, if all scores are negative
 
-    adata.obs['phase'] = phase
-    logg.hint('    \'S_score\' and \'G2M_score\', scores of cell cycle phases (adata.obs)')
+    adata.obs["phase"] = phase
+    logg.hint("    'S_score' and 'G2M_score', scores of cell cycle phases (adata.obs)")
     return adata if copy else None

@@ -6,7 +6,7 @@ from .transition_matrix import transition_matrix
 import numpy as np
 
 
-def velocity_confidence(data, vkey='velocity', copy=False):
+def velocity_confidence(data, vkey="velocity", copy=False):
     """Computes confidences of velocities.
 
     .. code:: python
@@ -37,15 +37,15 @@ def velocity_confidence(data, vkey='velocity', copy=False):
     """
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
-        raise ValueError('You need to run `tl.velocity` first.')
+        raise ValueError("You need to run `tl.velocity` first.")
 
     V = np.array(adata.layers[vkey])
 
     tmp_filter = np.invert(np.isnan(np.sum(V, axis=0)))
-    if f'{vkey}_genes' in adata.var.keys():
-        tmp_filter &= np.array(adata.var[f'{vkey}_genes'], dtype=bool)
-    if 'spearmans_score' in adata.var.keys():
-        tmp_filter &= (adata.var['spearmans_score'].values > .1)
+    if f"{vkey}_genes" in adata.var.keys():
+        tmp_filter &= np.array(adata.var[f"{vkey}_genes"], dtype=bool)
+    if "spearmans_score" in adata.var.keys():
+        tmp_filter &= adata.var["spearmans_score"].values > 0.1
 
     V = V[:, tmp_filter]
 
@@ -53,25 +53,27 @@ def velocity_confidence(data, vkey='velocity', copy=False):
     V_norm = norm(V)
     R = np.zeros(adata.n_obs)
 
-    indices = get_indices(dist=get_neighs(adata, 'distances'))[0]
+    indices = get_indices(dist=get_neighs(adata, "distances"))[0]
     for i in range(adata.n_obs):
         Vi_neighs = V[indices[i]]
         Vi_neighs -= Vi_neighs.mean(1)[:, None]
-        R[i] = np.mean(np.einsum('ij, j', Vi_neighs, V[i]) / (norm(Vi_neighs) * V_norm[i])[None, :])
+        R[i] = np.mean(
+            np.einsum("ij, j", Vi_neighs, V[i]) / (norm(Vi_neighs) * V_norm[i])[None, :]
+        )
 
-    adata.obs[f'{vkey}_length'] = V_norm.round(2)
-    adata.obs[f'{vkey}_confidence'] = np.clip(R, 0, None)
+    adata.obs[f"{vkey}_length"] = V_norm.round(2)
+    adata.obs[f"{vkey}_confidence"] = np.clip(R, 0, None)
 
-    logg.hint(f'added \'{vkey}_length\' (adata.obs)')
-    logg.hint(f'added \'{vkey}_confidence\' (adata.obs)')
+    logg.hint(f"added '{vkey}_length' (adata.obs)")
+    logg.hint(f"added '{vkey}_confidence' (adata.obs)")
 
-    if f'{vkey}_confidence_transition' not in adata.obs.keys():
+    if f"{vkey}_confidence_transition" not in adata.obs.keys():
         velocity_confidence_transition(adata, vkey)
 
     return adata if copy else None
 
 
-def velocity_confidence_transition(data, vkey='velocity', scale=10, copy=False):
+def velocity_confidence_transition(data, vkey="velocity", scale=10, copy=False):
     """Computes confidences of velocity transitions.
 
     Arguments
@@ -93,16 +95,16 @@ def velocity_confidence_transition(data, vkey='velocity', scale=10, copy=False):
     """
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
-        raise ValueError('You need to run `tl.velocity` first.')
+        raise ValueError("You need to run `tl.velocity` first.")
 
-    X = np.array(adata.layers['Ms'])
+    X = np.array(adata.layers["Ms"])
     V = np.array(adata.layers[vkey])
 
     tmp_filter = np.invert(np.isnan(np.sum(V, axis=0)))
-    if f'{vkey}_genes' in adata.var.keys():
-        tmp_filter &= np.array(adata.var[f'{vkey}_genes'], dtype=bool)
-    if 'spearmans_score' in adata.var.keys():
-        tmp_filter &= (adata.var['spearmans_score'].values > .1)
+    if f"{vkey}_genes" in adata.var.keys():
+        tmp_filter &= np.array(adata.var[f"{vkey}_genes"], dtype=bool)
+    if "spearmans_score" in adata.var.keys():
+        tmp_filter &= adata.var["spearmans_score"].values > 0.1
 
     V = V[:, tmp_filter]
     X = X[:, tmp_filter]
@@ -115,14 +117,16 @@ def velocity_confidence_transition(data, vkey='velocity', scale=10, copy=False):
     norms = norm(dX) * norm(V)
     norms += norms == 0
 
-    adata.obs[f'{vkey}_confidence_transition'] = prod_sum_var(dX, V) / norms
+    adata.obs[f"{vkey}_confidence_transition"] = prod_sum_var(dX, V) / norms
 
-    logg.hint(f'added \'{vkey}_confidence_transition\' (adata.obs)')
+    logg.hint(f"added '{vkey}_confidence_transition' (adata.obs)")
 
     return adata if copy else None
 
 
-def score_robustness(data, adata_subset=None, fraction=.5, vkey='velocity', copy=False):
+def score_robustness(
+    data, adata_subset=None, fraction=0.5, vkey="velocity", copy=False
+):
     adata = data.copy() if copy else data
 
     if adata_subset is None:
@@ -130,13 +134,13 @@ def score_robustness(data, adata_subset=None, fraction=.5, vkey='velocity', copy
         from ..preprocessing.neighbors import neighbors
         from .velocity import velocity
 
-        logg.switch_verbosity('off')
+        logg.switch_verbosity("off")
         adata_subset = adata.copy()
         subset = random_subsample(adata_subset, fraction=fraction, return_subset=True)
         neighbors(adata_subset)
         moments(adata_subset)
         velocity(adata_subset, vkey=vkey)
-        logg.switch_verbosity('on')
+        logg.switch_verbosity("on")
     else:
         subset = adata.obs_names.isin(adata_subset.obs_names)
 
@@ -145,6 +149,6 @@ def score_robustness(data, adata_subset=None, fraction=.5, vkey='velocity', copy
 
     score = np.nan * (subset == False)
     score[subset] = prod_sum_var(V, V_subset) / (norm(V) * norm(V_subset))
-    adata.obs[f'{vkey}_score_robustness'] = score
+    adata.obs[f"{vkey}_score_robustness"] = score
 
     return adata_subset if copy else None
