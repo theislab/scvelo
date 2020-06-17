@@ -292,12 +292,7 @@ class MomentGenerator:
         """Normalize data
         """
 
-        if any(
-            [
-                not_yet_normalized(self.adata.layers[layer]["raw"])
-                for layer in self.layers
-            ]
-        ):
+        if any([not_yet_normalized(self.adata.layers[layer]) for layer in self.layers]):
             normalize_per_cell(self.adata)
 
     def set_neighbors(self):
@@ -326,9 +321,7 @@ class MomentGenerator:
 
         return {
             layer: (
-                csr_matrix.dot(
-                    connectivities, csr_matrix(self.adata.layers[layer]["raw"])
-                )
+                csr_matrix.dot(connectivities, csr_matrix(self.adata.layers[layer]))
                 .astype(np.float32)
                 .A
             )
@@ -344,7 +337,7 @@ class MomentGenerator:
 
         first_moments = self.get_first_moment()
         for layer in self.layers:
-            self.adata.layers[layer]["first_moment"] = first_moments[layer]
+            self.adata.layers[f"{layer}_first_moment"] = first_moments[layer]
 
         logg.info(
             "    finished", time=True, end=" " if settings.verbosity > 2 else "\n"
