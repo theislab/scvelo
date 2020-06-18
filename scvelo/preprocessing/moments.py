@@ -240,7 +240,7 @@ class MomentGenerator:
         method: str = "umap",
         use_rep: Optional[str] = None,
         copy: bool = False,
-        layers: Optional[List[str]] = None,
+        modalities: Optional[List[str]] = None,
     ):
         """Computes moments for velocity estimation.
 
@@ -268,8 +268,9 @@ class MomentGenerator:
             automatically: for .n_vars < 50, .X is used, otherwise ‘X_pca’ is used.
         copy: `bool` (default: `False`)
             Return a copy instead of writing to adata.
-        layers: `List[str]` (default: None)
-            List of layers to compute moments for.
+        modalities: `List[str]` (default: None)
+            List of modalities to compute moments for. If set to `None`, the moments
+            for all present layers are being calculated.
         """
 
         self.adata = data.copy() if copy else data
@@ -279,20 +280,39 @@ class MomentGenerator:
         self.mode = mode
         self.method = method
         self.use_rep = "X_pca" if use_rep is None else use_rep
-        if layers is None:
-            self.layers = self.adata.layers.keys()
+        if modalities is None:
+            self.modalities = self.adata.layers.keys()
         else:
             # TODO: Add warning if provided layers do not exist
-            self.layers = set(layers).intersection(self.adata.layers.keys())
+            self.modalities = (
+                set(modalities)
+                & set("X")
+                & set(self.adata.layers.keys())
+                & set(self.adata.obsm.keys())
+            )
 
     def __call__(self):
         return self.set_moments()
+
+    def _get_modality(self, modality):
+        if modality == "X":
+            return self.adata.X
+        elif modality in self.adata.layers.keys():
+            return self.adata.layers[modality]
+        elif modality in self.adata.obsm.keys():
+            return self.adata.obsm[modality]
 
     def _normalize(self):
         """Normalize data.
         """
 
-        if any([not_yet_normalized(self.adata.layers[layer]) for layer in self.layers]):
+        if any(
+            [
+                not_yet_normalized(self.adata.layers[modality])
+                for modality in self.modalities
+                if modality in self.adata.layers.keys()
+            ]
+        ):
             normalize_per_cell(self.adata)
 
     def set_neighbors(self):
@@ -320,12 +340,12 @@ class MomentGenerator:
         )
 
         return {
-            layer: (
-                csr_matrix.dot(connectivities, csr_matrix(self.adata.layers[layer]))
+            modality: (
+                csr_matrix.dot(connectivities, csr_matrix(self._get_modality(modality)))
                 .astype(np.float32)
                 .A
             )
-            for layer in self.layers
+            for modality in self.modalities
         }
 
     def get_second_moment(self):
@@ -336,8 +356,11 @@ class MomentGenerator:
         self.set_neighbors()
 
         first_moments = self.get_first_moment()
-        for layer in self.layers:
-            self.adata.layers[f"{layer}_first_moment"] = first_moments[layer]
+        for modality in self.modalities:
+            if modality in self.adata.layers.keys():
+                self.adata.layers[f"{modality}_first_moment"] = first_moments[modality]
+            else:
+                self.adata.obsm[f"{modality}_first_moment"] = first_moments[modality]
 
         logg.info(
             "    finished", time=True, end=" " if settings.verbosity > 2 else "\n"
