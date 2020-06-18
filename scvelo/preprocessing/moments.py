@@ -326,7 +326,7 @@ class MomentGenerator:
             )
         verify_neighbors(self.adata)
 
-    def get_first_moment(self) -> List[np.array]:
+    def get_first_moments(self) -> List[np.array]:
         """Calculate first order moments.
         """
 
@@ -352,7 +352,7 @@ class MomentGenerator:
         self._normalize()
         self.set_neighbors()
 
-        first_moments = self.get_first_moment()
+        first_moments = self.get_first_moments()
         for modality in self.modalities:
             if modality in self.adata.layers.keys():
                 self.adata.layers[f"{modality}_first_moment"] = first_moments[modality]
