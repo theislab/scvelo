@@ -345,7 +345,7 @@ class MomentGenerator:
             for modality in self.modalities
         }
 
-    def get_second_moment(self):
+    def get_second_moments(self):
         raise NotImplementedError
 
     def set_moments(self) -> Optional[AnnData]:
