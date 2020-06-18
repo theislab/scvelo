@@ -284,11 +284,8 @@ class MomentGenerator:
             self.modalities = self.adata.layers.keys()
         else:
             # TODO: Add warning if provided layers do not exist
-            self.modalities = (
-                set(modalities)
-                & set("X")
-                & set(self.adata.layers.keys())
-                & set(self.adata.obsm.keys())
+            self.modalities = set(modalities) & (
+                set("X") | set(self.adata.layers.keys()) | set(self.adata.obsm.keys())
             )
 
     def __call__(self):
