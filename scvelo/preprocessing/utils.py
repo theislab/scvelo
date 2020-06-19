@@ -24,7 +24,7 @@ def sum_var(A):
         return A.sum(1).A1 if issparse(A) else np.sum(A, axis=1)
 
 
-def show_proportions(adata, layers=["spliced", "unspliced", "ambigious"], use_raw=True):
+def show_proportions(adata, layers=None, use_raw=True):
     """Proportions of spliced/unspliced abundances
 
     Arguments
@@ -36,6 +36,8 @@ def show_proportions(adata, layers=["spliced", "unspliced", "ambigious"], use_ra
     -------
     Prints the fractions of abundances.
     """
+    if layers is None:
+        layers = ["spliced", "unspliced", "ambigious"]
     layers_keys = [key for key in layers if key in adata.layers.keys()]
     counts_layers = [sum_var(adata.layers[key]) for key in layers_keys]
     if use_raw:
@@ -162,7 +164,7 @@ def get_initial_size(adata, layer=None, by_total_size=None):
         return None
 
 
-def filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
+def _filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
     counts = (
         sum_obs(X)
         if (min_counts is not None or max_counts is not None)
@@ -292,10 +294,10 @@ def filter_genes(
         gene_subset = np.ones(adata.n_vars, dtype=bool)
 
         if _min_counts is not None or _max_counts is not None:
-            gene_subset &= filter(X, min_counts=_min_counts, max_counts=_max_counts)[0]
+            gene_subset &= _filter(X, min_counts=_min_counts, max_counts=_max_counts)[0]
 
         if _min_cells is not None or _max_cells is not None:
-            gene_subset &= filter(X, min_cells=_min_cells, max_cells=_max_cells)[0]
+            gene_subset &= _filter(X, min_cells=_min_cells, max_cells=_max_cells)[0]
 
         if retain_genes is not None:
             if isinstance(retain_genes, str):
@@ -361,11 +363,11 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
     return mean, var
 
 
-def materialize_as_ndarray(a):
+def materialize_as_ndarray(key):
     """Convert distributed arrays to ndarrays."""
-    if type(a) in (list, tuple):
-        return tuple(np.asarray(arr) for arr in a)
-    return np.asarray(a)
+    if isinstance(key, (list, tuple)):
+        return tuple(np.asarray(arr) for arr in key)
+    return np.asarray(key)
 
 
 def filter_genes_dispersion(
@@ -516,7 +518,6 @@ def filter_genes_dispersion(
             else:
                 max_disp = np.inf if max_disp is None else max_disp
                 dispersion_norm[np.isnan(dispersion_norm)] = 0
-                disp = dispersion_norm
                 gene_subset = np.logical_and.reduce(
                     (
                         mean > min_mean,

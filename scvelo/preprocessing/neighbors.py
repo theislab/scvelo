@@ -19,7 +19,7 @@ def neighbors(
     random_state=0,
     method="umap",
     metric="euclidean",
-    metric_kwds={},
+    metric_kwds=None,
     num_threads=-1,
     copy=False,
 ):
@@ -107,6 +107,9 @@ def neighbors(
                 f"You seem to have {n_duplicate_cells} duplicate cells in your data.",
                 "Consider removing these via pp.remove_duplicate_cells.",
             )
+
+    if metric_kwds is None:
+        metric_kwds = {}
 
     logg.info("computing neighbors", r=True)
 
