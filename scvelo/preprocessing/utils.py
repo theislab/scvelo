@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from scipy.sparse import issparse
 from sklearn.utils import sparsefuncs
 from anndata import AnnData
@@ -324,6 +325,49 @@ def filter_genes(
     return adata if copy else None
 
 
+def get_mean_var(X, ignore_zeros=False, perc=None):
+    data = X.data if issparse(X) else X
+    mask_nans = np.isnan(data) | np.isinf(data) | np.isneginf(data)
+
+    n_nonzeros = (X != 0).sum(0)
+    n_counts = n_nonzeros if ignore_zeros else X.shape[0]
+
+    if mask_nans.sum() > 0:
+        if issparse(X):
+            data[np.isnan(data) | np.isinf(data) | np.isneginf(data)] = 0
+            n_nans = n_nonzeros - (X != 0).sum(0)
+        else:
+            X[mask_nans] = 0
+            n_nans = mask_nans.sum(0)
+        n_counts -= n_nans
+
+    if perc is not None:
+        if np.size(perc) < 2:
+            perc = [perc, 100] if perc < 50 else [0, perc]
+        lb, ub = np.percentile(data, perc)
+        data = np.clip(data, lb, ub)
+
+    if issparse(X):
+        mean = (X.sum(0) / n_counts).A1
+        mean_sq = (X.multiply(X).sum(0) / n_counts).A1
+    else:
+        mean = X.sum(0) / n_counts
+        mean_sq = np.multiply(X, X).sum(0) / n_counts
+    n_cells = np.clip(X.shape[0], 2, None)  # to avoid division by zero
+    var = (mean_sq - mean ** 2) * (n_cells / (n_cells - 1))
+
+    mean = np.nan_to_num(mean)
+    var = np.nan_to_num(var)
+    return mean, var
+
+
+def materialize_as_ndarray(a):
+    """Convert distributed arrays to ndarrays."""
+    if type(a) in (list, tuple):
+        return tuple(np.asarray(arr) for arr in a)
+    return np.asarray(a)
+
+
 def filter_genes_dispersion(
     data,
     flavor="seurat",
@@ -339,6 +383,8 @@ def filter_genes_dispersion(
     copy=False,
 ):
     """Extract highly variable genes.
+
+    Expects non-logarithmized data.
     The normalized dispersion is obtained by scaling with the mean and standard
     deviation of the dispersions for genes falling into a given bin for mean
     expression of genes. This means that for each bin of mean expression, highly
@@ -385,45 +431,105 @@ def filter_genes_dispersion(
     """
     adata = data.copy() if copy else data
     set_initial_size(adata)
+
+    mean, var = materialize_as_ndarray(get_mean_var(adata.X))
+
     if n_top_genes is not None and adata.n_vars < n_top_genes:
         logg.info(
             "Skip filtering by dispersion since number "
-            "of variables are less than `n_top_genes`"
+            "of variables are less than `n_top_genes`."
         )
     else:
         if flavor == "svr":
-            mu = adata.X.mean(0).A1 if issparse(adata.X) else adata.X.mean(0)
-            sigma = (
-                np.sqrt(adata.X.multiply(adata.X).mean(0).A1 - mu ** 2)
-                if issparse(adata.X)
-                else adata.X.std(0)
-            )
-            log_mu = np.log2(mu)
-            log_cv = np.log2(sigma / mu)
-
             from sklearn.svm import SVR
 
-            clf = SVR(gamma=150.0 / len(mu))
+            log_mu = np.log2(mean)
+            log_cv = np.log2(np.sqrt(var) / mean)
+            clf = SVR(gamma=150.0 / len(mean))
             clf.fit(log_mu[:, None], log_cv)
             score = log_cv - clf.predict(log_mu[:, None])
-            nth_score = np.sort(score)[::-1][n_top_genes]
+            nth_score = np.sort(score)[::-1][n_top_genes - 1]
             adata.var["highly_variable"] = score >= nth_score
 
         else:
-            from scanpy.preprocessing import filter_genes_dispersion
+            cut_disp = [min_disp, max_disp, min_mean, max_mean]
+            if n_top_genes is not None and not all(x is None for x in cut_disp):
+                logg.info("If you pass `n_top_genes`, all cutoffs are ignored.")
+            if min_disp is None:
+                min_disp = 0.5
+            if min_mean is None:
+                min_mean = 0.0125
+            if max_mean is None:
+                max_mean = 3
 
-            filter_genes_dispersion(
-                adata,
-                flavor=flavor,
-                min_disp=min_disp,
-                max_disp=max_disp,
-                min_mean=min_mean,
-                max_mean=max_mean,
-                n_bins=n_bins,
-                n_top_genes=n_top_genes,
-                log=log,
-                subset=False,
-            )
+            mean[mean == 0] = 1e-12  # set entries equal to zero to small value
+            dispersion = var / mean
+            if log:  # logarithmized mean as in Seurat
+                dispersion[dispersion == 0] = np.nan
+                dispersion = np.log(dispersion)
+                mean = np.log1p(mean)
+
+            # all of the following quantities are "per-gene" here
+            df = pd.DataFrame()
+            df["mean"], df["dispersion"] = mean, dispersion
+
+            if flavor == "seurat":
+                df["mean_bin"] = pd.cut(df["mean"], bins=n_bins)
+                disp_grouped = df.groupby("mean_bin")["dispersion"]
+                disp_mean_bin = disp_grouped.mean()
+                disp_std_bin = disp_grouped.std(ddof=1)
+                # retrieve genes that have nan std (i.e. single gene fell in one bin)
+                # and implicitly set them to have a normalized disperion of 1
+                one_gene_per_bin = disp_std_bin.isnull()
+                gen_indices = np.where(one_gene_per_bin[df["mean_bin"].values])
+                gen_indices = gen_indices[0].tolist()
+                disp_std_bin[one_gene_per_bin] = disp_mean_bin[one_gene_per_bin].values
+                disp_mean_bin[one_gene_per_bin] = 0
+                # normalized dispersion
+                val = df["dispersion"].values
+                mu = disp_mean_bin[df["mean_bin"].values].values
+                std = disp_std_bin[df["mean_bin"].values].values
+                df["dispersion_norm"] = (val - mu) / std
+
+            elif flavor == "cell_ranger":
+                from statsmodels import robust
+
+                cut = np.percentile(df["mean"], np.arange(10, 105, 5))
+                df["mean_bin"] = pd.cut(df["mean"], np.r_[-np.inf, cut, np.inf])
+                disp_grouped = df.groupby("mean_bin")["dispersion"]
+                disp_median_bin = disp_grouped.median()
+                with warnings.catch_warnings():  # ignore warning: "Mean of empty slice"
+                    warnings.simplefilter("ignore")
+                    disp_mad_bin = disp_grouped.apply(robust.mad)
+                val = df["dispersion"].values
+                mu = disp_median_bin[df["mean_bin"].values].values
+                std = disp_mad_bin[df["mean_bin"].values].values
+                df["dispersion_norm"] = np.abs(val - mu) / std
+            else:
+                raise ValueError('`flavor` needs to be "seurat" or "cell_ranger"')
+            dispersion_norm = df["dispersion_norm"].values
+            if n_top_genes is not None:
+                dispersion_norm = dispersion_norm[~np.isnan(dispersion_norm)]
+                dispersion_norm[::-1].sort()
+                disp_cut_off = dispersion_norm[n_top_genes - 1]
+                gene_subset = df["dispersion_norm"].values >= disp_cut_off
+            else:
+                max_disp = np.inf if max_disp is None else max_disp
+                dispersion_norm[np.isnan(dispersion_norm)] = 0
+                disp = dispersion_norm
+                gene_subset = np.logical_and.reduce(
+                    (
+                        mean > min_mean,
+                        mean < max_mean,
+                        dispersion_norm > min_disp,
+                        dispersion_norm < max_disp,
+                    )
+                )
+
+            adata.var["means"] = df["mean"].values
+            adata.var["dispersions"] = df["dispersion"].values
+            adata.var["dispersions_norm"] = df["dispersion_norm"].values
+            adata.var["highly_variable"] = gene_subset
 
         if subset:
             gene_subset = adata.var["highly_variable"]
@@ -433,6 +539,7 @@ def filter_genes_dispersion(
                 gene_subset = gene_subset | adata.var_names.isin(retain_genes)
             adata._inplace_subset_var(gene_subset)
 
+        logg.info(f"Exctracted {np.sum(gene_subset)} highly variable genes.")
     return adata if copy else None
 
 
