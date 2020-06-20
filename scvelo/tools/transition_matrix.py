@@ -201,7 +201,7 @@ def get_cell_transitions(
         self_transitions=False,
         **kwargs,
     )
-    for i in range(n_steps):
+    for _ in range(n_steps):
         t = T[X[-1]]
         indices, p = t.indices, t.data
         if n_neighbors is not None and n_neighbors < len(p):

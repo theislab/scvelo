@@ -10,7 +10,6 @@ from scanpy.tools._dpt import DPT
 
 def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False):
     """Computes the principal curve
-    
     Arguments
     ---------
     data: :class:`~anndata.AnnData`

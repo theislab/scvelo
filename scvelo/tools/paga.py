@@ -36,8 +36,6 @@ def get_igraph_from_adjacency(adjacency, directed=None):
 
 
 def get_sparse_from_igraph(graph, weight_attr=None):
-    from scipy.sparse import csr_matrix
-
     edges = graph.get_edgelist()
     if weight_attr is None:
         weights = [1] * len(edges)

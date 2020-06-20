@@ -29,7 +29,7 @@ def heatmap(
     font_scale=None,
     show=True,
     save=None,
-    **kwargs
+    **kwargs,
 ):
     """\
     Plot time series for genes as heatmap.
@@ -92,7 +92,7 @@ def heatmap(
 
     if n_convolve is not None:
         weights = np.ones(n_convolve) / n_convolve
-        for i, gene in enumerate(var_names):
+        for gene in var_names:
             try:
                 df[gene] = np.convolve(df[gene].values, weights, mode="same")
             except:
@@ -157,7 +157,7 @@ def heatmap_deprecated(
     groupby=None,
     annotations=None,
     use_raw=False,
-    layers=["X"],
+    layers=None,
     color_map=None,
     color_map_anno=None,
     colorbar=True,
@@ -169,7 +169,7 @@ def heatmap_deprecated(
     show=True,
     save=None,
     ax=None,
-    **kwargs
+    **kwargs,
 ):
 
     """\
@@ -228,6 +228,8 @@ def heatmap_deprecated(
             "A function requires computation of the pseudotime"
             "for ordering at single-cell resolution"
         )
+    if layers is None:
+        layers = ["X"]
     if annotations is None:
         annotations = []
     if isinstance(var_names, str):

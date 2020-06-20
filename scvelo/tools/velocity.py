@@ -247,7 +247,7 @@ def velocity(
         Whether to use raw data for estimation.
     use_latent_time: `bool`or `None` (default: `None`)
         Whether to use latent time as a regularization for velocity estimation.
-    perc: `float` (default: `None`)
+    perc: `float` (default: `[5, 95]`)
         Percentile, e.g. 98, for extreme quantile fit.
     min_r2: `float` (default: 0.01)
         Minimum threshold for coefficient of determination
@@ -285,7 +285,7 @@ def velocity(
         )
 
     if mode in {"dynamical", "dynamical_residuals"}:
-        from .dynamical_model_utils import mRNA, vectorize
+        from .dynamical_model_utils import vectorize
         from .dynamical_model_utils import get_reads, get_vars, get_divergence
 
         gene_subset = ~np.isnan(adata.var["fit_alpha"].values)

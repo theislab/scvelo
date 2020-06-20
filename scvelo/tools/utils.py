@@ -414,10 +414,9 @@ def test_bimodality(x, bins=30, kde=True, plot=False):
 
 def random_subsample(adata, fraction=0.1, return_subset=False, copy=False):
     adata_sub = adata.copy() if copy else adata
-    p, n = fraction, adata.n_obs
-    subset = np.random.choice([True, False], size=adata.n_obs, p=[p, 1 - p])
+    p, size = fraction, adata.n_obs
+    subset = np.random.choice([True, False], size=size, p=[p, 1 - p])
     adata_sub._inplace_subset_obs(subset)
-
     return adata_sub if copy else subset if return_subset else None
 
 

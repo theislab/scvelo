@@ -1,7 +1,8 @@
 from .. import settings
 from ..preprocessing.neighbors import get_neighs
 from ..tools.transition_matrix import transition_matrix
-from .utils import savefig_or_show, default_basis, get_components, get_basis, groups_to_bool, default_size
+from .utils import savefig_or_show, default_basis, get_components
+from .utils import get_basis, groups_to_bool, default_size
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
 
@@ -11,10 +12,32 @@ from scipy.sparse import issparse, csr_matrix
 
 
 @doc_params(scatter=doc_scatter)
-def velocity_graph(adata, basis=None, vkey='velocity', which_graph=None, n_neighbors=10, arrows=None, arrowsize=3,
-                   alpha=.8, perc=None, threshold=None, edge_width=.2, edge_color='grey', edges_on_top=None, color=None,
-                   layer=None, size=None, groups=None, components=None, title=None, dpi=None, show=True, save=None,
-                   ax=None, **kwargs):
+def velocity_graph(
+    adata,
+    basis=None,
+    vkey="velocity",
+    which_graph=None,
+    n_neighbors=10,
+    arrows=None,
+    arrowsize=3,
+    alpha=0.8,
+    perc=None,
+    threshold=None,
+    edge_width=0.2,
+    edge_color="grey",
+    edges_on_top=None,
+    color=None,
+    layer=None,
+    size=None,
+    groups=None,
+    components=None,
+    title=None,
+    dpi=None,
+    show=True,
+    save=None,
+    ax=None,
+    **kwargs,
+):
     """\
     Plot of the velocity graph.
 
@@ -23,11 +46,12 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph=None, n_neigh
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
     which_graph: `'velocity_graph'` or `'connectivities'`  (default: `None`)
-        Whether to show transitions from velocity graph or connectivities from neighbors graph.
+        Whether to show transitions from velocity graph or neighbor connectivities.
     n_neighbors: `int` (default: 10)
         Number of neighbors to be included for generating connectivity / velocity graph.
     arrows: `bool` (default: `None`)
-        Whether to display arrows instead of edges. Recommended to be used only on a cluster by setting groups parameter.
+        Whether to display arrows instead of edges.
+        Recommended to be used only on a cluster by setting groups parameter.
     arrowsize: `int` (default: 3)
         Size of the arrow heads.
 
@@ -38,58 +62,107 @@ def velocity_graph(adata, basis=None, vkey='velocity', which_graph=None, n_neigh
         `matplotlib.Axis` if `show==False`
     """
     basis = default_basis(adata, **kwargs) if basis is None else get_basis(adata, basis)
-    kwargs.update({"basis": basis, "title": which_graph if title is None else title,
-                   "alpha": alpha, "components": components, "groups": groups, "dpi": dpi, "show": False, "save": None})
+    kwargs.update(
+        {
+            "basis": basis,
+            "title": which_graph if title is None else title,
+            "alpha": alpha,
+            "components": components,
+            "groups": groups,
+            "dpi": dpi,
+            "show": False,
+            "save": None,
+        }
+    )
     ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, zorder=0, **kwargs)
 
     from networkx import Graph, DiGraph
-    if which_graph in {'neighbors', 'connectivities'}:
-        T = get_neighs(adata, 'connectivities').copy()
+
+    if which_graph in {"neighbors", "connectivities"}:
+        T = get_neighs(adata, "connectivities").copy()
         if perc is not None or threshold is not None:
-            if threshold is None: threshold = np.percentile(T.data, perc)
+            if threshold is None:
+                threshold = np.percentile(T.data, perc)
             T.data[T.data < threshold] = 0
             T.eliminate_zeros()
     elif which_graph in adata.uns.keys():
         T = adata.uns[which_graph].copy()
         if perc is not None or threshold is not None:
-            if threshold is None: threshold = np.percentile(T.data, perc)
+            if threshold is None:
+                threshold = np.percentile(T.data, perc)
             T.data[T.data < threshold] = 0
             T.eliminate_zeros()
-    elif hasattr(adata, 'obsp') and which_graph in adata.obsp.keys():
+    elif hasattr(adata, "obsp") and which_graph in adata.obsp.keys():
         T = adata.obsp[which_graph].copy()
         if perc is not None or threshold is not None:
-            if threshold is None: threshold = np.percentile(T.data, perc)
+            if threshold is None:
+                threshold = np.percentile(T.data, perc)
             T.data[T.data < threshold] = 0
             T.eliminate_zeros()
     else:
-        if threshold is None: threshold = .05
-        T = transition_matrix(adata, vkey=vkey, weight_indirect_neighbors=0,
-                              n_neighbors=n_neighbors, perc=perc, threshold=threshold)
+        if threshold is None:
+            threshold = 0.05
+        T = transition_matrix(
+            adata,
+            vkey=vkey,
+            weight_indirect_neighbors=0,
+            n_neighbors=n_neighbors,
+            perc=perc,
+            threshold=threshold,
+        )
 
     if groups is not None:
-        if issparse(T): T = T.A
+        if issparse(T):
+            T = T.A
         T[~groups_to_bool(adata, groups, color)] = 0
         T = csr_matrix(T)
         T.eliminate_zeros()
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        X_emb = adata.obsm[f'X_{basis}'][:, get_components(components, basis)]
-        node_size = (kwargs['size'] if 'size' in kwargs else default_size(adata)) / 4
-        edges = draw_networkx_edges(DiGraph(T) if arrows else Graph(T), X_emb, node_size=node_size,
-                                    width=edge_width, edge_color=edge_color, arrowsize=arrowsize, ax=ax)
+        X_emb = adata.obsm[f"X_{basis}"][:, get_components(components, basis)]
+        node_size = (kwargs["size"] if "size" in kwargs else default_size(adata)) / 4
+        edges = draw_networkx_edges(
+            DiGraph(T) if arrows else Graph(T),
+            X_emb,
+            node_size=node_size,
+            width=edge_width,
+            edge_color=edge_color,
+            arrowsize=arrowsize,
+            ax=ax,
+        )
         if not arrows and not edges_on_top:
             edges.set_zorder(-2)
             edges.set_rasterized(settings._vector_friendly)
 
     savefig_or_show(dpi=dpi, save=save, show=show)
-    if not show: return ax
+    if not show:
+        return ax
 
 
-def draw_networkx_edges(G, pos, edgelist=None, width=1.0, edge_color='k', style='solid', alpha=None, arrowstyle='-|>',
-                        arrowsize=3, edge_cmap=None, edge_vmin=None, edge_vmax=None, ax=None, arrows=True, label=None,
-                        node_size=300, nodelist=None, node_shape="o", connectionstyle=None, min_source_margin=0,
-                        min_target_margin=0):
+def draw_networkx_edges(
+    G,
+    pos,
+    edgelist=None,
+    width=1.0,
+    edge_color="k",
+    style="solid",
+    alpha=None,
+    arrowstyle="-|>",
+    arrowsize=3,
+    edge_cmap=None,
+    edge_vmin=None,
+    edge_vmax=None,
+    ax=None,
+    arrows=True,
+    label=None,
+    node_size=300,
+    nodelist=None,
+    node_shape="o",
+    connectionstyle=None,
+    min_source_margin=0,
+    min_target_margin=0,
+):
     """Draw the edges of the graph G. Adjusted from networkx.
     """
     try:
@@ -120,17 +193,20 @@ def draw_networkx_edges(G, pos, edgelist=None, width=1.0, edge_color='k', style=
 
     # FancyArrowPatch handles color=None different from LineCollection
     if edge_color is None:
-        edge_color = 'k'
+        edge_color = "k"
 
     # set edge positions
     edge_pos = np.asarray([(pos[e[0]], pos[e[1]]) for e in edgelist])
 
     # Check if edge_color is an array of floats and map to edge_cmap.
     # This is the only case handled differently from matplotlib
-    if np.iterable(edge_color) and (len(edge_color) == len(edge_pos)) \
-            and np.alltrue([isinstance(c, Number) for c in edge_color]):
+    if (
+        np.iterable(edge_color)
+        and (len(edge_color) == len(edge_pos))
+        and np.alltrue([isinstance(c, Number) for c in edge_color])
+    ):
         if edge_cmap is not None:
-            assert(isinstance(edge_cmap, Colormap))
+            assert isinstance(edge_cmap, Colormap)
         else:
             edge_cmap = plt.get_cmap()
         if edge_vmin is None:
@@ -140,15 +216,16 @@ def draw_networkx_edges(G, pos, edgelist=None, width=1.0, edge_color='k', style=
         color_normal = Normalize(vmin=edge_vmin, vmax=edge_vmax)
         edge_color = [edge_cmap(color_normal(e)) for e in edge_color]
 
-    if (not G.is_directed() or not arrows):
-        edge_collection = LineCollection(edge_pos,
-                                         colors=edge_color,
-                                         linewidths=width,
-                                         antialiaseds=(1,),
-                                         linestyle=style,
-                                         transOffset=ax.transData,
-                                         alpha=alpha
-                                         )
+    if not G.is_directed() or not arrows:
+        edge_collection = LineCollection(
+            edge_pos,
+            colors=edge_color,
+            linewidths=width,
+            antialiaseds=(1,),
+            linestyle=style,
+            transOffset=ax.transData,
+            alpha=alpha,
+        )
 
         edge_collection.set_cmap(edge_cmap)
         edge_collection.set_clim(edge_vmin, edge_vmax)
@@ -213,16 +290,19 @@ def draw_networkx_edges(G, pos, edgelist=None, width=1.0, edge_color='k', style=
             else:
                 line_width = width
 
-            arrow = FancyArrowPatch((x1, y1), (x2, y2),
-                                    arrowstyle=arrowstyle,
-                                    shrinkA=shrink_source,
-                                    shrinkB=shrink_target,
-                                    mutation_scale=mutation_scale,
-                                    color=arrow_color,
-                                    linewidth=line_width,
-                                    connectionstyle=connectionstyle,
-                                    linestyle=style,
-                                    zorder=1)  # arrows go behind nodes
+            arrow = FancyArrowPatch(
+                (x1, y1),
+                (x2, y2),
+                arrowstyle=arrowstyle,
+                shrinkA=shrink_source,
+                shrinkB=shrink_target,
+                mutation_scale=mutation_scale,
+                color=arrow_color,
+                linewidth=line_width,
+                connectionstyle=connectionstyle,
+                linestyle=style,
+                zorder=1,
+            )  # arrows go behind nodes
 
             # There seems to be a bug in matplotlib to make collections of
             # FancyArrowPatch instances. Until fixed, the patches are added
@@ -238,17 +318,18 @@ def draw_networkx_edges(G, pos, edgelist=None, width=1.0, edge_color='k', style=
 
     w = maxx - minx
     h = maxy - miny
-    padx,  pady = 0.05 * w, 0.05 * h
+    padx, pady = 0.05 * w, 0.05 * h
     corners = (minx - padx, miny - pady), (maxx + padx, maxy + pady)
     ax.update_datalim(corners)
     ax.autoscale_view()
 
     ax.tick_params(
-        axis='both',
-        which='both',
+        axis="both",
+        which="both",
         bottom=False,
         left=False,
         labelbottom=False,
-        labelleft=False)
+        labelleft=False,
+    )
 
     return arrow_collection

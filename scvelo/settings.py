@@ -296,7 +296,6 @@ def set_figure_params(
         IPython.display.set_matplotlib_formats(*ipython_format)
     except:
         pass
-    from matplotlib import rcParams
 
     global _rcParams_style
     _rcParams_style = style

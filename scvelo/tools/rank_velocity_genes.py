@@ -330,7 +330,7 @@ def rank_velocity_genes(
         mean[i], var[i] = get_mean_var(X[mask])
 
     # test each against the union of all other groups
-    rankings_gene_names, rankings_gene_scores, indices = [], [], []
+    rankings_gene_names, rankings_gene_scores = [], []
     for i in range(n_groups):
         mask_rest = ~groups_masks[i]
         mean_rest, var_rest = get_mean_var(X[mask_rest])

@@ -11,7 +11,8 @@ from functools import partial
 
 
 def _wraps_plot(wrapper, func):
-    annots_orig = {k: v for k, v in wrapper.__annotations__.items() if k not in {'self', 'kwargs'}}  # 'adata',
+    args = {"self", "kwargs"}
+    annots_orig = {k: v for k, v in wrapper.__annotations__.items() if k not in args}
     annots = {k: v for k, v in func.__annotations__.items()}
     wrapper.__annotations__ = {**annots, **annots_orig}
     wrapper.__wrapped__ = func
@@ -19,16 +20,20 @@ def _wraps_plot(wrapper, func):
 
 
 _wraps_plot_scatter = partial(_wraps_plot, func=scatter)
+_wraps_plot_hist = partial(_wraps_plot, func=hist)
+_wraps_plot_velocity_graph = partial(_wraps_plot, func=velocity_graph)
 _wraps_plot_velocity_embedding = partial(_wraps_plot, func=velocity_embedding)
 _wraps_plot_velocity_embedding_grid = partial(_wraps_plot, func=velocity_embedding_grid)
-_wraps_plot_velocity_embedding_stream = partial(_wraps_plot, func=velocity_embedding_stream)
-_wraps_plot_velocity_graph = partial(_wraps_plot, func=velocity_graph)
-_wraps_plot_hist = partial(_wraps_plot, func=hist)
+_wraps_plot_velocity_embedding_stream = partial(
+    _wraps_plot, func=velocity_embedding_stream
+)
 
 
 def gridspec(ncols=4, nrows=1, figsize=None, dpi=None):
     figsize, dpi = get_figure_params(figsize, dpi, ncols)
-    gs = pl.GridSpec(nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi))
+    gs = pl.GridSpec(
+        nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi)
+    )
     return gs
 
 
@@ -60,7 +65,7 @@ class GridSpec:
         """
         self.ncols, self.nrows, self.figsize, self.dpi = ncols, nrows, figsize, dpi
         self.scatter_kwargs = scatter_kwargs
-        self.scatter_kwargs.update({'show': False})
+        self.scatter_kwargs.update({"show": False})
         self.get_new_grid()
         self.new_row = None
 
@@ -70,7 +75,7 @@ class GridSpec:
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.new_row and self.count < self.max_count:
             ax = pl.subplot(self.gs[self.max_count - 1])
-            ax.axis('off')
+            ax.axis("off")
         pl.show()
 
     def get_new_grid(self):
@@ -88,7 +93,7 @@ class GridSpec:
         _kwargs = self.scatter_kwargs.copy()
         if kwargs is not None:
             _kwargs.update(kwargs)
-        _kwargs.update({'ax': self.get_ax(), 'show': False})
+        _kwargs.update({"ax": self.get_ax(), "show": False})
         return _kwargs
 
     @_wraps_plot_scatter
