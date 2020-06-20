@@ -381,7 +381,7 @@ def default_ykey(adata, use_raw):
 def default_arrow(size):
     if isinstance(size, (list, tuple)) and len(size) == 3:
         head_l, head_w, ax_l = size
-    elif type(size) == int or type(size) == float:
+    elif isinstance(size, (int, np.integer, float)):
         head_l, head_w, ax_l = 12 * size, 10 * size, 8 * size
     else:
         head_l, head_w, ax_l = 12, 10, 8
@@ -568,7 +568,7 @@ def set_legend(
         legend_fontweight = "bold" if legend_fontweight is None else legend_fontweight
         # identify centroids to put labels
         texts = []
-        for ilabel, label in enumerate(categories):
+        for label in categories:
             x_pos, y_pos = np.nanmedian(scatter_array[obs_vals == label, :], axis=0)
             if isinstance(label, str):
                 label = label.replace("_", " ")

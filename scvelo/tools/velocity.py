@@ -285,7 +285,6 @@ def velocity(
         )
 
     if mode in {"dynamical", "dynamical_residuals"}:
-        from .dynamical_model_utils import vectorize
         from .dynamical_model_utils import get_reads, get_vars, get_divergence
 
         gene_subset = ~np.isnan(adata.var["fit_alpha"].values)

@@ -166,13 +166,11 @@ def draw_networkx_edges(
     """Draw the edges of the graph G. Adjusted from networkx.
     """
     try:
-        import matplotlib
         import matplotlib.pyplot as plt
         from matplotlib.colors import colorConverter, Colormap, Normalize
         from matplotlib.collections import LineCollection
         from matplotlib.patches import FancyArrowPatch
         from numbers import Number
-        import numpy as np
     except ImportError:
         raise ImportError("Matplotlib required for draw()")
     except RuntimeError:

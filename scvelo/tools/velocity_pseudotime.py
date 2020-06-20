@@ -20,7 +20,6 @@ def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False
         Number of pricipal components to be used.
     copy: `bool`, (default: `False`)
         Return a copy instead of writing to adata.
-    
     Returns
     -------
     Returns or updates `adata` with the attributes

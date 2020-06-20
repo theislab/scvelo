@@ -603,9 +603,8 @@ def _paga(
     x, y = pos[:, 0], pos[:, 1]
 
     if plot:
-        axs, panel_pos, draw_region_width, figure_width = setup_axes(
-            ax=ax, panels=colors, colorbars=colorbars
-        )
+        axs_pars = setup_axes(ax=ax, panels=colors, colorbars=colorbars)
+        axs, panel_pos, draw_region_width, _ = axs_pars
 
         if len(colors) == 1 and not isinstance(axs, list):
             axs = [axs]
@@ -669,7 +668,7 @@ def _paga(
                 else:
                     ax_cb = cax[icolor]
 
-                cb = pl.colorbar(sct, cax=ax_cb)
+                pl.colorbar(sct, cax=ax_cb)
     if add_pos:
         adata.uns["paga"]["pos"] = pos
     if plot:
@@ -795,7 +794,7 @@ def _paga_graph(
     if isinstance(colors, str) and colors in var_names:
         x_color = []
         cats = adata.obs[groups_key].cat.categories
-        for icat, cat in enumerate(cats):
+        for cat in cats:
             subset = (cat == adata.obs[groups_key]).values
             if adata.raw is not None and use_raw:
                 adata_gene = adata.raw[:, colors]
@@ -812,7 +811,7 @@ def _paga_graph(
     ):
         x_color = []
         cats = adata.obs[groups_key].cat.categories
-        for icat, cat in enumerate(cats):
+        for cat in cats:
             subset = (cat == adata.obs[groups_key]).values
             x_color.append(adata.obs.loc[subset, colors].mean())
         colors = x_color
@@ -827,7 +826,7 @@ def _paga_graph(
         from scanpy._utils import get_associated_colors_of_groups
 
         norm = "reference" if normalize_to_color else "prediction"
-        asso_names, asso_matrix = compute_association_matrix_of_groups(
+        _, asso_matrix = compute_association_matrix_of_groups(
             adata, prediction=groups_key, reference=colors, normalization=norm
         )
         add_colors_for_categorical_sample_annotation(adata, colors)

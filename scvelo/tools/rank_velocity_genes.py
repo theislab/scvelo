@@ -168,7 +168,7 @@ def velocity_clusters(
 
         vc = vdata.obs["louvain"]
         cats_nums = {cat: 0 for cat in adata.obs[match_with].cat.categories}
-        for i, cat in enumerate(vc.cat.categories):
+        for cat in vc.cat.categories:
             cells_in_cat = np.where(vc == cat)[0]
             new_cat = most_common_in_list(adata.obs[match_with][cells_in_cat])
             cats_nums[new_cat] += 1

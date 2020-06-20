@@ -106,12 +106,11 @@ def heatmap(
     if col_color is not None:
         col_colors = to_list(col_color)
         col_color = []
-        for i, col in enumerate(col_colors):
+        for _, col in enumerate(col_colors):
             if not is_categorical(adata, col):
                 obs_col = adata.obs[col]
-                adata.obs[f"{col}_categorical"] = pd.Categorical(
-                    np.round(obs_col / np.max(obs_col), 2) * np.max(obs_col)
-                )
+                cat_col = np.round(obs_col / np.max(obs_col), 2) * np.max(obs_col)
+                adata.obs[f"{col}_categorical"] = pd.Categorical(cat_col)
                 col += "_categorical"
                 set_colors_for_categorical_obs(adata, col, palette)
             col_color.append(interpret_colorkey(adata, col)[np.argsort(time)])

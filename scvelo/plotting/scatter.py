@@ -365,7 +365,8 @@ def scatter(
             elif is_embedding:
                 X_emb = adata.obsm[f"X_{basis}"][:, get_components(components, basis)]
                 x, y = X_emb[:, 0], X_emb[:, 1]
-                z = X_emb[:, 2] if projection == "3d" and X_emb.shape[1] > 2 else None
+                # todo: 3d plotting
+                # z = X_emb[:, 2] if projection == "3d" and X_emb.shape[1] > 2 else None
 
             elif isinstance(x, str) and isinstance(y, str):
                 var_names = (
@@ -494,7 +495,6 @@ def scatter(
                         c *= rescale_color[1] / np.nanmax(c)
                     except:
                         logg.warn("Could not rescale colors. Pass a tuple, e.g. [0,1].")
-                        pass
 
             # set vmid to 0 if color values obtained from velocity expression
             if not np.any([v in kwargs for v in ["vmin", "vmid", "vmax"]]) and np.any(
