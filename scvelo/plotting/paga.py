@@ -27,7 +27,7 @@ def paga(
     title=None,
     threshold=None,
     layout=None,
-    layout_kwds={},
+    layout_kwds=None,
     init_pos=None,
     root=0,
     labels=None,
@@ -47,7 +47,7 @@ def paga(
     normalize_to_color=False,
     cmap=None,
     cax=None,
-    cb_kwds={},
+    cb_kwds=None,
     add_pos=True,
     export_to_gexf=False,
     plot=True,
@@ -178,6 +178,10 @@ def paga(
 
     if scatter_flag is None:
         scatter_flag = ax is None
+    if layout_kwds is None:
+        layout_kwds = {}
+    if cb_kwds is None:
+        cb_kwds = {}
     if vkey == "all":
         vkey = [k for k in adata.layers.keys() if "velocity" in k and "_u" not in k]
     layers, vkeys = make_unique_list(layer), make_unique_list(vkey)

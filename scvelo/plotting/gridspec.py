@@ -113,10 +113,6 @@ class GridSpec:
         return velocity_embedding_stream(adata, **self.get_kwargs(kwargs))
 
     @_wraps_plot_velocity_graph
-    def velocity_embedding(self, adata, **kwargs):
-        return velocity_embedding(adata, **self.get_kwargs(kwargs))
-
-    @_wraps_plot_velocity_graph
     def velocity_graph(self, adata, **kwargs):
         return velocity_graph(adata, **self.get_kwargs(kwargs))
 

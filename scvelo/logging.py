@@ -150,7 +150,7 @@ def print_passed_time():
     return _sec_to_str(get_passed_time())
 
 
-def timeout(func, args=(), kwargs={}, timeout_duration=2, default=None):
+def timeout(func, args=(), timeout_duration=2, default=None, **kwargs):
     """This will spwan a thread and run the given function using the args, kwargs and
     return the given default value if the timeout_duration is exceeded
     """

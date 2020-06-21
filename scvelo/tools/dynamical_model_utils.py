@@ -12,6 +12,7 @@ from scipy.sparse import issparse
 import warnings
 import pandas as pd
 import numpy as np
+
 exp = np.exp
 
 
@@ -31,13 +32,17 @@ def inv(x):
 
 def normalize(X, axis=0, min_confidence=None):
     X_sum = np.sum(X, axis=axis)
-    if min_confidence: X_sum += min_confidence
+    if min_confidence:
+        X_sum += min_confidence
     X_sum += X_sum == 0
     return X / X_sum
 
 
 def convolve(x, weights=None):
-    return (weights.multiply(x).tocsr() if issparse(weights) else weights * x) if weights is not None else x
+    if weights is None:
+        return x
+    else:
+        return weights.multiply(x).tocsr() if issparse(weights) else weights * x
 
 
 def linreg(u, s):  # linear regression fit
@@ -59,7 +64,8 @@ def compute_dt(t, clipped=True, axis=0):
 
 def root_time(t, root=None):
     nans = np.isnan(np.sum(t, axis=0))
-    if np.any(nans): t = t[:, ~nans]
+    if np.any(nans):
+        t = t[:, ~nans]
 
     t_root = 0 if root is None else t[root]
     o = np.array(t >= t_root, dtype=int)
@@ -74,7 +80,8 @@ def root_time(t, root=None):
 
 def compute_shared_time(t, perc=None, norm=True):
     nans = np.isnan(np.sum(t, axis=0))
-    if np.any(nans): t = np.array(t[:, ~nans])
+    if np.any(nans):
+        t = np.array(t[:, ~nans])
     t -= np.min(t)
 
     tx_list = np.percentile(t, [15, 20, 25, 30, 35] if perc is None else perc, axis=1)
@@ -90,7 +97,8 @@ def compute_shared_time(t, perc=None, norm=True):
     idx_best = np.argsort(mse)[:2]
 
     t_shared = tx_list[idx_best].sum(0)
-    if norm: t_shared /= t_shared.max()
+    if norm:
+        t_shared /= t_shared.max()
 
     return t_shared
 
@@ -111,8 +119,9 @@ def spliced(tau, s0, u0, alpha, beta, gamma):
 
 def mRNA(tau, u0, s0, alpha, beta, gamma):
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
+    expus = (alpha - u0 * beta) * inv(gamma - beta) * (exps - expu)
     u = u0 * expu + alpha / beta * (1 - expu)
-    s = s0 * exps + alpha / gamma * (1 - exps) + (alpha - u0 * beta) * inv(gamma - beta) * (exps - expu)
+    s = s0 * exps + alpha / gamma * (1 - exps) + expus
     return u, s
 
 
@@ -122,16 +131,17 @@ def adjust_increments(tau, tau_=None):
     dtau = np.diff(tau_ord, prepend=0)
 
     if tau_ is None:
-        #m_dtau = np.max([np.mean(dtau), np.max(tau) / len(tau), 0])
-        #ub = m_dtau + 3 * np.sqrt(m_dtau)  # Poisson with std = sqrt(mean) -> ~99.9% confidence
+        # m_dtau = np.max([np.mean(dtau), np.max(tau) / len(tau), 0])
+        # ub = m_dtau + 3 * np.sqrt(m_dtau)  # Poisson with std = sqrt(mean)
         ub = 3 * np.percentile(dtau, 99.5, axis=0)
     else:
         tau_new_ = np.array(tau_)
         tau_ord_ = np.sort(tau_new_)
         dtau_ = np.diff(tau_ord_, prepend=0)
 
-        #m_dtau = np.min([m_dtau, np.max([np.mean(dtau_), np.max(tau_) / len(tau_), 0])])
-        #ub = m_dtau + 3 * np.sqrt(m_dtau)
+        # m_dtaus = [m_dtau, np.max([np.mean(dtau_), np.max(tau_) / len(tau_), 0])]
+        # m_dtau = np.min(m_dtaus)
+        # ub = m_dtau + 3 * np.sqrt(m_dtau)  # Poisson with std = sqrt(mean)
         ub = 3 * np.percentile(np.hstack([dtau, dtau_]), 99.5, axis=0)
 
         idx = np.where(dtau_ > ub)[0]
@@ -158,17 +168,21 @@ def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
     if any_invus:  # tau_inv(u, s)
         beta_ = beta * inv(gamma - beta)
         xinf = alpha / gamma - beta_ * (alpha / beta)
-        tau = - 1 / gamma * log((s - beta_ * u - xinf) / (s0 - beta_ * u0 - xinf))
+        tau = -1 / gamma * log((s - beta_ * u - xinf) / (s0 - beta_ * u0 - xinf))
 
     if any_invu:  # tau_inv(u)
         uinf = alpha / beta
-        tau_u = - 1 / beta * log((u - uinf) / (u0 - uinf))
+        tau_u = -1 / beta * log((u - uinf) / (u0 - uinf))
         tau = tau_u * inv_u + tau * inv_us if any_invus else tau_u
     return tau
 
 
-def assign_tau(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, assignment_mode=None):
-    if assignment_mode in {'full_projection', 'partial_projection'} or (assignment_mode == 'projection' and beta < gamma):
+def assign_tau(
+    u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, assignment_mode=None
+):
+    if assignment_mode in {"full_projection", "partial_projection"} or (
+        assignment_mode == "projection" and beta < gamma
+    ):
         x_obs = np.vstack([u, s]).T
         t0 = tau_inv(np.min(u[s > 0]), u0=u0_, alpha=0, beta=beta)
 
@@ -182,7 +196,7 @@ def assign_tau(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, assignment
         # assign time points (oth. projection onto 'on' and 'off' curve)
         tau, tau_ = np.zeros(len(u)), np.zeros(len(u))
         for i, xi in enumerate(x_obs):
-            diffx, diffx_ = np.sum((xt - xi)**2, 1), np.sum((xt_ - xi)**2, 1)
+            diffx, diffx_ = np.sum((xt - xi) ** 2, 1), np.sum((xt_ - xi) ** 2, 1)
             tau[i] = tpoints[np.argmin(diffx)]
             tau_[i] = tpoints_[np.argmin(diffx_)]
     else:
@@ -195,23 +209,54 @@ def assign_tau(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, assignment
     return tau, tau_, t_
 
 
-def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s0_=None, tau=None, tau_=None,
-                       std_u=1, std_s=1, normalized=False, mode='distance', assignment_mode=None, var_scale=False,
-                       kernel_width=None, fit_steady_states=True, connectivities=None, constraint_time_increments=True,
-                       reg_time=None, reg_par=None, min_confidence=None, pval_steady=None, steady_u=None, steady_s=None,
-                       noise_model='chi', time_connectivities=None, clusters=None, **kwargs):
-    """Estimates the divergence (avaiable metrics: distance, mse, likelihood, loglikelihood) of ODE to observations
+def compute_divergence(
+    u,
+    s,
+    alpha,
+    beta,
+    gamma,
+    scaling=1,
+    t_=None,
+    u0_=None,
+    s0_=None,
+    tau=None,
+    tau_=None,
+    std_u=1,
+    std_s=1,
+    normalized=False,
+    mode="distance",
+    assignment_mode=None,
+    var_scale=False,
+    kernel_width=None,
+    fit_steady_states=True,
+    connectivities=None,
+    constraint_time_increments=True,
+    reg_time=None,
+    reg_par=None,
+    min_confidence=None,
+    pval_steady=None,
+    steady_u=None,
+    steady_s=None,
+    noise_model="chi",
+    time_connectivities=None,
+    clusters=None,
+    **kwargs,
+):
+    """Estimates the divergence of ODE to observations
+    (avaiable metrics: distance, mse, likelihood, loglikelihood)
 
     Arguments
     ---------
-    mode: `'distance'`, `'mse'`, `'likelihood'`, `'loglikelihood'`, `'soft_eval'` (default: `'distance'`)
+    mode: `'distance'`, `'mse'`, `'likelihood'` (default: `'distance'`)
 
     """
     # set tau, tau_
     if u0_ is None or s0_ is None:
         u0_, s0_ = mRNA(t_, 0, 0, alpha, beta, gamma)
     if tau is None or tau_ is None or t_ is None:
-        tau, tau_, t_ = assign_tau(u, s, alpha, beta, gamma, t_, u0_, s0_, assignment_mode)
+        tau, tau_, t_ = assign_tau(
+            u, s, alpha, beta, gamma, t_, u0_, s0_, assignment_mode
+        )
 
     std_u /= scaling
 
@@ -225,14 +270,21 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
         res = np.array([distu_ ** 2 + dists_ ** 2, distu ** 2 + dists ** 2])
         if connectivities is not None and connectivities is not False:
-            res = np.array([connectivities.dot(r) for r in res]) if res.ndim > 2 else connectivities.dot(res.T).T
+            res = (
+                np.array([connectivities.dot(r) for r in res])
+                if res.ndim > 2
+                else connectivities.dot(res.T).T
+            )
 
         o = np.argmin(res, axis=0)
 
         off, on = o == 0, o == 1
-        if np.any(on) and np.any(off): tau[on], tau_[off] = adjust_increments(tau[on], tau_[off])
-        elif np.any(on): tau[on] = adjust_increments(tau[on])
-        elif np.any(off): tau_[off] = adjust_increments(tau_[off])
+        if np.any(on) and np.any(off):
+            tau[on], tau_[off] = adjust_increments(tau[on], tau_[off])
+        elif np.any(on):
+            tau[on] = adjust_increments(tau[on])
+        elif np.any(off):
+            tau_[off] = adjust_increments(tau_[off])
 
     # compute induction/repression state distances
     ut, st = mRNA(tau, 0, 0, alpha, beta, gamma)
@@ -241,10 +293,10 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
     distu, distu_ = (u - ut) / std_u, (u - ut_) / std_u
     dists, dists_ = (s - st) / std_s, (s - st_) / std_s
 
-    if mode == 'unspliced_dists':
+    if mode == "unspliced_dists":
         return distu, distu_
 
-    elif mode == 'outside_of_trajectory':
+    elif mode == "outside_of_trajectory":
         return np.sign(distu) * np.sign(distu_) == 1
 
     distx = distu ** 2 + dists ** 2
@@ -252,7 +304,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
     res, varx = np.array([distx_, distx]), 1  # default vals;
 
-    if noise_model == 'normal':
+    if noise_model == "normal":
         if var_scale:
             o = np.argmin([distx_, distx], axis=0)
             varu = np.nanvar(distu * o + distu_ + (1 - o), axis=0)
@@ -268,22 +320,28 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
     # compute steady state distances
     if fit_steady_states:
-        distx_steady = ((u - alpha / beta) / std_u) ** 2 + ((s - alpha / gamma) / std_s) ** 2
+        distx_steady = ((u - alpha / beta) / std_u) ** 2
+        distx_steady += ((s - alpha / gamma) / std_s) ** 2
         distx_steady_ = (u / std_u) ** 2 + (s / std_s) ** 2
 
         res = np.array([distx_, distx, distx_steady_, distx_steady])
 
     if connectivities is not None and connectivities is not False:
-        res = np.array([connectivities.dot(r) for r in res]) if res.ndim > 2 else connectivities.dot(res.T).T
+        res = (
+            np.array([connectivities.dot(r) for r in res])
+            if res.ndim > 2
+            else connectivities.dot(res.T).T
+        )
 
     # compute variances
-    if noise_model == 'chi':
+    if noise_model == "chi":
         if var_scale:
             o = np.argmin([distx_, distx], axis=0)
             dist = distx * o + distx_ * (1 - o)
             sign = np.sign(dists * o + dists_ * (1 - o))
             varx = np.mean(dist, axis=0) - np.mean(sign * np.sqrt(dist), axis=0) ** 2
-            if kernel_width is not None: varx *= kernel_width ** 2
+            if kernel_width is not None:
+                varx *= kernel_width ** 2
             res /= varx
         elif kernel_width is not None:
             res /= kernel_width ** 2
@@ -297,7 +355,8 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         dist_tau = (tau - reg_time[:, None]) ** 2
         dist_tau_ = (tau_ + t_ - reg_time[:, None]) ** 2
         mu_res = np.mean(res, axis=1)
-        if reg_par is not None: mu_res *= reg_par
+        if reg_par is not None:
+            mu_res *= reg_par
 
         res[0] += dist_tau_ * mu_res[0]
         res[1] += dist_tau * mu_res[1]
@@ -305,103 +364,121 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
             res[2] += dist_tau * mu_res[1]
             res[3] += dist_tau_ * mu_res[0]
 
-    if mode == 'tau':
+    if mode == "tau":
         res = [tau, tau_]
 
-    elif mode == 'likelihood':
-        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        if normalized: res = normalize(res, min_confidence=min_confidence)
+    elif mode == "likelihood":
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-0.5 * res)
+        if normalized:
+            res = normalize(res, min_confidence=min_confidence)
 
-    elif mode == 'nll':
-        res = np.log(2 * np.pi * np.sqrt(varx)) + .5 * res
-        if normalized: res = normalize(res, min_confidence=min_confidence)
+    elif mode == "nll":
+        res = np.log(2 * np.pi * np.sqrt(varx)) + 0.5 * res
+        if normalized:
+            res = normalize(res, min_confidence=min_confidence)
 
-    elif mode == 'confidence':
+    elif mode == "confidence":
         res = np.array([res[0], res[1]])
-        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        if normalized: res = normalize(res, min_confidence=min_confidence)
-        res = np.median(np.max(res, axis=0) - (np.sum(res, axis=0) - np.max(res, axis=0)), axis=1)
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-0.5 * res)
+        if normalized:
+            res = normalize(res, min_confidence=min_confidence)
+        res = np.median(
+            np.max(res, axis=0) - (np.sum(res, axis=0) - np.max(res, axis=0)), axis=1
+        )
 
-    elif mode in {'soft_eval', 'soft'}:
-        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        if normalized: res = normalize(res, min_confidence=min_confidence)
+    elif mode in {"soft_eval", "soft"}:
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-0.5 * res)
+        if normalized:
+            res = normalize(res, min_confidence=min_confidence)
 
         o_, o = res[0], res[1]
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
-    elif mode in {'hardsoft_eval', 'hardsoft'}:
-        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        if normalized: res = normalize(res, min_confidence=min_confidence)
+    elif mode in {"hardsoft_eval", "hardsoft"}:
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-0.5 * res)
+        if normalized:
+            res = normalize(res, min_confidence=min_confidence)
         o = np.argmax(res, axis=0)
         o_, o = (o == 0) * res[0], (o == 1) * res[1]
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
-    elif mode in {'hard_eval', 'hard'}:
-        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        if normalized: res = normalize(res, min_confidence=min_confidence)
+    elif mode in {"hard_eval", "hard"}:
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-0.5 * res)
+        if normalized:
+            res = normalize(res, min_confidence=min_confidence)
         o = np.argmax(res, axis=0)
         o_, o = o == 0, o == 1
         res = np.array([o_, o, ut * o + ut_ * o_, st * o + st_ * o_])
 
-    elif mode == 'soft_state':
-        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        if normalized: res = normalize(res, min_confidence=min_confidence)
+    elif mode == "soft_state":
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-0.5 * res)
+        if normalized:
+            res = normalize(res, min_confidence=min_confidence)
         res = res[1] - res[0]
 
-    elif mode == 'hard_state':
+    elif mode == "hard_state":
         res = np.argmin(res, axis=0)
 
-    elif mode == 'steady_state':
-        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        if normalized: res = normalize(res, min_confidence=min_confidence)
+    elif mode == "steady_state":
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-0.5 * res)
+        if normalized:
+            res = normalize(res, min_confidence=min_confidence)
         res = res[2] + res[3]
 
-    elif mode in {'assign_timepoints', 'time'}:
+    elif mode in {"assign_timepoints", "time"}:
         o = np.argmin(res, axis=0)
 
-        tau_ *= (o == 0)
-        tau  *= (o == 1)
+        tau_ *= o == 0
+        tau *= o == 1
 
-        if 2 in o: o[o == 2] = 1
-        if 3 in o: o[o == 3] = 0
+        if 2 in o:
+            o[o == 2] = 1
+        if 3 in o:
+            o[o == 3] = 0
 
         t = tau * (o == 1) + (tau_ + t_) * (o == 0)
-        res = [t, tau, o] if mode == 'assign_timepoints' else t
+        res = [t, tau, o] if mode == "assign_timepoints" else t
 
-    elif mode == 'dists':
+    elif mode == "dists":
         o = np.argmin(res, axis=0)
 
-        tau_ *= (o == 0)
-        tau *= (o == 1)
+        tau_ *= o == 0
+        tau *= o == 1
 
-        if 2 in o: o[o == 2] = 1
-        if 3 in o: o[o == 3] = 0
+        if 2 in o:
+            o[o == 2] = 1
+        if 3 in o:
+            o[o == 3] = 0
 
         distu = distu * (o == 1) + distu_ * (o == 0)
         dists = dists * (o == 1) + dists_ * (o == 0)
         res = distu, dists
 
-    elif mode == 'distx':
+    elif mode == "distx":
         o = np.argmin(res, axis=0)
 
-        tau_ *= (o == 0)
-        tau *= (o == 1)
+        tau_ *= o == 0
+        tau *= o == 1
 
-        if 2 in o: o[o == 2] = 1
-        if 3 in o: o[o == 3] = 0
+        if 2 in o:
+            o[o == 2] = 1
+        if 3 in o:
+            o[o == 3] = 0
 
         distu = distu * (o == 1) + distu_ * (o == 0)
         dists = dists * (o == 1) + dists_ * (o == 0)
         res = distu ** 2 + dists ** 2
 
-    elif mode == 'gene_likelihood':
+    elif mode == "gene_likelihood":
         o = np.argmin(res, axis=0)
 
-        tau_ *= (o == 0)
-        tau *= (o == 1)
+        tau_ *= o == 0
+        tau *= o == 1
 
-        if 2 in o: o[o == 2] = 1
-        if 3 in o: o[o == 3] = 0
+        if 2 in o:
+            o[o == 2] = 1
+        if 3 in o:
+            o[o == 3] = 0
 
         distu = distu * (o == 1) + distu_ * (o == 0)
         dists = dists * (o == 1) + dists_ * (o == 0)
@@ -414,7 +491,9 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         distx = distu ** 2 + dists ** 2
 
         # compute variance / equivalent to np.var(np.sign(sdiff) * np.sqrt(distx))
-        varx = np.nanmean(distx, 0) - np.nanmean(np.sign(dists) * np.sqrt(distx), 0) ** 2
+        varx = (
+            np.nanmean(distx, 0) - np.nanmean(np.sign(dists) * np.sqrt(distx), 0) ** 2
+        )
 
         if clusters is not None:
             res = []
@@ -424,25 +503,28 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
                 distx_sum = np.nansum(distx_cat, 0)
 
                 # penalize if very low count number
-                n = np.clip(np.sum(np.invert(np.isnan(distx_cat)), 0) - len(distx_cat) * .01, 2, None)
+                n = np.sum(np.invert(np.isnan(distx_cat)), 0) - len(distx_cat) * 0.01
+                n = np.clip(n, 2, None)
                 distx_sum[n < np.nanmax(n) / 5] = np.nanmax(distx_sum)
-                #varx_ = np.nanmean(distx_cat, 0) - np.nanmean(np.sign(dists[idx_cat]) * np.sqrt(distx_cat), 0) ** 2
-                #varx[n > np.nanmax(n) / 5] = varx_[n > np.nanmax(n) / 5]
-
-                ll = - 1 / 2 / n * distx_sum / varx - 1 / 2 * np.log(2 * np.pi * varx)
+                ll = -1 / 2 / n * distx_sum / varx - 1 / 2 * np.log(2 * np.pi * varx)
                 ll[distx_sum == 0] = np.nan
                 res.append(ll)
             res = np.exp(res)
         else:
-            n = np.clip(len(distu) - len(distu) * .01, 2, None)
-            ll = - 1 / 2 / n * np.nansum(distx, 0) / varx - 1 / 2 * np.log(2 * np.pi * varx)
+            n = np.clip(len(distu) - len(distu) * 0.01, 2, None)
+            ll = -1 / 2 / n * np.nansum(distx, 0) / varx
+            ll -= 1 / 2 * np.log(2 * np.pi * varx)
             res = np.exp(ll)
 
-    elif mode == 'velocity':
-        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        res = np.array([res[0], res[1], res[2], res[3], 1e-6 * np.ones(res[0].shape)]) if res.ndim > 2 \
+    elif mode == "velocity":
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-0.5 * res)
+        res = (
+            np.array([res[0], res[1], res[2], res[3], 1e-6 * np.ones(res[0].shape)])
+            if res.ndim > 2
             else np.array([res[0], res[1], min_confidence * np.ones(res[0].shape)])
-        if normalized: res = normalize(res, min_confidence=min_confidence)
+        )
+        if normalized:
+            res = normalize(res, min_confidence=min_confidence)
         res = np.argmax(res, axis=0)
         o_, o = res == 0, res == 1
         t = tau * o + (tau_ + t_) * o_
@@ -460,18 +542,22 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
         st = st * o + st_ * o_
         alpha = alpha * o
 
-        vt = (ut * beta - st * gamma)  # ds/dt
+        vt = ut * beta - st * gamma  # ds/dt
         wt = (alpha - beta * ut) * scaling  # du/dt
 
         vt, wt = np.clip(vt, -s, None), np.clip(wt, -u * scaling, None)
 
         res = [vt, wt]
 
-    elif mode == 'velocity_residuals':
-        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        res = np.array([res[0], res[1], res[2], res[3], 1e-6 * np.ones(res[0].shape)]) if res.ndim > 2 \
+    elif mode == "velocity_residuals":
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-0.5 * res)
+        res = (
+            np.array([res[0], res[1], res[2], res[3], 1e-6 * np.ones(res[0].shape)])
+            if res.ndim > 2
             else np.array([res[0], res[1], min_confidence * np.ones(res[0].shape)])
-        if normalized: res = normalize(res, min_confidence=min_confidence)
+        )
+        if normalized:
+            res = normalize(res, min_confidence=min_confidence)
         res = np.argmax(res, axis=0)
         o_, o = res == 0, res == 1
         t = tau * o + (tau_ + t_) * o_
@@ -487,21 +573,22 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
         alpha = alpha * o
 
-        vt = (u * beta - s * gamma)  # ds/dt
+        vt = u * beta - s * gamma  # ds/dt
         wt = (alpha - beta * u) * scaling  # du/dt
 
         vt, wt = np.clip(vt, -s, None), np.clip(wt, -u * scaling, None)
 
         res = [vt, wt]
 
-    elif mode == 'soft_velocity':
-        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-.5 * res)
-        if normalized: res = normalize(res, min_confidence=min_confidence)
+    elif mode == "soft_velocity":
+        res = 1 / (2 * np.pi * np.sqrt(varx)) * np.exp(-0.5 * res)
+        if normalized:
+            res = normalize(res, min_confidence=min_confidence)
         o_, o = res[0], res[1]
         ut = ut * o + ut_ * o_
         st = st * o + st_ * o_
         alpha = alpha * o
-        vt = (ut * beta - st * gamma)  # ds/dt
+        vt = ut * beta - st * gamma  # ds/dt
         wt = (alpha - beta * ut) * scaling  # du/dt
         res = [vt, wt]
 
@@ -509,7 +596,7 @@ def compute_divergence(u, s, alpha, beta, gamma, scaling=1, t_=None, u0_=None, s
 
 
 def assign_timepoints(**kwargs):
-    return compute_divergence(**kwargs, mode='assign_timepoints')
+    return compute_divergence(**kwargs, mode="assign_timepoints")
 
 
 def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0, sorted=False):
@@ -532,7 +619,20 @@ def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0, sorted=False
     return tau, alpha, u0, s0
 
 
-def curve_dists(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, std_u=1, std_s=1, scaling=1, num=None):
+def curve_dists(
+    u,
+    s,
+    alpha,
+    beta,
+    gamma,
+    t_=None,
+    u0_=None,
+    s0_=None,
+    std_u=1,
+    std_s=1,
+    scaling=1,
+    num=None,
+):
     if u0_ is None or s0_ is None:
         u0_, s0_ = mRNA(t_, 0, 0, alpha, beta, gamma)
 
@@ -550,9 +650,9 @@ def curve_dists(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, std_u=1, 
     # match each curve point to nearest observation
     dist, dist_ = np.zeros(len(curve_t)), np.zeros(len(curve_t_))
     for i, ci in enumerate(curve_t):
-        dist[i] = np.min(np.sum((x_obs - ci)**2 / std_x**2, 1))
+        dist[i] = np.min(np.sum((x_obs - ci) ** 2 / std_x ** 2, 1))
     for i, ci in enumerate(curve_t_):
-        dist_[i] = np.min(np.sum((x_obs - ci)**2 / std_x**2, 1))
+        dist_[i] = np.min(np.sum((x_obs - ci) ** 2 / std_x ** 2, 1))
 
     return dist, dist_
 
@@ -561,19 +661,34 @@ def curve_dists(u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, std_u=1, 
 
 
 class BaseDynamics:
-    def __init__(self, adata=None, gene=None, u=None, s=None, use_raw=False, perc=99, max_iter=10, fit_time=True,
-                 fit_scaling=True, fit_steady_states=True, fit_connected_states=True, fit_basal_transcription=None,
-                 high_pars_resolution=False, steady_state_prior=None, init_vals=None):
+    def __init__(
+        self,
+        adata=None,
+        gene=None,
+        u=None,
+        s=None,
+        use_raw=False,
+        perc=99,
+        max_iter=10,
+        fit_time=True,
+        fit_scaling=True,
+        fit_steady_states=True,
+        fit_connected_states=True,
+        fit_basal_transcription=None,
+        high_pars_resolution=False,
+        steady_state_prior=None,
+        init_vals=None,
+    ):
         self.s, self.u, self.use_raw = None, None, None
 
         _layers = adata[:, gene].layers
         self.gene = gene
-        self.use_raw = use_raw or 'Ms' not in _layers.keys()
+        self.use_raw = use_raw or "Ms" not in _layers.keys()
 
         # extract actual data
         if u is None or s is None:
-            u = _layers['unspliced'] if self.use_raw else _layers['Mu']
-            s = _layers['spliced'] if self.use_raw else _layers['Ms']
+            u = _layers["unspliced"] if self.use_raw else _layers["Mu"]
+            s = _layers["spliced"] if self.use_raw else _layers["Ms"]
         self.s, self.u = make_dense(s), make_dense(u)
 
         # Basal transcription
@@ -584,13 +699,20 @@ class BaseDynamics:
         else:
             self.u0, self.s0 = 0, 0
 
-        self.alpha, self.beta, self.gamma, self.scaling, self.t_, self.alpha_ = None, None, None, None, None, None
-        self.u0_, self.s0_, self.weights, self.weights_outer, self.weights_upper, = None, None, None, None, None
-        self.t, self.tau, self.o, self.tau_, self.likelihood, self.loss, self.pars = None, None, None, None, None, None, None
+        self.alpha, self.beta, self.gamma = None, None, None
+        self.scaling, self.t_, self.alpha_ = None, None, None
+        self.u0_, self.s0_, self.weights = None, None, None
+        self.weights_outer, self.weights_upper = None, None
+        self.t, self.tau, self.o, self.tau_, = None, None, None, None
+        self.likelihood, self.loss, self.pars = None, None, None
 
         self.max_iter = max_iter
-        # partition to total of 5 fitting procedures (t_ and alpha, scaling, rates, t_, all together)
-        self.simplex_kwargs = {'method': 'Nelder-Mead', 'options': {'maxiter': int(self.max_iter / 5)}}
+        # partition to total of 5 fitting procedures
+        # (t_ and alpha, scaling, rates, t_, all together)
+        self.simplex_kwargs = {
+            "method": "Nelder-Mead",
+            "options": {"maxiter": int(self.max_iter / 5)},
+        }
 
         self.perc = perc
         self.recoverable = True
@@ -598,7 +720,7 @@ class BaseDynamics:
             self.initialize_weights()
         except:
             self.recoverable = False
-            logg.warn(f'Model for {self.gene} could not be instantiated.')
+            logg.warn(f"Model for {self.gene} could not be instantiated.")
 
         self.refit_time = fit_time
 
@@ -609,7 +731,11 @@ class BaseDynamics:
         self.fit_scaling = fit_scaling
         self.fit_steady_states = fit_steady_states
         self.fit_connected_states = fit_connected_states
-        self.connectivities = get_connectivities(adata) if self.fit_connected_states is True else self.fit_connected_states
+        self.connectivities = (
+            get_connectivities(adata)
+            if self.fit_connected_states is True
+            else self.fit_connected_states
+        )
         self.high_pars_resolution = high_pars_resolution
         self.init_vals = init_vals
 
@@ -628,8 +754,10 @@ class BaseDynamics:
             if weighted:
                 ub_s = np.percentile(self.s[weights], self.perc)
                 ub_u = np.percentile(self.u[weights], self.perc)
-                if ub_s > 0: weights &= np.ravel(self.s <= ub_s)
-                if ub_u > 0: weights &= np.ravel(self.u <= ub_u)
+                if ub_s > 0:
+                    weights &= np.ravel(self.s <= ub_s)
+                if ub_u > 0:
+                    weights &= np.ravel(self.u <= ub_u)
 
             self.weights = weights
             u, s = self.u[weights], self.s[weights]
@@ -638,34 +766,38 @@ class BaseDynamics:
 
             self.weights_upper = np.array(weights)
             if np.any(weights):
-                self.weights_upper &= (self.u > np.max(u) / 3) & (self.s > np.max(s) / 3)
+                w_upper = (self.u > np.max(u) / 3) & (self.s > np.max(s) / 3)
+                self.weights_upper &= w_upper
 
     def load_pars(self, adata, gene):
         idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
-        self.alpha = adata.var['fit_alpha'][idx]
-        self.beta = adata.var['fit_beta'][idx] * adata.var['fit_scaling'][idx]
-        self.gamma = adata.var['fit_gamma'][idx]
-        self.scaling = adata.var['fit_scaling'][idx]
-        self.t_ = adata.var['fit_t_'][idx]
+        self.alpha = adata.var["fit_alpha"][idx]
+        self.beta = adata.var["fit_beta"][idx] * adata.var["fit_scaling"][idx]
+        self.gamma = adata.var["fit_gamma"][idx]
+        self.scaling = adata.var["fit_scaling"][idx]
+        self.t_ = adata.var["fit_t_"][idx]
         self.steady_state_ratio = self.gamma / self.beta
 
-        if 'fit_steady_s' in adata.var.keys():
-            self.steady_u = adata.var['fit_steady_u'][idx]
-        if 'fit_steady_u' in adata.var.keys():
-            self.steady_s = adata.var['fit_steady_s'][idx]
-        if 'fit_pval_steady' in adata.var.keys():
-            self.pval_steady = adata.var['fit_pval_steady'][idx]
+        if "fit_steady_s" in adata.var.keys():
+            self.steady_u = adata.var["fit_steady_u"][idx]
+        if "fit_steady_u" in adata.var.keys():
+            self.steady_s = adata.var["fit_steady_s"][idx]
+        if "fit_pval_steady" in adata.var.keys():
+            self.pval_steady = adata.var["fit_pval_steady"][idx]
 
         self.alpha_ = 0
         self.u0_, self.s0_ = mRNA(self.t_, 0, 0, self.alpha, self.beta, self.gamma)
-        self.pars = np.array([self.alpha, self.beta, self.gamma, self.t_, self.scaling])[:, None]
+        self.pars = [self.alpha, self.beta, self.gamma, self.t_, self.scaling]
+        self.pars = np.array(self.pars)[:, None]
 
-        t = adata.obs['shared_time'] if 'shared_time' in adata.obs.keys() else adata.layers['fit_t'][:, idx]
+        lt = "latent_time"
+        t = adata.obs[lt] if lt in adata.obs.keys() else adata.layers["fit_t"][:, idx]
 
         if isinstance(self.refit_time, bool):
             self.t, self.tau, self.o = self.get_time_assignment(t=t)
         else:
-            self.t = adata.obs[self.refit_time].values if isinstance(self.refit_time, str) else self.refit_time
+            tkey = self.refit_time
+            self.t = adata.obs[tkey].values if isinstance(tkey, str) else tkey
             self.refit_time = False
             steady_states = t == self.t_
             if np.any(steady_states):
@@ -675,9 +807,17 @@ class BaseDynamics:
         self.loss = [self.get_loss()]
 
     def get_weights(self, weighted=None, weights_cluster=None):
-        weights = np.array(self.weights_outer if weighted == 'outer' else
-                           self.weights_upper if weighted == 'upper' else self.weights) \
-            if weighted else np.ones(len(self.weights), bool)
+        weights = (
+            np.array(
+                self.weights_outer
+                if weighted == "outer"
+                else self.weights_upper
+                if weighted == "upper"
+                else self.weights
+            )
+            if weighted
+            else np.ones(len(self.weights), bool)
+        )
         if weights_cluster is not None and len(weights) == len(weights_cluster):
             weights &= weights_cluster
         return weights
@@ -686,11 +826,22 @@ class BaseDynamics:
         scaling = self.scaling if scaling is None else scaling
         u, s = self.u / scaling, self.s
         if weighted or weights_cluster is not None:
-            weights = self.get_weights(weighted=weighted, weights_cluster=weights_cluster)
+            weights = self.get_weights(
+                weighted=weighted, weights_cluster=weights_cluster
+            )
             u, s = u[weights], s[weights]
         return u, s
 
-    def get_vars(self, alpha=None, beta=None, gamma=None, scaling=None, t_=None, u0_=None, s0_=None):
+    def get_vars(
+        self,
+        alpha=None,
+        beta=None,
+        gamma=None,
+        scaling=None,
+        t_=None,
+        u0_=None,
+        s0_=None,
+    ):
         alpha = self.alpha if alpha is None else alpha
         beta = self.beta if beta is None else beta
         gamma = self.gamma if gamma is None else gamma
@@ -699,15 +850,49 @@ class BaseDynamics:
             t_ = self.t_ if u0_ is None else tau_inv(u0_, s0_, 0, 0, alpha, beta, gamma)
         return alpha, beta, gamma, scaling, t_
 
-    def get_divergence(self, alpha=None, beta=None, gamma=None, scaling=None, t_=None, u0_=None, s0_=None, mode=None, **kwargs):
-        alpha, beta, gamma, scaling, t_ = self.get_vars(alpha, beta, gamma, scaling, t_, u0_, s0_)
-        res = compute_divergence(self.u / scaling, self.s, alpha, beta, gamma, scaling, t_, u0_, s0_, mode=mode,
-                                 std_u=self.std_u, std_s=self.std_s, assignment_mode=self.assignment_mode,
-                                 connectivities=self.connectivities, fit_steady_states=self.fit_steady_states, **kwargs)
+    def get_divergence(
+        self,
+        alpha=None,
+        beta=None,
+        gamma=None,
+        scaling=None,
+        t_=None,
+        u0_=None,
+        s0_=None,
+        mode=None,
+        **kwargs,
+    ):
+        alpha, beta, gamma, scaling, t_ = self.get_vars(
+            alpha, beta, gamma, scaling, t_, u0_, s0_
+        )
+        u, s = self.u / scaling, self.s
+        kwargs.update(dict(t_=t_, u0_=u0_, s0_=s0_, std_u=self.std_u, std_s=self.std_s))
+        kwargs.update(
+            dict(
+                mode=mode,
+                assignment_mode=self.assignment_mode,
+                connectivities=self.connectivities,
+                fit_steady_states=self.fit_steady_states,
+            )
+        )
+        res = compute_divergence(u, s, alpha, beta, gamma, scaling, **kwargs)
         return res
 
-    def get_time_assignment(self, alpha=None, beta=None, gamma=None, scaling=None, t_=None, u0_=None, s0_=None,
-                             t=None, refit_time=None, rescale_factor=None, weighted=None, weights_cluster=None):
+    def get_time_assignment(
+        self,
+        alpha=None,
+        beta=None,
+        gamma=None,
+        scaling=None,
+        t_=None,
+        u0_=None,
+        s0_=None,
+        t=None,
+        refit_time=None,
+        rescale_factor=None,
+        weighted=None,
+        weights_cluster=None,
+    ):
         if refit_time is None:
             refit_time = self.refit_time
 
@@ -717,7 +902,9 @@ class BaseDynamics:
             tau = t * o + (t - t_) * (1 - o)
         elif refit_time:
             if rescale_factor is not None:
-                alpha, beta, gamma, scaling, t_ = self.get_vars(alpha, beta, gamma, scaling, t_, u0_, s0_)
+                alpha, beta, gamma, scaling, t_ = self.get_vars(
+                    alpha, beta, gamma, scaling, t_, u0_, s0_
+                )
 
                 u0_ = self.u0_ if u0_ is None else u0_
                 s0_ = self.s0_ if s0_ is None else s0_
@@ -729,7 +916,9 @@ class BaseDynamics:
                 u0_ /= rescale_factor
                 t_ = tau_inv(u0_, s0_, 0, 0, alpha, beta, gamma)
 
-            t, tau, o = self.get_divergence(alpha, beta, gamma, scaling, t_, u0_, s0_, mode='assign_timepoints')
+            t, tau, o = self.get_divergence(
+                alpha, beta, gamma, scaling, t_, u0_, s0_, mode="assign_timepoints"
+            )
             if rescale_factor is not None:
                 t *= self.t_ / t_
                 tau *= self.t_ / t_
@@ -737,23 +926,56 @@ class BaseDynamics:
             t, tau, o = self.t, self.tau, self.o
 
         if weighted or weights_cluster is not None:
-            weights = self.get_weights(weighted=weighted, weights_cluster=weights_cluster)
+            weights = self.get_weights(
+                weighted=weighted, weights_cluster=weights_cluster
+            )
             t, tau, o = t[weights], tau[weights], o[weights]
         return t, tau, o
 
-    def get_vals(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, u0_=None, s0_=None,
-                 refit_time=None):
-        alpha, beta, gamma, scaling, t_ = self.get_vars(alpha, beta, gamma, scaling, t_, u0_, s0_)
-        t, tau, o = self.get_time_assignment(alpha, beta, gamma, scaling, t_, u0_, s0_, t, refit_time)
+    def get_vals(
+        self,
+        t=None,
+        t_=None,
+        alpha=None,
+        beta=None,
+        gamma=None,
+        scaling=None,
+        u0_=None,
+        s0_=None,
+        refit_time=None,
+    ):
+        alpha, beta, gamma, scaling, t_ = self.get_vars(
+            alpha, beta, gamma, scaling, t_, u0_, s0_
+        )
+        t, tau, o = self.get_time_assignment(
+            alpha, beta, gamma, scaling, t_, u0_, s0_, t, refit_time
+        )
         return t, t_, alpha, beta, gamma, scaling
 
-    def get_dists(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, u0_=None, s0_=None,
-                  refit_time=None, weighted=True, weights_cluster=None, reg=None):
-        u, s = self.get_reads(scaling, weighted=weighted, weights_cluster=weights_cluster)
+    def get_dists(
+        self,
+        t=None,
+        t_=None,
+        alpha=None,
+        beta=None,
+        gamma=None,
+        scaling=None,
+        u0_=None,
+        s0_=None,
+        refit_time=None,
+        weighted=True,
+        weights_cluster=None,
+        reg=None,
+    ):
+        weight_args = dict(weighted=weighted, weights_cluster=weights_cluster)
+        u, s = self.get_reads(scaling, **weight_args)
 
-        alpha, beta, gamma, scaling, t_ = self.get_vars(alpha, beta, gamma, scaling, t_, u0_, s0_)
-        t, tau, o = self.get_time_assignment(alpha, beta, gamma, scaling, t_, u0_, s0_, t, refit_time,
-                                             weighted=weighted, weights_cluster=weights_cluster)
+        alpha, beta, gamma, scaling, t_ = self.get_vars(
+            alpha, beta, gamma, scaling, t_, u0_, s0_
+        )
+        t, tau, o = self.get_time_assignment(
+            alpha, beta, gamma, scaling, t_, u0_, s0_, t, refit_time, **weight_args
+        )
 
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
         ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
@@ -761,7 +983,9 @@ class BaseDynamics:
         udiff = np.array(ut - u) / self.std_u * scaling
         sdiff = np.array(st - s) / self.std_s
         if reg is None:
-            reg = (gamma / beta - self.steady_state_ratio) * s / self.std_s if self.steady_state_ratio is not None else 0
+            reg = 0
+            if self.steady_state_ratio is not None:
+                reg = (gamma / beta - self.steady_state_ratio) * s / self.std_s
         return udiff, sdiff, reg
 
     def get_residuals_linear(self, **kwargs):
@@ -772,11 +996,12 @@ class BaseDynamics:
         udiff, sdiff, reg = self.get_dists(**kwargs)
         return np.sign(sdiff) * np.sqrt(udiff ** 2 + sdiff ** 2)
 
-    def get_distx(self, noise_model='normal', regularize=True, **kwargs):
+    def get_distx(self, noise_model="normal", regularize=True, **kwargs):
         udiff, sdiff, reg = self.get_dists(**kwargs)
         distx = udiff ** 2 + sdiff ** 2
-        if regularize: distx += reg ** 2
-        return np.sqrt(distx) if noise_model == 'laplace' else distx
+        if regularize:
+            distx += reg ** 2
+        return np.sqrt(distx) if noise_model == "laplace" else distx
 
     def get_se(self, **kwargs):
         return np.sum(self.get_distx(**kwargs))
@@ -784,31 +1009,49 @@ class BaseDynamics:
     def get_mse(self, **kwargs):
         return np.mean(self.get_distx(**kwargs))
 
-    def get_loss(self, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, u0_=None, s0_=None, refit_time=None):
-        return self.get_se(t=t, t_=t_, alpha=alpha, beta=beta, gamma=gamma, scaling=scaling, u0_=u0_, s0_=s0_, refit_time=refit_time)
+    def get_loss(
+        self,
+        t=None,
+        t_=None,
+        alpha=None,
+        beta=None,
+        gamma=None,
+        scaling=None,
+        u0_=None,
+        s0_=None,
+        refit_time=None,
+    ):
+        kwargs = dict(t=t, t_=t_, alpha=alpha, beta=beta, gamma=gamma, scaling=scaling)
+        kwargs.update(dict(u0_=u0_, s0_=s0_, refit_time=refit_time))
+        return self.get_se(**kwargs)
 
-    def get_loglikelihood(self, varx=None, noise_model='normal', **kwargs):
-        if 'weighted' not in kwargs: kwargs.update({'weighted': 'upper'})
+    def get_loglikelihood(self, varx=None, noise_model="normal", **kwargs):
+        if "weighted" not in kwargs:
+            kwargs.update({"weighted": "upper"})
         udiff, sdiff, reg = self.get_dists(**kwargs)
 
         distx = udiff ** 2 + sdiff ** 2 + reg ** 2
         eucl_distx = np.sqrt(distx)
-        n = np.clip(len(distx) - len(self.u) * .01, 2, None)
+        n = np.clip(len(distx) - len(self.u) * 0.01, 2, None)
 
         # compute variance / equivalent to np.var(np.sign(sdiff) * np.sqrt(distx))
-        varx = np.mean(distx) - np.mean(np.sign(sdiff) * eucl_distx) ** 2 if varx is None else varx
+        if varx is None:
+            varx = np.mean(distx) - np.mean(np.sign(sdiff) * eucl_distx) ** 2
         varx += varx == 0  # edge case of mRNAs levels to be the same across all cells
 
-        if noise_model == 'normal':
-            loglik = - 1 / 2 / n * np.sum(distx) / varx - 1 / 2 * np.log(2 * np.pi * varx)
-        elif noise_model == 'laplace':
-            loglik = - 1 / np.sqrt(2) / n * np.sum(eucl_distx) / np.sqrt(varx) - 1 / 2 * np.log(2 * varx)
+        if noise_model == "normal":
+            loglik = -1 / 2 / n * np.sum(distx) / varx
+            loglik -= 1 / 2 * np.log(2 * np.pi * varx)
+        elif noise_model == "laplace":
+            loglik = -1 / np.sqrt(2) / n * np.sum(eucl_distx) / np.sqrt(varx)
+            loglik -= 1 / 2 * np.log(2 * varx)
         else:
-            raise ValueError('That noise model is not supported.')
+            raise ValueError("That noise model is not supported.")
         return loglik
 
     def get_likelihood(self, **kwargs):
-        if 'weighted' not in kwargs: kwargs.update({'weighted': 'upper'})
+        if "weighted" not in kwargs:
+            kwargs.update({"weighted": "upper"})
         likelihood = np.exp(self.get_loglikelihood(**kwargs))
         return likelihood
 
@@ -817,14 +1060,16 @@ class BaseDynamics:
         u, s = self.get_reads(scaling, weighted=False)
         varx = self.get_variance()
 
-        dist, dist_ = curve_dists(u, s, alpha, beta, gamma, t_, std_u=self.std_u, std_s=self.std_s, scaling=scaling)
-        l = - 1 / 2 / len(dist) * np.sum(dist) / varx - 1 / 2 * np.log(2 * np.pi * varx)
-        l_ = - 1 / 2 / len(dist_) * np.sum(dist_) / varx - 1 / 2 * np.log(2 * np.pi * varx)
+        kwargs = dict(std_u=self.std_u, std_s=self.std_s, scaling=scaling)
+        dist, dist_ = curve_dists(u, s, alpha, beta, gamma, t_, **kwargs)
+        l = -0.5 / len(dist) * np.sum(dist) / varx - 0.5 * np.log(2 * np.pi * varx)
+        l_ = -0.5 / len(dist_) * np.sum(dist_) / varx - 0.5 * np.log(2 * np.pi * varx)
         likelihood = np.exp(np.max([l, l_]))
         return likelihood
 
     def get_variance(self, **kwargs):
-        if 'weighted' not in kwargs: kwargs.update({'weighted': 'upper'})
+        if "weighted" not in kwargs:
+            kwargs.update({"weighted": "upper"})
         udiff, sdiff, reg = self.get_dists(**kwargs)
         distx = udiff ** 2 + sdiff ** 2
         return np.mean(distx) - np.mean(np.sign(sdiff) * np.sqrt(distx)) ** 2
@@ -839,40 +1084,78 @@ class BaseDynamics:
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
         return spliced(tau, s0, u0, alpha, beta, gamma)
 
-    def get_vt(self, mode='soft_eval'):
+    def get_vt(self, mode="soft_eval"):
         alpha, beta, gamma, scaling, _ = self.get_vars()
         o_, o, ut, st = self.get_divergence(mode=mode)
         return ut * beta - st * gamma
 
-    def plot_phase(self, adata=None, t=None, t_=None, alpha=None, beta=None, gamma=None, scaling=None, refit_time=None,
-                   show=True, show_assignments=None, **kwargs):
+    def plot_phase(
+        self,
+        adata=None,
+        t=None,
+        t_=None,
+        alpha=None,
+        beta=None,
+        gamma=None,
+        scaling=None,
+        refit_time=None,
+        show=True,
+        show_assignments=None,
+        **kwargs,
+    ):
         from ..plotting.scatter import scatter
-        if np.all([x is None for x in [alpha, beta, gamma, scaling, t_]]): refit_time = False
-        t, t_, alpha, beta, gamma, scaling = self.get_vals(t, t_, alpha, beta, gamma, scaling, refit_time=refit_time)
+
+        if np.all([x is None for x in [alpha, beta, gamma, scaling, t_]]):
+            refit_time = False
+        t, t_, alpha, beta, gamma, scaling = self.get_vals(
+            t, t_, alpha, beta, gamma, scaling, refit_time=refit_time
+        )
         ut = self.get_ut(t=t, t_=t_, alpha=alpha, beta=beta, gamma=gamma) * scaling
         st = self.get_st(t=t, t_=t_, alpha=alpha, beta=beta, gamma=gamma)
 
         idx_sorted = np.argsort(t)
         ut, st, t = ut[idx_sorted], st[idx_sorted], t[idx_sorted]
 
-        args = {"color_map": 'RdYlGn', "vmin": -.1, "vmax": 1.1}
+        args = {"color_map": "RdYlGn", "vmin": -0.1, "vmax": 1.1}
         args.update(kwargs)
 
         ax = scatter(adata, x=self.s, y=self.u, colorbar=False, show=False, **kwargs)
 
-        pl.plot(st, ut, color='purple', linestyle='-')
-        pl.xlabel('spliced'); pl.ylabel('unspliced');
+        pl.plot(st, ut, color="purple", linestyle="-")
+        pl.xlabel("spliced")
+        pl.ylabel("unspliced")
 
         if show_assignments:
-            ax.plot(np.array([self.s[idx_sorted], st]),
-                    np.array([self.u[idx_sorted], ut]), color='grey', linewidth=.1 * 1)
+            xnew = (np.array([self.s[idx_sorted], st]),)
+            ynew = np.array([self.u[idx_sorted], ut])
+            ax.plot(xnew, ynew, color="grey", linewidth=0.1)
+
         return ax if not show else None
 
-    def plot_profile_contour(self, xkey='gamma', ykey='alpha', x_sight=.5, y_sight=.5, num=20, contour_levels=4,
-                             fontsize=12, refit_time=None, ax=None, color_map='RdGy', figsize=None, dpi=None,
-                             vmin=None, vmax=None, horizontal_ylabels=True, show_path=False, show=True,
-                             return_color_scale=False, **kwargs):
+    def plot_profile_contour(
+        self,
+        xkey="gamma",
+        ykey="alpha",
+        x_sight=0.5,
+        y_sight=0.5,
+        num=20,
+        contour_levels=4,
+        fontsize=12,
+        refit_time=None,
+        ax=None,
+        color_map="RdGy",
+        figsize=None,
+        dpi=None,
+        vmin=None,
+        vmax=None,
+        horizontal_ylabels=True,
+        show_path=False,
+        show=True,
+        return_color_scale=False,
+        **kwargs,
+    ):
         from ..plotting.utils import update_axes
+
         x_var = getattr(self, xkey)
         y_var = getattr(self, ykey)
 
@@ -882,7 +1165,9 @@ class BaseDynamics:
         assignment_mode = self.assignment_mode
         self.assignment_mode = None
 
-        fp = lambda x, y: self.get_likelihood(**{xkey: x, ykey: y}, refit_time=refit_time)
+        fp = lambda x, y: self.get_likelihood(
+            **{xkey: x, ykey: y}, refit_time=refit_time
+        )
 
         zp = np.zeros((len(x), len(x)))
         for i, xi in enumerate(x):
@@ -890,121 +1175,204 @@ class BaseDynamics:
                 zp[i, j] = fp(xi, yi)
         log_zp = np.log1p(zp.T)
 
-        if vmin is None: vmin = np.min(log_zp)
-        if vmax is None: vmax = np.max(log_zp)
+        if vmin is None:
+            vmin = np.min(log_zp)
+        if vmax is None:
+            vmax = np.max(log_zp)
 
-        x_label = r'$' + f'\\{xkey}$' if xkey in ['gamma', 'alpha', 'beta'] else xkey
-        y_label = r'$' + f'\\{ykey}$' if ykey in ['gamma', 'alpha', 'beta'] else ykey
+        x_label = r"$" + f"\\{xkey}$" if xkey in ["gamma", "alpha", "beta"] else xkey
+        y_label = r"$" + f"\\{ykey}$" if ykey in ["gamma", "alpha", "beta"] else ykey
 
         if ax is None:
-            figsize = rcParams['figure.figsize'] if figsize is None else figsize
+            figsize = rcParams["figure.figsize"] if figsize is None else figsize
             ax = pl.figure(figsize=(figsize[0], figsize[1]), dpi=dpi).gca()
 
         ax.contourf(x, y, log_zp, levels=num, cmap=color_map, vmin=vmin, vmax=vmax)
         if contour_levels != 0:
-            contours = ax.contour(x, y, log_zp, levels=contour_levels, colors='k', linewidths=.5)
-            fmt = '%1.1f' if np.isscalar(contour_levels) else '%1.0f'
-            ax.clabel(contours, fmt=fmt, inline=True, fontsize=fontsize * .75)
+            contours = ax.contour(
+                x, y, log_zp, levels=contour_levels, colors="k", linewidths=0.5
+            )
+            fmt = "%1.1f" if np.isscalar(contour_levels) else "%1.0f"
+            ax.clabel(contours, fmt=fmt, inline=True, fontsize=fontsize * 0.75)
 
-        ax.scatter(x=x_var, y=y_var, s=50, c='purple', zorder=3, **kwargs)
+        ax.scatter(x=x_var, y=y_var, s=50, c="purple", zorder=3, **kwargs)
         ax.set_xlabel(x_label, fontsize=fontsize)
-        ax.set_ylabel(y_label, fontsize=fontsize, rotation=0 if horizontal_ylabels else 90)
+        rotation = 0 if horizontal_ylabels else 90
+        ax.set_ylabel(y_label, fontsize=fontsize, rotation=rotation)
         update_axes(ax, fontsize=fontsize, frameon=True)
 
         if show_path:
             axis = ax.axis()
-            x_hist = self.pars[['alpha', 'beta', 'gamma', 't_', 'scaling'].index(xkey)]
-            y_hist = self.pars[['alpha', 'beta', 'gamma', 't_', 'scaling'].index(ykey)]
+            x_hist = self.pars[["alpha", "beta", "gamma", "t_", "scaling"].index(xkey)]
+            y_hist = self.pars[["alpha", "beta", "gamma", "t_", "scaling"].index(ykey)]
             ax.plot(x_hist, y_hist)
             ax.axis(axis)
 
         self.assignment_mode = assignment_mode
         if return_color_scale:
             return np.min(log_zp), np.max(log_zp)
-        elif not show: return ax
+        elif not show:
+            return ax
 
-    def plot_profile_hist(self, xkey='gamma', sight=.5, num=20, dpi=None, fontsize=12, ax=None, figsize=None,
-                          color_map='RdGy', vmin=None, vmax=None, show=True):
+    def plot_profile_hist(
+        self,
+        xkey="gamma",
+        sight=0.5,
+        num=20,
+        dpi=None,
+        fontsize=12,
+        ax=None,
+        figsize=None,
+        color_map="RdGy",
+        vmin=None,
+        vmax=None,
+        show=True,
+    ):
         from ..plotting.utils import update_axes
-        x_var = getattr(self, xkey)
 
+        x_var = getattr(self, xkey)
         x = np.linspace(-sight, sight, num=num) * x_var + x_var
 
         assignment_mode = self.assignment_mode
         self.assignment_mode = None
 
         fp = lambda x: self.get_likelihood(**{xkey: x}, refit_time=True)
-
         zp = np.zeros((len(x)))
         for i, xi in enumerate(x):
             zp[i] = fp(xi)
 
         log_zp = np.log1p(zp.T)
-        if vmin is None: vmin = np.min(log_zp)
-        if vmax is None: vmax = np.max(log_zp)
+        if vmin is None:
+            vmin = np.min(log_zp)
+        if vmax is None:
+            vmax = np.max(log_zp)
 
-        x_label = r'$' + f'\\{xkey}$' if xkey in ['gamma', 'alpha', 'beta'] else xkey
-        figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        x_label = r"$" + f"\\{xkey}$" if xkey in ["gamma", "alpha", "beta"] else xkey
+        figsize = rcParams["figure.figsize"] if figsize is None else figsize
         if ax is None:
             fig = pl.figure(figsize=(figsize[0], figsize[1]), dpi=dpi)
             ax = fig.gca()
 
         xp = np.linspace(x.min(), x.max(), 1000)
         yp = np.interp(xp, x, log_zp)
-        ax.scatter(xp, yp, c=yp, cmap=color_map, edgecolor='none', vmin=vmin, vmax=vmax)
+        ax.scatter(xp, yp, c=yp, cmap=color_map, edgecolor="none", vmin=vmin, vmax=vmax)
         ax.set_xlabel(x_label, fontsize=fontsize)
-        ax.set_ylabel('likelihood', fontsize=fontsize)
+        ax.set_ylabel("likelihood", fontsize=fontsize)
         update_axes(ax, fontsize=fontsize, frameon=True)
 
         self.assignment_mode = assignment_mode
-        if not show: return ax
+        if not show:
+            return ax
 
-    def plot_profiles(self, params=['alpha', 'beta', 'gamma'], contour_levels=0, sight=.5, num=20, fontsize=12,
-                      color_map='RdGy', vmin=None, vmax=None, figsize=None, dpi=None, **kwargs):
+    def plot_profiles(
+        self,
+        params=None,
+        contour_levels=0,
+        sight=0.5,
+        num=20,
+        fontsize=12,
+        color_map="RdGy",
+        vmin=None,
+        vmax=None,
+        figsize=None,
+        dpi=None,
+        **kwargs,
+    ):
         from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+        if params is None:
+            params = ["alpha", "beta", "gamma"]
         fig = pl.figure(constrained_layout=True, dpi=dpi, figsize=figsize)
         n = len(params)
         gs = gridspec.GridSpec(n, n, figure=fig)
 
+        pkwargs = dict(color_map=color_map, vmin=vmin, vmax=vmax, figsize=figsize)
+
         for i in range(len(params)):
-            for j in range(n-1, i-1, -1):
+            for j in range(n - 1, i - 1, -1):
                 xkey = params[j]
                 ykey = params[i]
                 ax = fig.add_subplot(gs[n - 1 - i, n - 1 - j])
                 if xkey == ykey:
-                    ax = self.plot_profile_hist(xkey, figsize=figsize, ax=ax, color_map=color_map, num=num,
-                                                sight=sight if np.isscalar(sight) else sight[j],
-                                                fontsize=fontsize, vmin=vmin, vmax=vmax, show=False)
+                    ax = self.plot_profile_hist(
+                        xkey,
+                        ax=ax,
+                        num=num,
+                        sight=sight if np.isscalar(sight) else sight[j],
+                        fontsize=fontsize,
+                        show=False,
+                        **pkwargs,
+                    )
                     if i == 0 & j == 0:
-                        cax = inset_axes(ax, width="7%", height="100%", loc='lower left',
-                                         bbox_to_anchor=(1.05, 0., 1, 1), bbox_transform=ax.transAxes, borderpad=0)
+                        cax = inset_axes(
+                            ax,
+                            width="7%",
+                            height="100%",
+                            loc="lower left",
+                            bbox_to_anchor=(1.05, 0.0, 1, 1),
+                            bbox_transform=ax.transAxes,
+                            borderpad=0,
+                        )
                         norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-                        cb1 = mpl.colorbar.ColorbarBase(cax, cmap=color_map, norm=norm)
+                        _ = mpl.colorbar.ColorbarBase(cax, cmap=color_map, norm=norm)
                 else:
-                    vmin_, vmax_ = self.plot_profile_contour(xkey, ykey, figsize=figsize, ax=ax, color_map=color_map,
-                                                             contour_levels=contour_levels, vmin=vmin, vmax=vmax,
-                                                             x_sight=sight if np.isscalar(sight) else sight[j],
-                                                             y_sight=sight if np.isscalar(sight) else sight[i],
-                                                             num=num, fontsize=fontsize, return_color_scale=True, **kwargs)
-                    if vmin is None or vmax is None: vmin, vmax = vmin_, vmax_  # scaled to first contour plot
+                    vmin_, vmax_ = self.plot_profile_contour(
+                        xkey,
+                        ykey,
+                        ax=ax,
+                        contour_levels=contour_levels,
+                        x_sight=sight if np.isscalar(sight) else sight[j],
+                        y_sight=sight if np.isscalar(sight) else sight[i],
+                        num=num,
+                        fontsize=fontsize,
+                        return_color_scale=True,
+                        **pkwargs,
+                        **kwargs,
+                    )
+                    if vmin is None or vmax is None:
+                        vmin, vmax = vmin_, vmax_  # scaled to first contour plot
 
                 if i != 0:
-                    ax.set_xlabel('')
+                    ax.set_xlabel("")
                     ax.set_xticks([])
                 if j - n + 1 != 0:
-                    ax.set_ylabel('')
+                    ax.set_ylabel("")
                     ax.set_yticks([])
 
-    def plot_state_likelihoods(self, num=300, dpi=None, figsize=None, color_map=None, color_map_steady=None,
-                               continuous=True, common_color_scale=True, var_scale=True, kernel_width=None,
-                               normalized=None, transitions=None, colorbar=False, alpha_=0.5, linewidths=3,
-                               padding_u=.1, padding_s=.1, fontsize=12, title=None, ax=None, **kwargs):
+    def plot_state_likelihoods(
+        self,
+        num=300,
+        dpi=None,
+        figsize=None,
+        color_map=None,
+        color_map_steady=None,
+        continuous=True,
+        common_color_scale=True,
+        var_scale=True,
+        kernel_width=None,
+        normalized=None,
+        transitions=None,
+        colorbar=False,
+        alpha_=0.5,
+        linewidths=3,
+        padding_u=0.1,
+        padding_s=0.1,
+        fontsize=12,
+        title=None,
+        ax=None,
+        **kwargs,
+    ):
         from ..plotting.utils import update_axes
         from ..plotting.utils import rgb_custom_colormap
+
         if color_map is None:
-            color_map = rgb_custom_colormap(['royalblue', 'white', 'seagreen'], alpha=[1, .5, 1])
+            color_map = rgb_custom_colormap(
+                ["royalblue", "white", "seagreen"], alpha=[1, 0.5, 1]
+            )
         if color_map_steady is None:
-            color_map_steady = rgb_custom_colormap(colors=3*['sienna'], alpha=[0, .5, 1])
+            color_map_steady = rgb_custom_colormap(
+                colors=3 * ["sienna"], alpha=[0, 0.5, 1]
+            )
 
         alpha, beta, gamma, scaling, t_ = self.get_vars()
         u, s = self.u / scaling, self.s
@@ -1017,60 +1385,126 @@ class BaseDynamics:
         grid_u = grid_u.flatten()
         grid_s = grid_s.flatten()
 
-        if var_scale: var_scale = self.get_variance()
+        if var_scale:
+            var_scale = self.get_variance()
 
-        dkwargs = {'alpha': alpha, 'beta': beta, 'gamma': gamma, 'scaling': scaling, 't_': t_, 'kernel_width': kernel_width,
-                   'std_u': self.std_u, 'std_s': self.std_s, 'var_scale': var_scale, 'normalized': normalized,
-                   'fit_steady_states': True, 'constraint_time_increments': False, 'assignment_mode': 'projection'}
+        dkwargs = {
+            "alpha": alpha,
+            "beta": beta,
+            "gamma": gamma,
+            "scaling": scaling,
+            "t_": t_,
+            "kernel_width": kernel_width,
+            "std_u": self.std_u,
+            "std_s": self.std_s,
+            "var_scale": var_scale,
+            "normalized": normalized,
+            "fit_steady_states": True,
+            "constraint_time_increments": False,
+            "assignment_mode": "projection",
+        }
 
-        likelihoods = compute_divergence(u, s, mode='soft_state', **dkwargs)
-        likelihoods_steady = compute_divergence(u, s, mode='steady_state', **dkwargs)
+        likelihoods = compute_divergence(u, s, mode="soft_state", **dkwargs)
+        likelihoods_steady = compute_divergence(u, s, mode="steady_state", **dkwargs)
 
-        likelihoods_grid = compute_divergence(grid_u, grid_s, mode='soft_state', **dkwargs)
-        likelihoods_grid_steady = compute_divergence(grid_u, grid_s, mode='steady_state', **dkwargs)
+        likelihoods_grid = compute_divergence(
+            grid_u, grid_s, mode="soft_state", **dkwargs
+        )
+        likelihoods_grid_steady = compute_divergence(
+            grid_u, grid_s, mode="steady_state", **dkwargs
+        )
 
-        figsize = rcParams['figure.figsize'] if figsize is None else figsize
+        figsize = rcParams["figure.figsize"] if figsize is None else figsize
         if ax is None:
             fig = pl.figure(figsize=(figsize[0], figsize[1]), dpi=dpi)
             ax = fig.gca()
 
-        ax.scatter(x=s, y=u, s=50, c=likelihoods_steady, zorder=3, cmap=color_map_steady, edgecolors='black', **kwargs)
-        ax.scatter(x=s, y=u, s=50, c=likelihoods, zorder=3, cmap=color_map, edgecolors='black', **kwargs)
+        ax.scatter(
+            x=s,
+            y=u,
+            s=50,
+            c=likelihoods_steady,
+            zorder=3,
+            cmap=color_map_steady,
+            edgecolors="black",
+            **kwargs,
+        )
+        ax.scatter(
+            x=s,
+            y=u,
+            s=50,
+            c=likelihoods,
+            zorder=3,
+            cmap=color_map,
+            edgecolors="black",
+            **kwargs,
+        )
 
-        # Grid scatter for test
-        # ax.scatter(x=grid_s, y=grid_u, s=50, c=likelihoods, zorder=3, cmap=color_map,
-        #            edgecolors='black', vmax=vmax, **kwargs)
-        # ax.scatter(x=grid_s, y=grid_u, s=50, c=likelihoods_steady, zorder=3, cmap=color_map_steady,
-        #            edgecolors='black', vmax=vmax, **kwargs)
-
-        l_grid, l_grid_steady = likelihoods_grid.reshape(num, num).T, likelihoods_grid_steady.reshape(num, num).T
+        l_grid, l_grid_steady = (
+            likelihoods_grid.reshape(num, num).T,
+            likelihoods_grid_steady.reshape(num, num).T,
+        )
 
         if common_color_scale:
-            vmax = vmax_steady = np.max([np.abs(likelihoods_grid), np.abs(likelihoods_grid_steady)])
+            vmax = vmax_steady = np.max(
+                [np.abs(likelihoods_grid), np.abs(likelihoods_grid_steady)]
+            )
         else:
             vmax, vmax_steady = np.max(np.abs(likelihoods_grid)), None
 
         if continuous:
-            contf_steady = ax.imshow(l_grid_steady, cmap=color_map_steady, alpha=alpha_, vmin=0, vmax=vmax_steady,
-                                     aspect='auto', origin='lower', extent=(min(ss), max(ss), min(uu), max(uu)))
-            contf = ax.imshow(l_grid, cmap=color_map, alpha=alpha_, vmin=-vmax, vmax=vmax,
-                              aspect='auto', origin='lower', extent=(min(ss), max(ss), min(uu), max(uu)))
+            extent = (min(ss), max(ss), min(uu), max(uu))
+            contf_steady = ax.imshow(
+                l_grid_steady,
+                cmap=color_map_steady,
+                alpha=alpha_,
+                vmin=0,
+                vmax=vmax_steady,
+                aspect="auto",
+                origin="lower",
+                extent=extent,
+            )
+            contf = ax.imshow(
+                l_grid,
+                cmap=color_map,
+                alpha=alpha_,
+                vmin=-vmax,
+                vmax=vmax,
+                aspect="auto",
+                origin="lower",
+                extent=extent,
+            )
         else:
-            contf_steady = ax.contourf(ss, uu, l_grid_steady, vmin=0, vmax=vmax_steady, levels=30, cmap=color_map_steady)
-            contf = ax.contourf(ss, uu, l_grid, vmin=-vmax, vmax=vmax, levels=30, cmap=color_map)
+            cmap = color_map_steady
+            contf_steady = ax.contourf(
+                ss, uu, l_grid_steady, vmin=0, vmax=vmax_steady, levels=30, cmap=cmap
+            )
+            contf = ax.contourf(
+                ss, uu, l_grid, vmin=-vmax, vmax=vmax, levels=30, cmap=color_map
+            )
 
         # Contour lines
         if transitions is not None:
-            trans_width = np.max(likelihoods_grid) - np.min(likelihoods_grid)
-            transitions = np.multiply(np.array(transitions), [np.min(likelihoods_grid), np.max(likelihoods_grid)])# trans_width
-            ax.contour(ss, uu, likelihoods_grid.reshape(num, num).T, transitions, linestyles='solid', colors='k', linewidths=linewidths)
+            transitions = np.multiply(
+                np.array(transitions),
+                [np.min(likelihoods_grid), np.max(likelihoods_grid)],
+            )  # trans_width
+            ax.contour(
+                ss,
+                uu,
+                likelihoods_grid.reshape(num, num).T,
+                transitions,
+                linestyles="solid",
+                colors="k",
+                linewidths=linewidths,
+            )
 
         if colorbar:
             pl.colorbar(contf, ax=ax)
             pl.colorbar(contf_steady, ax=ax)
-        ax.set_xlabel('spliced', fontsize=fontsize)
-        ax.set_ylabel('unspliced', fontsize=fontsize)
-        title = '' if title is None else title
+        ax.set_xlabel("spliced", fontsize=fontsize)
+        ax.set_ylabel("unspliced", fontsize=fontsize)
+        title = "" if title is None else title
         ax.set_title(title, fontsize=fontsize)
         update_axes(ax, fontsize=fontsize, frameon=True)
 
@@ -1085,17 +1519,20 @@ class BaseDynamics:
         self.steady_state_ratio = None
         self.clusters = clusters
         self.cats = pd.Categorical(clusters).categories
-        self.weights_outer = np.array(self.weights) & self.get_divergence(mode='outside_of_trajectory')
+        self.weights_outer = np.array(self.weights) & self.get_divergence(
+            mode="outside_of_trajectory"
+        )
 
     def get_orth_fit(self, **kwargs):
-        kwargs['weighted'] = True  # include inner vals for orthogonal regression
+        kwargs["weighted"] = True  # include inner vals for orthogonal regression
         u, s = self.get_reads(**kwargs)
         a, b = np.sum(s * u), np.sum(u ** 2 - s ** 2)
-        orth_beta = (b + ((b ** 2 + 4 * a ** 2) ** .5)) / (2 * a)
+        orth_beta = (b + ((b ** 2 + 4 * a ** 2) ** 0.5)) / (2 * a)
         return orth_beta
 
     def get_orth_distx(self, orth_beta=None, **kwargs):
-        if 'weighted' not in kwargs: kwargs['weighted'] = 'outer'
+        if "weighted" not in kwargs:
+            kwargs["weighted"] = "outer"
         u, s = self.get_reads(**kwargs)
         if orth_beta is None:
             orth_beta = self.get_orth_fit(**kwargs)
@@ -1104,15 +1541,22 @@ class BaseDynamics:
         udiff = np.array(orth_beta * s_real - u) / self.std_u * self.scaling
         return udiff ** 2 + sdiff ** 2
 
-    def get_pval(self, model='dynamical', **kwargs):
-        # assuming var-scaled udiff, sdiff follow N(0,1), the sum of errors for the cluster follows chi2(df=2n)
-        if 'weighted' not in kwargs: kwargs['weighted'] = 'outer'
-        distx = self.get_orth_distx(**kwargs) if model == 'orthogonal' else self.get_distx(**kwargs) / 2
-        return chi2.sf(df=2*len(distx), x=np.sum(distx) / self.varx)
+    def get_pval(self, model="dynamical", **kwargs):
+        # assuming var-scaled udiff, sdiff follow N(0,1),
+        # the sum of errors for the cluster follows chi2(df=2n)
+        if "weighted" not in kwargs:
+            kwargs["weighted"] = "outer"
+        distx = (
+            self.get_orth_distx(**kwargs)
+            if model == "orthogonal"
+            else self.get_distx(**kwargs) / 2
+        )
+        return chi2.sf(df=2 * len(distx), x=np.sum(distx) / self.varx)
 
     def get_pval_diff_kinetics(self, orth_beta=None, min_cells=10, **kwargs):
         """
-        Calculates the p-value for the likelihood ratio using the asymptotic property of the chi^2 distr.
+        Calculates the p-value for the likelihood ratio
+        using the asymptotic property of the chi^2 distr.
 
         Derivation:
         - dists_dynamical and dists_orthogonal are squared N(0,1) distributed residuals
@@ -1120,7 +1564,7 @@ class BaseDynamics:
         - X2 = sum(dists_orthogonal) / variance ~ chi2(df=2n)
         - Y1 = (X1 - df) / sqrt(2*df) ~ N(0,1) for large df
         - Y2 = (X2 - df) / sqrt(2*df) ~ N(0,1) for large df
-        - since Y1~N(0,1) and Y2~N(0,1), then Y1 - Y2 ~ N(0,2) or (Y1 -Y2) / sqrt(2) ~ N(0,1)
+        - since Y1~N(0,1) and Y2~N(0,1), Y1 - Y2 ~ N(0,2) or (Y1 -Y2) / sqrt(2) ~ N(0,1)
         - thus Z = (X1 - X2) / sqrt(4*df) ~ N(0,1) for large df
 
         Parameters
@@ -1134,103 +1578,196 @@ class BaseDynamics:
         -------
         p-value
         """
-        if 'weights_cluster' in kwargs and np.sum(kwargs['weights_cluster']) < min_cells: return 1
-        if 'weighted' not in kwargs: kwargs['weighted'] = 'outer'
+        if (
+            "weights_cluster" in kwargs
+            and np.sum(kwargs["weights_cluster"]) < min_cells
+        ):
+            return 1
+        if "weighted" not in kwargs:
+            kwargs["weighted"] = "outer"
         distx = self.get_distx(**kwargs) / 2  # due to convolved assignments (tbd)
         orth_distx = self.get_orth_distx(orth_beta=orth_beta, **kwargs)
-        denom = self.varx * np.sqrt(4 * 2*len(distx))
-        pval = norm.sf((np.sum(distx) - np.sum(orth_distx)) / denom)  # see derivation above
+        denom = self.varx * np.sqrt(4 * 2 * len(distx))
+        pval = norm.sf(
+            (np.sum(distx) - np.sum(orth_distx)) / denom
+        )  # see derivation above
         return pval
 
-    def get_cluster_mse(self, clusters=None, min_cells=10, weighted='outer'):
+    def get_cluster_mse(self, clusters=None, min_cells=10, weighted="outer"):
         if self.clusters is None or clusters is not None:
             self.initialize_diff_kinetics(clusters)
-        mse = np.array([self.get_mse(weights_cluster=self.clusters == c, weighted=weighted) for c in self.cats])
+        mse = np.array(
+            [
+                self.get_mse(weights_cluster=self.clusters == c, weighted=weighted)
+                for c in self.cats
+            ]
+        )
         if min_cells is not None:
-            w = self.weights_outer if weighted == 'outer' else self.weights_upper if weighted == 'upper' else self.weights
-            mse[np.array([np.sum(w & (self.clusters == c)) for c in self.cats]) < min_cells] = 0
+            w = (
+                self.weights_outer
+                if weighted == "outer"
+                else self.weights_upper
+                if weighted == "upper"
+                else self.weights
+            )
+            mse[
+                np.array([np.sum(w & (self.clusters == c)) for c in self.cats])
+                < min_cells
+            ] = 0
         return mse
 
     def get_cluster_pvals(self, clusters=None, model=None, orth_beta=None, **kwargs):
         if self.clusters is None or clusters is not None:
             self.initialize_diff_kinetics(clusters)
-        pvals = np.array([self.get_pval_diff_kinetics(weights_cluster=self.clusters == c, orth_beta=orth_beta, **kwargs)
-                          if model is None else self.get_pval(model=model, weights_cluster=self.clusters == c, **kwargs)
-                          for c in self.cats])
+        pvals = np.array(
+            [
+                self.get_pval_diff_kinetics(
+                    weights_cluster=self.clusters == c, orth_beta=orth_beta, **kwargs
+                )
+                if model is None
+                else self.get_pval(
+                    model=model, weights_cluster=self.clusters == c, **kwargs
+                )
+                for c in self.cats
+            ]
+        )
         return pvals
 
-    def differential_kinetic_test(self, clusters, as_df=None, min_cells=10, weighted='outer'):
+    def differential_kinetic_test(
+        self, clusters, as_df=None, min_cells=10, weighted="outer"
+    ):
         # after fitting dyn. model
         self.initialize_diff_kinetics(clusters)
         mse = self.get_cluster_mse(weighted=weighted, min_cells=min_cells)
 
         weights_cluster = self.clusters == self.cats[np.argmax(mse)]
-        self.orth_beta = self.get_orth_fit(weights_cluster=weights_cluster, weighted=False)  # include inner vals
-        pval = self.get_pval_diff_kinetics(weights_cluster=weights_cluster, orth_beta=self.orth_beta, weighted=weighted)
+        self.orth_beta = self.get_orth_fit(
+            weights_cluster=weights_cluster, weighted=False
+        )  # include inner vals
+        pval = self.get_pval_diff_kinetics(
+            weights_cluster=weights_cluster, orth_beta=self.orth_beta, weighted=weighted
+        )
 
         if pval > 1e-2:
-            weighted = 'upper'
+            weighted = "upper"
             mse = self.get_cluster_mse(weighted=weighted, min_cells=min_cells)
-            self.orth_beta = self.get_orth_fit(weights_cluster=self.clusters == self.cats[np.argmax(mse)])
+            self.orth_beta = self.get_orth_fit(
+                weights_cluster=self.clusters == self.cats[np.argmax(mse)]
+            )
 
-        self.pvals_kinetics = self.get_cluster_pvals(orth_beta=self.orth_beta, weighted=weighted)
-        self.diff_kinetics = ",".join([c for (c, p) in zip(self.cats, self.pvals_kinetics) if p < 1e-2])
+        self.pvals_kinetics = self.get_cluster_pvals(
+            orth_beta=self.orth_beta, weighted=weighted
+        )
+        self.diff_kinetics = ",".join(
+            [c for (c, p) in zip(self.cats, self.pvals_kinetics) if p < 1e-2]
+        )
         if np.any(self.pvals_kinetics < 1e-2):
             self.pval_kinetics = np.max(self.pvals_kinetics[self.pvals_kinetics < 1e-2])
 
         if as_df:
-            return pd.DataFrame(np.array(round(self.pvals_kinetics, 2))[None, :], columns=self.cats, index=['pval'])
+            return pd.DataFrame(
+                np.array(round(self.pvals_kinetics, 2))[None, :],
+                columns=self.cats,
+                index=["pval"],
+            )
 
 
-def get_reads(adata, key='fit', scaled=True, use_raw=False):
-    if 'Ms' not in adata.layers.keys(): use_raw = True
-    s = make_dense(adata.layers['spliced' if use_raw else 'Ms'])
-    u = make_dense(adata.layers['unspliced'if use_raw else 'Mu'])
-    if scaled: u /= adata.var[f'{key}_scaling'].values
+def get_reads(adata, key="fit", scaled=True, use_raw=False):
+    if "Ms" not in adata.layers.keys():
+        use_raw = True
+    s = make_dense(adata.layers["spliced" if use_raw else "Ms"])
+    u = make_dense(adata.layers["unspliced" if use_raw else "Mu"])
+    if scaled:
+        u /= adata.var[f"{key}_scaling"].values
     return u, s
 
 
-def get_vars(adata, scaled=True, key='fit'):
-    alpha = adata.var[f'{key}_alpha'].values if f'{key}_alpha' in adata.var.keys() else 1
-    beta = adata.var[f'{key}_beta'].values if f'{key}_beta' in adata.var.keys() else 1
-    gamma = adata.var[f'{key}_gamma'].values
-    scaling = adata.var[f'{key}_scaling'].values if f'{key}_scaling' in adata.var.keys() else 1
-    t_ = adata.var[f'{key}_t_'].values
+def get_vars(adata, scaled=True, key="fit"):
+    alpha = (
+        adata.var[f"{key}_alpha"].values if f"{key}_alpha" in adata.var.keys() else 1
+    )
+    beta = adata.var[f"{key}_beta"].values if f"{key}_beta" in adata.var.keys() else 1
+    gamma = adata.var[f"{key}_gamma"].values
+    scaling = (
+        adata.var[f"{key}_scaling"].values
+        if f"{key}_scaling" in adata.var.keys()
+        else 1
+    )
+    t_ = adata.var[f"{key}_t_"].values
     return alpha, beta * scaling if scaled else beta, gamma, scaling, t_
 
 
-def get_latent_vars(adata, scaled=True, key='fit'):
-    scaling = adata.var[f'{key}_scaling'].values
-    std_u = adata.var[f'{key}_std_u'].values
-    std_s = adata.var[f'{key}_std_s'].values
-    u0 = adata.var[f'{key}_u0'].values
-    s0 = adata.var[f'{key}_s0'].values
-    pval_steady = adata.var[f'{key}_pval_steady'].values if f'{key}_pval_steady' in adata.var.keys() else None
-    steady_u = adata.var[f'{key}_steady_u'].values if f'{key}_steady_u' in adata.var.keys() else None
-    steady_s = adata.var[f'{key}_steady_s'].values if f'{key}_steady_s' in adata.var.keys() else None
-    return std_u, std_s, u0 / scaling if scaled else u0, s0, pval_steady, steady_u, steady_s
+def get_latent_vars(adata, scaled=True, key="fit"):
+    scaling = adata.var[f"{key}_scaling"].values
+    std_u = adata.var[f"{key}_std_u"].values
+    std_s = adata.var[f"{key}_std_s"].values
+    u0 = adata.var[f"{key}_u0"].values
+    s0 = adata.var[f"{key}_s0"].values
+    pval_steady = (
+        adata.var[f"{key}_pval_steady"].values
+        if f"{key}_pval_steady" in adata.var.keys()
+        else None
+    )
+    steady_u = (
+        adata.var[f"{key}_steady_u"].values
+        if f"{key}_steady_u" in adata.var.keys()
+        else None
+    )
+    steady_s = (
+        adata.var[f"{key}_steady_s"].values
+        if f"{key}_steady_s" in adata.var.keys()
+        else None
+    )
+    u0_scaled = (u0 / scaling if scaled else u0,)
+    return std_u, std_s, u0_scaled, s0, pval_steady, steady_u, steady_s
 
 
-def get_divergence(adata, mode='soft', use_latent_time=None, use_connectivities=None, **kwargs):
-    vdata = adata[:, ~np.isnan(adata.var['fit_alpha'].values)].copy()
+def get_divergence(
+    adata, mode="soft", use_latent_time=None, use_connectivities=None, **kwargs
+):
+    vdata = adata[:, ~np.isnan(adata.var["fit_alpha"].values)].copy()
     alpha, beta, gamma, scaling, t_ = get_vars(vdata)
     std_u, std_s, u0, s0, pval_steady, steady_u, steady_s = get_latent_vars(vdata)
 
-    kwargs_ = {'kernel_width': None, 'normalized': True, 'var_scale': True, 'reg_par': None, 'min_confidence': 1e-2,
-               'constraint_time_increments': False, 'fit_steady_states': True, 'fit_basal_transcription': None,
-               'std_u': std_u, 'std_s': std_s, 'pval_steady': pval_steady, 'steady_u': steady_u, 'steady_s': steady_s}
-    kwargs_.update(adata.uns['recover_dynamics'])
+    kwargs_ = {
+        "kernel_width": None,
+        "normalized": True,
+        "var_scale": True,
+        "reg_par": None,
+        "min_confidence": 1e-2,
+        "constraint_time_increments": False,
+        "fit_steady_states": True,
+        "fit_basal_transcription": None,
+        "std_u": std_u,
+        "std_s": std_s,
+        "pval_steady": pval_steady,
+        "steady_u": steady_u,
+        "steady_s": steady_s,
+    }
+    kwargs_.update(adata.uns["recover_dynamics"])
     kwargs_.update(**kwargs)
 
     reg_time = None
-    if use_latent_time is True: use_latent_time = 'latent_time'
+    if use_latent_time is True:
+        use_latent_time = "latent_time"
     if isinstance(use_latent_time, str) and use_latent_time in adata.obs.keys():
         reg_time = adata.obs[use_latent_time].values
-    u, s = get_reads(vdata, use_raw=kwargs_['use_raw'])
-    if kwargs_['fit_basal_transcription']: u, s = u - u0, s - s0
-    tau = np.array(vdata.layers['fit_tau']) if 'fit_tau' in vdata.layers.keys() else None
-    tau_ = np.array(vdata.layers['fit_tau_']) if 'fit_tau_' in vdata.layers.keys() else None
+    u, s = get_reads(vdata, use_raw=kwargs_["use_raw"])
+    if kwargs_["fit_basal_transcription"]:
+        u, s = u - u0, s - s0
+    tau = (
+        np.array(vdata.layers["fit_tau"]) if "fit_tau" in vdata.layers.keys() else None
+    )
+    tau_ = (
+        np.array(vdata.layers["fit_tau_"])
+        if "fit_tau_" in vdata.layers.keys()
+        else None
+    )
 
-    res = compute_divergence(u, s, alpha, beta, gamma, scaling, t_, tau=tau, tau_=tau_, reg_time=reg_time, mode=mode,
-                             connectivities=get_connectivities(adata) if use_connectivities else None, **kwargs_)
+    kwargs.update(dict(t_=t_, tau=tau, tau_=tau_, reg_time=reg_time, mode=mode))
+    conn = get_connectivities(adata) if use_connectivities else None
+
+    res = compute_divergence(
+        u, s, alpha, beta, gamma, scaling, connectivities=conn, **kwargs_,
+    )
     return res
