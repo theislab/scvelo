@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 
 
+# fmt: off
 s_genes_list = \
     ['Mcm5', 'Pcna', 'Tyms', 'Fen1', 'Mcm2', 'Mcm4', 'Rrm1', 'Ung', 'Gins2',
      'Mcm6', 'Cdca7', 'Dtl', 'Prim1', 'Uhrf1', 'Mlf1ip', 'Hells', 'Rfc2',
@@ -19,6 +20,7 @@ g2m_genes_list = \
      'Cdc25c', 'Kif2c', 'Rangap1', 'Ncapd2', 'Dlgap5', 'Cdca2', 'Cdca8',
      'Ect2', 'Kif23', 'Hmmr', 'Aurka', 'Psrc1', 'Anln', 'Lbr', 'Ckap5',
      'Cenpe', 'Ctcf', 'Nek2', 'G2e3', 'Gas2l3', 'Cbx5', 'Cenpa']
+# fmt: on
 
 
 def get_phase_marker_genes(adata):
@@ -96,9 +98,9 @@ def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kw
     score_genes(adata, gene_list=g2m_genes, score_name="G2M_score", **kwargs)
     scores = adata.obs[["S_score", "G2M_score"]]
 
-    phase = pd.Series("S", index=scores.index)          # default phase is S
-    phase[scores.G2M_score > scores.S_score] = "G2M"    # G2M, if G2M is higher than S
-    phase[np.all(scores < 0, axis=1)] = "G1"            # G1, if all scores are negative
+    phase = pd.Series("S", index=scores.index)  # default phase is S
+    phase[scores.G2M_score > scores.S_score] = "G2M"  # G2M, if G2M is higher than S
+    phase[np.all(scores < 0, axis=1)] = "G1"  # G1, if all scores are negative
 
     adata.obs["phase"] = phase
     logg.hint("    'S_score' and 'G2M_score', scores of cell cycle phases (adata.obs)")

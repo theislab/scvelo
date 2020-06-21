@@ -160,7 +160,7 @@ def simulation(
     -------
     Returns `adata` object
     """
-    from .tools.dynamical_model_utils import unspliced, spliced, vectorize, mRNA
+    from .tools.dynamical_model_utils import vectorize, mRNA
 
     np.random.seed(random_seed)
 

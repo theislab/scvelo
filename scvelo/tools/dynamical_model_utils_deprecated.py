@@ -179,9 +179,7 @@ def tau_s(s, s0, u0, alpha, beta, gamma, u=None, tau=None, eps=1e-2):
             a, b, c = ftt / 2, ft, f - s
             term = b ** 2 - 4 * a * c
             update = (-b + np.sqrt(term)) / (2 * a)
-            if (
-                mixed_states
-            ):
+            if mixed_states:
                 update = np.nan_to_num(update) * (alpha > 0) + (-c / b) * (alpha <= 0)
             tau = (
                 np.nan_to_num(tau_prev + update) * (s != 0)
