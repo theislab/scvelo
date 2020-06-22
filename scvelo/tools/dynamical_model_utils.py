@@ -1764,7 +1764,7 @@ def get_divergence(
         else None
     )
 
-    kwargs.update(dict(t_=t_, tau=tau, tau_=tau_, reg_time=reg_time, mode=mode))
+    kwargs_.update(dict(t_=t_, tau=tau, tau_=tau_, reg_time=reg_time, mode=mode))
     conn = get_connectivities(adata) if use_connectivities else None
 
     res = compute_divergence(
