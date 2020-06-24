@@ -67,6 +67,9 @@ def heatmap(
     save: `bool` or `str`, optional (default: `None`)
         If `True` or a `str`, save the figure. A string is appended to the default
         filename. Infer the filetype if ending on {'.pdf', '.png', '.svg'}.
+    kwargs:
+        Arguments passed to seaborns clustermap,
+        e.g., set `yticklabels=True` to display all gene names in all rows.
 
     Returns
     -------

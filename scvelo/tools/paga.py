@@ -70,6 +70,7 @@ class PAGA_tree(PAGA):
         use_time_prior=None,
         root_key=None,
         end_key=None,
+        threshold_root_end_prior=None,
         minimum_spanning_tree=None,
     ):
         super().__init__(adata=adata, groups=groups, model="v1.2")
@@ -78,6 +79,9 @@ class PAGA_tree(PAGA):
         self.use_time_prior = use_time_prior
         self.root_key = root_key
         self.end_key = end_key
+        self.threshold_root_end_prior = threshold_root_end_prior
+        if self.threshold_root_end_prior is None:
+            self.threshold_root_end_prior = 0.9
         self.minimum_spanning_tree = minimum_spanning_tree
 
     def compute_transitions(self):
@@ -118,11 +122,11 @@ class PAGA_tree(PAGA):
                 rows.extend([i] * np.sum(idx_bool))
             vgraph = vals_to_csr(vals, rows, cols, shape=vgraph.shape)
 
+        lb = self.threshold_root_end_prior  # cells to be consider as terminal states
         if isinstance(self.end_key, str) and self.end_key in self._adata.obs.keys():
-            set_row_csr(vgraph, rows=np.where(self._adata.obs[self.end_key] > 0.7)[0])
-
+            set_row_csr(vgraph, rows=np.where(self._adata.obs[self.end_key] > lb)[0])
         if isinstance(self.root_key, str) and self.root_key in self._adata.obs.keys():
-            vgraph[:, np.where(self._adata.obs[self.root_key] > 0.7)[0]] = 0
+            vgraph[:, np.where(self._adata.obs[self.root_key] > lb)[0]] = 0
             vgraph.eliminate_zeros()
 
         membership = self._adata.obs[self.groups].cat.codes.values
@@ -178,6 +182,7 @@ def paga(
     use_time_prior=True,
     root_key=None,
     end_key=None,
+    threshold_root_end_prior=None,
     minimum_spanning_tree=True,
     copy=False,
 ):
@@ -205,6 +210,9 @@ def paga(
         Obs key for root states.
     end_key : `str` or bool, optional (default: None)
         Obs key for end states.
+    threshold_root_end_prior : `float` (default: 0.9)
+        Threshold for root and final states priors, to be in the range of [0,1].
+        Values above the threshold will be considered as terminal and included as prior.
     minimum_spanning_tree : bool, optional (default: True)
         Whether to prune the tree such that a path from A-to-B
         is removed if another more confident path exists.
@@ -259,6 +267,7 @@ def paga(
         use_time_prior=use_time_prior,
         root_key=root_key,
         end_key=end_key,
+        threshold_root_end_prior=threshold_root_end_prior,
         minimum_spanning_tree=minimum_spanning_tree,
     )
 
