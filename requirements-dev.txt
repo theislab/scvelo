@@ -1,4 +1,7 @@
 -r requirements.txt
 
+git+https://github.com/theislab/scvelo
+
+#TODO: Check if older versions are compatible as well.
 black>=19.10b0
-pre-commit==2.5.1
+pre-commit>=2.5.1
