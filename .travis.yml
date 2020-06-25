@@ -7,9 +7,19 @@ python:
 install:
   - pip install docutils
   - pip install -e .
+  - pip install black>=19.10b0
 
 env: MPLBACKEND=Agg
 
-script:
-  - pytest
-  - rst2html.py --halt=2 README.rst >/dev/null
+jobs:
+  allow_failures:
+    env:
+      - CAN_FAIL=true
+  include:
+    - stage: "linting"
+      env: CAN_FAIL=true
+      script: black --check .
+    - stage: "test"
+      script:
+        - pytest
+        - rst2html.py --halt=2 README.rst >/dev/null
