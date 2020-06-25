@@ -450,11 +450,11 @@ def convert_to_gene_names(ensembl_names=None):
 
         gene_names = np.array(ensembl_names)
         idx = pd.DataFrame(ensembl_names).isin(df.index).values.flatten()
-        gene_names[idx] = df['gene name'].values
+        gene_names[idx] = df["gene name"].values
 
         df = pd.DataFrame([ensembl_names, gene_names]).T
-        df.columns = ['ensembl', 'gene name']
-        df.index = df.pop('ensembl')
+        df.columns = ["ensembl", "gene name"]
+        df.index = df.pop("ensembl")
     return df
 
 

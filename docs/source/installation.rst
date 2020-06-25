@@ -31,7 +31,7 @@ location such that pulled changes are also reflected in the environment.
 
 To contribute to scVelo install the latest packages required for development and the pre-commit hooks::
 
-    pip install -r requirement-dev.txt
+    pip install -r requirements-dev.txt
     pre-commit install
 
 
