@@ -20,4 +20,5 @@ from .plotting.utils import interpret_colorkey, rgb_custom_colormap
 from .plotting.velocity_embedding_grid import compute_velocity_on_grid
 from .plotting.simulation import compute_dynamics
 
-from .read_load import clean_obs_names, merge
+from .read_load import clean_obs_names, merge, gene_info
+from .read_load import convert_to_gene_names, load_biomart

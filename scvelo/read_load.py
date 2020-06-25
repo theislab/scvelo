@@ -417,3 +417,65 @@ def get_df(
 
 
 DataFrame = get_df
+
+
+def load_biomart():
+    # human genes from https://biomart.genenames.org/martform
+    # mouse genes from http://www.ensembl.org/biomart/martview
+    # antibodies from https://www.biolegend.com/en-us/totalseq
+    nb_url = "https://github.com/theislab/scvelo_notebooks/raw/master/"
+
+    filename = "data/biomart/mart_export_human.txt"
+    df = load(filename, sep="\t", backup_url=f"{nb_url}{filename}")
+    df.columns = ["ensembl", "gene name"]
+    df.index = df.pop("ensembl")
+
+    filename = "data/biomart/mart_export_mouse.txt"
+    df2 = load(filename, sep="\t", backup_url=f"{nb_url}{filename}")
+    df2.columns = ["ensembl", "gene name"]
+    df2.index = df2.pop("ensembl")
+
+    df = pd.concat([df, df2])
+    return df
+
+
+def convert_to_gene_names(ensembl_names=None):
+    df = load_biomart()
+    if ensembl_names is not None:
+        if isinstance(ensembl_names, str):
+            ensembl_names = ensembl_names
+        valid_names = [name for name in ensembl_names if name in df.index]
+        if len(valid_names) > 0:
+            df = df.loc[valid_names]
+
+        gene_names = np.array(ensembl_names)
+        idx = pd.DataFrame(ensembl_names).isin(df.index).values.flatten()
+        gene_names[idx] = df['gene name'].values
+
+        df = pd.DataFrame([ensembl_names, gene_names]).T
+        df.columns = ['ensembl', 'gene name']
+        df.index = df.pop('ensembl')
+    return df
+
+
+def gene_info(name, fields="name,symbol,refseq,generif,ensembl"):
+    try:
+        from biothings_client import get_client
+    except ImportError:
+        raise ImportError(
+            "Please install Biothings first via `pip install biothings_client`."
+        )
+
+    class MyGeneInfo(get_client("gene", instance=False)):
+        def __init__(self):
+            super(MyGeneInfo, self).__init__()
+
+    if not name.startswith("ENS"):
+        df = convert_to_gene_names()
+        df.reset_index(inplace=True)
+        df.set_index("gene name", inplace=True)
+        if name in df.index:
+            name = df.loc[name][0]
+
+    info = MyGeneInfo().getgene(name, fields)
+    return info
