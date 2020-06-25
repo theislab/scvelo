@@ -259,7 +259,10 @@ def paga(
         if use_time_prior not in adata.obs.keys():
             velocity_pseudotime(adata, vkey=vkey, root_key=root_key, end_key=end_key)
 
-    logg.info("running PAGA", r=True)
+    priors = [p for p in [use_time_prior, root_key, end_key] if p in adata.obs.keys()]
+    logg.info(
+        f"running PAGA", f"using priors: {priors}" if len(priors) > 0 else "", r=True,
+    )
     paga = PAGA_tree(
         adata,
         groups,
