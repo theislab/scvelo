@@ -49,7 +49,7 @@ def velocity_embedding_stream(
     figsize=None,
     dpi=None,
     frameon=None,
-    show=True,
+    show=None,
     save=None,
     ax=None,
     ncols=None,
@@ -192,7 +192,7 @@ def velocity_embedding_stream(
                     )
                 )
         savefig_or_show(dpi=dpi, save=save, show=show)
-        if not show:
+        if show is False:
             return ax
 
     else:
@@ -225,5 +225,5 @@ def velocity_embedding_stream(
         )
 
         savefig_or_show(dpi=dpi, save=save, show=show)
-        if not show:
+        if show is False:
             return ax

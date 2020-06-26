@@ -27,7 +27,7 @@ def heatmap(
     row_cluster=False,
     figsize=(8, 4),
     font_scale=None,
-    show=True,
+    show=None,
     save=None,
     **kwargs,
 ):
@@ -148,7 +148,7 @@ def heatmap(
         cm = sns.clustermap(df.T, **kwargs)
 
     savefig_or_show("heatmap", save=save, show=show)
-    if not show:
+    if show is False:
         return cm
 
 

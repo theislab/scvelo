@@ -716,7 +716,7 @@ def scatter(
                     set_colorbar(smp, ax=ax, labelsize=labelsize)
 
             savefig_or_show(dpi=dpi, save=save, show=show)
-            if not show:
+            if show is False:
                 return ax
 
 

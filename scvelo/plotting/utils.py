@@ -113,7 +113,6 @@ def get_ax(ax, show=None, figsize=None, dpi=None, projection=None):
     if ax is None:
         projection = "3d" if projection == "3d" else None
         ax = pl.figure(None, figsize, dpi=dpi).gca(projection=projection)
-        show = show or show is None
     elif isinstance(ax, SubplotSpec):
         geo = ax.get_geometry()
         if show is None:
@@ -963,7 +962,6 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
             filename += f"{settings.plot_suffix}.png"
             pl.savefig(filename, dpi=dpi, bbox_inches="tight")
         logg.msg("saving figure to file", filename, v=1)
-
     if show:
         pl.show()
     if save:

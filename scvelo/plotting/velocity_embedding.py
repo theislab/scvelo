@@ -45,7 +45,7 @@ def velocity_embedding(
     figsize=None,
     dpi=None,
     frameon=None,
-    show=True,
+    show=None,
     save=None,
     ax=None,
     ncols=None,
@@ -155,7 +155,7 @@ def velocity_embedding(
                     )
                 )
         savefig_or_show(dpi=dpi, save=save, show=show)
-        if not show:
+        if show is False:
             return ax
 
     else:
@@ -256,5 +256,5 @@ def velocity_embedding(
         ax = scatter(adata, size=size, title=title, ax=ax, zorder=0, **scatter_kwargs)
 
         savefig_or_show(dpi=dpi, save=save, show=show)
-        if not show:
+        if show is False:
             return ax

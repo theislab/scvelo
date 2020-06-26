@@ -57,7 +57,7 @@ def paga(
     components=None,
     figsize=None,
     dpi=None,
-    show=True,
+    show=None,
     save=None,
     ax=None,
     ncols=None,
@@ -271,7 +271,7 @@ def paga(
                     )
                 )
         savefig_or_show(dpi=dpi, save=save, show=show)
-        if not show:
+        if show is False:
             return ax
 
     else:
@@ -354,7 +354,7 @@ def paga(
         _paga(adata, ax=ax, show=False, text_kwds=text_kwds, **paga_kwargs)
 
         savefig_or_show(dpi=dpi, save=save, show=show)
-        if not show:
+        if show is False:
             return ax
 
 

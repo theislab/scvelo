@@ -33,7 +33,7 @@ def velocity_graph(
     components=None,
     title=None,
     dpi=None,
-    show=True,
+    show=None,
     save=None,
     ax=None,
     **kwargs,
@@ -136,7 +136,7 @@ def velocity_graph(
             edges.set_rasterized(settings._vector_friendly)
 
     savefig_or_show(dpi=dpi, save=save, show=show)
-    if not show:
+    if show is False:
         return ax
 
 
