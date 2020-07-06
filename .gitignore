@@ -26,6 +26,7 @@ Thumbs.db
 .directory
 /.idea/
 .vscode/
+=19
 
 # Docs build
 docs/build

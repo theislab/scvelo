@@ -29,7 +29,8 @@ or::
 ``-e`` is short for ``--editable`` and links the package to the original cloned
 location such that pulled changes are also reflected in the environment.
 
-To contribute to scVelo install the latest packages required for development and the pre-commit hooks::
+To contribute to scVelo, ``cd`` into the cloned directory and
+install the latest packages required for development together with the pre-commit hooks::
 
     pip install -r requirements-dev.txt
     pre-commit install
@@ -58,7 +59,7 @@ Jupyter Notebook
 
 To run the tutorials in a notebook locally, please install::
 
-   pip install notebook
+   conda install notebook
 
 and run ``jupyter notebook`` in the terminal. If you get the error ``Not a directory: 'xdg-settings'``,
 use ``jupyter notebook --no-browser`` instead and open the url manually (or use this

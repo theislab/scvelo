@@ -10,7 +10,10 @@ setup(
         l.strip() for l in Path("requirements.txt").read_text("utf-8").splitlines()
     ],
     extras_require=dict(
-        louvain=["python-igraph", "louvain"], hnswlib=["pybind11", "hnswlib"]
+        louvain=["python-igraph", "louvain"],
+        hnswlib=["pybind11", "hnswlib"],
+        dev=["black==19.10b0", "pre-commit==2.5.1"],
+        docs=[r for r in Path("docs/requirements.txt").read_text("utf-8").splitlines()],
     ),
     packages=find_packages(),
     author="Volker Bergen",
