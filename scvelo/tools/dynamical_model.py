@@ -127,6 +127,39 @@ class DynamicsRecovery(BaseDynamics):
         self.likelihood = self.get_likelihood(refit_time=False)
         self.varx = self.get_variance()
 
+    def fit_alpha(self, sight=0.5, **kwargs):
+        def mse(x):
+            return self.get_mse(alpha=x[0], **kwargs)
+
+        val = self.alpha
+        vals = val + np.linspace(-1, 1, num=4) * val * sight
+        for v in vals:
+            self.update(alpha=val * v)
+        res = minimize(mse, np.array([val]), **self.simplex_kwargs)
+        self.update(alpha=res.x[0])
+
+    def fit_beta(self, sight=0.5, **kwargs):
+        def mse(x):
+            return self.get_mse(beta=x[0], **kwargs)  # scaling=x[1])
+
+        val = self.beta
+        vals = val + np.linspace(-1, 1, num=4) * val * sight
+        for v in vals:
+            self.update(beta=val * v)
+        res = minimize(mse, np.array([val]), **self.simplex_kwargs)
+        self.update(beta=res.x[0])
+
+    def fit_gamma(self, sight=0.5, **kwargs):
+        def mse(x):
+            return self.get_mse(gamma=x[0], **kwargs)
+
+        val = self.gamma
+        vals = val + np.linspace(-1, 1, num=4) * val * sight
+        for v in vals:
+            self.update(gamma=val * v)
+        res = minimize(mse, np.array([val]), **self.simplex_kwargs)
+        self.update(gamma=res.x[0])
+
     def fit_t_and_alpha(self, **kwargs):
         def mse(x):
             return self.get_mse(t_=x[0], alpha=x[1], **kwargs)
