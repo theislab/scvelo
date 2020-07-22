@@ -42,12 +42,12 @@ Feel free to submit an `issue <https://github.com/theislab/scvelo/issues/new/cho
 or send us an `email <mailto:mail@scvelo.org>`_.
 Your help to improve scVelo is highly appreciated.
 
-.. note::
-
-   Dear scVelo user, I am currently traveling and will be returning in mid August.
-   Upon my return, I will be available via voice call for urgent matters.
-   Please schedule a VC meeting |meet|.
-   Warmest regards, Volker.
+Currently out of office
+-----------------------
+Dear scVelo user, I am currently traveling and will be returning in mid August.
+Upon my return, I will be available via voice call for urgent matters.
+Please schedule a VC meeting `here <https://calendly.com/scvelo>`_.
+Warmest regards, Volker.
 
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
@@ -67,11 +67,3 @@ Your help to improve scVelo is highly appreciated.
 .. |br| raw:: html
 
   <br/>
-
-.. |meet| raw:: html
-
-  <!-- Calendly link widget begin -->
-  <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
-  <script src="https://assets.calendly.com/assets/external/widget.js" type="text/javascript"></script>
-  <a href="" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/scvelo'});return false;">here</a>
-  <!-- Calendly link widget end -->
