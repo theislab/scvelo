@@ -213,7 +213,11 @@ def velocity_pseudotime(
     )
     for cat in categories:
         groups = cat if cat is not None else groups
-        if root_key is None or end_key is None:
+        if (
+            root_key is None
+            or root_key in adata.obs.keys()
+            and np.max(adata.obs[root_key]) == np.min(adata.obs[root_key])
+        ):
             terminal_states(adata, vkey, groupby, groups)
             root_key, end_key = "root_cells", "end_points"
         cell_subset = groups_to_bool(adata, groups=groups, groupby=groupby)
@@ -233,15 +237,16 @@ def velocity_pseudotime(
         vpt.compute_pseudotime()
         dpt_root = vpt.pseudotime
 
-        vpt.set_iroot(end_key)
-        vpt.compute_pseudotime(inverse=True)
-        dpt_end = vpt.pseudotime
+        if end_key is not None:
+            vpt.set_iroot(end_key)
+            vpt.compute_pseudotime(inverse=True)
+            dpt_end = vpt.pseudotime
 
-        # merge dpt_root and inverse dpt_end together
-        vpt.pseudotime = np.nan_to_num(dpt_root) + np.nan_to_num(dpt_end)
-        vpt.pseudotime[np.isfinite(dpt_root) & np.isfinite(dpt_end)] /= 2
-        vpt.pseudotime = scale(vpt.pseudotime)
-        vpt.pseudotime[np.isnan(dpt_root) & np.isnan(dpt_end)] = np.nan
+            # merge dpt_root and inverse dpt_end together
+            vpt.pseudotime = np.nan_to_num(dpt_root) + np.nan_to_num(dpt_end)
+            vpt.pseudotime[np.isfinite(dpt_root) & np.isfinite(dpt_end)] /= 2
+            vpt.pseudotime = scale(vpt.pseudotime)
+            vpt.pseudotime[np.isnan(dpt_root) & np.isnan(dpt_end)] = np.nan
 
         if "n_branchings" in kwargs and kwargs["n_branchings"] > 0:
             vpt.branchings_segments()
