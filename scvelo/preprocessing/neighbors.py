@@ -177,6 +177,7 @@ def neighbors(
         "method": method,
         "metric": metric,
         "n_pcs": n_pcs,
+        "use_rep": use_rep,
     }
 
     logg.info("    finished", time=True, end=" " if settings.verbosity > 2 else "\n")
