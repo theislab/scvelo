@@ -20,7 +20,7 @@ def pseudotime(adata, gene_list, ckey="velocity", reverse=False):
 
     gs = pl.GridSpec(1, len(gene_list))
     for n, gene in enumerate(gene_list):
-        i = np.where(adata_subset.var_names == gene)[0][0]
+        i = adata_subset.var_names.get_loc(gene)
         ax = pl.subplot(gs[n])
 
         lb, ub = np.percentile(adata_subset.obsm[ckey][:, i], [0.5, 99.5])
