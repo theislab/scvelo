@@ -770,7 +770,7 @@ class BaseDynamics:
                 self.weights_upper &= w_upper
 
     def load_pars(self, adata, gene):
-        idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
+        idx = adata.var_names.get_loc(gene) if isinstance(gene, str) else gene
         self.alpha = adata.var["fit_alpha"][idx]
         self.beta = adata.var["fit_beta"][idx] * adata.var["fit_scaling"][idx]
         self.gamma = adata.var["fit_gamma"][idx]
