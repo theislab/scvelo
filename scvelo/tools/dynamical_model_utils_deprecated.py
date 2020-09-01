@@ -568,7 +568,7 @@ class DynamicsRecovery(BaseDynamics):
         self.update_scaling(sight=0.1)
 
     def load_pars(self, adata, gene):
-        idx = np.where(adata.var_names == gene)[0][0] if isinstance(gene, str) else gene
+        idx = adata.var_names.get_loc(gene) if isinstance(gene, str) else gene
         self.alpha = adata.var["fit_alpha"][idx]
         self.beta = adata.var["fit_beta"][idx]
         self.gamma = adata.var["fit_gamma"][idx]
@@ -978,7 +978,7 @@ def recover_dynamics_deprecated(
                 **kwargs,
             )
 
-        ix = np.where(adata.var_names == gene)[0][0]
+        ix = adata.var_names.get_loc(gene)
         idx.append(ix)
 
         alpha[ix], beta[ix], gamma[ix], t_[ix], scaling[ix] = dm.pars[:, -1]
