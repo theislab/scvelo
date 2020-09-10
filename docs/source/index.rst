@@ -9,10 +9,10 @@ scVelo - RNA velocity generalized through dynamical modeling
 
 **scVelo** is a scalable toolkit for RNA velocity analysis in single cells. |br|
 The methods are based on
-`Bergen et al. (2020, Nature Biotech) <https://doi.org/10.1038/s41587-020-0591-3>`_.
+`Bergen et al. (Nature Biotech, 2020) <https://doi.org/10.1038/s41587-020-0591-3>`_.
 
 RNA velocity enables the recovery of directed dynamic information by leveraging splicing information.
-scVelo generalizes the concept of RNA velocity (`La Manno et al., 2018, Nature <https://doi.org/10.1038/s41586-018-0414-6>`_)
+scVelo generalizes the concept of RNA velocity (`La Manno et al., Nature, 2018 <https://doi.org/10.1038/s41586-018-0414-6>`_)
 by relaxing previously made assumptions with a stochastic and a dynamical model that solves the full
 transcriptional dynamics. It thereby adapts RNA velocity to widely varying specifications such as non-stationary populations.
 
@@ -28,7 +28,7 @@ scVelo's key applications
 
 Upcoming talks
 ^^^^^^^^^^^^^^
-- `Sep 15: Temporal Single-Cell Analysis (SCOG) <https://www.singlecell.de/index.php/events/virtual-scog-workshop-temporal-single-cell-genomics/>`_
+- `Sep 15: Temporal Single-Cell Analysis (SCOG) <https://www.singlecell.de/index.php/events/virtual-scog-workshop-temporal-single-cell-genomics/>`_, with a great line-up of `speakers <https://twitter.com/singlecellomics/status/1290894971835428864>`_.
 - `Nov 12: Single Cell Biology (SCB) <https://coursesandconferences.wellcomegenomecampus.org/our-events/single-cell-biology-2020/>`_
 
 Reference
@@ -42,7 +42,7 @@ Support
 ^^^^^^^
 Feel free to submit an `issue <https://github.com/theislab/scvelo/issues/new/choose>`_
 or send us an `email <mailto:mail@scvelo.org>`_.
-Your help to improve scVelo is highly appreciated.|br|
+Your help to improve scVelo is highly appreciated.
 As GitHub requests currently exceeds our limited time capacities, please excuse potential delays.
 For urgent matters, you may schedule a zoom meeting `here <https://calendly.com/scvelo>`_.
 
