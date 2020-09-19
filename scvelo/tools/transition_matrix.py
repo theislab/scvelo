@@ -36,6 +36,8 @@ def transition_matrix(
     from the velocity graph :math:`\\pi_{ij}`, with row-normalization :math:`z_i` and
     kernel width :math:`\\sigma` (scale parameter :math:`\\lambda = \\sigma^{-1}`).
 
+    :func:`cellrank.tl.transition_matrix`
+
     Arguments
     ---------
     adata: :class:`~anndata.AnnData`

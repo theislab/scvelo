@@ -88,29 +88,29 @@ def cell_origin(
 ):
     """Computes individual cell root points
 
-        Arguments
-        ---------
-        data: :class:`~anndata.AnnData`
-            Annotated data matrix.
-        groupby: `str` (default: `'clusters'`)
-            Key to which to assign the fates.
-        disconnected_groups: list of `str` (default: `None`)
-            Which groups to treat as disconnected for fate assignment.
-        n_neighbors: `int` (default: `None`)
-            Number of neighbors to restrict transitions to.
-        self_transitions: `bool` (default: `False`)
-            Whether to include self-transitions.
-        copy: `bool` (default: `False`)
-            Return a copy instead of writing to `adata`.
+    Arguments
+    ---------
+    data: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    groupby: `str` (default: `'clusters'`)
+        Key to which to assign the fates.
+    disconnected_groups: list of `str` (default: `None`)
+        Which groups to treat as disconnected for fate assignment.
+    n_neighbors: `int` (default: `None`)
+        Number of neighbors to restrict transitions to.
+    self_transitions: `bool` (default: `False`)
+        Whether to include self-transitions.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to `adata`.
 
-        Returns
-        -------
-        Returns or updates `adata` with the attributes
-        cell_origin: `.obs`
-            most likely cell origin for each individual cell
-        cell_origin_confidence: `.obs`
-            confidence of coming from assigned origin
-        """
+    Returns
+    -------
+    Returns or updates `adata` with the attributes
+    cell_origin: `.obs`
+        most likely cell origin for each individual cell
+    cell_origin_confidence: `.obs`
+        confidence of coming from assigned origin
+    """
     adata = data.copy() if copy else data
     logg.info("computing cell fates", r=True)
 
@@ -227,9 +227,11 @@ def terminal_states(
     .. code:: python
 
         scv.tl.terminal_states(adata)
-        scv.pl.scatter(adata, color=[ 'root_cells', 'end_points'])
+        scv.pl.scatter(adata, color=['root_cells', 'end_points'])
 
     .. image:: https://user-images.githubusercontent.com/31883718/69496183-bcfdf300-0ecf-11ea-9aae-685300a0b1ba.png
+
+    :func:`cellrank.tl.terminal_states`
 
     Arguments
     ---------
