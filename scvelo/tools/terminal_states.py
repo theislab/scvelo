@@ -231,9 +231,10 @@ def terminal_states(
 
     .. image:: https://user-images.githubusercontent.com/31883718/69496183-bcfdf300-0ecf-11ea-9aae-685300a0b1ba.png
 
-    Other option would be to use :func:`cellrank.tl.terminal_states` (end points)
-    or :func:`cellrank.tl.initial_states` (root points), which uses the real Schur decomposition
-    instead of the eigendecomposition because of the asymmetricity of the transition matrix.
+    An alternative option would be to use :func:`cellrank.tl.terminal_states` or
+    :func:`cellrank.tl.initial_states`, both of which make use of the real Schur
+    decompositions to handle non-symmetries in the transition matrix. These methods are also
+    able to separate multiple initial/terminal states and to pick the most likely cells from each.
 
     Arguments
     ---------

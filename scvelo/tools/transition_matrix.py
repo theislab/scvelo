@@ -36,8 +36,8 @@ def transition_matrix(
     from the velocity graph :math:`\\pi_{ij}`, with row-normalization :math:`z_i` and
     kernel width :math:`\\sigma` (scale parameter :math:`\\lambda = \\sigma^{-1}`).
 
-    Other option would be to use :func:`cellrank.tl.transition_matrix`
-    which can also take into account velocity uncertainty.
+    An alternative option is given by :func:`cellrank.tl.transition_matrix` which takes
+    into account uncertainty in the velocity vectors when computing transition probabilities.
 
     Arguments
     ---------
