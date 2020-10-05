@@ -77,7 +77,7 @@ class VPT(DPT):
             self.iroot = get_connectivities(self._adata).dot(self._adata.obs[root])
             self.iroot = scale(self.iroot).argmax()
         elif isinstance(root, str) and root in self._adata.obs_names:
-            self.iroot = np.where(self._adata.obs_names == root)[0][0]
+            self.iroot = self._adata.obs_names.get_loc(root)
         elif isinstance(root, (int, np.integer)) and root < self._adata.n_obs:
             self.iroot = root
         else:
