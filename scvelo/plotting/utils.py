@@ -675,13 +675,13 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
             var_keys = [
                 k for k in adata.var.keys() if not isinstance(adata.var[k][0], str)
             ]
-            var = adata.var[[var_keys]]
+            var = adata.var[list(var_keys)]
             c = var.astype(np.float32).eval(c)
         elif np.any([obs_key in c for obs_key in adata.obs.keys()]):
             obs_keys = [
-                k for k in adata.obs.keys() if not isinstance(adata.var[k][0], str)
+                k for k in adata.obs.keys() if not isinstance(adata.obs[k][0], str)
             ]
-            obs = adata.obs[[obs_keys]]
+            obs = adata.obs[list(obs_keys)]
             c = obs.astype(np.float32).eval(c)
         elif not is_color_like(c):
             raise ValueError(
