@@ -177,6 +177,7 @@ def neighbors(
         "method": method,
         "metric": metric,
         "n_pcs": n_pcs,
+        "use_rep": use_rep,
     }
 
     logg.info("    finished", time=True, end=" " if settings.verbosity > 2 else "\n")
@@ -293,15 +294,7 @@ def get_neighs(adata, mode="distances"):
 
 
 def get_n_neighs(adata):
-    return (
-        adata.uns["neighbors"]["params"]["n_neighbors"]
-        if (
-            "neighbors" in adata.uns.keys()
-            and "params" in adata.uns["neighbors"]
-            and "n_neighbors" in adata.uns["neighbors"]["params"]
-        )
-        else 0
-    )
+    return adata.uns.get("neighbors", {}).get("params", {}).get("n_neighbors", 0)
 
 
 def verify_neighbors(adata):
