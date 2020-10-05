@@ -227,9 +227,12 @@ def terminal_states(
     .. code:: python
 
         scv.tl.terminal_states(adata)
-        scv.pl.scatter(adata, color=[ 'root_cells', 'end_points'])
+        scv.pl.scatter(adata, color=['root_cells', 'end_points'])
 
     .. image:: https://user-images.githubusercontent.com/31883718/69496183-bcfdf300-0ecf-11ea-9aae-685300a0b1ba.png
+
+    Alternatively, we recommend to use :func:`cellrank.tl.terminal_states`
+    providing an improved/generalized approach of identifying terminal states.
 
     Arguments
     ---------
