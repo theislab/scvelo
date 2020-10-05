@@ -640,7 +640,9 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
     if is_categorical(adata, c):
         c = get_colors(adata, c)
     elif isinstance(c, str):
-        if c in adata.obs.keys():  # color by observation key
+        if is_color_like(c):
+            pass
+        elif c in adata.obs.keys():  # color by observation key
             c = adata.obs[c]
         elif c in adata.var_names or (
             use_raw and adata.raw is not None and c in adata.raw.var_names
