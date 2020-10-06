@@ -91,7 +91,7 @@ def is_list_of_int(lst):
 def to_list(key, max_len=20):
     if isinstance(key, Index) or is_list_of_str(key, max_len):
         key = list(key)
-    return key if is_list(key) and len(key) < max_len else [key]
+    return key if is_list(key) and (max_len is None or len(key) < max_len) else [key]
 
 
 def to_val(key):
