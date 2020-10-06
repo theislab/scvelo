@@ -33,7 +33,7 @@ scVelo's key applications
 
 Upcoming talks
 --------------
-- `Sep 15: Temporal Single-Cell Analysis (SCOG) <https://www.singlecell.de/index.php/events/virtual-scog-workshop-temporal-single-cell-genomics/>`_, with a great `line-up of speakers <https://twitter.com/singlecellomics/status/1290894971835428864>`_.
+- `Sep 15: Temporal Single-Cell Analysis (SCOG) <https://twitter.com/fabian_theis/status/1305621028056465412>`_.
 - `Nov 12: Single Cell Biology (SCB) <https://coursesandconferences.wellcomegenomecampus.org/our-events/single-cell-biology-2020/>`_
 
 Reference

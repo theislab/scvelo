@@ -961,6 +961,7 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
             pl.savefig(filename, dpi=dpi, bbox_inches="tight")
         except:  # save as .png if .pdf is not feasible (e.g. specific streamplots)
             logg.msg(f"figure cannot be saved as {ext}, using png instead.", v=1)
+            filename = f"{settings.figdir}{settings.plot_prefix}{writekey}"
             filename += f"{settings.plot_suffix}.png"
             pl.savefig(filename, dpi=dpi, bbox_inches="tight")
         logg.msg("saving figure to file", filename, v=1)
