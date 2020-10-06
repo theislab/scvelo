@@ -175,9 +175,7 @@ def get_cell_transitions(
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
     starting_cell: `int` (default: `0`)
-        Name of velocity estimates to be used.
-    basis: `str` or `None` (default: `None`)
-        Key for embedding coordinates.s
+        Index (`int`) or name (`obs_names) of starting cell.
     n_steps: `int` (default: `100`)
         Number of transitions/steps to be simulated.
     backward: `bool` (default: `False`)
@@ -193,8 +191,8 @@ def get_cell_transitions(
     otherwise return indices of simulated cell transitions.
     """
     np.random.seed(random_state)
-    if isinstance(starting_cell, str) and starting_cell in adata.var_names:
-        starting_cell = np.where(adata.var_names == starting_cell)[0]
+    if isinstance(starting_cell, str) and starting_cell in adata.obs_names:
+        starting_cell = adata.obs_names.get_loc(starting_cell)
     X = [starting_cell]
     T = transition_matrix(
         adata,
