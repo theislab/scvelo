@@ -130,7 +130,8 @@ def scatter(
         add_text = list(np.array(add_text, dtype=str))
 
     # create list of each mkey and check if all bases are valid.
-    color, layer, components = to_list(color), to_list(layer), to_list(components)
+    color = to_list(color, max_len=None)
+    layer, components = to_list(layer), to_list(components)
     x, y, basis = to_list(x), to_list(y), to_valid_bases_list(adata, basis)
 
     # get multikey (with more than one element)

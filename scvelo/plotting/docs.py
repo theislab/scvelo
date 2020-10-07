@@ -16,8 +16,8 @@ def doc_params(**kwds):
 
 
 doc_scatter = """\
-basis: `str` or list of `str` (default='umap')
-    Key for embedding.
+basis: `str` or list of `str` (default: `None`)
+    Key for embedding. If not specified, use 'umap', 'tsne' or 'pca' (ordered by preference).
 vkey: `str` or list of `str` (default: `None`)
     Key for velocity / steady-state ratio to be visualized.
 color: `str`,  list of `str` or `None` (default: `None`)

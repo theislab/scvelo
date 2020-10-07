@@ -91,7 +91,7 @@ def is_list_of_int(lst):
 def to_list(key, max_len=20):
     if isinstance(key, Index) or is_list_of_str(key, max_len):
         key = list(key)
-    return key if is_list(key) and len(key) < max_len else [key]
+    return key if is_list(key) and (max_len is None or len(key) < max_len) else [key]
 
 
 def to_val(key):
@@ -640,7 +640,9 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
     if is_categorical(adata, c):
         c = get_colors(adata, c)
     elif isinstance(c, str):
-        if c in adata.obs.keys():  # color by observation key
+        if is_color_like(c):
+            pass
+        elif c in adata.obs.keys():  # color by observation key
             c = adata.obs[c]
         elif c in adata.var_names or (
             use_raw and adata.raw is not None and c in adata.raw.var_names
@@ -673,13 +675,13 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
             var_keys = [
                 k for k in adata.var.keys() if not isinstance(adata.var[k][0], str)
             ]
-            var = adata.var[[var_keys]]
+            var = adata.var[list(var_keys)]
             c = var.astype(np.float32).eval(c)
         elif np.any([obs_key in c for obs_key in adata.obs.keys()]):
             obs_keys = [
-                k for k in adata.obs.keys() if not isinstance(adata.var[k][0], str)
+                k for k in adata.obs.keys() if not isinstance(adata.obs[k][0], str)
             ]
-            obs = adata.obs[[obs_keys]]
+            obs = adata.obs[list(obs_keys)]
             c = obs.astype(np.float32).eval(c)
         elif not is_color_like(c):
             raise ValueError(
@@ -959,6 +961,7 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
             pl.savefig(filename, dpi=dpi, bbox_inches="tight")
         except:  # save as .png if .pdf is not feasible (e.g. specific streamplots)
             logg.msg(f"figure cannot be saved as {ext}, using png instead.", v=1)
+            filename = f"{settings.figdir}{settings.plot_prefix}{writekey}"
             filename += f"{settings.plot_suffix}.png"
             pl.savefig(filename, dpi=dpi, bbox_inches="tight")
         logg.msg("saving figure to file", filename, v=1)

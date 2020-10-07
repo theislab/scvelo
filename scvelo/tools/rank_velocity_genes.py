@@ -56,7 +56,7 @@ def select_groups(adata, groups="all", key="louvain"):
     if groups == "all":
         groups = categories.values
     else:
-        groups_ids = [np.where(categories.values == name)[0][0] for name in groups]
+        groups_ids = [categories.get_loc(name) for name in groups]
         groups_masks = groups_masks[groups_ids]
         groups = categories[groups_ids].values
     return groups, groups_masks

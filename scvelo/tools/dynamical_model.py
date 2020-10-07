@@ -959,7 +959,7 @@ def differential_kinetic_test(
         if dm.recoverable:
             dm.differential_kinetic_test(clusters, **kwargs)
 
-            ix = np.where(adata.var_names == gene)[0][0]
+            ix = adata.var_names.get_loc(gene)
             idx.append(ix)
             diff_kinetics[ix], pval_kinetics[ix], = dm.diff_kinetics, dm.pval_kinetics
             pvals[ix] = np.array(dm.pvals_kinetics)

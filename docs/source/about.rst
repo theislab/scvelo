@@ -3,7 +3,7 @@ About scVelo
 
 Measuring gene activity in individual cells requires destroying these cells to read out their content, making it
 challenging to study dynamic processes and to learn about cellular decision making. The introduction of RNA velocity by
-`La Manno et al., (2018) <https://doi.org/10.1038/s41586-018-0414-6>`_ has
+`La Manno et al. (Nature, 2018) <https://doi.org/10.1038/s41586-018-0414-6>`_ has
 enabled the recovery of directed dynamic information by leveraging the fact that newly
 transcribed, unspliced pre-mRNAs and mature, spliced mRNAs can be distinguished in common single-cell RNA-seq protocols,
 the former detectable by the presence of introns.
@@ -12,7 +12,7 @@ has opened up new ways of studying cellular differentiation. The originally prop
 mRNA from an inferred steady state. Errors in velocity estimates arise if the central assumptions of a common splicing
 rate and the observation of the full splicing dynamics with steady-state mRNA levels are violated.
 
-With scVelo, developed by `Bergen et al. (2019) <https://doi.org/10.1101/820936>`_,
+With scVelo, developed by `Bergen et al. (Nature Biotechnology, 2020) <https://doi.org/10.1038/s41587-020-0591-3>`_,
 these restrictions are addressed by solving the full transcriptional dynamics of splicing kinetics using
 a likelihood-based dynamical model. This generalizes RNA velocity to a wide variety of systems comprising transient
 cell states, which are common in development and in response to perturbations.
@@ -87,4 +87,4 @@ For best results and above-described additional insights, we recommend using the
 If runtime is of importance, the stochastic model is advised to be used as it very efficiently approximates the dynamical model,
 taking few minutes on 30k cells. The dynamical yet can take up to one hour, however, enhancing efficiency is in progress.
 
-See `Bergen et al. (2019) <https://doi.org/10.1101/820936>`_ for a detailed exposition of the methods.
+See `Bergen et al. (2020) <https://doi.org/10.1038/s41587-020-0591-3>`_ for a detailed exposition of the methods.

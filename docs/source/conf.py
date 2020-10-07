@@ -79,6 +79,7 @@ intersphinx_mapping = dict(
     python=("https://docs.python.org/3", None),
     anndata=("https://anndata.readthedocs.io/en/latest/", None),
     scanpy=("https://scanpy.readthedocs.io/en/latest/", None),
+    cellrank=("https://cellrank.readthedocs.io/en/latest/", None),
 )
 
 templates_path = ["_templates"]

@@ -26,7 +26,7 @@ def get_dynamics(adata, key="fit", extrapolate=False, sorted=False, t=None):
 def compute_dynamics(
     adata, basis, key="true", extrapolate=None, sort=True, t_=None, t=None
 ):
-    idx = np.where(adata.var_names == basis)[0][0] if isinstance(basis, str) else basis
+    idx = adata.var_names.get_loc(basis) if isinstance(basis, str) else basis
     key = "fit" if f"{key}_gamma" not in adata.var_keys() else key
     alpha, beta, gamma, scaling, t_ = get_vars(adata[:, basis], key=key)
 
@@ -95,7 +95,7 @@ def show_full_dynamics(
         )
         (line,) = ax.plot(st, ut, color=color, linewidth=linewidth, label=label)
 
-        idx = np.where(adata.var_names == basis)[0][0]
+        idx = adata.var_names.get_loc(basis)
         beta, gamma = adata.var[f"{key}_beta"][idx], adata.var[f"{key}_gamma"][idx]
         xnew = np.linspace(np.min(st), np.max(st))
         ynew = gamma / beta * (xnew - np.min(xnew)) + np.min(ut)
@@ -135,7 +135,7 @@ def simulation(
             1, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1]), dpi=dpi)
         )
     ):
-        idx = np.where(adata.var_names == var_names[i])[0][0]
+        idx = adata.var_names.get_loc(var_names[i])
         alpha, ut, st = compute_dynamics(adata, idx)
         t = (
             adata.obs[xkey]
