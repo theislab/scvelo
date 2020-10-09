@@ -9,16 +9,14 @@ from .. import logging as logg
 
 
 def sum_obs(A):
-    """summation over axis 0 (obs) equivalent to np.sum(A, 0)
-    """
+    """summation over axis 0 (obs) equivalent to np.sum(A, 0)"""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return A.sum(0).A1 if issparse(A) else np.sum(A, axis=0)
 
 
 def sum_var(A):
-    """summation over axis 1 (var) equivalent to np.sum(A, 1)
-    """
+    """summation over axis 1 (var) equivalent to np.sum(A, 1)"""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return A.sum(1).A1 if issparse(A) else np.sum(A, axis=1)
@@ -483,8 +481,9 @@ def filter_genes_dispersion(
                 # retrieve genes that have nan std (i.e. single gene fell in one bin)
                 # and implicitly set them to have a normalized disperion of 1
                 one_gene_per_bin = disp_std_bin.isnull()
-                gen_indices = np.where(one_gene_per_bin[df["mean_bin"].values])
-                gen_indices = gen_indices[0].tolist()
+                # gen_indices = np.where(one_gene_per_bin[df["mean_bin"].values])
+                # gen_indices = gen_indices[0].tolist()
+                one_gene_per_bin = one_gene_per_bin.values
                 disp_std_bin[one_gene_per_bin] = disp_mean_bin[one_gene_per_bin].values
                 disp_mean_bin[one_gene_per_bin] = 0
                 # normalized dispersion
@@ -849,8 +848,7 @@ def recipe_velocity(
     log=True,
     copy=False,
 ):
-    """Runs pp.filter_and_normalize() and pp.moments()
-    """
+    """Runs pp.filter_and_normalize() and pp.moments()"""
     from .moments import moments
 
     filter_and_normalize(
