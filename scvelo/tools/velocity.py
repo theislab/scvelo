@@ -21,6 +21,8 @@ class Velocity:
         residual=None,
         constrain_ratio=None,
         min_r2=0.01,
+        min_ratio=0.01,
+        use_highly_variable=True,
         r2_adjusted=True,
         use_raw=False,
     ):
@@ -37,6 +39,7 @@ class Velocity:
         self._offset = np.zeros(n_vars, dtype=np.float32)
         self._offset2 = np.zeros(n_vars, dtype=np.float32)
         self._gamma = np.zeros(n_vars, dtype=np.float32)
+        self._qreg_ratio = np.zeros(n_vars, dtype=np.float32)
         self._r2 = np.zeros(n_vars, dtype=np.float32)
         self._beta = np.ones(n_vars, dtype=np.float32)
         self._velocity_genes = np.ones(n_vars, dtype=bool)
@@ -44,6 +47,11 @@ class Velocity:
         self._constrain_ratio = constrain_ratio
         self._r2_adjusted = r2_adjusted
         self._min_r2 = min_r2
+        self._min_ratio = min_ratio
+        self._highly_variable = None
+        if use_highly_variable is not None and adata is not None:
+            if "highly_variable" in adata.var.keys():
+                self._highly_variable = adata.var["highly_variable"]
 
     def compute_deterministic(self, fit_offset=False, perc=None):
         subset = self._groups_for_fit
@@ -69,13 +77,18 @@ class Velocity:
             if fit_offset:
                 _residual -= _offset
 
+        self._qreg_ratio = np.array(self._gamma)  # quantile regression ratio
+
         self._r2 = R_squared(_residual, total=self._Mu - self._Mu.mean(0))
         self._velocity_genes = (
             (self._r2 > self._min_r2)
-            & (self._gamma > 0.01)
+            & (self._gamma > self._min_ratio)
             & (np.max(self._Ms > 0, 0) > 0)
             & (np.max(self._Mu > 0, 0) > 0)
         )
+
+        if self._highly_variable is not None:
+            self._velocity_genes &= self._highly_variable
 
         if np.sum(self._velocity_genes) < 2:
             min_r2 = np.percentile(self._r2, 80)
@@ -84,7 +97,7 @@ class Velocity:
             logg.warn(
                 f"You seem to have very low signal in splicing dynamics.\n"
                 f"The correlation threshold has been reduced to {min_r2}.\n"
-                f"Please be cautious when interpretating results."
+                f"Please be cautious when interpreting results."
             )
 
     def compute_stochastic(
@@ -154,12 +167,21 @@ class Velocity:
             self._offset2,
             self._beta,
             self._gamma,
+            self._qreg_ratio,
             self._r2,
             self._velocity_genes,
         )
 
     def get_pars_names(self):
-        return ["_offset", "_offset2", "_beta", "_gamma", "_r2", "_genes"]
+        return [
+            "_offset",
+            "_offset2",
+            "_beta",
+            "_gamma",
+            "_qreg_ratio",
+            "_r2",
+            "_genes",
+        ]
 
 
 def write_residuals(adata, vkey, residual=None, cell_subset=None):
@@ -198,6 +220,7 @@ def velocity(
     min_r2=1e-2,
     min_likelihood=1e-3,
     r2_adjusted=None,
+    use_highly_variable=True,
     diff_kinetics=None,
     copy=False,
     **kwargs,
@@ -256,6 +279,8 @@ def velocity(
     r2_adjusted: `bool` (default: `None`)
         Whether to compute coefficient of determination
         on full data fit (adjusted) or extreme quantile fit (None)
+    use_highly_variable: `bool` (default: True)
+        Whether to use highly variable genes only, stored in .var['highly_variable'].
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
 
@@ -311,7 +336,7 @@ def velocity(
         if "residuals" in mode:
             u, s = get_reads(vdata, use_raw=adata.uns["recover_dynamics"]["use_raw"])
             if kwargs_["fit_basal_transcription"]:
-                u, s = u - u0, s - s0
+                u, s = u - adata.var["fit_u0"], s - adata.var["fit_s0"]
             o = vdata.layers["fit_t"] < t_
             vt = u * beta - s * gamma  # ds/dt
             wt = (alpha * o - beta * u) * scaling  # du/dt
@@ -327,6 +352,7 @@ def velocity(
                     groupby=groupby,
                     constrain_ratio=constrain_ratio,
                     min_r2=min_r2,
+                    use_highly_variable=use_highly_variable,
                     use_raw=use_raw,
                 )
                 velo.compute_deterministic(fit_offset=fit_offset, perc=perc)
@@ -370,6 +396,7 @@ def velocity(
                 constrain_ratio=constrain_ratio,
                 min_r2=min_r2,
                 r2_adjusted=r2_adjusted,
+                use_highly_variable=use_highly_variable,
                 use_raw=use_raw,
             )
             velo.compute_deterministic(fit_offset=fit_offset, perc=perc)
@@ -385,6 +412,7 @@ def velocity(
                         groups_for_fit=groups_for_fit,
                         groupby=groupby,
                         constrain_ratio=constrain_ratio,
+                        use_highly_variable=use_highly_variable,
                     )
                 velo.compute_stochastic(fit_offset, fit_offset2, mode, perc=perc)
 
@@ -434,7 +462,12 @@ def velocity(
 
 
 def velocity_genes(
-    data, vkey="velocity", min_r2=0.01, highly_variable=None, copy=False
+    data,
+    vkey="velocity",
+    min_r2=0.01,
+    min_ratio=0.01,
+    use_highly_variable=True,
+    copy=False,
 ):
     """Estimates velocities in a gene-specific manner
 
@@ -446,8 +479,10 @@ def velocity_genes(
         Name under which to refer to the computed velocities.
     min_r2: `float` (default: 0.01)
         Minimum threshold for coefficient of determination
-    highly_variable: `bool` (default: `None`)
-        Whether to include highly variable genes only.
+    min_ratio: `float` (default: 0.01)
+        Minimum threshold for quantile regression un/spliced ratio.
+    use_highly_variable: `bool` (default: True)
+        Whether to use highly variable genes only, stored in .var['highly_variable'].
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
 
@@ -459,14 +494,27 @@ def velocity_genes(
     """
     adata = data.copy() if copy else data
     if f"{vkey}_genes" not in adata.var.keys():
-        velocity(data, vkey)
+        velocity(adata, vkey)
     vgenes = np.ones(adata.n_vars, dtype=bool)
 
-    if min_r2 is not None:
+    if "Ms" in adata.layers.keys() and "Mu" in adata.layers.keys():
+        vgenes &= np.max(adata.layers["Ms"] > 0, 0) > 0
+        vgenes &= np.max(adata.layers["Mu"] > 0, 0) > 0
+
+    if min_r2 is not None and f"{vkey}_r2" in adata.var.keys():
         vgenes &= adata.var[f"{vkey}_r2"] > min_r2
 
-    if highly_variable and "highly_variable" in adata.var.keys():
+    if min_ratio is not None and f"{vkey}_qreg_ratio" in adata.var.keys():
+        vgenes &= adata.var[f"{vkey}_qreg_ratio"] > min_ratio
+
+    if use_highly_variable and "highly_variable" in adata.var.keys():
         vgenes &= adata.var["highly_variable"].values
+
+    if np.sum(vgenes) < 2:
+        logg.warn(
+            f"You seem to have very low signal in splicing dynamics.\n"
+            f"Consider reducing the thresholds and be cautious with interpretations.\n"
+        )
 
     adata.var[f"{vkey}_genes"] = vgenes
 

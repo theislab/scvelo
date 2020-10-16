@@ -34,6 +34,7 @@ def test_pipeline():
     adata = scv.datasets.simulation(random_seed=0, n_vars=10)
 
     scv.pp.filter_and_normalize(adata, n_top_genes=5)
+    scv.pp.pca(adata)
     scv.pp.moments(adata)
 
     scv.tl.recover_dynamics(adata)
@@ -68,3 +69,28 @@ def test_pipeline():
     assert np.allclose(Vs, [3.2961, 2.5254, 2.9926, 2.634, 3.1352], rtol=1e-2)
     assert np.allclose(Vgraph, [0.915, 0.5997, 0.8494, 0.1615, 0.7708], rtol=1e-2)
     assert np.allclose(pars, [4.9257, 0.3239], rtol=1e-2)
+
+
+def test_highly_variable_subset():
+    adata = scv.datasets.simulation(random_seed=0, n_vars=10)
+    bdata = adata.copy()
+
+    scv.pp.filter_and_normalize(adata, n_top_genes=5, subset_highly_variable=True)
+    scv.pp.filter_and_normalize(bdata, n_top_genes=5, subset_highly_variable=False)
+
+    scv.pp.pca(adata)
+    scv.pp.pca(bdata)
+
+    scv.pp.moments(adata, use_rep="pca")
+    scv.pp.moments(bdata, use_rep="pca")
+
+    scv.tl.velocity_graph(adata)
+    scv.tl.velocity_graph(bdata)
+
+    bdata._inplace_subset_var(bdata.var["highly_variable"])
+
+    assert np.allclose(adata.layers["Ms"][0], bdata.layers["Ms"][0])
+    assert np.allclose(adata.layers["velocity"][0], bdata.layers["velocity"][0])
+    assert np.allclose(
+        adata.uns["velocity_graph"].data[:5], bdata.uns["velocity_graph"].data[:5]
+    )

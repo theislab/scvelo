@@ -15,6 +15,7 @@ def neighbors(
     n_neighbors=30,
     n_pcs=None,
     use_rep=None,
+    use_highly_variable=True,
     knn=True,
     random_state=0,
     method="umap",
@@ -49,6 +50,8 @@ def neighbors(
     use_rep : `None`, `'X'` or any key for `.obsm` (default: None)
         Use the indicated representation. If `None`, the representation is chosen
         automatically: for .n_vars < 50, .X is used, otherwise ‘X_pca’ is used.
+    use_highly_variable: `bool` (default: True)
+        Whether to use highly variable genes only, stored in .var['highly_variable'].
     knn
         If `True`, use a hard threshold to restrict the number of neighbors to
         `n_neighbors`, that is, consider a knn graph. Otherwise, use a Gaussian
@@ -64,6 +67,8 @@ def neighbors(
         A known metric’s name or a callable that returns a distance.
     metric_kwds
         Options for the metric.
+    num_threads
+        Number of threads to be used (for runtime).
     copy
         Return a copy instead of writing to adata.
     Returns
@@ -90,9 +95,16 @@ def neighbors(
             or n_pcs is not None
             and n_pcs > adata.obsm["X_pca"].shape[1]
         ):
+            n_vars = (
+                np.sum(adata.var["highly_variable"])
+                if use_highly_variable and "highly_variable" in adata.var.keys()
+                else adata.n_vars
+            )
+            n_comps = min(30 if n_pcs is None else n_pcs, n_vars - 1)
             pca(
                 adata,
-                n_comps=min(30 if n_pcs is None else n_pcs, adata.n_vars - 1),
+                n_comps=n_comps,
+                use_highly_variable=use_highly_variable,
                 svd_solver="arpack",
             )
         elif n_pcs is None and adata.obsm["X_pca"].shape[1] < 10:
@@ -152,7 +164,7 @@ def neighbors(
                 knn=knn,
                 n_pcs=n_pcs,
                 method=method,
-                use_rep=None if use_rep == "X_pca" else use_rep,
+                use_rep=use_rep,
                 random_state=random_state,
                 metric=metric,
                 metric_kwds=metric_kwds,

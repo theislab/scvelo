@@ -734,6 +734,7 @@ def filter_and_normalize(
     min_shared_cells=None,
     n_top_genes=None,
     retain_genes=None,
+    subset_highly_variable=True,
     flavor="seurat",
     log=True,
     layers_normalize=None,
@@ -776,6 +777,8 @@ def filter_and_normalize(
         Number of genes to keep.
     retain_genes: `list`, optional (default: `None`)
         List of gene names to be retained independent of thresholds.
+    subset_highly_variable: `bool` (default: True)
+        Whether to subset highly variable genes or to store in .var['highly_variable'].
     flavor: {'seurat', 'cell_ranger', 'svr'}, optional (default: 'seurat')
         Choose the flavor for computing normalized dispersion.
         If choosing 'seurat', this expects non-logarithmized data.
@@ -817,7 +820,11 @@ def filter_and_normalize(
 
     if n_top_genes is not None:
         filter_genes_dispersion(
-            adata, n_top_genes=n_top_genes, retain_genes=retain_genes, flavor=flavor
+            adata,
+            n_top_genes=n_top_genes,
+            retain_genes=retain_genes,
+            flavor=flavor,
+            subset=subset_highly_variable,
         )
 
     log_advised = (
