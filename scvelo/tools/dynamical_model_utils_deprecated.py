@@ -280,7 +280,7 @@ def ds(
     tau, alpha, beta, gamma, u0=0, s0=0, du0=[0, 0, 0], ds0=[0, 0, 0, 0], dtau=[0, 0, 0]
 ):
     # ds0 is the derivative ds0 / d(alpha, beta, gamma, tau)
-    expu, exps, = exp(-beta * tau), exp(-gamma * tau)
+    expu, exps = exp(-beta * tau), exp(-gamma * tau)
     expus = exps - expu
 
     cbu = (alpha - beta * u0) * inv(gamma - beta)
@@ -549,7 +549,7 @@ class DynamicsRecovery(BaseDynamics):
         t_ = tau_inv(u0_, s0_, 0, 0, alpha, beta, gamma)
 
         # update object with initialized vars
-        alpha_, u0, s0, = 0, 0, 0
+        alpha_, u0, s0 = 0, 0, 0
         self.alpha, self.beta, self.gamma, self.alpha_, self.scaling = (
             alpha,
             beta,

@@ -163,8 +163,7 @@ def draw_networkx_edges(
     min_source_margin=0,
     min_target_margin=0,
 ):
-    """Draw the edges of the graph G. Adjusted from networkx.
-    """
+    """Draw the edges of the graph G. Adjusted from networkx."""
     try:
         import matplotlib.pyplot as plt
         from matplotlib.colors import colorConverter, Colormap, Normalize

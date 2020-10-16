@@ -21,8 +21,7 @@ def get_weight(x, y=None, perc=95):
 
 
 def leastsq_NxN(x, y, fit_offset=False, perc=None, constraint_positive_offset=True):
-    """Solves least squares X*b=Y for b.
-    """
+    """Solves least squares X*b=Y for b."""
     if perc is not None:
         if not fit_offset and isinstance(perc, (list, tuple)):
             perc = perc[1]
@@ -64,8 +63,7 @@ leastsq = leastsq_NxN
 
 
 def optimize_NxN(x, y, fit_offset=False, perc=None):
-    """Just to compare with closed-form solution
-    """
+    """Just to compare with closed-form solution"""
     if perc is not None:
         if not fit_offset and isinstance(perc, (list, tuple)):
             perc = perc[1]
@@ -110,8 +108,7 @@ def leastsq_generalized(
     fit_offset2=False,
     perc=None,
 ):
-    """Solution to the 2-dim generalized least squares: gamma = inv(X'QX)X'QY
-    """
+    """Solution to the 2-dim generalized least squares: gamma = inv(X'QX)X'QY"""
     if perc is not None:
         if not fit_offset and isinstance(perc, (list, tuple)):
             perc = perc[1]
@@ -171,8 +168,7 @@ def leastsq_generalized(
 
 
 def maximum_likelihood(Ms, Mu, Mus, Mss, fit_offset=False, fit_offset2=False):
-    """Maximizing the log likelihood using weights according to empirical bayes
-    """
+    """Maximizing the log likelihood using weights according to empirical bayes"""
     n_obs, n_var = Ms.shape
     offset = np.zeros(n_var, dtype="float32")
     offset_ss = np.zeros(n_var, dtype="float32")

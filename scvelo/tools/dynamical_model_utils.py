@@ -703,7 +703,7 @@ class BaseDynamics:
         self.scaling, self.t_, self.alpha_ = None, None, None
         self.u0_, self.s0_, self.weights = None, None, None
         self.weights_outer, self.weights_upper = None, None
-        self.t, self.tau, self.o, self.tau_, = None, None, None, None
+        self.t, self.tau, self.o, self.tau_ = None, None, None, None
         self.likelihood, self.loss, self.pars = None, None, None
 
         self.max_iter = max_iter
@@ -1768,6 +1768,6 @@ def get_divergence(
     conn = get_connectivities(adata) if use_connectivities else None
 
     res = compute_divergence(
-        u, s, alpha, beta, gamma, scaling, connectivities=conn, **kwargs_,
+        u, s, alpha, beta, gamma, scaling, connectivities=conn, **kwargs_
     )
     return res

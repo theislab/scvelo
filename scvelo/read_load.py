@@ -13,8 +13,7 @@ from scanpy import read, read_loom
 
 
 def load(filename, backup_url=None, header="infer", index_col="infer", **kwargs):
-    """Load a csv, txt, tsv or npy file.
-    """
+    """Load a csv, txt, tsv or npy file."""
     numpy_ext = {"npy", "npz"}
     pandas_ext = {"csv", "txt", "tsv"}
 

@@ -7,7 +7,7 @@ python:
 install:
   - pip install docutils
   - pip install -e .
-  - pip install black>=19.10b0
+  - pip install black>=20.8b1
 
 env: MPLBACKEND=Agg
 

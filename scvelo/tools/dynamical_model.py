@@ -22,7 +22,8 @@ class DynamicsRecovery(BaseDynamics):
     def initialize(self):
         # set weights
         u, s, w, perc = self.u, self.s, self.weights, 98
-        u_w, s_w, = u[w], s[w]
+        u_w = u[w]
+        s_w = s[w]
 
         # initialize scaling
         self.std_u, self.std_s = np.std(u_w), np.std(s_w)
@@ -978,7 +979,8 @@ def differential_kinetic_test(
 
             ix = adata.var_names.get_loc(gene)
             idx.append(ix)
-            diff_kinetics[ix], pval_kinetics[ix], = dm.diff_kinetics, dm.pval_kinetics
+            diff_kinetics[ix] = dm.diff_kinetics
+            pval_kinetics[ix] = dm.pval_kinetics
             pvals[ix] = np.array(dm.pvals_kinetics)
 
             progress.update()
@@ -1071,7 +1073,8 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
 
     adata.uns[key] = {
         "names": np.rec.fromarrays(
-            [n for n in rankings_gene_names], dtype=[(f"{rn}", "U50") for rn in groups],
+            [n for n in rankings_gene_names],
+            dtype=[(f"{rn}", "U50") for rn in groups],
         ),
         "scores": np.rec.fromarrays(
             [n.round(2) for n in rankings_gene_scores],
