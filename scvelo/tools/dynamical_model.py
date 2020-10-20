@@ -12,8 +12,8 @@ from scipy.optimize import minimize
 
 
 class DynamicsRecovery(BaseDynamics):
-    def __init__(self, adata=None, gene=None, load_pars=None, **kwargs):
-        super(DynamicsRecovery, self).__init__(adata, gene, **kwargs)
+    def __init__(self, adata, gene, load_pars=None, **kwargs):
+        super().__init__(adata, gene, **kwargs)
         if load_pars and "fit_alpha" in adata.var.keys():
             self.load_pars(adata, gene)
         elif self.recoverable:
