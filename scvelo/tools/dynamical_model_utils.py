@@ -663,8 +663,8 @@ def curve_dists(
 class BaseDynamics:
     def __init__(
         self,
-        adata=None,
-        gene=None,
+        adata,
+        gene,
         u=None,
         s=None,
         use_raw=False,
