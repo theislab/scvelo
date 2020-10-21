@@ -267,7 +267,7 @@ def strings_to_categoricals(adata):
     df = adata.var
     df_keys = [key for key in df.columns if is_string_dtype(df[key])]
     for key in df_keys:
-        c = df[key]
+        c = df[key].astype("U")
         c = Categorical(c)
         if 1 < len(c.categories) < min(len(c), 100):
             df[key] = c
