@@ -319,9 +319,8 @@ def paga(
                 categories = list(adata.obs[paga_groups].cat.categories)
                 pos = np.zeros((len(categories), 2))
                 for ilabel, label in enumerate(categories):
-                    X_emb = adata.obsm[f"X_{basis}"][
-                        adata.obs[paga_groups] == label, :2
-                    ]
+                    X_emb = adata.obsm[f"X_{basis}"][adata.obs[paga_groups] == label]
+                    X_emb = np.array(X_emb[:, get_components(components, basis)])
                     x_pos, y_pos = np.median(X_emb, axis=0)
                     pos[ilabel] = [x_pos, y_pos]
             else:
