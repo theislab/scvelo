@@ -3,12 +3,18 @@ name: CI
 # trigger
 on: [push]
 
+# environment variables
+env:
+  MPLBACKEND: AGG
+
+# jobs to execute
 jobs:
+ # basic tests
  base:
    runs-on: ubuntu-latest
    strategy:
      matrix:
-       python-version: [3.8]
+       python-version: [3.8, 3.7]
 
    steps:
    - name: Check out repository
