@@ -4,7 +4,7 @@ name: CI
 on: [push]
 
 jobs:
- lint:
+ base:
    runs-on: ubuntu-latest
    strategy:
      matrix:
@@ -27,9 +27,8 @@ jobs:
 
    - name: Install dependencies
      run: |
+      pip install wheel docutils black pytest
       pip install -e .
-      pip install docutils
-      pip install black
   
    - name: Lint
      run: black --check .
