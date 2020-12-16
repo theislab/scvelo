@@ -33,14 +33,21 @@ jobs:
 
    - name: Install dependencies
      run: |
-      pip install wheel docutils black pytest
+      pip install wheel
+      pip install docutils black pytest pytest-cov
       pip install -e .
   
    - name: Lint
      run: black --check .
 
    - name: Unit tests
-     run: pytest
+     run: python -m pytest --cov=scvelo --cov-report=xml
+
+   - name: Coverage
+     uses: codecov/codecov-action@v1
+     with:
+       token: ${{ secrets.CODECOV_TOKEN }}
+       file: ./coverage.xml
 
    - name: rst2html
      run: rst2html.py --halt=2 README.rst >/dev/null
