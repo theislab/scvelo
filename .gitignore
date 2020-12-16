@@ -38,3 +38,6 @@ docs/source/scvelo*
 
 .coverage
 .eggs
+
+# vim
+*.swp
