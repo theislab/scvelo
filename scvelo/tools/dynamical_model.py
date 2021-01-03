@@ -763,7 +763,7 @@ def recover_dynamics(
             work_kwargs=work_kwargs,
             tasks=var_names,
             result=result,
-            n_procs=4,
+            n_procs=n_procs,
             batch_size=batch_size,
         )
     else:
