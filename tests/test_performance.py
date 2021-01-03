@@ -4,7 +4,7 @@ from time import time
 import scvelo as scv
 
 
-def test_todo():
+def test_dynamics_recovery_components():
     adata = scv.datasets.pancreas()
     scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=200)
     scv.pp.moments(adata, n_pcs=30, n_neighbors=30)

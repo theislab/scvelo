@@ -11,8 +11,8 @@ from matplotlib import rcParams
 from scipy.optimize import minimize
 import multiprocessing
 import ctypes
-from time import sleep
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Tuple
+from abc import ABC, abstractmethod
 
 
 class DynamicsRecovery(BaseDynamics):
@@ -374,7 +374,24 @@ def parse_var_names(var_names, adata, use_raw, n_top_genes) -> np.ndarray:
 """Dynamics recovery execution"""
 
 
-def work_recover_dynamics_fit(gene, kwargs):
+def work_recover_dynamics_fit_single(gene, kwargs: dict) -> Tuple:
+    """Fit a single gene.
+
+    Parameters
+    ----------
+    gene:
+        Identifier of the gene to fit.
+    kwargs:
+        Various keyword arguments that are passed on to
+        `dm = DynamicsRecovery(...)` and `dm.fit(...)`.
+
+    Returns
+    -------
+    gene, dm:
+        A tuple consisting of the identifying gene, and the fitted
+        `DynamicsRecovery` instance.
+    """
+    # create dynamics recovery instance
     dm = DynamicsRecovery(
         adata=kwargs["adata"],
         gene=gene,
@@ -389,6 +406,7 @@ def work_recover_dynamics_fit(gene, kwargs):
         steady_state_prior=kwargs["steady_state_prior"],
         **kwargs["kwargs"],
     )
+    # fit it if genes are recoverable
     if dm.recoverable:
         dm.fit(assignment_mode=kwargs["assignment_mode"])
     return gene, dm
@@ -401,6 +419,27 @@ def work_recover_dynamics_fit_queue(
     batch_size: int,
     kwargs: dict,
 ):
+    """Fit a sequence of genes and write results on shared-memory queue.
+
+    Parameters
+    ----------
+    var_names:
+        A list of genes, typically a subset of all.
+    queue: The queue to write results on. The function writes lists of
+        `work_recover_dynamics_fit_single` outputs.
+    shared_task_counter:
+        Shared-memory couunter to coordinate which workers work on what.
+    batch_size:
+        Number of `var_names`entries to handle at a time. A batch size > 1
+        reduces the distributed processing communication overhead.
+    kwargs:
+        Keyword arguments that are passed on to
+        `work_recover_dynamics_fit_single`.
+
+    Returns
+    -------
+    Nothing. Results written onto queue.
+    """
     # number of genes required
     n_req = len(var_names)
 
@@ -422,19 +461,27 @@ def work_recover_dynamics_fit_queue(
         rets = []
         for gene in genes:
             # the actual work
-            _, dm = work_recover_dynamics_fit(gene, kwargs)
+            _, dm = work_recover_dynamics_fit_single(gene, kwargs)
             rets.append((gene, dm))
         # put results on the queue
         queue.put(rets)
 
 
-class Result:
+class Result(ABC):
+    """Abstract result base class."""
+
+    @abstractmethod
     def collect(self, ret):
         """Collect worker outputs, transfer to a combined result object."""
-        raise NotImplementedError()
 
 
 class RecoverDynamicsFitResult(Result):
+    """Dynamics recovery fitting result.
+
+    Maintains a collection of data variables, which are iteratively filled
+    from the worker results.
+    """
+
     def __init__(self, adata, var_names):
         self.adata = adata
         self.var_names = var_names
@@ -508,12 +555,43 @@ class RecoverDynamicsFitResult(Result):
             # if plot_results and i < 4:
             #     P.append(np.array(dm.pars))
 
-        # remember the last dm for some reason
+        # remember the last dm
+        # TODO this looks unclean
         if gene == self.var_names[-1]:
             self.dm = dm
 
 
-class Engine:
+class Engine(ABC):
+    """Abstract execution engine base class.
+
+    Handles the execution of a similar work process specified in `work` on
+    a sequence of inputs specified in `tasks`.
+
+    Parameters
+    ----------
+    work:
+        The worker function. See the code for the expected signature.
+    work_kwargs:
+        Keyword arguments that are passed on to the `work` function as a dict.
+    tasks:
+        A sequence of tasks (e.g. a list of strings) specifying the varying
+        inputs to apply `work` on.
+    result:
+        A result object iteratively filled by the workers.
+
+    Note
+    ----
+    In distributed processing, objects are copied. Therefore, in order to
+    work properly it must be assumed that the `work()` function does not modify
+    any objects of interest secretly,
+    but returns all values that are of subsequent interest,
+    and that then the `result.collect()` method collects all outputs
+    to be read in from the main program afterwards.
+    In particular, it must be assumed that the `work()` function does not
+    secretly modify the `adata` objects, and that all `work()` runs
+    are independent of each other, as an execution order cannot be guaranteed.
+    """
+
     def __init__(
         self, work: Callable, work_kwargs: dict, tasks: Sequence, result: Result
     ):
@@ -522,13 +600,19 @@ class Engine:
         self.tasks = tasks
         self.result = result
 
+    @abstractmethod
     def run(self):
         """Run all tasks."""
-        raise NotImplementedError()
 
 
 class SequentialEngine(Engine):
+    """Sequential task execution without parallelization.
+
+    This is just a small wrapper around a for loop.
+    """
+
     def run(self):
+        """Run all tasks sequentially in a for loop."""
         progress = logg.ProgressReporter(len(self.tasks))
         for task in self.tasks:
             ret = self.work(task, self.work_kwargs)
@@ -538,6 +622,27 @@ class SequentialEngine(Engine):
 
 
 class MultiprocessingEngine(Engine):
+    """Multiprocess parallel task execution.
+
+    Starts a number of workers, using a shared counter for coordination.
+    All workers work on patches of data until all are finished. The main thread
+    meanwhile collects all results as they come in.
+    As all workers stay up until all tasks have finished, communication and
+    distribution overhead is low.
+
+    Uses the python `multiprocessing` module to generate parallel processes.
+    Note: The exact way of spawning is platform-dependent.
+
+    Parameters
+    ----------
+    n_procs:
+        Number of parallel processes to spawn. Make sure this is adequate
+        both regarding the available number of cores, and the single-process
+        parallelization.
+    batch_size:
+        Batch size how many results are to be calculated at a time.
+    """
+
     def __init__(
         self,
         work: Callable,
@@ -552,7 +657,7 @@ class MultiprocessingEngine(Engine):
         self.batch_size = batch_size
 
     def run(self):
-        """Run all tasks"""
+        """Run all tasks on a specified number of workers."""
         # inter-process communication queue for outputs
         queue = multiprocessing.Queue()
 
@@ -598,9 +703,13 @@ class MultiprocessingEngine(Engine):
 
 
 class RecoverDynamicsSequentialEngine(SequentialEngine):
+    """Sequential engine for dynamics recovery.
+    Convenience wrapper around `SequentialEngine`.
+    """
+
     def __init__(self, work_kwargs: dict, tasks: Sequence, result: Result):
         super().__init__(
-            work=work_recover_dynamics_fit,
+            work=work_recover_dynamics_fit_single,
             work_kwargs=work_kwargs,
             tasks=tasks,
             result=result,
@@ -608,6 +717,10 @@ class RecoverDynamicsSequentialEngine(SequentialEngine):
 
 
 class RecoverDynamicsMultiprocessingEngine(MultiprocessingEngine):
+    """Multiprocessing parallel engine for dynamics recovery.
+    Convenience wrapper around `MultiprocessingEngine`.
+    """
+
     def __init__(
         self,
         work_kwargs: dict,
@@ -704,6 +817,7 @@ def recover_dynamics(
         Number of processes to parallelize the analysis on. The default is not
         to use any parallelization. A speed-up can be obtained on multi-core
         systems.
+        For details see `scvelo.tools.dynamical_model.MultiprocessingEngine`.
     batch_size: `int` (default: 10)
         Batch size to use in parallelization. Only applies if `n_procs` > 1.
 
@@ -774,49 +888,26 @@ def recover_dynamics(
     engine.run()
 
     # flatten result
-    (
-        alpha,
-        beta,
-        gamma,
-        t_,
-        scaling,
-        std_u,
-        std_s,
-        likelihood,
-        u0,
-        s0,
-        pval,
-        steady_u,
-        steady_s,
-        varx,
-        idx,
-        L,
-        P,
-        T,
-        Tau,
-        Tau_,
-    ) = (
-        result.alpha,
-        result.beta,
-        result.gamma,
-        result.t_,
-        result.scaling,
-        result.std_u,
-        result.std_s,
-        result.likelihood,
-        result.u0,
-        result.s0,
-        result.pval,
-        result.steady_u,
-        result.steady_s,
-        result.varx,
-        result.idx,
-        result.L,
-        result.P,
-        result.T,
-        result.Tau,
-        result.Tau_,
-    )
+    alpha = result.alpha
+    beta = result.beta
+    gamma = result.gamma
+    t_ = result.t_
+    scaling = result.scaling
+    std_u = result.std_u
+    std_s = result.std_s
+    likelihood = result.likelihood
+    u0 = result.u0
+    s0 = result.s0
+    pval = result.pval
+    steady_u = result.steady_u
+    steady_s = result.steady_s
+    varx = result.varx
+    idx = result.idx
+    L = result.L
+    P = result.P
+    T = result.T
+    Tau = result.Tau
+    Tau_ = result.Tau_
 
     dm = result.dm
 
