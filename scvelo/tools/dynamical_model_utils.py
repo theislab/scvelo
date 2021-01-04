@@ -243,7 +243,7 @@ def compute_divergence(
     **kwargs,
 ):
     """Estimates the divergence of ODE to observations
-    (avaiable metrics: distance, mse, likelihood, loglikelihood)
+    (available metrics: distance, mse, likelihood, loglikelihood)
     Arguments
     ---------
     mode: `'distance'`, `'mse'`, `'likelihood'` (default: `'distance'`)

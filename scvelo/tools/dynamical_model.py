@@ -117,10 +117,10 @@ class DynamicsRecovery(BaseDynamics):
             self.fit_rates()
             self.fit_t_()
 
-            # actual EM (each iteration of simplex downhill is
+            # actual EM (each iteration of simplex downhill is one step)
             self.fit_t_and_rates()
 
-            # train with optimal time assignment (oth. projection)
+            # train with optimal time assignment (orth. projection)
             self.assignment_mode = assignment_mode
             self.update(adjust_t_=False)
             self.fit_t_and_rates(refit_time=False)
