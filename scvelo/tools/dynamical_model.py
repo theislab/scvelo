@@ -482,15 +482,17 @@ class RecoverDynamicsFitResult(Result):
     from the worker results.
     """
 
-    def __init__(self, adata, var_names):
+    def __init__(self, adata, var_names, plot_results: bool):
         self.adata = adata
         self.var_names = var_names
+        self.plot_results = plot_results
 
         pars = read_pars(adata)
         alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood = pars[:8]
         u0, s0, pval, steady_u, steady_s, varx = pars[8:]
         # likelihood[np.isnan(likelihood)] = 0
-        idx, L, P = [], [], []
+        idx, L = [], []
+        P = [None] * 4
         T = np.zeros(adata.shape) * np.nan
         Tau = np.zeros(adata.shape) * np.nan
         Tau_ = np.zeros(adata.shape) * np.nan
@@ -548,12 +550,13 @@ class RecoverDynamicsFitResult(Result):
             self.std_u[ix], self.std_s[ix] = dm.std_u, dm.std_s
             self.likelihood[ix], self.varx[ix] = dm.likelihood, dm.varx
             self.L.append(dm.loss)
+
+            # maybe record the first few results for plotting
+            if self.plot_results and gene in self.var_names[:4]:
+                self.P[np.where(self.var_names[:4] == gene)[0][0]] = np.array(dm.pars)
+
         else:
             logg.warn(dm.gene, "not recoverable due to insufficient samples.")
-
-            # TODO This is ignored atm
-            # if plot_results and i < 4:
-            #     P.append(np.array(dm.pars))
 
         # remember the last dm
         # TODO this looks unclean
@@ -870,7 +873,9 @@ def recover_dynamics(
     )
 
     # prepare a result object which the engine writes to
-    result = RecoverDynamicsFitResult(adata=adata, var_names=var_names)
+    result = RecoverDynamicsFitResult(
+        adata=adata, var_names=var_names, plot_results=plot_results
+    )
     # define engine for the fitting
     if n_procs > 1:
         engine = RecoverDynamicsMultiprocessingEngine(

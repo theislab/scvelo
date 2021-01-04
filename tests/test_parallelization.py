@@ -17,5 +17,5 @@ def test_pancreas():
     print(f"Time moments: {time() - start}")
 
     start = time()
-    scv.tl.recover_dynamics(adata, n_procs=2)
+    scv.tl.recover_dynamics(adata, n_procs=2, plot_results=True)
     print(f"Time recover_dynamics: {time() - start}")
