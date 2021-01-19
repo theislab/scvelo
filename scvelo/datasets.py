@@ -233,7 +233,7 @@ def simulation(
 
     noise_level = cycle(noise_level, len(switches) if n_vars is None else n_vars)
 
-    n_vars = max(len(switches), len(noise_level)) if n_vars is None else n_vars
+    n_vars = min(len(switches), len(noise_level)) if n_vars is None else n_vars
     U = np.zeros(shape=(len(t), n_vars))
     S = np.zeros(shape=(len(t), n_vars))
 
