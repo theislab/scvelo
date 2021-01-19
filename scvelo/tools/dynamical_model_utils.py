@@ -778,9 +778,9 @@ class BaseDynamics:
         self.t_ = adata.var["fit_t_"][idx]
         self.steady_state_ratio = self.gamma / self.beta
 
-        if "fit_steady_s" in adata.var.keys():
-            self.steady_u = adata.var["fit_steady_u"][idx]
         if "fit_steady_u" in adata.var.keys():
+            self.steady_u = adata.var["fit_steady_u"][idx]
+        if "fit_steady_s" in adata.var.keys():
             self.steady_s = adata.var["fit_steady_s"][idx]
         if "fit_pval_steady" in adata.var.keys():
             self.pval_steady = adata.var["fit_pval_steady"][idx]
