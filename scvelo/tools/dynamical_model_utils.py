@@ -243,12 +243,10 @@ def compute_divergence(
     **kwargs,
 ):
     """Estimates the divergence of ODE to observations
-    (avaiable metrics: distance, mse, likelihood, loglikelihood)
-
+    (available metrics: distance, mse, likelihood, loglikelihood)
     Arguments
     ---------
     mode: `'distance'`, `'mse'`, `'likelihood'` (default: `'distance'`)
-
     """
     # set tau, tau_
     if u0_ is None or s0_ is None:
@@ -1557,7 +1555,6 @@ class BaseDynamics:
         """
         Calculates the p-value for the likelihood ratio
         using the asymptotic property of the chi^2 distr.
-
         Derivation:
         - dists_dynamical and dists_orthogonal are squared N(0,1) distributed residuals
         - X1 = sum(dists_dynamical) / variance ~ chi2(df=2n)
@@ -1566,14 +1563,12 @@ class BaseDynamics:
         - Y2 = (X2 - df) / sqrt(2*df) ~ N(0,1) for large df
         - since Y1~N(0,1) and Y2~N(0,1), Y1 - Y2 ~ N(0,2) or (Y1 -Y2) / sqrt(2) ~ N(0,1)
         - thus Z = (X1 - X2) / sqrt(4*df) ~ N(0,1) for large df
-
         Parameters
         ----------
         indices: "bool" array
             bool array for cluster of interest
         orth_beta: "float"
             orthogonal line fit beta
-
         Returns
         -------
         p-value

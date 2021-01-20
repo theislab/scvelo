@@ -9,6 +9,10 @@ import pandas as pd
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 from scipy.optimize import minimize
+import multiprocessing
+import ctypes
+from typing import Callable, Sequence, Tuple
+from abc import ABC, abstractmethod
 
 
 class DynamicsRecovery(BaseDynamics):
@@ -113,10 +117,10 @@ class DynamicsRecovery(BaseDynamics):
             self.fit_rates()
             self.fit_t_()
 
-            # actual EM (each iteration of simplex downhill is
+            # actual EM (each iteration of simplex downhill is one step)
             self.fit_t_and_rates()
 
-            # train with optimal time assignment (oth. projection)
+            # train with optimal time assignment (orth. projection)
             self.assignment_mode = assignment_mode
             self.update(adjust_t_=False)
             self.fit_t_and_rates(refit_time=False)
@@ -333,6 +337,414 @@ def write_pars(adata, pars, pars_names=None, add_key="fit"):
         adata.var[f"{add_key}_{name}"] = pars[i]
 
 
+def parse_var_names(var_names, adata, use_raw, n_top_genes) -> np.ndarray:
+    """Parse the variable/gene specification.
+
+    Returns
+    -------
+    var_names: The variable names.
+    """
+    if isinstance(var_names, str) and var_names not in adata.var_names:
+        if var_names in adata.var.keys():
+            var_names = adata.var_names[adata.var[var_names].values]
+        elif use_raw or var_names == "all":
+            var_names = adata.var_names
+        elif "_genes" in var_names:
+            from .velocity import Velocity
+
+            velo = Velocity(adata, use_raw=use_raw)
+            velo.compute_deterministic(perc=[5, 95])
+            var_names = adata.var_names[velo._velocity_genes]
+            adata.var["fit_r2"] = velo._r2
+        else:
+            raise ValueError("Variable name not found in var keys.")
+    if not isinstance(var_names, str):
+        var_names = list(np.ravel(var_names))
+
+    var_names = make_unique_list(var_names, allow_array=True)
+    var_names = np.array([name for name in var_names if name in adata.var_names])
+    if len(var_names) == 0:
+        raise ValueError("Variable name not found in var keys.")
+    if n_top_genes is not None and len(var_names) > n_top_genes:
+        X = adata[:, var_names].layers[("spliced" if use_raw else "Ms")]
+        var_names = var_names[np.argsort(np.sum(X, 0))[::-1][:n_top_genes]]
+    return var_names
+
+
+"""Dynamics recovery execution"""
+
+
+def work_recover_dynamics_fit_single(gene, kwargs: dict) -> Tuple:
+    """Fit a single gene.
+
+    Parameters
+    ----------
+    gene:
+        Identifier of the gene to fit.
+    kwargs:
+        Various keyword arguments that are passed on to
+        `dm = DynamicsRecovery(...)` and `dm.fit(...)`.
+
+    Returns
+    -------
+    gene, dm:
+        A tuple consisting of the identifying gene, and the fitted
+        `DynamicsRecovery` instance.
+    """
+    # create dynamics recovery instance
+    dm = DynamicsRecovery(
+        adata=kwargs["adata"],
+        gene=gene,
+        use_raw=kwargs["use_raw"],
+        load_pars=kwargs["load_pars"],
+        max_iter=kwargs["max_iter"],
+        fit_time=kwargs["fit_time"],
+        fit_steady_states=kwargs["fit_steady_states"],
+        fit_connected_states=kwargs["conn"],
+        fit_scaling=kwargs["fit_scaling"],
+        fit_basal_transcription=kwargs["fit_basal_transcription"],
+        steady_state_prior=kwargs["steady_state_prior"],
+        **kwargs["kwargs"],
+    )
+    # fit it if genes are recoverable
+    if dm.recoverable:
+        dm.fit(assignment_mode=kwargs["assignment_mode"])
+    return gene, dm
+
+
+def work_recover_dynamics_fit_queue(
+    var_names: Sequence,
+    queue: multiprocessing.Queue,
+    shared_task_counter: multiprocessing.Value,
+    batch_size: int,
+    kwargs: dict,
+):
+    """Fit a sequence of genes and write results on shared-memory queue.
+
+    Parameters
+    ----------
+    var_names:
+        A list of genes, typically a subset of all.
+    queue: The queue to write results on. The function writes lists of
+        `work_recover_dynamics_fit_single` outputs.
+    shared_task_counter:
+        Shared-memory couunter to coordinate which workers work on what.
+    batch_size:
+        Number of `var_names`entries to handle at a time. A batch size > 1
+        reduces the distributed processing communication overhead.
+    kwargs:
+        Keyword arguments that are passed on to
+        `work_recover_dynamics_fit_single`.
+
+    Returns
+    -------
+    Nothing. Results written onto queue.
+    """
+    # number of genes required
+    n_req = len(var_names)
+
+    while True:
+        # check whether there is work to do, and register
+        with shared_task_counter.get_lock():
+            # next task intex to work on
+            task_ix = shared_task_counter.value
+            if task_ix < n_req:
+                # extract genes to work on
+                genes = var_names[task_ix : task_ix + batch_size]
+                # set counter to next value
+                shared_task_counter.value += batch_size
+            else:
+                # no more work needed
+                return
+
+        # work on genes
+        rets = []
+        for gene in genes:
+            # the actual work
+            _, dm = work_recover_dynamics_fit_single(gene, kwargs)
+            rets.append((gene, dm))
+        # put results on the queue
+        queue.put(rets)
+
+
+class Result(ABC):
+    """Abstract result base class."""
+
+    @abstractmethod
+    def collect(self, ret):
+        """Collect worker outputs, transfer to a combined result object."""
+
+
+class RecoverDynamicsFitResult(Result):
+    """Dynamics recovery fitting result.
+
+    Maintains a collection of data variables, which are iteratively filled
+    from the worker results.
+    """
+
+    def __init__(self, adata, var_names, plot_results: bool):
+        self.adata = adata
+        self.var_names = var_names
+        self.plot_results = plot_results
+
+        pars = read_pars(adata)
+        alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood = pars[:8]
+        u0, s0, pval, steady_u, steady_s, varx = pars[8:]
+        # likelihood[np.isnan(likelihood)] = 0
+        idx, L = [], []
+        P = [None] * 4
+        T = np.zeros(adata.shape) * np.nan
+        Tau = np.zeros(adata.shape) * np.nan
+        Tau_ = np.zeros(adata.shape) * np.nan
+        if "fit_t" in adata.layers.keys():
+            T = adata.layers["fit_t"]
+        if "fit_tau" in adata.layers.keys():
+            Tau = adata.layers["fit_tau"]
+        if "fit_tau_" in adata.layers.keys():
+            Tau_ = adata.layers["fit_tau_"]
+
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.t_ = t_
+        self.scaling = scaling
+        self.std_u = std_u
+        self.std_s = std_s
+        self.likelihood = likelihood
+        self.u0 = u0
+        self.s0 = s0
+        self.pval = pval
+        self.steady_u = steady_u
+        self.steady_s = steady_s
+        self.varx = varx
+        self.idx = idx
+        self.L = L
+        self.P = P
+        self.T = T
+        self.Tau = Tau
+        self.Tau_ = Tau_
+
+        # remember the last dm
+        self.dm = None
+
+    def collect(self, ret):
+        # extract
+        gene, dm = ret
+        if dm.recoverable:
+            ix = self.adata.var_names.get_loc(gene)
+            self.idx.append(ix)
+
+            self.T[:, ix], self.Tau[:, ix], self.Tau_[:, ix] = dm.t, dm.tau, dm.tau_
+            (
+                self.alpha[ix],
+                self.beta[ix],
+                self.gamma[ix],
+                self.t_[ix],
+                self.scaling[ix],
+            ) = dm.pars[:, -1]
+            self.u0[ix], self.s0[ix], self.pval[ix] = dm.u0, dm.s0, dm.pval_steady
+            self.steady_u[ix], self.steady_s[ix] = dm.steady_u, dm.steady_s
+            self.beta[ix] /= self.scaling[ix]
+            self.steady_u[ix] *= self.scaling[ix]
+
+            self.std_u[ix], self.std_s[ix] = dm.std_u, dm.std_s
+            self.likelihood[ix], self.varx[ix] = dm.likelihood, dm.varx
+            self.L.append(dm.loss)
+
+            # maybe record the first few results for plotting
+            if self.plot_results and gene in self.var_names[:4]:
+                self.P[np.where(self.var_names[:4] == gene)[0][0]] = np.array(dm.pars)
+
+        else:
+            logg.warn(dm.gene, "not recoverable due to insufficient samples.")
+
+        # remember the last dm
+        # TODO this looks unclean
+        if gene == self.var_names[-1]:
+            self.dm = dm
+
+
+class Engine(ABC):
+    """Abstract execution engine base class.
+
+    Handles the execution of a similar work process specified in `work` on
+    a sequence of inputs specified in `tasks`.
+
+    Parameters
+    ----------
+    work:
+        The worker function. See the code for the expected signature.
+    work_kwargs:
+        Keyword arguments that are passed on to the `work` function as a dict.
+    tasks:
+        A sequence of tasks (e.g. a list of strings) specifying the varying
+        inputs to apply `work` on.
+    result:
+        A result object iteratively filled by the workers.
+
+    Note
+    ----
+    In distributed processing, objects are copied. Therefore, in order to
+    work properly it must be assumed that the `work()` function does not modify
+    any objects of interest secretly,
+    but returns all values that are of subsequent interest,
+    and that then the `result.collect()` method collects all outputs
+    to be read in from the main program afterwards.
+    In particular, it must be assumed that the `work()` function does not
+    secretly modify the `adata` objects, and that all `work()` runs
+    are independent of each other, as an execution order cannot be guaranteed.
+    """
+
+    def __init__(
+        self, work: Callable, work_kwargs: dict, tasks: Sequence, result: Result
+    ):
+        self.work = work
+        self.work_kwargs = work_kwargs
+        self.tasks = tasks
+        self.result = result
+
+    @abstractmethod
+    def run(self):
+        """Run all tasks."""
+
+
+class SequentialEngine(Engine):
+    """Sequential task execution without parallelization.
+
+    This is just a small wrapper around a for loop.
+    """
+
+    def run(self):
+        """Run all tasks sequentially in a for loop."""
+        progress = logg.ProgressReporter(len(self.tasks))
+        for task in self.tasks:
+            ret = self.work(task, self.work_kwargs)
+            self.result.collect(ret)
+            progress.update()
+        progress.finish()
+
+
+class MultiprocessingEngine(Engine):
+    """Multiprocess parallel task execution.
+
+    Starts a number of workers, using a shared counter for coordination.
+    All workers work on patches of data until all are finished. The main thread
+    meanwhile collects all results as they come in.
+    As all workers stay up until all tasks have finished, communication and
+    distribution overhead is low.
+
+    Uses the python `multiprocessing` module to generate parallel processes.
+    Note: The exact way of spawning is platform-dependent.
+
+    Parameters
+    ----------
+    n_procs:
+        Number of parallel processes to spawn. Make sure this is adequate
+        both regarding the available number of cores, and the single-process
+        parallelization.
+    batch_size:
+        Batch size how many results are to be calculated at a time.
+    """
+
+    def __init__(
+        self,
+        work: Callable,
+        work_kwargs: dict,
+        tasks: Sequence,
+        result: Result,
+        n_procs: int,
+        batch_size: int = 50,
+    ):
+        super().__init__(work=work, work_kwargs=work_kwargs, tasks=tasks, result=result)
+        self.n_procs = n_procs
+        self.batch_size = batch_size
+
+    def run(self):
+        """Run all tasks on a specified number of workers."""
+        # inter-process communication queue for outputs
+        queue = multiprocessing.Queue()
+
+        # shared-memory task counter
+        task_ix = multiprocessing.Value(ctypes.c_longlong)
+        task_ix.value = 0
+
+        # arguments to pass to the worker
+        args = (self.tasks, queue, task_ix, self.batch_size, self.work_kwargs)
+
+        # worker processes
+        processes = [
+            multiprocessing.Process(target=self.work, args=args, daemon=True)
+            for _ in range(self.n_procs)
+        ]
+
+        # start them
+        for p in processes:
+            p.start()
+
+        # collect results
+
+        # counter for results obtained
+        n_done = 0
+        # number of results expected/required
+        n_req = len(self.tasks)
+        # a progress bar
+        progress = logg.ProgressReporter(n_req)
+        while n_done < n_req:
+            # read from worker output queue
+            rets = queue.get(block=True)
+            # the results are batched for efficiency
+            for ret in rets:
+                # process result
+                self.result.collect(ret)
+                n_done += 1
+                progress.update()
+
+        # tidy up
+        progress.finish()
+        for p in processes:
+            p.join()
+
+
+class RecoverDynamicsSequentialEngine(SequentialEngine):
+    """Sequential engine for dynamics recovery.
+    Convenience wrapper around `SequentialEngine`.
+    """
+
+    def __init__(self, work_kwargs: dict, tasks: Sequence, result: Result):
+        super().__init__(
+            work=work_recover_dynamics_fit_single,
+            work_kwargs=work_kwargs,
+            tasks=tasks,
+            result=result,
+        )
+
+
+class RecoverDynamicsMultiprocessingEngine(MultiprocessingEngine):
+    """Multiprocessing parallel engine for dynamics recovery.
+    Convenience wrapper around `MultiprocessingEngine`.
+    """
+
+    def __init__(
+        self,
+        work_kwargs: dict,
+        tasks: Sequence,
+        result: Result,
+        n_procs: int,
+        batch_size: int,
+    ):
+        super().__init__(
+            work=work_recover_dynamics_fit_queue,
+            work_kwargs=work_kwargs,
+            tasks=tasks,
+            result=result,
+            n_procs=n_procs,
+            batch_size=batch_size,
+        )
+
+
+"""Main routines"""
+
+
 def recover_dynamics(
     data,
     var_names="velocity_genes",
@@ -352,6 +764,8 @@ def recover_dynamics(
     steady_state_prior=None,
     add_key="fit",
     copy=False,
+    n_procs: int = 1,
+    batch_size: int = 10,
     **kwargs,
 ):
     """Recovers the full splicing kinetics of specified genes.
@@ -373,7 +787,7 @@ def recover_dynamics(
     max_iter:`int` (default: `10`)
         Maximal iterations in the EM-Algorithm.
     assignment_mode: `str` (default: `projection`)
-        Determined how times are assigned to observations.
+        Determines how times are assigned to observations.
         If `projection`, observations are projected onto the model trajectory.
         Else uses an inverse approximating formula.
     t_max: `float`, `False` or `None` (default: `None`)
@@ -402,6 +816,13 @@ def recover_dynamics(
         Key to add to parameter names, e.g. 'fit_t' for fitted time.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
+    n_procs: `int` (default: 1)
+        Number of processes to parallelize the analysis on. The default is not
+        to use any parallelization. A speed-up can be obtained on multi-core
+        systems.
+        For details see `scvelo.tools.dynamical_model.MultiprocessingEngine`.
+    batch_size: `int` (default: 10)
+        Batch size to use in parallelization. Only applies if `n_procs` > 1.
 
     Returns
     -------
@@ -425,88 +846,75 @@ def recover_dynamics(
         "use_raw": use_raw,
     }
 
-    if isinstance(var_names, str) and var_names not in adata.var_names:
-        if var_names in adata.var.keys():
-            var_names = adata.var_names[adata.var[var_names].values]
-        elif use_raw or var_names == "all":
-            var_names = adata.var_names
-        elif "_genes" in var_names:
-            from .velocity import Velocity
+    # parse variable/gene names
+    var_names = parse_var_names(
+        var_names=var_names, adata=adata, use_raw=use_raw, n_top_genes=n_top_genes
+    )
 
-            velo = Velocity(adata, use_raw=use_raw)
-            velo.compute_deterministic(perc=[5, 95])
-            var_names = adata.var_names[velo._velocity_genes]
-            adata.var["fit_r2"] = velo._r2
-        else:
-            raise ValueError("Variable name not found in var keys.")
-    if not isinstance(var_names, str):
-        var_names = list(np.ravel(var_names))
-
-    var_names = make_unique_list(var_names, allow_array=True)
-    var_names = np.array([name for name in var_names if name in adata.var_names])
-    if len(var_names) == 0:
-        raise ValueError("Variable name not found in var keys.")
-    if n_top_genes is not None and len(var_names) > n_top_genes:
-        X = adata[:, var_names].layers[("spliced" if use_raw else "Ms")]
-        var_names = var_names[np.argsort(np.sum(X, 0))[::-1][:n_top_genes]]
     if return_model is None:
         return_model = len(var_names) < 5
 
-    pars = read_pars(adata)
-    alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood = pars[:8]
-    u0, s0, pval, steady_u, steady_s, varx = pars[8:]
-    # likelihood[np.isnan(likelihood)] = 0
-    idx, L, P = [], [], []
-    T = np.zeros(adata.shape) * np.nan
-    Tau = np.zeros(adata.shape) * np.nan
-    Tau_ = np.zeros(adata.shape) * np.nan
-    if "fit_t" in adata.layers.keys():
-        T = adata.layers["fit_t"]
-    if "fit_tau" in adata.layers.keys():
-        Tau = adata.layers["fit_tau"]
-    if "fit_tau_" in adata.layers.keys():
-        Tau_ = adata.layers["fit_tau_"]
-
     conn = get_connectivities(adata) if fit_connected_states else None
-    progress = logg.ProgressReporter(len(var_names))
-    for i, gene in enumerate(var_names):
-        dm = DynamicsRecovery(
-            adata,
-            gene,
-            use_raw=use_raw,
-            load_pars=load_pars,
-            max_iter=max_iter,
-            fit_time=fit_time,
-            fit_steady_states=fit_steady_states,
-            fit_connected_states=conn,
-            fit_scaling=fit_scaling,
-            fit_basal_transcription=fit_basal_transcription,
-            steady_state_prior=steady_state_prior,
-            **kwargs,
+
+    # arguments to pass on to the fitting workers
+    work_kwargs = dict(
+        adata=adata,
+        use_raw=use_raw,
+        load_pars=load_pars,
+        max_iter=max_iter,
+        fit_time=fit_time,
+        fit_steady_states=fit_steady_states,
+        conn=conn,
+        fit_scaling=fit_scaling,
+        fit_basal_transcription=fit_basal_transcription,
+        steady_state_prior=steady_state_prior,
+        assignment_mode=assignment_mode,
+        kwargs=kwargs,
+    )
+
+    # prepare a result object which the engine writes to
+    result = RecoverDynamicsFitResult(
+        adata=adata, var_names=var_names, plot_results=plot_results
+    )
+    # define engine for the fitting
+    if n_procs > 1:
+        engine = RecoverDynamicsMultiprocessingEngine(
+            work_kwargs=work_kwargs,
+            tasks=var_names,
+            result=result,
+            n_procs=n_procs,
+            batch_size=batch_size,
         )
-        if dm.recoverable:
-            dm.fit(assignment_mode=assignment_mode)
+    else:
+        engine = RecoverDynamicsSequentialEngine(
+            work_kwargs=work_kwargs, tasks=var_names, result=result
+        )
+    # execute engine, fills result
+    engine.run()
 
-            ix = adata.var_names.get_loc(gene)
-            idx.append(ix)
+    # flatten result
+    alpha = result.alpha
+    beta = result.beta
+    gamma = result.gamma
+    t_ = result.t_
+    scaling = result.scaling
+    std_u = result.std_u
+    std_s = result.std_s
+    likelihood = result.likelihood
+    u0 = result.u0
+    s0 = result.s0
+    pval = result.pval
+    steady_u = result.steady_u
+    steady_s = result.steady_s
+    varx = result.varx
+    idx = result.idx
+    L = result.L
+    P = result.P
+    T = result.T
+    Tau = result.Tau
+    Tau_ = result.Tau_
 
-            T[:, ix], Tau[:, ix], Tau_[:, ix] = dm.t, dm.tau, dm.tau_
-            alpha[ix], beta[ix], gamma[ix], t_[ix], scaling[ix] = dm.pars[:, -1]
-            u0[ix], s0[ix], pval[ix] = dm.u0, dm.s0, dm.pval_steady
-            steady_u[ix], steady_s[ix] = dm.steady_u, dm.steady_s
-            beta[ix] /= scaling[ix]
-            steady_u[ix] *= scaling[ix]
-
-            std_u[ix], std_s[ix] = dm.std_u, dm.std_s
-            likelihood[ix], varx[ix] = dm.likelihood, dm.varx
-            L.append(dm.loss)
-            if plot_results and i < 4:
-                P.append(np.array(dm.pars))
-
-            progress.update()
-        else:
-            logg.warn(dm.gene, "not recoverable due to insufficient samples.")
-    progress.finish()
+    dm = result.dm
 
     _pars = [
         alpha,
