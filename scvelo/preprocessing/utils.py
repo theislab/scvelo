@@ -509,8 +509,8 @@ def filter_genes_dispersion(
                 raise ValueError('`flavor` needs to be "seurat" or "cell_ranger"')
             dispersion_norm = df["dispersion_norm"].values
             if n_top_genes is not None:
-                cut_off = df["normalized_dispersion"].nlargest(n_top_genes).values[-1]
-                gene_subset = df["normalized_dispersion"].values >= cut_off
+                cut_off = df["dispersion_norm"].nlargest(n_top_genes).values[-1]
+                gene_subset = df["dispersion_norm"].values >= cut_off
             else:
                 gene_subset = np.logical_and.reduce(
                     (
