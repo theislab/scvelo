@@ -539,7 +539,7 @@ def filter_genes_dispersion(
                 gene_subset = gene_subset | adata.var_names.isin(retain_genes)
             adata._inplace_subset_var(gene_subset)
 
-        logg.info(f"Exctracted {np.sum(gene_subset)} highly variable genes.")
+        logg.info(f"Extracted {np.sum(gene_subset)} highly variable genes.")
     return adata if copy else None
 
 
