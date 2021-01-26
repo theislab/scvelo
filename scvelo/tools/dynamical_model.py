@@ -1263,6 +1263,8 @@ def _parallelize(
         return res if extractor is None else extractor(res)
 
     col_len = collection.shape[0] if issparse(collection) else len(collection)
+
+    # TODO: Generalize to work with e.g. n_jobs = -1
     if n_split is None:
         n_split = n_jobs if n_jobs is not None else 1
 
