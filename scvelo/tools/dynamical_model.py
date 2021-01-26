@@ -352,6 +352,8 @@ def recover_dynamics(
     steady_state_prior=None,
     add_key="fit",
     copy=False,
+    n_jobs=None,
+    backend="loky",
     **kwargs,
 ):
     """Recovers the full splicing kinetics of specified genes.
@@ -402,6 +404,10 @@ def recover_dynamics(
         Key to add to parameter names, e.g. 'fit_t' for fitted time.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
+    n_jobs: `int` or `None` (default: `None`)
+        Number of parallel jobs.
+    backend: `str` (default: "loky")
+        Backend used for multiprocessing. See :class:`joblib.Parallel` for valid options.
 
     Returns
     -------
@@ -469,9 +475,8 @@ def recover_dynamics(
 
     conn = get_connectivities(adata) if fit_connected_states else None
 
-    n_jobs = 8  # TODO
     res = _parallelize(
-        _fit_recovery, var_names, n_jobs, unit="gene", as_array=False, backend="loky"
+        _fit_recovery, var_names, n_jobs, unit="gene", as_array=False, backend=backend
     )(
         adata=adata,
         use_raw=use_raw,
