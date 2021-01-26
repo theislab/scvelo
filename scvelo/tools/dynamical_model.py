@@ -1156,7 +1156,7 @@ def _parallelize(
     unit: str = "",
     as_array: bool = True,
     use_ixs: bool = False,
-    backend: str = "multiprocessing",
+    backend: str = "loky",
     extractor: Optional[Callable[[Any], Any]] = None,
     show_progress_bar: bool = True,
 ) -> Union[np.ndarray, Any]:
