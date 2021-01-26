@@ -8,7 +8,7 @@ from typing import Any, Union, Callable, Optional, Sequence
 from threading import Thread
 from multiprocessing import Manager
 
-import joblib as jl
+from joblib import Parallel, delayed
 from scipy.sparse import issparse, spmatrix
 
 import numpy as np
@@ -1246,8 +1246,8 @@ def _parallelize(
         else:
             pbar, queue, thread = None, None, None
 
-        res = jl.Parallel(n_jobs=n_jobs, backend=backend)(
-            jl.delayed(callback)(
+        res = Parallel(n_jobs=n_jobs, backend=backend)(
+            delayed(callback)(
                 *((i, cs) if use_ixs else (cs,)),
                 *args,
                 **kwargs,
