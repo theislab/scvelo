@@ -470,12 +470,21 @@ def recover_dynamics(
     conn = get_connectivities(adata) if fit_connected_states else None
 
     n_jobs = 8  # TODO
-    res = _parallelize(_fit_recovery, var_names, n_jobs, unit="gene", as_array=False, backend="loky")(
-        adata=adata, use_raw=use_raw, load_pars=load_pars,
-        max_iter=max_iter, fit_time=fit_time,
+    res = _parallelize(
+        _fit_recovery, var_names, n_jobs, unit="gene", as_array=False, backend="loky"
+    )(
+        adata=adata,
+        use_raw=use_raw,
+        load_pars=load_pars,
+        max_iter=max_iter,
+        fit_time=fit_time,
         fit_steady_states=fit_steady_states,
-        fit_scaling=fit_scaling, fit_basal_transcription=fit_basal_transcription,
-        steady_state_prior=steady_state_prior, conn=conn, assignment_mode=assignment_mode, **kwargs
+        fit_scaling=fit_scaling,
+        fit_basal_transcription=fit_basal_transcription,
+        steady_state_prior=steady_state_prior,
+        conn=conn,
+        assignment_mode=assignment_mode,
+        **kwargs,
     )
     idx, dms = map(_flatten, zip(*res))
 
@@ -1071,8 +1080,22 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
     return adata if copy else None
 
 
-def _fit_recovery(var_names, adata, use_raw, load_pars, max_iter, fit_time, fit_steady_states,
-                  conn, fit_scaling, fit_basal_transcription, steady_state_prior, assignment_mode, queue, **kwargs):
+def _fit_recovery(
+    var_names,
+    adata,
+    use_raw,
+    load_pars,
+    max_iter,
+    fit_time,
+    fit_steady_states,
+    conn,
+    fit_scaling,
+    fit_basal_transcription,
+    steady_state_prior,
+    assignment_mode,
+    queue,
+    **kwargs,
+):
 
     idx, dms = [], []
     for i, gene in enumerate(var_names):
@@ -1121,16 +1144,16 @@ _msg_shown = False
 
 
 def _parallelize(
-        callback: Callable[[Any], Any],
-        collection: Union[spmatrix, Sequence[Any]],
-        n_jobs: Optional[int] = None,
-        n_split: Optional[int] = None,
-        unit: str = "",
-        as_array: bool = True,
-        use_ixs: bool = False,
-        backend: str = "multiprocessing",
-        extractor: Optional[Callable[[Any], Any]] = None,
-        show_progress_bar: bool = True,
+    callback: Callable[[Any], Any],
+    collection: Union[spmatrix, Sequence[Any]],
+    n_jobs: Optional[int] = None,
+    n_split: Optional[int] = None,
+    unit: str = "",
+    as_array: bool = True,
+    use_ixs: bool = False,
+    backend: str = "multiprocessing",
+    extractor: Optional[Callable[[Any], Any]] = None,
+    show_progress_bar: bool = True,
 ) -> Union[np.ndarray, Any]:
     """
     Parallelize function call over a collection of elements.
@@ -1221,7 +1244,10 @@ def _parallelize(
 
         res = jl.Parallel(n_jobs=n_jobs, backend=backend)(
             jl.delayed(callback)(
-                *((i, cs) if use_ixs else (cs,)), *args, **kwargs, queue=queue,
+                *((i, cs) if use_ixs else (cs,)),
+                *args,
+                **kwargs,
+                queue=queue,
             )
             for i, cs in enumerate(collections)
         )
