@@ -4,6 +4,13 @@ from ..preprocessing.moments import get_connectivities
 from .utils import make_unique_list, test_bimodality
 from .dynamical_model_utils import BaseDynamics, linreg, convolve, tau_inv, unspliced
 
+from typing import Any, Union, Callable, Optional, Sequence
+from threading import Thread
+from multiprocessing import Manager
+
+import joblib as jl
+from scipy.sparse import issparse, spmatrix
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as pl
@@ -1136,14 +1143,6 @@ def _fit_recovery(
 
 # -*- coding: utf-8 -*-
 """Module used to parallelize model fitting."""
-
-from typing import Any, Union, Callable, Optional, Sequence
-from threading import Thread
-from multiprocessing import Manager
-
-import numpy as np
-import joblib as jl
-from scipy.sparse import issparse, spmatrix
 
 _msg_shown = False
 
