@@ -1264,7 +1264,7 @@ def _parallelize(
 
     col_len = collection.shape[0] if issparse(collection) else len(collection)
     if n_split is None:
-        n_split = n_jobs
+        n_split = n_jobs if n_jobs is not None else 1
 
     if issparse(collection):
         if n_split == collection.shape[0]:
