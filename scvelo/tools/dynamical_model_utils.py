@@ -663,8 +663,8 @@ def curve_dists(
 class BaseDynamics:
     def __init__(
         self,
-        adata=None,
-        gene=None,
+        adata,
+        gene,
         u=None,
         s=None,
         use_raw=False,
@@ -703,7 +703,7 @@ class BaseDynamics:
         self.scaling, self.t_, self.alpha_ = None, None, None
         self.u0_, self.s0_, self.weights = None, None, None
         self.weights_outer, self.weights_upper = None, None
-        self.t, self.tau, self.o, self.tau_, = None, None, None, None
+        self.t, self.tau, self.o, self.tau_ = None, None, None, None
         self.likelihood, self.loss, self.pars = None, None, None
 
         self.max_iter = max_iter
@@ -778,9 +778,9 @@ class BaseDynamics:
         self.t_ = adata.var["fit_t_"][idx]
         self.steady_state_ratio = self.gamma / self.beta
 
-        if "fit_steady_s" in adata.var.keys():
-            self.steady_u = adata.var["fit_steady_u"][idx]
         if "fit_steady_u" in adata.var.keys():
+            self.steady_u = adata.var["fit_steady_u"][idx]
+        if "fit_steady_s" in adata.var.keys():
             self.steady_s = adata.var["fit_steady_s"][idx]
         if "fit_pval_steady" in adata.var.keys():
             self.pval_steady = adata.var["fit_pval_steady"][idx]
@@ -1768,6 +1768,6 @@ def get_divergence(
     conn = get_connectivities(adata) if use_connectivities else None
 
     res = compute_divergence(
-        u, s, alpha, beta, gamma, scaling, connectivities=conn, **kwargs_,
+        u, s, alpha, beta, gamma, scaling, connectivities=conn, **kwargs_
     )
     return res

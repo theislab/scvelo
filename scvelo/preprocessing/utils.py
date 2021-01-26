@@ -9,16 +9,14 @@ from .. import logging as logg
 
 
 def sum_obs(A):
-    """summation over axis 0 (obs) equivalent to np.sum(A, 0)
-    """
+    """summation over axis 0 (obs) equivalent to np.sum(A, 0)"""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return A.sum(0).A1 if issparse(A) else np.sum(A, axis=0)
 
 
 def sum_var(A):
-    """summation over axis 1 (var) equivalent to np.sum(A, 1)
-    """
+    """summation over axis 1 (var) equivalent to np.sum(A, 1)"""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return A.sum(1).A1 if issparse(A) else np.sum(A, axis=1)
@@ -483,8 +481,9 @@ def filter_genes_dispersion(
                 # retrieve genes that have nan std (i.e. single gene fell in one bin)
                 # and implicitly set them to have a normalized disperion of 1
                 one_gene_per_bin = disp_std_bin.isnull()
-                gen_indices = np.where(one_gene_per_bin[df["mean_bin"].values])
-                gen_indices = gen_indices[0].tolist()
+                # gen_indices = np.where(one_gene_per_bin[df["mean_bin"].values])
+                # gen_indices = gen_indices[0].tolist()
+                one_gene_per_bin = one_gene_per_bin.values
                 disp_std_bin[one_gene_per_bin] = disp_mean_bin[one_gene_per_bin].values
                 disp_mean_bin[one_gene_per_bin] = 0
                 # normalized dispersion
@@ -540,7 +539,7 @@ def filter_genes_dispersion(
                 gene_subset = gene_subset | adata.var_names.isin(retain_genes)
             adata._inplace_subset_var(gene_subset)
 
-        logg.info(f"Exctracted {np.sum(gene_subset)} highly variable genes.")
+        logg.info(f"Extracted {np.sum(gene_subset)} highly variable genes.")
     return adata if copy else None
 
 
@@ -735,6 +734,7 @@ def filter_and_normalize(
     min_shared_cells=None,
     n_top_genes=None,
     retain_genes=None,
+    subset_highly_variable=True,
     flavor="seurat",
     log=True,
     layers_normalize=None,
@@ -777,6 +777,8 @@ def filter_and_normalize(
         Number of genes to keep.
     retain_genes: `list`, optional (default: `None`)
         List of gene names to be retained independent of thresholds.
+    subset_highly_variable: `bool` (default: True)
+        Whether to subset highly variable genes or to store in .var['highly_variable'].
     flavor: {'seurat', 'cell_ranger', 'svr'}, optional (default: 'seurat')
         Choose the flavor for computing normalized dispersion.
         If choosing 'seurat', this expects non-logarithmized data.
@@ -818,7 +820,11 @@ def filter_and_normalize(
 
     if n_top_genes is not None:
         filter_genes_dispersion(
-            adata, n_top_genes=n_top_genes, retain_genes=retain_genes, flavor=flavor
+            adata,
+            n_top_genes=n_top_genes,
+            retain_genes=retain_genes,
+            flavor=flavor,
+            subset=subset_highly_variable,
         )
 
     log_advised = (
@@ -849,8 +855,7 @@ def recipe_velocity(
     log=True,
     copy=False,
 ):
-    """Runs pp.filter_and_normalize() and pp.moments()
-    """
+    """Runs pp.filter_and_normalize() and pp.moments()"""
     from .moments import moments
 
     filter_and_normalize(

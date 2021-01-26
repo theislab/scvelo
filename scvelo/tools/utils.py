@@ -30,8 +30,7 @@ def make_dense(X):
 
 
 def sum_obs(A):
-    """summation over axis 0 (obs) equivalent to np.sum(A, 0)
-    """
+    """summation over axis 0 (obs) equivalent to np.sum(A, 0)"""
     if issparse(A):
         return A.sum(0).A1
     else:
@@ -39,8 +38,7 @@ def sum_obs(A):
 
 
 def sum_var(A):
-    """summation over axis 1 (var) equivalent to np.sum(A, 1)
-    """
+    """summation over axis 1 (var) equivalent to np.sum(A, 1)"""
     if issparse(A):
         return A.sum(1).A1
     else:
@@ -48,8 +46,7 @@ def sum_var(A):
 
 
 def prod_sum_obs(A, B):
-    """dot product and sum over axis 0 (obs) equivalent to np.sum(A * B, 0)
-    """
+    """dot product and sum over axis 0 (obs) equivalent to np.sum(A * B, 0)"""
     if issparse(A):
         return A.multiply(B).sum(0).A1
     else:
@@ -57,8 +54,7 @@ def prod_sum_obs(A, B):
 
 
 def prod_sum_var(A, B):
-    """dot product and sum over axis 1 (var) equivalent to np.sum(A * B, 1)
-    """
+    """dot product and sum over axis 1 (var) equivalent to np.sum(A * B, 1)"""
     if issparse(A):
         return A.multiply(B).sum(1).A1
     else:
@@ -165,7 +161,10 @@ def get_indices_from_csr(conn):
 
 
 def get_iterative_indices(
-    indices, index, n_recurse_neighbors=2, max_neighs=None,
+    indices,
+    index,
+    n_recurse_neighbors=2,
+    max_neighs=None,
 ):
     def iterate_indices(indices, index, n_recurse_neighbors):
         if n_recurse_neighbors > 1:
@@ -248,8 +247,7 @@ def extract_int_from_str(array):
 
 
 def strings_to_categoricals(adata):
-    """Transform string annotations to categoricals.
-    """
+    """Transform string annotations to categoricals."""
     from pandas.api.types import is_string_dtype, is_integer_dtype, is_bool_dtype
     from pandas import Categorical
 
@@ -269,7 +267,7 @@ def strings_to_categoricals(adata):
     df = adata.var
     df_keys = [key for key in df.columns if is_string_dtype(df[key])]
     for key in df_keys:
-        c = df[key]
+        c = df[key].astype("U")
         c = Categorical(c)
         if 1 < len(c.categories) < min(len(c), 100):
             df[key] = c
@@ -367,8 +365,7 @@ def make_unique_list(key, allow_array=False):
 
 
 def test_bimodality(x, bins=30, kde=True, plot=False):
-    """Test for bimodal distribution.
-    """
+    """Test for bimodal distribution."""
     from scipy.stats import gaussian_kde, norm
 
     lb, ub = np.min(x), np.percentile(x, 99.9)
@@ -494,8 +491,7 @@ def convolve(adata, x):
 
 
 def get_extrapolated_state(adata, vkey="velocity", dt=1, use_raw=None, dropna=True):
-    """Get extrapolated cell state.
-    """
+    """Get extrapolated cell state."""
     S = adata.layers["spliced" if use_raw else "Ms"]
     if dropna:
         St = S + dt * adata.layers[vkey]

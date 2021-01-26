@@ -14,6 +14,7 @@ def moments(
     mode="connectivities",
     method="umap",
     use_rep=None,
+    use_highly_variable=True,
     copy=False,
 ):
     """Computes moments for velocity estimation.
@@ -40,6 +41,8 @@ def moments(
     use_rep : `None`, `'X'` or any key for `.obsm` (default: None)
         Use the indicated representation. If `None`, the representation is chosen
         automatically: for .n_vars < 50, .X is used, otherwise ‘X_pca’ is used.
+    use_highly_variable: `bool` (default: True)
+        Whether to use highly variable genes only, stored in .var['highly_variable'].
     copy: `bool` (default: `False`)
         Return a copy instead of writing to adata.
 
@@ -58,10 +61,13 @@ def moments(
         normalize_per_cell(adata)
 
     if n_neighbors is not None and n_neighbors > get_n_neighs(adata):
-        if use_rep is None:
-            use_rep = "X_pca"
         neighbors(
-            adata, n_neighbors=n_neighbors, use_rep=use_rep, n_pcs=n_pcs, method=method
+            adata,
+            n_neighbors=n_neighbors,
+            use_rep=use_rep,
+            use_highly_variable=use_highly_variable,
+            n_pcs=n_pcs,
+            method=method,
         )
     verify_neighbors(adata)
 

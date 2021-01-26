@@ -53,8 +53,7 @@ def get_sparse_from_igraph(graph, weight_attr=None):
 
 
 def set_row_csr(csr, rows, value=0):
-    """Set all nonzero elements to the given value. Useful to set to 0 mostly.
-    """
+    """Set all nonzero elements to the given value. Useful to set to 0 mostly."""
     for row in rows:
         csr.data[csr.indptr[row] : csr.indptr[row + 1]] = value
     if value == 0:
@@ -261,7 +260,9 @@ def paga(
 
     priors = [p for p in [use_time_prior, root_key, end_key] if p in adata.obs.keys()]
     logg.info(
-        f"running PAGA", f"using priors: {priors}" if len(priors) > 0 else "", r=True,
+        f"running PAGA",
+        f"using priors: {priors}" if len(priors) > 0 else "",
+        r=True,
     )
     paga = PAGA_tree(
         adata,

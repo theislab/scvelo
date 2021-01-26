@@ -44,8 +44,7 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
 
 
 def select_groups(adata, groups="all", key="louvain"):
-    """Get subset of groups in adata.obs[key].
-    """
+    """Get subset of groups in adata.obs[key]."""
     strings_to_categoricals(adata)
     if isinstance(groups, list) and isinstance(groups[0], int):
         groups = [f"{n}" for n in groups]

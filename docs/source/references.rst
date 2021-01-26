@@ -1,9 +1,9 @@
 References
 ----------
 
-.. [Bergen19] Bergen *et al.* (2019),
+.. [Bergen20] Bergen *et al.* (2020),
    *Generalizing RNA velocity to transient cell states through dynamical modeling*,
-   `bioRxiv <https://doi.org/10.1101/820936>`__.
+   `Nature Biotech <https://doi.org/10.1038/s41587-020-0591-3>`__.
 
 .. [Manno18] La Manno *et al.* (2018),
    *RNA velocity of single cells*,
