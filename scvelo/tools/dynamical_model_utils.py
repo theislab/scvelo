@@ -194,11 +194,12 @@ def assign_tau(
         xt_ = np.vstack(mRNA(tpoints_, u0_, s0_, 0, beta, gamma)).T
 
         # assign time points (oth. projection onto 'on' and 'off' curve)
-        tau, tau_ = np.zeros(len(u)), np.zeros(len(u))
-        for i, xi in enumerate(x_obs):
-            diffx, diffx_ = np.sum((xt - xi) ** 2, 1), np.sum((xt_ - xi) ** 2, 1)
-            tau[i] = tpoints[np.argmin(diffx)]
-            tau_[i] = tpoints_[np.argmin(diffx_)]
+        tau = tpoints[
+            ((xt[None, :, :] - x_obs[:, None, :]) ** 2).sum(axis=2).argmin(axis=1)
+        ]
+        tau_ = tpoints_[
+            ((xt_[None, :, :] - x_obs[:, None, :]) ** 2).sum(axis=2).argmin(axis=1)
+        ]
     else:
         tau = tau_inv(u, s, 0, 0, alpha, beta, gamma)
         tau = np.clip(tau, 0, t_)
