@@ -1,4 +1,4 @@
-|PyPI| |PyPIDownloads| |travis|
+|PyPI| |PyPIDownloads| |CI|
 
 scVelo - RNA velocity generalized through dynamical modeling
 ============================================================
@@ -61,8 +61,8 @@ For urgent matters, you may schedule a zoom meeting `here <https://calendly.com/
 .. |Docs| image:: https://readthedocs.org/projects/scvelo/badge/?version=latest
    :target: https://scvelo.readthedocs.io
 
-.. |travis| image:: https://travis-ci.org/theislab/scvelo.svg?branch=master
-   :target: https://travis-ci.org/theislab/scvelo
+.. |CI| image:: https://img.shields.io/github/workflow/status/theislab/scvelo/CI/master
+   :target: https://github.com/theislab/scvelo/actions?query=workflow%3ACI
 
 .. _scanpy: https://scanpy.readthedocs.io
 
