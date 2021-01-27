@@ -457,6 +457,8 @@ def filter_genes_dispersion(
                 logg.info("If you pass `n_top_genes`, all cutoffs are ignored.")
             if min_disp is None:
                 min_disp = 0.5
+            if max_disp is None:
+                max_disp = np.inf
             if min_mean is None:
                 min_mean = 0.0125
             if max_mean is None:
@@ -478,20 +480,18 @@ def filter_genes_dispersion(
                 disp_grouped = df.groupby("mean_bin")["dispersion"]
                 disp_mean_bin = disp_grouped.mean()
                 disp_std_bin = disp_grouped.std(ddof=1)
+
                 # retrieve genes that have nan std (i.e. single gene fell in one bin)
                 # and implicitly set them to have a normalized disperion of 1
                 one_gene_per_bin = disp_std_bin.isnull()
-                # gen_indices = np.where(one_gene_per_bin[df["mean_bin"].values])
-                # gen_indices = gen_indices[0].tolist()
-                one_gene_per_bin = one_gene_per_bin.values
+
                 disp_std_bin[one_gene_per_bin] = disp_mean_bin[one_gene_per_bin].values
                 disp_mean_bin[one_gene_per_bin] = 0
+
                 # normalized dispersion
-                val = df["dispersion"].values
                 mu = disp_mean_bin[df["mean_bin"].values].values
                 std = disp_std_bin[df["mean_bin"].values].values
-                df["dispersion_norm"] = (val - mu) / std
-
+                df["dispersion_norm"] = ((df["dispersion"] - mu) / std).fillna(0)
             elif flavor == "cell_ranger":
                 from statsmodels import robust
 
@@ -502,21 +502,16 @@ def filter_genes_dispersion(
                 with warnings.catch_warnings():  # ignore warning: "Mean of empty slice"
                     warnings.simplefilter("ignore")
                     disp_mad_bin = disp_grouped.apply(robust.mad)
-                val = df["dispersion"].values
                 mu = disp_median_bin[df["mean_bin"].values].values
                 std = disp_mad_bin[df["mean_bin"].values].values
-                df["dispersion_norm"] = np.abs(val - mu) / std
+                df["dispersion_norm"] = (np.abs(df["dispersion"] - mu) / std).fillna(0)
             else:
                 raise ValueError('`flavor` needs to be "seurat" or "cell_ranger"')
             dispersion_norm = df["dispersion_norm"].values
             if n_top_genes is not None:
-                dispersion_norm = dispersion_norm[~np.isnan(dispersion_norm)]
-                dispersion_norm[::-1].sort()
-                disp_cut_off = dispersion_norm[n_top_genes - 1]
-                gene_subset = df["dispersion_norm"].values >= disp_cut_off
+                cut_off = df["dispersion_norm"].nlargest(n_top_genes).values[-1]
+                gene_subset = df["dispersion_norm"].values >= cut_off
             else:
-                max_disp = np.inf if max_disp is None else max_disp
-                dispersion_norm[np.isnan(dispersion_norm)] = 0
                 gene_subset = np.logical_and.reduce(
                     (
                         mean > min_mean,
