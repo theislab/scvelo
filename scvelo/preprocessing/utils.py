@@ -504,7 +504,7 @@ def filter_genes_dispersion(
                     disp_mad_bin = disp_grouped.apply(robust.mad)
                 mu = disp_median_bin[df["mean_bin"].values].values
                 std = disp_mad_bin[df["mean_bin"].values].values
-                df["dispersion_norm"] = ((df["dispersion"] - mu) / std).fillna(0)
+                df["dispersion_norm"] = (np.abs(df["dispersion"] - mu) / std).fillna(0)
             else:
                 raise ValueError('`flavor` needs to be "seurat" or "cell_ranger"')
             dispersion_norm = df["dispersion_norm"].values
