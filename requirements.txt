@@ -1,5 +1,5 @@
 # main requirements for single-cell analysis
-anndata>=0.7          # added new attributes `obsp` and `varp` (v0.7)
+anndata>=0.7.5        # compatible with h5py v3.0 (v0.7.5)
 scanpy>=1.5           # adapt to new anndata attributes (v1.5)
 
 # for reading loom files with spliced/unspliced counts
