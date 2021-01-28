@@ -31,7 +31,7 @@ scVelo's key applications
 
 Latest news
 ^^^^^^^^^^^
-- Dec/2020: Cover of `Nature Biotech <https://www.nature.com/nbt/volumes/38>`_
+- Dec/2020: Cover of `Nature Biotechnology <https://www.nature.com/nbt/volumes/38>`_
 - Nov/2020: Talk at `Single Cell Biology (SCB) <https://coursesandconferences.wellcomegenomecampus.org/our-events/single-cell-biology-2020/>`_
 - Oct/2020: Honored by Helmholtz with `Best Paper Award 2020 <https://twitter.com/ICBmunich/status/1318611467722199041>`_
 - Oct/2020: Predicting cell fates with `CellRank <https://cellrank.org>`_
