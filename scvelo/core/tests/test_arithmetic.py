@@ -11,51 +11,6 @@ from numpy.testing import assert_array_equal
 from scvelo.core import clipped_log, invert, prod_sum, sum
 
 
-class TestInvert:
-    @given(
-        a=arrays(
-            np.float,
-            shape=st.integers(min_value=1, max_value=100),
-            elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
-        )
-    )
-    def test_flat_arrays(self, a: ndarray):
-        a_inv = invert(a)
-
-        if a[a != 0].size == 0:
-            assert a_inv[a != 0].size == 0
-        else:
-            assert_array_equal(a_inv[a != 0], 1 / a[a != 0])
-
-        if 0 in a:
-            assert np.isnan(a_inv[a == 0]).all()
-        else:
-            assert set(a_inv[a == 0]) == set()
-
-    @given(
-        a=arrays(
-            np.float,
-            shape=st.tuples(
-                st.integers(min_value=1, max_value=100),
-                st.integers(min_value=1, max_value=100),
-            ),
-            elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
-        )
-    )
-    def test_2d_arrays(self, a: ndarray):
-        a_inv = invert(a)
-
-        if a[a != 0].size == 0:
-            assert a_inv[a != 0].size == 0
-        else:
-            assert_array_equal(a_inv[a != 0], 1 / a[a != 0])
-
-        if 0 in a:
-            assert np.isnan(a_inv[a == 0]).all()
-        else:
-            assert set(a_inv[a == 0]) == set()
-
-
 class TestClippedLog:
     @given(
         a=arrays(
@@ -111,6 +66,51 @@ class TestClippedLog:
         assert a_logged.shape == a.shape
         assert (a_logged >= np.log(lb + eps)).all()
         assert (a_logged <= np.log(ub - eps)).all()
+
+
+class TestInvert:
+    @given(
+        a=arrays(
+            np.float,
+            shape=st.integers(min_value=1, max_value=100),
+            elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
+        )
+    )
+    def test_flat_arrays(self, a: ndarray):
+        a_inv = invert(a)
+
+        if a[a != 0].size == 0:
+            assert a_inv[a != 0].size == 0
+        else:
+            assert_array_equal(a_inv[a != 0], 1 / a[a != 0])
+
+        if 0 in a:
+            assert np.isnan(a_inv[a == 0]).all()
+        else:
+            assert set(a_inv[a == 0]) == set()
+
+    @given(
+        a=arrays(
+            np.float,
+            shape=st.tuples(
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
+            ),
+            elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
+        )
+    )
+    def test_2d_arrays(self, a: ndarray):
+        a_inv = invert(a)
+
+        if a[a != 0].size == 0:
+            assert a_inv[a != 0].size == 0
+        else:
+            assert_array_equal(a_inv[a != 0], 1 / a[a != 0])
+
+        if 0 in a:
+            assert np.isnan(a_inv[a == 0]).all()
+        else:
+            assert set(a_inv[a == 0]) == set()
 
 
 # TODO: Extend test to generate sparse inputs as well
