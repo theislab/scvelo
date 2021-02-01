@@ -45,7 +45,10 @@ class LinearRegression:
         positive_intercept: bool = True,
         constrain_ratio: Optional[Union[Tuple, float]] = None,
     ):
-        self.percentile = percentile
+        if not fit_intercept and isinstance(percentile, (list, tuple)):
+            self.percentile = percentile[1]
+        else:
+            self.percentile = percentile
         self.fit_intercept = fit_intercept
         self.positive_intercept = positive_intercept
 
