@@ -1,10 +1,29 @@
+from typing import Union
+
 import numpy as np
-from scipy.sparse import issparse
+from numpy import ndarray
+from scipy.sparse import issparse, spmatrix
 
 
-# TODO: Add type hints
 # TODO: Add case `axis == None`
-def l2_norm(x, axis=1):
+def l2_norm(x: Union[ndarray, spmatrix], axis: int = 1) -> Union[float, ndarray]:
+    """Calculate l2 norm along a given axis.
+
+    Arguments
+    ---------
+    x:
+        Array to calculate l2 norm of.
+
+    axis:
+        Axis along which to calculate l2 norm.
+
+    Returns
+    -------
+    Union[float, ndarray]:
+        L2 norm along a given axis.
+
+    """
+
     if issparse(x):
         return np.sqrt(x.multiply(x).sum(axis=axis).A1)
     elif x.ndim == 1:

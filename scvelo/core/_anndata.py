@@ -9,12 +9,21 @@ from anndata import AnnData
 import scvelo.logging as logg
 
 
-def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix, DataFrame]:
+def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
     """Extract data of one modality.
 
-    Args:
-        adata (AnnData): Annotated data to extract modality from.
-        modality (str): Modality for which data is needed.
+    Arguments
+    ---------
+    adata:
+        Annotated data to extract modality from.
+    modality:
+        Modality for which data is needed.
+
+    Returns
+    -------
+    Union[ndarray, spmatrix]
+        Retrieved modality from :class:`~anndata.AnnData` object.
+
     """
 
     if modality == "X":
@@ -32,16 +41,22 @@ def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix, Data
 def make_dense(
     adata: AnnData, modalities: Union[List[str], str], inplace: bool = True
 ) -> Optional[AnnData]:
-    """Densify sparse AnnData entry
+    """Densify sparse AnnData entry.
 
-    Args:
-        adata (AnnData): Annotated data object.
-        modality (str): Modality to make dense.
-        inplace (bool): Boolean flag to perform operations inplace or not. Defaults to
-            `True`.
+    Arguments
+    ---------
+    adata:
+        Annotated data object.
+    modality:
+        Modality to make dense.
+    inplace:
+        Boolean flag to perform operations inplace or not. Defaults to `True`.
 
-    Returns:
-        Copy of annotated data `adata` if `inplace=True`.
+    Returns
+    -------
+    Optional[AnnData]
+        Copy of annotated data `adata` if `inplace=True` with dense modalities.
+
     """
 
     if not inplace:
@@ -63,16 +78,22 @@ def make_dense(
 def make_sparse(
     adata: AnnData, modalities: Union[List[str], str], inplace: bool = True
 ) -> Optional[AnnData]:
-    """Make AnnData entry sparse
+    """Make AnnData entry sparse.
 
-    Args:
-        adata (AnnData): Annotated data object.
-        modality (str): Modality to make sparse.
-        inplace (bool): Boolean flag to perform operations inplace or not. Defaults to
-            `True`.
+    Arguments
+    ---------
+    adata:
+        Annotated data object.
+    modality:
+        Modality to make sparse.
+    inplace:
+        Boolean flag to perform operations inplace or not. Defaults to `True`.
 
-    Returns:
-        Copy of annotated data `adata` if `inplace=True`.
+    Returns
+    -------
+    Optional[AnnData]
+        Copy of annotated data `adata` with sparse modalities if `inplace=True`.
+
     """
 
     if not inplace:
@@ -102,15 +123,22 @@ def set_modality(
 ) -> Optional[AnnData]:
     """Set modality of annotated data object to new value.
 
-    Args:
-        adata (AnnData): Annotated data object.
-        new_value (ndarray, spmatrix or DataFrame): New value of modality.
-        modality (str or None): Modality to overwrite with new value. Defaults to
-            `None`.
-        inplace (bool): Boolean flag to indicate whether setting of modality should be
-            inplace or not. Defaults to `True`.
+    Arguments
+    ---------
+    adata:
+        Annotated data object.
+    new_value:
+        New value of modality.
+    modality:
+        Modality to overwrite with new value. Defaults to `None`.
+    inplace:
+        Boolean flag to indicate whether setting of modality should be inplace or
+            not. Defaults to `True`.
 
-    Returns:
+    Returns
+    -------
+    Optional[AnnData]
+        Copy of annotated data `adata` with updated modality if `inplace=True`.
 
     """
 

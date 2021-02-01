@@ -33,38 +33,51 @@ def get_adata(
 
     The largest possible value of a numerical entry is `1e5`.
 
-    Args:
-        n_obs (Optional[int]): Number of observations. If set to `None`, a random
-            integer between `1` and `max_obs` will be drawn. Defaults to `None`.
-        n_vars (Optional[int]): Number of variables. If set to `None`, a random integer
-            between `1` and `max_vars` will be drawn. Defaults to `None`.
-        min_obs (Optional[int]): Minimum number of observations. If set to `None`, there
-            is no lower limit. Defaults to `1`.
-        max_obs (Optional[int]): Maximum number of observations. If set to `None`, there
-            is no upper limit. Defaults to `100`.
-        min_vars (Optional[int]): Minimum number of variables. If set to `None`, there
-            is no lower limit. Defaults to `1`.
-        max_vars (Optional[int]): Maximum number of variables. If set to `None`, there
-            is no upper limit. Defaults to `100`.
-        layer_keys (Optional[Union[List, str]]): Names of layers. If set to `None`,
-            layers will be named at random. Defaults to `None`.
-        min_layers (Optional[int]): Minimum number of layers. Is set to the number of
-            provided layer names if `layer_keys` is not `None`. Defaults to `2`.
-        max_layers (Optional[int]): Maximum number of layers. Is set to the number of
-            provided layer names if `layer_keys` is not `None`. Defaults to `2`.
-        obsm_keys (Optional[Union[List, str]]): Names of multi-dimensional observations
-            annotation. If set to `None`, names will be generated at random. Defaults to
-            `None`.
-        min_obsm (Optional[int]): Minimum number of multi-dimensional observations
-            annotation. Is set to the number of keys if `obsm_keys` is not `None`.
-            Defaults to `2`.
-        max_obsm (Optional[int]): Maximum number of multi-dimensional observations
-            annotation. Is set to the number of keys if `obsm_keys` is not `None`.
-            Defaults to `2`.
-        sparse_entries (bool): Whether or not to make AnnData entries sparse.
+    Arguments
+    ---------
+        n_obs:
+            Number of observations. If set to `None`, a random integer between `1` and
+            `max_obs` will be drawn. Defaults to `None`.
+        n_vars:
+            Number of variables. If set to `None`, a random integer between `1` and
+            `max_vars` will be drawn. Defaults to `None`.
+        min_obs:
+            Minimum number of observations. If set to `None`, there is no lower limit.
+            Defaults to `1`.
+        max_obs:
+            Maximum number of observations. If set to `None`, there is no upper limit.
+            Defaults to `100`.
+        min_vars:
+            Minimum number of variables. If set to `None`, there is no lower limit.
+            Defaults to `1`.
+        max_vars:
+            Maximum number of variables. If set to `None`, there is no upper limit.
+            Defaults to `100`.
+        layer_keys:
+            Names of layers. If set to `None`, layers will be named at random. Defaults
+            to `None`.
+        min_layers:
+            Minimum number of layers. Is set to the number of provided layer names if
+            `layer_keys` is not `None`. Defaults to `2`.
+        max_layers: Maximum number of layers. Is set to the number of provided layer
+            names if `layer_keys` is not `None`. Defaults to `2`.
+        obsm_keys:
+            Names of multi-dimensional observations annotation. If set to `None`, names
+            will be generated at random. Defaults to `None`.
+        min_obsm:
+            Minimum number of multi-dimensional observations annotation. Is set to the
+            number of keys if `obsm_keys` is not `None`. Defaults to `2`.
+        max_obsm:
+            Maximum number of multi-dimensional observations annotation. Is set to the
+            number of keys if `obsm_keys` is not `None`. Defaults to `2`.
+        sparse_entries:
+            Whether or not to make AnnData entries sparse.
 
-    Returns:
-        adata (AnnData): AnnData object.
+    Returns
+    -------
+    AnnData
+        Generated :class:`~anndata.AnnData` object.
+
     """
 
     if n_obs is None:
@@ -166,7 +179,7 @@ class TestBase:
         from_layers: bool = True,
         from_obsm: bool = True,
     ):
-        """Subset modalities of an AnnData object"""
+        """Subset modalities of an AnnData object."""
 
         modalities = ["X"]
         if from_layers:
@@ -176,7 +189,7 @@ class TestBase:
         return random.sample(modalities, min(len(modalities), n_modalities))
 
     def _convert_to_float(self, adata: AnnData):
-        """Convert AnnData entries in `layer` and `obsm` into floats"""
+        """Convert AnnData entries in `layer` and `obsm` into floats."""
 
         for layer in adata.layers:
             adata.layers[layer] = adata.layers[layer].astype(np.float)

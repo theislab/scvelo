@@ -1,21 +1,48 @@
-from typing import Optional
+from typing import Optional, Union
 import warnings
 
 import numpy as np
-from scipy.sparse import issparse
+from numpy import ndarray
+from scipy.sparse import issparse, spmatrix
 
 
-def clipped_log(x, lb=0, ub=1, eps=1e-6):
-    """Logarithmize between [lb + epsilon, ub - epsilon]."""
+def clipped_log(x: ndarray, lb: float = 0, ub: float = 1, eps: float = 1e-6) -> ndarray:
+    """Logarithmize between [lb + epsilon, ub - epsilon].
+
+    Arguments
+    ---------
+    x:
+        Array to invert.
+    lb:
+        Lower bound of interval to which array entries are clipped.
+    ub:
+        Upper bound of interval to which array entries are clipped.
+    eps:
+        Offset of boundaries of clipping interval.
+
+    Returns
+    -------
+    ndarray
+        Logarithm of clipped array.
+
+    """
 
     return np.log(np.clip(x, lb + eps, ub - eps))
 
 
-def invert(x):
+def invert(x: ndarray) -> ndarray:
     """Invert array and set infinity to NaN.
 
-    Args:
-        x: Array to invert.
+    Arguments
+    ---------
+    x:
+        Array to invert.
+
+    Returns
+    -------
+    ndarray
+        Inverted array.
+
     """
 
     with warnings.catch_warnings():
@@ -24,9 +51,27 @@ def invert(x):
     return x_inv
 
 
-# TODO: Add docstrings
-def prod_sum(a1, a2, axis=0):
-    """Take sum of product along given axis."""
+def prod_sum(
+    a1: Union[ndarray, spmatrix], a2: Union[ndarray, spmatrix], axis: Optional[int]
+) -> ndarray:
+    """Take sum of product of two arrays along given axis.
+
+    Arguments
+    ---------
+    a1:
+        First array.
+    a2:
+        Second array.
+    axis:
+        Axis along which to sum elements. If `None`, all elements will be summed.
+        Defaults to `None`.
+
+    Returns
+    -------
+    ndarray
+        Sum of product of arrays along given axis.
+
+    """
 
     if issparse(a1):
         return a1.multiply(a2).sum(axis=axis).A1
@@ -36,18 +81,22 @@ def prod_sum(a1, a2, axis=0):
         return np.einsum("ij, ij -> i", a1, a2) if a1.ndim > 1 else (a1 * a2).sum()
 
 
-# TODO: Finish type hints.
-# TODO: Finish docstrings
-def sum(a, axis: Optional[int] = None):
+def sum(a: Union[ndarray, spmatrix], axis: Optional[int] = None) -> ndarray:
     """Sum array elements over a given axis.
 
-    Args:
-        a (): Elements to sum.
-        axis (`None` or `int`): Axis along which to sum elements. If `None`, all
-            elements will be summed. Defaults to `None`.
+    Arguments
+    ---------
+    a:
+        Elements to sum.
+    axis:
+        Axis along which to sum elements. If `None`, all elements will be summed.
+        Defaults to `None`.
 
-    Returns:
-        sum_along_axis (): Sum of array along given axis.
+    Returns
+    -------
+    ndarray
+        Sum of array along given axis.
+
     """
 
     if a.ndim == 1:

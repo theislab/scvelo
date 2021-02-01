@@ -1,13 +1,43 @@
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
+from numpy import ndarray
 from scipy.sparse import csr_matrix, issparse
 
 from ._arithmetic import prod_sum, sum
 
 
-# TODO: Add / finish docstrings
 class LinearRegression:
+    """Extreme quantile and constraint least square linear regression.
+
+    Arguments
+    ---------
+    percentile:
+        Percentile of data on which linear regression line is fit. If `None`, all data
+        is used, if a single value is given, it is interpreted as the upper quantile.
+        Defaults to `None`.
+
+    fit_intercept:
+        Whether to calculate the intercept for model. Defaults to `False`.
+
+    positive_intercept:
+        Whether the intercept it constraint to positive values. Only plays a role when
+        `fit_intercept=True`. Defaults to `True`.
+
+    constrain_ratio:
+        Ratio to which coefficients are clipped. If `None`, the coefficients are not
+        constraint. Defaults to `None`.
+
+    Attributes
+    ----------
+    coef_:
+        Estimated coefficients of the linear regression line.
+
+    intercept_:
+        Fitted intercept of linear model. Set to `0.0` if `fit_intercept=False`.
+
+    """
+
     def __init__(
         self,
         percentile: Optional[Union[Tuple, int, float]] = None,
@@ -15,8 +45,6 @@ class LinearRegression:
         positive_intercept: bool = True,
         constrain_ratio: Optional[Union[Tuple, float]] = None,
     ):
-        """Extreme quantile and constraint least square linear regression."""
-
         self.percentile = percentile
         self.fit_intercept = fit_intercept
         self.positive_intercept = positive_intercept
@@ -28,14 +56,17 @@ class LinearRegression:
         else:
             self.constrain_ratio = constrain_ratio
 
-    # TODO: Fix type hints
-    # TODO: Add docstrings
-    def _trim_data(self, data: Union[List]) -> List:
+    def _trim_data(self, data: List) -> List:
         """Trim data to extreme values.
 
-        Args:
+        Arguments
+        ---------
+        data:
+            Data to be trimmed to extreme quantiles.
 
-        Returns:
+        Returns
+        -------
+        List
             Number of non-trivial entries per column and trimmed data.
         """
 
@@ -64,10 +95,21 @@ class LinearRegression:
             trimmer.multiply(data_mat).tocsr() for data_mat in data
         ]
 
-    # TODO: Fix type hints
-    # TODO: Add docstrings
-    def fit(self, x, y):
-        """Fit linear model."""
+    def fit(self, x: ndarray, y: ndarray):
+        """Fit linear model per column.
+
+        Arguments
+        ---------
+        x:
+            Training data of shape `(n_obs, n_vars)`.
+        y:
+            Target values of shape `(n_obs, n_vars)`.
+
+        Returns
+        -------
+        self:
+            Returns an instance of self.
+        """
 
         n_obs = x.shape[0]
 
