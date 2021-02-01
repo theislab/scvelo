@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import warnings
 
+from scvelo.core import sum
+
 warnings.simplefilter("ignore")
 
 
@@ -124,7 +126,7 @@ def get_indices(dist, n_neighbors=None, mode_neighbors="distances"):
     D = dist.copy()
     D.data += 1e-6
 
-    n_counts = sum_var(D > 0)
+    n_counts = sum(D > 0, axis=1)
     n_neighbors = (
         n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
     )
