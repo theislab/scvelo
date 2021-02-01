@@ -13,6 +13,8 @@ import warnings
 import pandas as pd
 import numpy as np
 
+from scvelo.core import invert
+
 exp = np.exp
 
 
@@ -112,14 +114,14 @@ def unspliced(tau, u0, alpha, beta):
 
 
 def spliced(tau, s0, u0, alpha, beta, gamma):
-    c = (alpha - u0 * beta) * inv(gamma - beta)
+    c = (alpha - u0 * beta) * invert(gamma - beta)
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
     return s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
 
 
 def mRNA(tau, u0, s0, alpha, beta, gamma):
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
-    expus = (alpha - u0 * beta) * inv(gamma - beta) * (exps - expu)
+    expus = (alpha - u0 * beta) * invert(gamma - beta) * (exps - expu)
     u = u0 * expu + alpha / beta * (1 - expu)
     s = s0 * exps + alpha / gamma * (1 - exps) + expus
     return u, s
@@ -166,7 +168,7 @@ def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
     any_invus = np.any(inv_us) and s is not None
 
     if any_invus:  # tau_inv(u, s)
-        beta_ = beta * inv(gamma - beta)
+        beta_ = beta * invert(gamma - beta)
         xinf = alpha / gamma - beta_ * (alpha / beta)
         tau = -1 / gamma * log((s - beta_ * u - xinf) / (s0 - beta_ * u0 - xinf))
 
