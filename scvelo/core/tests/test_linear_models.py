@@ -39,7 +39,7 @@ class TestLinearRegression:
             np.float,
             shape=st.tuples(
                 st.integers(min_value=1, max_value=100),
-                st.integers(min_value=1, max_value=10),
+                st.integers(min_value=1, max_value=100),
             ),
             elements=st.floats(
                 min_value=-1e3, max_value=1e3, allow_infinity=False, allow_nan=False
@@ -47,7 +47,7 @@ class TestLinearRegression:
         ),
         coef=arrays(
             np.float,
-            shape=10,
+            shape=100,
             elements=st.floats(
                 min_value=-1000, max_value=1000, allow_infinity=False, allow_nan=False
             ),
