@@ -15,7 +15,7 @@ class TestInvert:
     @given(
         a=arrays(
             np.float,
-            shape=st.integers(min_value=1, max_value=1000),
+            shape=st.integers(min_value=1, max_value=100),
             elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
         )
     )
@@ -36,8 +36,8 @@ class TestInvert:
         a=arrays(
             np.float,
             shape=st.tuples(
-                st.integers(min_value=1, max_value=1000),
-                st.integers(min_value=1, max_value=1000),
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
             ),
             elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
         )
@@ -60,7 +60,7 @@ class TestClippedLog:
     @given(
         a=arrays(
             np.float,
-            shape=st.integers(min_value=1, max_value=1000),
+            shape=st.integers(min_value=1, max_value=100),
             elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
         ),
         bounds=st.lists(
@@ -87,8 +87,8 @@ class TestClippedLog:
         a=arrays(
             np.float,
             shape=st.tuples(
-                st.integers(min_value=1, max_value=1000),
-                st.integers(min_value=1, max_value=1000),
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
             ),
             elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
         ),
@@ -120,7 +120,7 @@ class TestProdSum:
     @given(
         a=arrays(
             np.float,
-            shape=st.integers(min_value=1, max_value=1000),
+            shape=st.integers(min_value=1, max_value=100),
             elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
         ),
         axis=st.integers(min_value=0, max_value=1),
@@ -132,8 +132,8 @@ class TestProdSum:
         a=arrays(
             np.float,
             shape=st.tuples(
-                st.integers(min_value=1, max_value=1000),
-                st.integers(min_value=1, max_value=1000),
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
             ),
             elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
         ),
@@ -148,7 +148,7 @@ class TestSum:
     @given(
         a=arrays(
             np.float,
-            shape=st.integers(min_value=1, max_value=1000),
+            shape=st.integers(min_value=1, max_value=100),
             elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
         ),
     )
@@ -161,8 +161,8 @@ class TestSum:
         a=arrays(
             np.float,
             shape=st.tuples(
-                st.integers(min_value=1, max_value=1000),
-                st.integers(min_value=1, max_value=1000),
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
             ),
             elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
         ),
