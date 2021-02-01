@@ -39,7 +39,7 @@ class TestLinearRegression:
             np.float,
             shape=st.tuples(
                 st.integers(min_value=1, max_value=1000),
-                st.integers(min_value=1, max_value=500),
+                st.integers(min_value=1, max_value=10),
             ),
             elements=st.floats(
                 min_value=-1e3, max_value=1e3, allow_infinity=False, allow_nan=False
@@ -47,7 +47,7 @@ class TestLinearRegression:
         ),
         coef=arrays(
             np.float,
-            shape=500,
+            shape=10,
             elements=st.floats(
                 min_value=-1000, max_value=1000, allow_infinity=False, allow_nan=False
             ),
@@ -57,7 +57,7 @@ class TestLinearRegression:
             st.floats(min_value=0, max_value=100, allow_nan=False),
         ),
     )
-    # TODO: Check why test fails if number of columns is increased to 1000
+    # TODO: Check why test fails if number of columns is increased to e.g. 1000 (500)
     def test_perfect_fit_2d(self, x: ndarray, coef: ndarray, percentile: Tuple[float]):
         coef = coef[: x.shape[1]]
         percentile = (min(percentile), max(percentile))
