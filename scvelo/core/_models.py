@@ -3,10 +3,12 @@ from typing import Dict, List, Union
 import numpy as np
 from numpy import ndarray
 
+from ._base import DynamicsBase
+
 
 # TODO: Improve parameter names: alpha -> transcription_rate; beta -> splicing_rate;
 # gamma -> degradation_rate
-class SplicingDynamics:
+class SplicingDynamics(DynamicsBase):
     """Splicing dynamics.
 
     Arguments
