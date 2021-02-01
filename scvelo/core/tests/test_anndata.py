@@ -68,19 +68,12 @@ class TestMakeSparse(TestBase):
         inplace=st.booleans(),
         n_modalities=st.integers(min_value=0),
     )
-    def test_make_sparse(self, adata: AnnData, inplace: bool, n_modalities: int, capfd):
+    def test_make_sparse(self, adata: AnnData, inplace: bool, n_modalities: int):
         modalities_to_make_sparse = self._subset_modalities(adata, n_modalities)
 
         returned_adata = make_sparse(
             adata=adata, modalities=modalities_to_make_sparse, inplace=inplace
         )
-        out, err = capfd.readouterr()
-
-        if "X" in modalities_to_make_sparse:
-            assert out == "WARNING: Making `X` sparse is not supported.\n"
-            modalities_to_make_sparse.remove("X")
-        else:
-            assert out == ""
 
         if inplace:
             assert returned_adata is None
@@ -88,6 +81,7 @@ class TestMakeSparse(TestBase):
                 [
                     issparse(get_modality(adata=adata, modality=modality))
                     for modality in modalities_to_make_sparse
+                    if modality != "X"
                 ]
             )
         else:
@@ -96,12 +90,14 @@ class TestMakeSparse(TestBase):
                 [
                     issparse(get_modality(adata=returned_adata, modality=modality))
                     for modality in modalities_to_make_sparse
+                    if modality != "X"
                 ]
             )
             assert np.all(
                 [
                     not issparse(get_modality(adata=adata, modality=modality))
                     for modality in modalities_to_make_sparse
+                    if modality != "X"
                 ]
             )
 
