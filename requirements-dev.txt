@@ -3,4 +3,5 @@
 -e .
 
 black==20.8b1
+hypothesis
 pre-commit==2.5.1
