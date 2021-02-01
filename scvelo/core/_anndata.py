@@ -37,7 +37,6 @@ def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
             return adata.obsm[modality]
 
 
-# TODO: Add unit test
 def make_dense(
     adata: AnnData, modalities: Union[List[str], str], inplace: bool = True
 ) -> Optional[AnnData]:
