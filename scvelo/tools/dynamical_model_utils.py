@@ -13,7 +13,7 @@ import warnings
 import pandas as pd
 import numpy as np
 
-from scvelo.core import invert
+from scvelo.core import clipped_log, invert
 
 exp = np.exp
 
@@ -170,11 +170,13 @@ def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
     if any_invus:  # tau_inv(u, s)
         beta_ = beta * invert(gamma - beta)
         xinf = alpha / gamma - beta_ * (alpha / beta)
-        tau = -1 / gamma * log((s - beta_ * u - xinf) / (s0 - beta_ * u0 - xinf))
+        tau = (
+            -1 / gamma * clipped_log((s - beta_ * u - xinf) / (s0 - beta_ * u0 - xinf))
+        )
 
     if any_invu:  # tau_inv(u)
         uinf = alpha / beta
-        tau_u = -1 / beta * log((u - uinf) / (u0 - uinf))
+        tau_u = -1 / beta * clipped_log((u - uinf) / (u0 - uinf))
         tau = tau_u * inv_u + tau * inv_us if any_invus else tau_u
     return tau
 
