@@ -1,7 +1,9 @@
 from .. import logging as logg
 from ..preprocessing.neighbors import get_neighs
-from .utils import prod_sum_var, norm, get_indices, random_subsample
+from .utils import norm, get_indices, random_subsample
 from .transition_matrix import transition_matrix
+
+from scvelo.core import prod_sum
 
 import numpy as np
 
@@ -117,7 +119,7 @@ def velocity_confidence_transition(data, vkey="velocity", scale=10, copy=False):
     norms = norm(dX) * norm(V)
     norms += norms == 0
 
-    adata.obs[f"{vkey}_confidence_transition"] = prod_sum_var(dX, V) / norms
+    adata.obs[f"{vkey}_confidence_transition"] = prod_sum(dX, V, axis=1) / norms
 
     logg.hint(f"added '{vkey}_confidence_transition' (adata.obs)")
 
@@ -148,7 +150,7 @@ def score_robustness(
     V_subset = adata_subset.layers[vkey]
 
     score = np.nan * (subset == False)
-    score[subset] = prod_sum_var(V, V_subset) / (norm(V) * norm(V_subset))
+    score[subset] = prod_sum(V, V_subset, axis=1) / (norm(V) * norm(V_subset))
     adata.obs[f"{vkey}_score_robustness"] = score
 
     return adata_subset if copy else None

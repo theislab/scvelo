@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import warnings
 
-from scvelo.core import sum
+from scvelo.core import prod_sum, sum
 
 warnings.simplefilter("ignore")
 
@@ -83,9 +83,9 @@ def vector_norm(x):
 def R_squared(residual, total):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        r2 = np.ones(residual.shape[1]) - prod_sum_obs(
-            residual, residual
-        ) / prod_sum_obs(total, total)
+        r2 = np.ones(residual.shape[1]) - prod_sum(
+            residual, residual, axis=0
+        ) / prod_sum(total, total, axis=0)
     r2[np.isnan(r2)] = 0
     return r2
 
