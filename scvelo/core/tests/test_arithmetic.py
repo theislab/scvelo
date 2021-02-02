@@ -28,7 +28,9 @@ class TestClippedLog:
             max_size=2,
             unique=True,
         ),
-        eps=st.floats(min_value=0, max_value=1, allow_infinity=False, allow_nan=False),
+        eps=st.floats(
+            min_value=1e-6, max_value=1, allow_infinity=False, allow_nan=False
+        ),
     )
     def test_flat_arrays(self, a: ndarray, bounds: List[float], eps: float):
         lb = min(bounds)
@@ -47,17 +49,21 @@ class TestClippedLog:
                 st.integers(min_value=1, max_value=100),
                 st.integers(min_value=1, max_value=100),
             ),
-            elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
+            elements=st.floats(
+                min_value=-1e3, max_value=1e3, allow_infinity=False, allow_nan=False
+            ),
         ),
         bounds=st.lists(
             st.floats(
-                min_value=0, max_value=1000, allow_infinity=False, allow_nan=False
+                min_value=0, max_value=100, allow_infinity=False, allow_nan=False
             ),
             min_size=2,
             max_size=2,
             unique=True,
         ),
-        eps=st.floats(min_value=0, max_value=1, allow_infinity=False, allow_nan=False),
+        eps=st.floats(
+            min_value=1e-6, max_value=1, allow_infinity=False, allow_nan=False
+        ),
     )
     def test_2d_arrays(self, a: ndarray, bounds: List[float], eps: float):
         lb = min(bounds)
