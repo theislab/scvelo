@@ -99,7 +99,7 @@ def get_adata(
 
     X = draw(
         arrays(
-            dtype=np.int,
+            dtype=int,
             elements=st.integers(min_value=0, max_value=1e2),
             shape=(n_obs, n_vars),
         )
