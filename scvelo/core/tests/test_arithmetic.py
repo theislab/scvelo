@@ -1,6 +1,7 @@
+from datetime import timedelta
 from typing import List
 
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
@@ -12,6 +13,7 @@ from scvelo.core import clipped_log, invert, prod_sum, sum
 
 
 class TestClippedLog:
+    @settings(deadline=timedelta(milliseconds=500))
     @given(
         a=arrays(
             np.float,
@@ -40,6 +42,7 @@ class TestClippedLog:
         assert (a_logged >= np.log(lb + eps)).all()
         assert (a_logged <= np.log(ub - eps)).all()
 
+    @settings(deadline=timedelta(milliseconds=500))
     @given(
         a=arrays(
             np.float,
