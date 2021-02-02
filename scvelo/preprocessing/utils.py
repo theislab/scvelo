@@ -11,16 +11,28 @@ from scvelo.core import sum
 
 def sum_obs(A):
     """summation over axis 0 (obs) equivalent to np.sum(A, 0)"""
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        return A.sum(0).A1 if issparse(A) else np.sum(A, axis=0)
+
+    warnings.warn(
+        "`sum_obs` is deprecated since scVelo v0.2.3 and will be removed in a future "
+        "version. Please use `sum(A, axis=0)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return sum(A, axis=0)
 
 
 def sum_var(A):
     """summation over axis 1 (var) equivalent to np.sum(A, 1)"""
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        return A.sum(1).A1 if issparse(A) else np.sum(A, axis=1)
+
+    warnings.warn(
+        "`sum_var` is deprecated since scVelo v0.2.3 and will be removed in a future "
+        "version. Please use `sum(A, axis=1)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return sum(A, axis=1)
 
 
 def show_proportions(adata, layers=None, use_raw=True):

@@ -22,14 +22,28 @@ exp = np.exp
 
 
 def log(x, eps=1e-6):  # to avoid invalid values for log.
-    return np.log(np.clip(x, eps, 1 - eps))
+
+    warnings.warn(
+        "`clipped_log` is deprecated since scVelo v0.2.3 and will be removed in a "
+        "future version. Please use `clipped_log(x, eps=1e-6)` from `scvelo/core/`"
+        "instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return clipped_log(x, lb=0, ub=1, eps=1e-6)
 
 
 def inv(x):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        x_inv = 1 / x * (x != 0)
-    return x_inv
+
+    warnings.warn(
+        "`inv` is deprecated since scVelo v0.2.3 and will be removed in a future "
+        "version. Please use `invert(x)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return invert(x)
 
 
 def normalize(X, axis=0, min_confidence=None):
