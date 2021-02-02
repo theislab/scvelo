@@ -20,7 +20,7 @@ class TestClippedLog:
         ),
         bounds=st.lists(
             st.floats(
-                min_value=0, max_value=1000, allow_infinity=False, allow_nan=False
+                min_value=0, max_value=100, allow_infinity=False, allow_nan=False
             ),
             min_size=2,
             max_size=2,
