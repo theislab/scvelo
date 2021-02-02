@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import warnings
 
-from scvelo.core import prod_sum, sum
+from scvelo.core import l2_norm, prod_sum, sum
 
 warnings.simplefilter("ignore")
 
@@ -92,13 +92,15 @@ def R_squared(residual, total):
 
 def cosine_correlation(dX, Vi):
     dx = dX - dX.mean(-1)[:, None]
-    Vi_norm = vector_norm(Vi)
+    Vi_norm = l2_norm(Vi, axis=0)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if Vi_norm == 0:
             result = np.zeros(dx.shape[0])
         else:
-            result = np.einsum("ij, j", dx, Vi) / (norm(dx) * Vi_norm)[None, :]
+            result = (
+                np.einsum("ij, j", dx, Vi) / (l2_norm(dx, axis=1) * Vi_norm)[None, :]
+            )
     return result
 
 

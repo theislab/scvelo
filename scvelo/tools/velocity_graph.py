@@ -3,7 +3,7 @@ from .. import logging as logg
 from ..preprocessing.neighbors import pca, neighbors, verify_neighbors
 from ..preprocessing.neighbors import get_neighs, get_n_neighs
 from ..preprocessing.moments import get_moments
-from .utils import cosine_correlation, get_indices, get_iterative_indices, norm
+from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
 
 from scipy.sparse import coo_matrix, issparse
@@ -186,7 +186,7 @@ class VelocityGraph:
                 val = cosine_correlation(dX, self.V[i])  # 40% of runtime
 
                 if self.compute_uncertainties:
-                    dX /= norm(dX)[:, None]
+                    dX /= l2_norm(dX)[:, None]
                     uncertainties.extend(np.nansum(dX ** 2 * m[i][None, :], 1))
 
                 vals.extend(val)

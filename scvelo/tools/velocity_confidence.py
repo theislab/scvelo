@@ -1,9 +1,9 @@
 from .. import logging as logg
 from ..preprocessing.neighbors import get_neighs
-from .utils import norm, get_indices, random_subsample
+from .utils import get_indices, random_subsample
 from .transition_matrix import transition_matrix
 
-from scvelo.core import prod_sum
+from scvelo.core import l2_norm, prod_sum
 
 import numpy as np
 
@@ -52,7 +52,7 @@ def velocity_confidence(data, vkey="velocity", copy=False):
     V = V[:, tmp_filter]
 
     V -= V.mean(1)[:, None]
-    V_norm = norm(V)
+    V_norm = l2_norm(V, axis=1)
     R = np.zeros(adata.n_obs)
 
     indices = get_indices(dist=get_neighs(adata, "distances"))[0]
@@ -60,7 +60,8 @@ def velocity_confidence(data, vkey="velocity", copy=False):
         Vi_neighs = V[indices[i]]
         Vi_neighs -= Vi_neighs.mean(1)[:, None]
         R[i] = np.mean(
-            np.einsum("ij, j", Vi_neighs, V[i]) / (norm(Vi_neighs) * V_norm[i])[None, :]
+            np.einsum("ij, j", Vi_neighs, V[i])
+            / (l2_norm(Vi_neighs, axis=1) * V_norm[i])[None, :]
         )
 
     adata.obs[f"{vkey}_length"] = V_norm.round(2)
@@ -116,7 +117,7 @@ def velocity_confidence_transition(data, vkey="velocity", scale=10, copy=False):
     dX -= dX.mean(1)[:, None]
     V -= V.mean(1)[:, None]
 
-    norms = norm(dX) * norm(V)
+    norms = l2_norm(dX, axis=1) * l2_norm(V, axis=1)
     norms += norms == 0
 
     adata.obs[f"{vkey}_confidence_transition"] = prod_sum(dX, V, axis=1) / norms
@@ -150,7 +151,9 @@ def score_robustness(
     V_subset = adata_subset.layers[vkey]
 
     score = np.nan * (subset == False)
-    score[subset] = prod_sum(V, V_subset, axis=1) / (norm(V) * norm(V_subset))
+    score[subset] = prod_sum(V, V_subset, axis=1) / (
+        l2_norm(V, axis=1) * l2_norm(V_subset, axis=1)
+    )
     adata.obs[f"{vkey}_score_robustness"] = score
 
     return adata_subset if copy else None

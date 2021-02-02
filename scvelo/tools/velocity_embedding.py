@@ -1,7 +1,8 @@
 from .. import settings
 from .. import logging as logg
-from .utils import norm
 from .transition_matrix import transition_matrix
+
+from scvelo.core import l2_norm
 
 from scipy.sparse import issparse
 import numpy as np
@@ -157,7 +158,7 @@ def velocity_embedding(
                 indices = T[i].indices
                 dX = X_emb[indices] - X_emb[i, None]  # shape (n_neighbors, 2)
                 if not retain_scale:
-                    dX /= norm(dX)[:, None]
+                    dX /= l2_norm(dX)[:, None]
                 dX[np.isnan(dX)] = 0  # zero diff in a steady-state
                 probs = TA[i, indices] if densify else T[i].data
                 V_emb[i] = probs.dot(dX) - probs.mean() * dX.sum(0)
@@ -171,7 +172,7 @@ def velocity_embedding(
             delta = T.dot(X[:, vgenes]) - X[:, vgenes]
             if issparse(delta):
                 delta = delta.A
-            cos_proj = (V * delta).sum(1) / norm(delta)
+            cos_proj = (V * delta).sum(1) / l2_norm(delta)
             V_emb *= np.clip(cos_proj[:, None] * 10, 0, 1)
 
     if autoscale:
