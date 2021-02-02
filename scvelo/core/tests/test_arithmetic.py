@@ -16,7 +16,9 @@ class TestClippedLog:
         a=arrays(
             np.float,
             shape=st.integers(min_value=1, max_value=100),
-            elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
+            elements=st.floats(
+                min_value=-1e3, max_value=1e3, allow_infinity=False, allow_nan=False
+            ),
         ),
         bounds=st.lists(
             st.floats(
