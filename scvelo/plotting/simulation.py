@@ -1,9 +1,11 @@
-from ..tools.dynamical_model_utils import unspliced, mRNA, vectorize, tau_inv, get_vars
+from ..tools.dynamical_model_utils import unspliced, vectorize, tau_inv, get_vars
 from .utils import make_dense
 
 import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
+
+from scvelo.core import SplicingDynamics
 
 
 def get_dynamics(adata, key="fit", extrapolate=False, sorted=False, t=None):
@@ -18,8 +20,18 @@ def get_dynamics(adata, key="fit", extrapolate=False, sorted=False, t=None):
         t = adata.obs[f"{key}_t"].values if key == "true" else adata.layers[f"{key}_t"]
 
     tau, alpha, u0, s0 = vectorize(np.sort(t) if sorted else t, t_, alpha, beta, gamma)
-    ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
-
+    state = SplicingDynamics(
+        alpha=alpha, beta=beta, gamma=gamma, initial_state=[u0, s0]
+    ).get_solution(tau)
+    if state.shape[0] == 1:
+        ut = state[0, 0]
+        st = state[0, 1]
+    elif tau.ndim == 1:
+        ut = state[:, 0]
+        st = state[:, 1]
+    else:
+        ut = state[:, :, 0]
+        st = state[:, :, 1]
     return alpha, ut, st
 
 
@@ -51,7 +63,18 @@ def compute_dynamics(
 
     tau, alpha, u0, s0 = vectorize(np.sort(t) if sort else t, t_, alpha, beta, gamma)
 
-    ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
+    state = SplicingDynamics(
+        alpha=alpha, beta=beta, gamma=gamma, initial_state=[u0, s0]
+    ).get_solution(tau)
+    if state.shape[0] == 1:
+        ut = state[0, 0]
+        st = state[0, 1]
+    elif tau.ndim == 1:
+        ut = state[:, 0]
+        st = state[:, 1]
+    else:
+        ut = state[:, :, 0]
+        st = state[:, :, 1]
     ut, st = ut * scaling + u0_offset, st + s0_offset
     return alpha, ut, st
 
