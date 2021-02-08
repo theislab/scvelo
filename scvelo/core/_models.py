@@ -116,7 +116,10 @@ class SplicingDynamics(DynamicsBase):
         if with_keys:
             return {"u": unspliced, "s": spliced}
         else:
-            return np.column_stack([unspliced, spliced])
+            if isinstance(t, np.ndarray) and t.ndim == 2:
+                return np.stack([unspliced, spliced], axis=2)
+            else:
+                return np.column_stack([unspliced, spliced])
 
     # TODO: Handle cases `beta = 0`, `gamma = 0`
     def get_steady_states(self) -> ndarray:
