@@ -134,6 +134,14 @@ def spliced(tau, s0, u0, alpha, beta, gamma):
 
 
 def mRNA(tau, u0, s0, alpha, beta, gamma):
+
+    warnings.warn(
+        "`mRNA` is deprecated since scVelo v0.2.3 and will be removed in a future "
+        "version. Please use `SplicingDynamics` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
     expus = (alpha - u0 * beta) * invert(gamma - beta) * (exps - expu)
     u = u0 * expu + alpha / beta * (1 - expu)
