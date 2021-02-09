@@ -3,11 +3,13 @@ from typing import Dict, List, Union
 import numpy as np
 from numpy import ndarray
 
+from ._arithmetic import invert
 from ._base import DynamicsBase
 
 
 # TODO: Improve parameter names: alpha -> transcription_rate; beta -> splicing_rate;
 # gamma -> degradation_rate
+# TODO: Handle cases beta = 0, gamma == 0, beta == gamma
 class SplicingDynamics(DynamicsBase):
     """Splicing dynamics.
 
@@ -58,8 +60,6 @@ class SplicingDynamics(DynamicsBase):
             self.s0 = val[:, 1]
         self._initial_state = val
 
-    # TODO: If parameters are not arrays, broadcast them to right dimension and work
-    # with unspliced[beta == 0 & self.gamma == 0] = ..., etc
     def get_solution(self, t: ndarray, with_keys: bool = False) -> Union[Dict, ndarray]:
         """Calculate solution of dynamics.
 
@@ -81,37 +81,14 @@ class SplicingDynamics(DynamicsBase):
 
         """
 
-        beta = self.beta if not isinstance(self.beta, np.ndarray) else self.beta[0]
-        gamma = self.gamma if not isinstance(self.gamma, np.ndarray) else self.gamma[0]
-
         expu = np.exp(-self.beta * t)
         exps = np.exp(-self.gamma * t)
 
-        if beta == 0:
-            unspliced = self.u0 + self.alpha * t
-            spliced = self.s0 * exps
-        elif gamma == 0:
-            unspliced = self.u0 * expu + self.alpha / self.beta * (1 - expu)
-            spliced = (
-                self.s0
-                + self.alpha * t
-                + (self.u0 - self.alpha / self.beta) * (1 - expu)
-            )
-        elif beta == gamma:
-            unspliced = self.u0 * expu + self.alpha / self.beta * (1 - expu)
-            spliced = (
-                self.s0 * exps
-                + (self.beta * self.u0 - self.alpha) * t * exps
-                + self.alpha / self.gamma * (1 - exps)
-            )
-        else:
-            unspliced = self.u0 * expu + self.alpha / self.beta * (1 - expu)
-            c = (self.alpha - self.u0 * self.beta) / (self.gamma - self.beta)
-            spliced = (
-                self.s0 * exps
-                + self.alpha / self.gamma * (1 - exps)
-                + c * (exps - expu)
-            )
+        unspliced = self.u0 * expu + self.alpha / self.beta * (1 - expu)
+        c = (self.alpha - self.u0 * self.beta) * invert(self.gamma - self.beta)
+        spliced = (
+            self.s0 * exps + self.alpha / self.gamma * (1 - exps) + c * (exps - expu)
+        )
 
         if with_keys:
             return {"u": unspliced, "s": spliced}
