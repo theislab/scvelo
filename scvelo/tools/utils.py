@@ -540,7 +540,8 @@ def get_extrapolated_state(adata, vkey="velocity", dt=1, use_raw=None, dropna=Tr
     return St
 
 
-def get_plasticity_score(adata):
+# TODO: Generalize to use arbitrary modality i.e., not only layers
+def get_plasticity_score(adata, modality):
     idx_top_genes = np.argsort(adata.var["gene_count_corr"].values)[::-1][:200]
-    Ms = np.array(adata.layers["Ms"][:, idx_top_genes])
+    Ms = np.array(adata.layers[modality][:, idx_top_genes])
     return scale(np.mean(Ms / np.max(Ms, axis=0), axis=1))
