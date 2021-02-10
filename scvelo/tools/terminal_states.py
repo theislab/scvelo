@@ -173,7 +173,7 @@ def eigs(T, k=10, eps=1e-3, perc=None, random_state=None, v0=None):
     return eigvals, eigvecs
 
 
-def verify_roots(adata, roots, modality):
+def verify_roots(adata, roots, modality="Ms"):
     if "gene_count_corr" in adata.var.keys():
         p = get_plasticity_score(adata, modality)
         p_ub, root_ub = p > 0.5, roots > 0.9
@@ -205,8 +205,8 @@ def write_to_obs(adata, key, vals, cell_subset=None):
 
 def terminal_states(
     data,
-    modality="Ms",
     vkey="velocity",
+    modality="Ms",
     groupby=None,
     groups=None,
     self_transitions=False,
@@ -239,10 +239,10 @@ def terminal_states(
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
-    modality: `str` (default: `'Ms'`)
-        Layer used to calculate terminal states.
     vkey: `str` (default: `'velocity'`)
         Name of velocity estimates to be used.
+    modality: `str` (default: `'Ms'`)
+        Layer used to calculate terminal states.
     groupby: `str`, `list` or `np.ndarray` (default: `None`)
         Key of observations grouping to consider. Only to be set, if each group is
         assumed to have a distinct lineage with an independent root and end point.
