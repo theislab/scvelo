@@ -7,8 +7,7 @@ scVelo - RNA velocity generalized through dynamical modeling
    :width: 300px
    :align: left
 
-**scVelo** is a scalable toolkit for RNA velocity analysis in single cells. |br|
-The methods are based on
+**scVelo** is a scalable toolkit for RNA velocity analysis in single cells, based on
 `Bergen et al. (Nature Biotech, 2020) <https://doi.org/10.1038/s41587-020-0591-3>`_.
 
 RNA velocity enables the recovery of directed dynamic information by leveraging splicing kinetics.
@@ -30,17 +29,17 @@ scVelo's key applications
 Latest news
 ^^^^^^^^^^^
 - Dec/2020: Cover of `Nature Biotechnology <https://www.nature.com/nbt/volumes/38>`_
-- Nov/2020: Talk at `Single Cell Biology (SCB) <https://coursesandconferences.wellcomegenomecampus.org/our-events/single-cell-biology-2020/>`_
-- Oct/2020: Honored by Helmholtz with `Best Paper Award 2020 <https://twitter.com/ICBmunich/status/1318611467722199041>`_
-- Oct/2020: Predicting cell fates with `CellRank <https://cellrank.org>`_
-- Sep/2020: Talk at `Single Cell Omics Germany (SCOG) <https://twitter.com/fabian_theis/status/1305621028056465412>`_
-- Aug/2020: scVelo out in Nature Biotech - `press release <https://www.helmholtz-muenchen.de/en/aktuelles/latest-news/press-information-news/article/48658/index.html>`_
+- Nov/2020: Talk at `Single Cell Biology <https://coursesandconferences.wellcomegenomecampus.org/our-events/single-cell-biology-2020/>`_
+- Oct/2020: `Helmholtz Best Paper Award 2020 <https://twitter.com/ICBmunich/status/1318611467722199041>`_
+- Oct/2020: Map cell fates with `CellRank <https://cellrank.org>`_
+- Sep/2020: Talk at `Single Cell Omics <https://twitter.com/fabian_theis/status/1305621028056465412>`_
+- Aug/2020: `scVelo out in Nature Biotech <https://www.helmholtz-muenchen.de/en/aktuelles/latest-news/press-information-news/article/48658/index.html>`_
 
 Featured application examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- Immune response in COVID-19 patients (`Wilk et al., Nature Medicine, 2020 <https://www.nature.com/articles/s41591-020-0944-y>`_)
-- Human lung regeneration (`Strunz et al., Nature Communications, 2020 <https://www.nature.com/articles/s41467-020-17358-3>`_)
-- The adult human heart (`Litvinukova et al., Nature, 2020 <https://www.nature.com/articles/s41586-020-2797-4>`_)
+- Immune response in COVID-19 patients (`Wilk et al., Nat.Med. 2020 <https://www.nature.com/articles/s41591-020-0944-y>`_)
+- Human lung regeneration (`Strunz et al., Nat.Comm. 2020 <https://www.nature.com/articles/s41467-020-17358-3>`_)
+- The adult human heart (`Litvinukova et al., Nature 2020 <https://www.nature.com/articles/s41586-020-2797-4>`_)
 
 Reference
 ^^^^^^^^^
@@ -50,8 +49,11 @@ Bergen *et al.* (2020), Generalizing RNA velocity to transient cell states throu
 
 Support
 ^^^^^^^
-Feel free to submit an `issue <https://github.com/theislab/scvelo/issues/new/choose>`_
-or send us an `email <mailto:mail@scvelo.org>`_. Your help to improve scVelo is highly appreciated.
+Feel free to submit an `issue <https://github.com/theislab/scvelo/issues/new/choose>`_,
+start a new `discussion <https://github.com/theislab/scvelo/discussions>`_,
+or send us an `email <mailto:mail@scvelo.org>`_.
+Your help to improve scVelo is highly appreciated.
+For further information visit `scvelo.org <https://scvelo.org>`_.
 
 
 .. toctree::
@@ -113,5 +115,5 @@ or send us an `email <mailto:mail@scvelo.org>`_. Your help to improve scVelo is 
 
 .. |dim| raw:: html
 
-   <span class="__dimensions_badge_embed__" data-doi="10.1038/s41587-020-0591-3" data-style="small_rectangle"></span>
+   <span class="__dimensions_badge_embed__" data-id="pub.1129830274" data-style="small_rectangle"></span>
    <script async src="https://badge.dimensions.ai/badge.js" charset="utf-8"></script>
