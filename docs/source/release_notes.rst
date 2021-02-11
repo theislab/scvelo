@@ -4,6 +4,19 @@
 Release Notes
 =============
 
+Version 0.2.3 :small:`Feb 13, 2021`
+-----------------------------------
+
+- `tl.recover_dynamics`: Multicore implementation :smaller:`thanks to P Weiler, M Klein, Y Schaelte`
+- CI now runs on GitHub Actions
+
+
+Version 0.2.2 :small:`July 22, 2020`
+------------------------------------
+
+- `tl.paga`: PAGA graph with velocity-directed edges.
+- Black code style
+
 
 Version 0.2.1 :small:`May 28, 2020`
 --------------------------------------
