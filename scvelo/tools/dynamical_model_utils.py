@@ -291,6 +291,13 @@ def compute_divergence(
     ut, st = mRNA(tau, 0, 0, alpha, beta, gamma)
     ut_, st_ = mRNA(tau_, u0_, s0_, 0, beta, gamma)
 
+    if ut.ndim > 1 and ut.shape[1] == 1:
+        ut = np.ravel(ut)
+        st = np.ravel(st)
+    if ut_.ndim > 1 and ut_.shape[1] == 1:
+        ut_ = np.ravel(ut_)
+        st_ = np.ravel(st_)
+
     distu, distu_ = (u - ut) / std_u, (u - ut_) / std_u
     dists, dists_ = (s - st) / std_s, (s - st_) / std_s
 
@@ -321,10 +328,9 @@ def compute_divergence(
 
     # compute steady state distances
     if fit_steady_states:
-        distx_steady = ((u - alpha / beta) / std_u) ** 2
-        distx_steady += ((s - alpha / gamma) / std_s) ** 2
+        u_inf, s_inf = alpha / beta, alpha / gamma
+        distx_steady = ((u - u_inf) / std_u) ** 2 + ((s - s_inf) / std_s) ** 2
         distx_steady_ = (u / std_u) ** 2 + (s / std_s) ** 2
-
         res = np.array([distx_, distx, distx_steady_, distx_steady])
 
     if connectivities is not None and connectivities is not False:
@@ -547,6 +553,9 @@ def compute_divergence(
         wt = (alpha - beta * ut) * scaling  # du/dt
 
         vt, wt = np.clip(vt, -s, None), np.clip(wt, -u * scaling, None)
+        if vt.ndim == 1:
+            vt = vt.reshape(len(vt), 1)
+            wt = wt.reshape(len(wt), 1)
 
         res = [vt, wt]
 
@@ -1315,7 +1324,8 @@ class BaseDynamics:
                             borderpad=0,
                         )
                         norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-                        _ = mpl.colorbar.ColorbarBase(cax, cmap=color_map, norm=norm)
+                        cmap = mpl.cm.get_cmap(color_map)
+                        _ = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm)
                 else:
                     vmin_, vmax_ = self.plot_profile_contour(
                         xkey,
