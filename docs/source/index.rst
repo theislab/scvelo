@@ -27,8 +27,8 @@ scVelo's key applications
 - use statistical tests, e.g., to detect different kinetics regimes.
 
 scVelo has, for instance, recently been used to study immune response in COVID-19
-patients and dynamic processes in human lung regeneration
-[`application examples <https://scholar.google.com/scholar?cites=18195185735875895912>`_].
+patients and dynamic processes in human lung regeneration. Find out more in this list of
+`application examples <https://scholar.google.com/scholar?cites=18195185735875895912>`_].
 
 Latest news
 ^^^^^^^^^^^
@@ -49,10 +49,10 @@ Bergen *et al.* (2020), Generalizing RNA velocity to transient cell states throu
 Support
 ^^^^^^^
 Found a bug or would like to see a feature implemented? Feel free to submit an
-`issue <https://github.com/theislab/scvelo/issues/new/choose>`_. |br|
+`issue <https://github.com/theislab/scvelo/issues/new/choose>`_.
 Have a question or would like to start a new discussion? Head over to
-`GitHub discussions <https://github.com/theislab/scvelo/discussions>`_. |br|
-In either case, you can also always send us an `email <mailto:mail@scvelo.org>`_. |br|
+`GitHub discussions <https://github.com/theislab/scvelo/discussions>`_.
+In either case, you can also always send us an `email <mailto:mail@scvelo.org>`_.
 Your help to improve scVelo is highly appreciated.
 For further information visit `scvelo.org <https://scvelo.org>`_.
 
