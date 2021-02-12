@@ -44,7 +44,6 @@ Reference
 ^^^^^^^^^
 Bergen *et al.* (2020), Generalizing RNA velocity to transient cell states through dynamical modeling,
 `Nature Biotech <https://doi.org/10.1038/s41587-020-0591-3>`_.
-|dim|
 
 Support
 ^^^^^^^
@@ -70,12 +69,3 @@ For further information visit `scvelo.org <https://scvelo.org>`_.
    :target: https://github.com/theislab/scvelo/actions?query=workflow%3ACI
 
 .. _scanpy: https://scanpy.readthedocs.io
-
-.. |br| raw:: html
-
-  <br/>
-
-.. |dim| raw:: html
-
-   <span class="__dimensions_badge_embed__" data-id="pub.1129830274" data-style="small_rectangle"></span>
-   <script async src="https://badge.dimensions.ai/badge.js" charset="utf-8"></script>
