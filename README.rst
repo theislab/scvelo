@@ -28,20 +28,18 @@ scVelo's key applications
 - estimate reaction rates of transcription, splicing and degradation.
 - use statistical tests, e.g., to detect different kinetics regimes.
 
+scVelo has, for instance, recently been used to study immune response in COVID-19 patients
+[`list of application examples <https://scholar.google.com/scholar?cites=18195185735875895912>`_].
+
 Latest news
 ^^^^^^^^^^^
+- Feb/2021: scVelo goes multi-core
 - Dec/2020: Cover of `Nature Biotechnology <https://www.nature.com/nbt/volumes/38>`_
 - Nov/2020: Talk at `Single Cell Biology <https://coursesandconferences.wellcomegenomecampus.org/our-events/single-cell-biology-2020/>`_
-- Oct/2020: `Helmholtz Best Paper Award 2020 <https://twitter.com/ICBmunich/status/1318611467722199041>`_
+- Oct/2020: `Helmholtz Best Paper Award <https://twitter.com/ICBmunich/status/1318611467722199041>`_
 - Oct/2020: Map cell fates with `CellRank <https://cellrank.org>`_
 - Sep/2020: Talk at `Single Cell Omics <https://twitter.com/fabian_theis/status/1305621028056465412>`_
 - Aug/2020: `scVelo out in Nature Biotech <https://www.helmholtz-muenchen.de/en/aktuelles/latest-news/press-information-news/article/48658/index.html>`_
-
-Featured application examples
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- Immune response in COVID-19 patients (`Wilk et al., Nat.Med. 2020 <https://www.nature.com/articles/s41591-020-0944-y>`_)
-- Human lung regeneration (`Strunz et al., Nat.Comm. 2020 <https://www.nature.com/articles/s41467-020-17358-3>`_)
-- The adult human heart (`Litvinukova et al., Nature 2020 <https://www.nature.com/articles/s41586-020-2797-4>`_)
 
 Reference
 ^^^^^^^^^
