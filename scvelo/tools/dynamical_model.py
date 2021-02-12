@@ -422,7 +422,8 @@ def recover_dynamics(
     Returns or updates `adata`
     """
     adata = data.copy() if copy else data
-    n_jobs = 1 if n_jobs is None else os.cpu_count() if n_jobs == -1 else n_jobs
+
+    n_jobs = get_n_jobs(n_jobs=n_jobs)
     logg.info(f"recovering dynamics (using {n_jobs}/{os.cpu_count()} cores)", r=True)
 
     if len(set(adata.var_names)) != len(adata.var_names):
@@ -1157,6 +1158,17 @@ def _fit_recovery(
 _msg_shown = False
 
 
+def get_n_jobs(n_jobs):
+    if n_jobs is None or (n_jobs < 0 and os.cpu_count() + 1 + n_jobs <= 0):
+        return 1
+    elif n_jobs > os.cpu_count():
+        return os.cpu_count()
+    elif n_jobs < 0:
+        return os.cpu_count() + 1 + n_jobs
+    else:
+        return n_jobs
+
+
 def _parallelize(
     callback: Callable[[Any], Any],
     collection: Union[spmatrix, Sequence[Any]],
@@ -1276,7 +1288,7 @@ def _parallelize(
     col_len = collection.shape[0] if issparse(collection) else len(collection)
 
     if n_split is None:
-        n_split = n_jobs if n_jobs is not None else 1
+        n_split = get_n_jobs(n_jobs=n_jobs)
 
     if issparse(collection):
         if n_split == collection.shape[0]:
