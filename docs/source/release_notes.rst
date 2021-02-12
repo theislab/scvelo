@@ -7,7 +7,7 @@ Release Notes
 Version 0.2.3 :small:`Feb 13, 2021`
 -----------------------------------
 
-- `tl.recover_dynamics`: Multicore implementation :smaller:`thanks to P Weiler, M Klein, Y Schaelte`
+- `tl.recover_dynamics`: Multicore implementation :smaller:`thanks to M Klein, Y Schaelte, P Weiler`
 - CI now runs on GitHub Actions
 
 
