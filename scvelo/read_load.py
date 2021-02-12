@@ -439,6 +439,7 @@ def load_biomart():
 
 
 def convert_to_gene_names(ensembl_names=None):
+    """Retrieve gene names from ensembl IDs."""
     df = load_biomart()
     if ensembl_names is not None:
         if isinstance(ensembl_names, str):
@@ -457,7 +458,24 @@ def convert_to_gene_names(ensembl_names=None):
     return df
 
 
+def convert_to_ensembl(gene_names=None):
+    """Retrieve ensembl IDs from a list of gene names."""
+    df = load_biomart()
+    if gene_names is not None:
+        if isinstance(gene_names, str):
+            gene_names = [gene_names]
+        valid_names = [name for name in gene_names if name in df["gene name"].tolist()]
+        if len(valid_names) > 0:
+            index = [i in valid_names for i in df["gene name"].tolist()]
+            df = df[index]
+
+        df["ensembl"] = df.index
+        df = df.set_index("gene name")
+    return df
+
+
 def gene_info(name, fields="name,symbol,refseq,generif,ensembl"):
+    """Retrieve gene information from biothings client."""
     try:
         from biothings_client import get_client
     except ImportError:

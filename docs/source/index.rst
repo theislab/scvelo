@@ -7,12 +7,12 @@ scVelo - RNA velocity generalized through dynamical modeling
    :width: 300px
    :align: left
 
-**scVelo** is a scalable toolkit for RNA velocity analysis in single cells. |br|
-The methods are based on
+**scVelo** is a scalable toolkit for RNA velocity analysis in single cells, based on
 `Bergen et al. (Nature Biotech, 2020) <https://doi.org/10.1038/s41587-020-0591-3>`_.
 
-RNA velocity enables the recovery of directed dynamic information by leveraging splicing information.
-scVelo generalizes the concept of RNA velocity (`La Manno et al., Nature, 2018 <https://doi.org/10.1038/s41586-018-0414-6>`_)
+RNA velocity enables the recovery of directed dynamic information by leveraging splicing kinetics.
+scVelo generalizes the concept of RNA velocity
+(`La Manno et al., Nature, 2018 <https://doi.org/10.1038/s41586-018-0414-6>`_)
 by relaxing previously made assumptions with a stochastic and a dynamical model that solves the full
 transcriptional dynamics. It thereby adapts RNA velocity to widely varying specifications such as non-stationary populations.
 
@@ -26,26 +26,35 @@ scVelo's key applications
 - estimate reaction rates of transcription, splicing and degradation.
 - use statistical tests, e.g., to detect different kinetics regimes.
 
-Upcoming talks
-^^^^^^^^^^^^^^
-- `Sep 15: Temporal Single-Cell Analysis (SCOG) <https://twitter.com/fabian_theis/status/1305621028056465412>`_
-- `Nov 12: Single Cell Biology (SCB) <https://coursesandconferences.wellcomegenomecampus.org/our-events/single-cell-biology-2020/>`_
+scVelo has, for instance, recently been used to study immune response in COVID-19
+patients and dynamic processes in human lung regeneration. Find out more in this list of
+`application examples <https://scholar.google.com/scholar?cites=18195185735875895912>`_.
 
+Latest news
+^^^^^^^^^^^
+- Feb/2021: scVelo goes multi-core
+- Dec/2020: Cover of `Nature Biotechnology <https://www.nature.com/nbt/volumes/38>`_
+- Nov/2020: Talk at `Single Cell Biology <https://coursesandconferences.wellcomegenomecampus.org/our-events/single-cell-biology-2020/>`_
+- Oct/2020: `Helmholtz Best Paper Award <https://twitter.com/ICBmunich/status/1318611467722199041>`_
+- Oct/2020: Map cell fates with `CellRank <https://cellrank.org>`_
+- Sep/2020: Talk at `Single Cell Omics <https://twitter.com/fabian_theis/status/1305621028056465412>`_
+- Aug/2020: `scVelo out in Nature Biotech <https://www.helmholtz-muenchen.de/en/aktuelles/latest-news/press-information-news/article/48658/index.html>`_
 
 Reference
 ^^^^^^^^^
 Bergen *et al.* (2020), Generalizing RNA velocity to transient cell states through dynamical modeling,
-`Nature Biotechnology <https://doi.org/10.1038/s41587-020-0591-3>`_.
+`Nature Biotech <https://doi.org/10.1038/s41587-020-0591-3>`_.
 |dim|
-
 
 Support
 ^^^^^^^
-Feel free to submit an `issue <https://github.com/theislab/scvelo/issues/new/choose>`_
-or send us an `email <mailto:mail@scvelo.org>`_.
+Found a bug or would like to see a feature implemented? Feel free to submit an
+`issue <https://github.com/theislab/scvelo/issues/new/choose>`_.
+Have a question or would like to start a new discussion? Head over to
+`GitHub discussions <https://github.com/theislab/scvelo/discussions>`_.
+In either case, you can also always send us an `email <mailto:mail@scvelo.org>`_.
 Your help to improve scVelo is highly appreciated.
-As GitHub requests currently exceeds our limited time capacities, please excuse potential delays.
-For urgent matters, you may schedule a zoom meeting `here <https://calendly.com/scvelo>`_.
+For further information visit `scvelo.org <https://scvelo.org>`_.
 
 
 .. toctree::
@@ -91,6 +100,8 @@ For urgent matters, you may schedule a zoom meeting `here <https://calendly.com/
 
 .. _scanpy: https://scanpy.readthedocs.io
 
+.. _calendly: https://calendly.com/scvelo
+
 .. |br| raw:: html
 
   <br/>
@@ -105,5 +116,5 @@ For urgent matters, you may schedule a zoom meeting `here <https://calendly.com/
 
 .. |dim| raw:: html
 
-   <span class="__dimensions_badge_embed__" data-doi="10.1101/820936" data-style="small_rectangle"></span>
+   <span class="__dimensions_badge_embed__" data-id="pub.1129830274" data-style="small_rectangle"></span>
    <script async src="https://badge.dimensions.ai/badge.js" charset="utf-8"></script>

@@ -4,6 +4,14 @@ from ..preprocessing.moments import get_connectivities
 from .utils import make_unique_list, test_bimodality
 from .dynamical_model_utils import BaseDynamics, linreg, convolve, tau_inv, unspliced
 
+from typing import Any, Union, Callable, Optional, Sequence
+from threading import Thread
+from multiprocessing import Manager
+
+from joblib import Parallel, delayed
+from scipy.sparse import issparse, spmatrix
+
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as pl
@@ -352,6 +360,8 @@ def recover_dynamics(
     steady_state_prior=None,
     add_key="fit",
     copy=False,
+    n_jobs=None,
+    backend="loky",
     **kwargs,
 ):
     """Recovers the full splicing kinetics of specified genes.
@@ -402,13 +412,19 @@ def recover_dynamics(
         Key to add to parameter names, e.g. 'fit_t' for fitted time.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
+    n_jobs: `int` or `None` (default: `None`)
+        Number of parallel jobs.
+    backend: `str` (default: "loky")
+        Backend used for multiprocessing. See :class:`joblib.Parallel` for valid options.
 
     Returns
     -------
     Returns or updates `adata`
     """
     adata = data.copy() if copy else data
-    logg.info("recovering dynamics", r=True)
+
+    n_jobs = get_n_jobs(n_jobs=n_jobs)
+    logg.info(f"recovering dynamics (using {n_jobs}/{os.cpu_count()} cores)", r=True)
 
     if len(set(adata.var_names)) != len(adata.var_names):
         logg.warn("Duplicate var_names found. Making them unique.")
@@ -468,45 +484,42 @@ def recover_dynamics(
         Tau_ = adata.layers["fit_tau_"]
 
     conn = get_connectivities(adata) if fit_connected_states else None
-    progress = logg.ProgressReporter(len(var_names))
-    for i, gene in enumerate(var_names):
-        dm = DynamicsRecovery(
-            adata,
-            gene,
-            use_raw=use_raw,
-            load_pars=load_pars,
-            max_iter=max_iter,
-            fit_time=fit_time,
-            fit_steady_states=fit_steady_states,
-            fit_connected_states=conn,
-            fit_scaling=fit_scaling,
-            fit_basal_transcription=fit_basal_transcription,
-            steady_state_prior=steady_state_prior,
-            **kwargs,
-        )
-        if dm.recoverable:
-            dm.fit(assignment_mode=assignment_mode)
 
-            ix = adata.var_names.get_loc(gene)
-            idx.append(ix)
+    res = _parallelize(
+        _fit_recovery,
+        var_names,
+        n_jobs,
+        unit="gene",
+        as_array=False,
+        backend=backend,
+        show_progress_bar=len(var_names) > 9,
+    )(
+        adata=adata,
+        use_raw=use_raw,
+        load_pars=load_pars,
+        max_iter=max_iter,
+        fit_time=fit_time,
+        fit_steady_states=fit_steady_states,
+        fit_scaling=fit_scaling,
+        fit_basal_transcription=fit_basal_transcription,
+        steady_state_prior=steady_state_prior,
+        conn=conn,
+        assignment_mode=assignment_mode,
+        **kwargs,
+    )
+    idx, dms = map(_flatten, zip(*res))
 
-            T[:, ix], Tau[:, ix], Tau_[:, ix] = dm.t, dm.tau, dm.tau_
-            alpha[ix], beta[ix], gamma[ix], t_[ix], scaling[ix] = dm.pars[:, -1]
-            u0[ix], s0[ix], pval[ix] = dm.u0, dm.s0, dm.pval_steady
-            steady_u[ix], steady_s[ix] = dm.steady_u, dm.steady_s
-            beta[ix] /= scaling[ix]
-            steady_u[ix] *= scaling[ix]
+    for ix, dm in zip(idx, dms):
+        T[:, ix], Tau[:, ix], Tau_[:, ix] = dm.t, dm.tau, dm.tau_
+        alpha[ix], beta[ix], gamma[ix], t_[ix], scaling[ix] = dm.pars[:, -1]
+        u0[ix], s0[ix], pval[ix] = dm.u0, dm.s0, dm.pval_steady
+        steady_u[ix], steady_s[ix] = dm.steady_u, dm.steady_s
+        beta[ix] /= scaling[ix]
+        steady_u[ix] *= scaling[ix]
 
-            std_u[ix], std_s[ix] = dm.std_u, dm.std_s
-            likelihood[ix], varx[ix] = dm.likelihood, dm.varx
-            L.append(dm.loss)
-            if plot_results and i < 4:
-                P.append(np.array(dm.pars))
-
-            progress.update()
-        else:
-            logg.warn(dm.gene, "not recoverable due to insufficient samples.")
-    progress.finish()
+        std_u[ix], std_s[ix] = dm.std_u, dm.std_s
+        likelihood[ix], varx[ix] = dm.likelihood, dm.varx
+        L.append(dm.loss)
 
     _pars = [
         alpha,
@@ -1086,3 +1099,219 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
     logg.hint("added \n" f"    '{key}', sorted scores by group ids (adata.uns)")
 
     return adata if copy else None
+
+
+def _fit_recovery(
+    var_names,
+    adata,
+    use_raw,
+    load_pars,
+    max_iter,
+    fit_time,
+    fit_steady_states,
+    conn,
+    fit_scaling,
+    fit_basal_transcription,
+    steady_state_prior,
+    assignment_mode,
+    queue,
+    **kwargs,
+):
+
+    idx, dms = [], []
+    for i, gene in enumerate(var_names):
+        dm = DynamicsRecovery(
+            adata,
+            gene,
+            use_raw=use_raw,
+            load_pars=load_pars,
+            max_iter=max_iter,
+            fit_time=fit_time,
+            fit_steady_states=fit_steady_states,
+            fit_connected_states=conn,
+            fit_scaling=fit_scaling,
+            fit_basal_transcription=fit_basal_transcription,
+            steady_state_prior=steady_state_prior,
+            **kwargs,
+        )
+        if dm.recoverable:
+            dm.fit(assignment_mode=assignment_mode)
+
+            ix = np.where(adata.var_names == gene)[0][0]
+            idx.append(ix)
+            dms.append(dm)
+        else:
+            logg.warn(dm.gene, "not recoverable due to insufficient samples.")
+
+        if queue is not None:
+            queue.put(1)
+
+    if queue is not None:
+        queue.put(None)
+
+    return idx, dms
+
+
+# -*- coding: utf-8 -*-
+"""Module used to parallelize model fitting."""
+
+_msg_shown = False
+
+
+def get_n_jobs(n_jobs):
+    if n_jobs is None or (n_jobs < 0 and os.cpu_count() + 1 + n_jobs <= 0):
+        return 1
+    elif n_jobs > os.cpu_count():
+        return os.cpu_count()
+    elif n_jobs < 0:
+        return os.cpu_count() + 1 + n_jobs
+    else:
+        return n_jobs
+
+
+def _parallelize(
+    callback: Callable[[Any], Any],
+    collection: Union[spmatrix, Sequence[Any]],
+    n_jobs: Optional[int] = None,
+    n_split: Optional[int] = None,
+    unit: str = "",
+    as_array: bool = True,
+    use_ixs: bool = False,
+    backend: str = "loky",
+    extractor: Optional[Callable[[Any], Any]] = None,
+    show_progress_bar: bool = True,
+) -> Union[np.ndarray, Any]:
+    """
+    Parallelize function call over a collection of elements.
+
+    Parameters
+    ----------
+    callback
+        Function to parallelize.
+    collection
+        Sequence of items which to chunkify.
+    n_jobs
+        Number of parallel jobs.
+    n_split
+        Split :paramref:`collection` into :paramref:`n_split` chunks.
+        If `None`, split into :paramref:`n_jobs` chunks.
+    unit
+        Unit of the progress bar.
+    as_array
+        Whether to convert the results not :class:`numpy.ndarray`.
+    use_ixs
+        Whether to pass indices to the callback.
+    backend
+        Which backend to use for multiprocessing. See :class:`joblib.Parallel` for valid options.
+    extractor
+        Function to apply to the result after all jobs have finished.
+    show_progress_bar
+        Whether to show a progress bar.
+
+    Returns
+    -------
+    :class:`numpy.ndarray`
+        Result depending on :paramref:`extractor` and :paramref:`as_array`.
+    """
+
+    if show_progress_bar:
+        try:
+            try:
+                from tqdm.notebook import tqdm
+            except ImportError:
+                from tqdm import tqdm_notebook as tqdm
+            import ipywidgets  # noqa
+        except ImportError:
+            global _msg_shown
+            tqdm = None
+
+            if not _msg_shown:
+                logg.warn(
+                    "Unable to create progress bar. "
+                    "Consider installing `tqdm` as `pip install tqdm` "
+                    "and `ipywidgets` as `pip install ipywidgets`,\n"
+                    "or disable the progress bar using `show_progress_bar=False`."
+                )
+                _msg_shown = True
+    else:
+        tqdm = None
+
+    def update(pbar, queue, n_total):
+        n_finished = 0
+        while n_finished < n_total:
+            try:
+                res = queue.get()
+            except EOFError as e:
+                if not n_finished != n_total:
+                    raise RuntimeError(
+                        f"Finished only `{n_finished} out of `{n_total}` tasks.`"
+                    ) from e
+                break
+            assert res in (None, (1, None), 1)  # (None, 1) means only 1 job
+            if res == (1, None):
+                n_finished += 1
+                if pbar is not None:
+                    pbar.update()
+            elif res is None:
+                n_finished += 1
+            elif pbar is not None:
+                pbar.update()
+
+        if pbar is not None:
+            pbar.close()
+
+    def wrapper(*args, **kwargs):
+        if pass_queue and show_progress_bar:
+            pbar = None if tqdm is None else tqdm(total=col_len, unit=unit)
+            queue = Manager().Queue()
+            thread = Thread(target=update, args=(pbar, queue, len(collections)))
+            thread.start()
+        else:
+            pbar, queue, thread = None, None, None
+
+        res = Parallel(n_jobs=n_jobs, backend=backend)(
+            delayed(callback)(
+                *((i, cs) if use_ixs else (cs,)),
+                *args,
+                **kwargs,
+                queue=queue,
+            )
+            for i, cs in enumerate(collections)
+        )
+
+        res = np.array(res) if as_array else res
+        if thread is not None:
+            thread.join()
+
+        return res if extractor is None else extractor(res)
+
+    col_len = collection.shape[0] if issparse(collection) else len(collection)
+
+    if n_split is None:
+        n_split = get_n_jobs(n_jobs=n_jobs)
+
+    if issparse(collection):
+        if n_split == collection.shape[0]:
+            collections = [collection[[ix], :] for ix in range(collection.shape[0])]
+        else:
+            step = collection.shape[0] // n_split
+
+            ixs = [
+                np.arange(i * step, min((i + 1) * step, collection.shape[0]))
+                for i in range(n_split)
+            ]
+            ixs[-1] = np.append(
+                ixs[-1], np.arange(ixs[-1][-1] + 1, collection.shape[0])
+            )
+
+            collections = [collection[ix, :] for ix in filter(len, ixs)]
+    else:
+        collections = list(filter(len, np.array_split(collection, n_split)))
+
+    pass_queue = not hasattr(callback, "py_func")  # we'd be inside a numba function
+
+    return wrapper
+
+
+def _flatten(iterable):
+    return [i for it in iterable for i in it]

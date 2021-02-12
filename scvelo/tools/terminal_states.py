@@ -173,9 +173,9 @@ def eigs(T, k=10, eps=1e-3, perc=None, random_state=None, v0=None):
     return eigvals, eigvecs
 
 
-def verify_roots(adata, roots):
+def verify_roots(adata, roots, modality="Ms"):
     if "gene_count_corr" in adata.var.keys():
-        p = get_plasticity_score(adata)
+        p = get_plasticity_score(adata, modality)
         p_ub, root_ub = p > 0.5, roots > 0.9
         n_right_assignments = np.sum(root_ub * p_ub) / np.sum(p_ub)
         n_false_assignments = np.sum(root_ub * np.invert(p_ub)) / np.sum(
@@ -206,6 +206,7 @@ def write_to_obs(adata, key, vals, cell_subset=None):
 def terminal_states(
     data,
     vkey="velocity",
+    modality="Ms",
     groupby=None,
     groups=None,
     self_transitions=False,
@@ -240,6 +241,8 @@ def terminal_states(
         Annotated data matrix.
     vkey: `str` (default: `'velocity'`)
         Name of velocity estimates to be used.
+    modality: `str` (default: `'Ms'`)
+        Layer used to calculate terminal states.
     groupby: `str`, `list` or `np.ndarray` (default: `None`)
         Key of observations grouping to consider. Only to be set, if each group is
         assumed to have a distinct lineage with an independent root and end point.
@@ -292,7 +295,7 @@ def terminal_states(
         eigvecs_roots = eigs(T, eps=eps, perc=[2, 98], random_state=random_state)[1]
         roots = csr_matrix.dot(connectivities, eigvecs_roots).sum(1)
         roots = scale(np.clip(roots, 0, np.percentile(roots, 98)))
-        roots = verify_roots(_adata, roots)
+        roots = verify_roots(_adata, roots, modality)
         write_to_obs(adata, "root_cells", roots, cell_subset)
 
         T = transition_matrix(_adata, vkey=vkey, backward=False, **kwargs)

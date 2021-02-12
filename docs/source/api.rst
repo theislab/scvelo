@@ -166,6 +166,13 @@ Utils
 
    get_df
 
+**Get gene info**
+
+.. autosummary::
+   :toctree: .
+
+   utils.gene_info
+
 **Data preparation**
 
 .. autosummary::
@@ -185,6 +192,14 @@ Utils
    utils.get_transition_matrix
    utils.get_cell_transitions
    utils.get_extrapolated_state
+
+**Converters**
+
+.. autosummary::
+   :toctree: .
+
+   utils.convert_to_ensembl
+   utils.convert_to_gene_names
 
 **Least squares and correlation**
 

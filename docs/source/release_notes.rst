@@ -4,6 +4,24 @@
 Release Notes
 =============
 
+Version 0.2.3 :small:`Feb 13, 2021`
+-----------------------------------
+
+- `tl.recover_dynamics`: Multicore implementation :smaller:`thanks to M Klein, Y Schaelte, P Weiler`
+- CI now runs on GitHub Actions
+
+New utility functions:
+
+- `utils.gene_info`: Retrieve gene information from biothings client.
+- `utils.convert_to_ensembl` and `utils.convert_to_gene_names`: Converting ensembl IDs into gene names and vice versa.
+
+
+Version 0.2.2 :small:`July 22, 2020`
+------------------------------------
+
+- `tl.paga`: PAGA graph with velocity-directed edges.
+- Black code style
+
 
 Version 0.2.1 :small:`May 28, 2020`
 --------------------------------------
@@ -29,7 +47,7 @@ Tools:
 
 Plotting:
 
-- enhancements in `pl.scatter`: linear and polynomical fits, gradient coloring
+- `pl.scatter` enhancements: linear and polynomical fits, gradient coloring
 - `pl.proportions`: Pie and bar chart of spliced/unspliced proprtions.
 - `GridSpec`: multiplot environment.
 
@@ -43,7 +61,7 @@ Tools:
 
 Plotting:
 
-- enhancements in `pl.scatter`: multiplots, rugplot, linear and polynomial fits, density plots, etc.
+- `pl.scatter` enhancements: multiplots, rugplot, linear and polynomial fits, density plots, etc.
 - `pl.heatmap`: heatmap / clustermap of genes along time coordinate sorted by expression along dynamics.
 
 Preprocessing:

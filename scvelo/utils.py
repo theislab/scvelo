@@ -21,4 +21,4 @@ from .plotting.velocity_embedding_grid import compute_velocity_on_grid
 from .plotting.simulation import compute_dynamics
 
 from .read_load import clean_obs_names, merge, gene_info
-from .read_load import convert_to_gene_names, load_biomart
+from .read_load import convert_to_gene_names, convert_to_ensembl, load_biomart
