@@ -30,7 +30,7 @@ scVelo's key applications
 
 scVelo has, for instance, recently been used to study immune response in COVID-19
 patients and dynamic processes in human lung regeneration. Find out more in this list of
-`application examples <https://scholar.google.com/scholar?cites=18195185735875895912>`_].
+`application examples <https://scholar.google.com/scholar?cites=18195185735875895912>`_.
 
 Latest news
 ^^^^^^^^^^^
