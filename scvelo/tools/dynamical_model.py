@@ -11,6 +11,7 @@ from multiprocessing import Manager
 from joblib import Parallel, delayed
 from scipy.sparse import issparse, spmatrix
 
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as pl
@@ -421,7 +422,9 @@ def recover_dynamics(
     Returns or updates `adata`
     """
     adata = data.copy() if copy else data
-    logg.info("recovering dynamics", r=True)
+
+    n_jobs = get_n_jobs(n_jobs=n_jobs)
+    logg.info(f"recovering dynamics (using {n_jobs}/{os.cpu_count()} cores)", r=True)
 
     if len(set(adata.var_names)) != len(adata.var_names):
         logg.warn("Duplicate var_names found. Making them unique.")
@@ -483,7 +486,13 @@ def recover_dynamics(
     conn = get_connectivities(adata) if fit_connected_states else None
 
     res = _parallelize(
-        _fit_recovery, var_names, n_jobs, unit="gene", as_array=False, backend=backend
+        _fit_recovery,
+        var_names,
+        n_jobs,
+        unit="gene",
+        as_array=False,
+        backend=backend,
+        show_progress_bar=len(var_names) > 9,
     )(
         adata=adata,
         use_raw=use_raw,
@@ -1134,9 +1143,11 @@ def _fit_recovery(
         else:
             logg.warn(dm.gene, "not recoverable due to insufficient samples.")
 
-        queue.put(1)
+        if queue is not None:
+            queue.put(1)
 
-    queue.put(None)
+    if queue is not None:
+        queue.put(None)
 
     return idx, dms
 
@@ -1145,6 +1156,17 @@ def _fit_recovery(
 """Module used to parallelize model fitting."""
 
 _msg_shown = False
+
+
+def get_n_jobs(n_jobs):
+    if n_jobs is None or (n_jobs < 0 and os.cpu_count() + 1 + n_jobs <= 0):
+        return 1
+    elif n_jobs > os.cpu_count():
+        return os.cpu_count()
+    elif n_jobs < 0:
+        return os.cpu_count() + 1 + n_jobs
+    else:
+        return n_jobs
 
 
 def _parallelize(
@@ -1204,10 +1226,11 @@ def _parallelize(
             tqdm = None
 
             if not _msg_shown:
-                print(
-                    "Unable to create progress bar. Consider installing `tqdm` as `pip install tqdm` "
-                    "and `ipywidgets` as `pip install ipywidgets`.\n"
-                    "Optionally, you can disable the progress bar using `show_progress_bar=False`."
+                logg.warn(
+                    "Unable to create progress bar. "
+                    "Consider installing `tqdm` as `pip install tqdm` "
+                    "and `ipywidgets` as `pip install ipywidgets`,\n"
+                    "or disable the progress bar using `show_progress_bar=False`."
                 )
                 _msg_shown = True
     else:
@@ -1264,9 +1287,8 @@ def _parallelize(
 
     col_len = collection.shape[0] if issparse(collection) else len(collection)
 
-    # TODO: Generalize to work with e.g. n_jobs = -1
     if n_split is None:
-        n_split = n_jobs if n_jobs is not None else 1
+        n_split = get_n_jobs(n_jobs=n_jobs)
 
     if issparse(collection):
         if n_split == collection.shape[0]:

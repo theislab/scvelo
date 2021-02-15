@@ -218,7 +218,7 @@ def velocity_pseudotime(
             or root_key in adata.obs.keys()
             and np.max(adata.obs[root_key]) == np.min(adata.obs[root_key])
         ):
-            terminal_states(adata, vkey, groupby, groups)
+            terminal_states(adata, vkey=vkey, groupby=groupby, groups=groups)
             root_key, end_key = "root_cells", "end_points"
         cell_subset = groups_to_bool(adata, groups=groups, groupby=groupby)
         data = adata.copy() if cell_subset is None else adata[cell_subset].copy()

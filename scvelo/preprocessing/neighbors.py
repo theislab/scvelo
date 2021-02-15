@@ -101,6 +101,7 @@ def neighbors(
                 else adata.n_vars
             )
             n_comps = min(30 if n_pcs is None else n_pcs, n_vars - 1, adata.n_obs - 1)
+            use_highly_variable &= "highly_variable" in adata.var.keys()
             pca(
                 adata,
                 n_comps=n_comps,
