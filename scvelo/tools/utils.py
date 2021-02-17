@@ -35,7 +35,7 @@ def sum_obs(A):
     """summation over axis 0 (obs) equivalent to np.sum(A, 0)"""
 
     warnings.warn(
-        "`sum_obs` is deprecated since scVelo v0.2.3 and will be removed in a future "
+        "`sum_obs` is deprecated since scVelo v0.2.4 and will be removed in a future "
         "version. Please use `sum(A, axis=0)` from `scvelo/core/` instead.",
         DeprecationWarning,
         stacklevel=2,
@@ -48,7 +48,7 @@ def sum_var(A):
     """summation over axis 1 (var) equivalent to np.sum(A, 1)"""
 
     warnings.warn(
-        "`sum_var` is deprecated since scVelo v0.2.3 and will be removed in a future "
+        "`sum_var` is deprecated since scVelo v0.2.4 and will be removed in a future "
         "version. Please use `sum(A, axis=1)` from `scvelo/core/` instead.",
         DeprecationWarning,
         stacklevel=2,
@@ -61,7 +61,7 @@ def prod_sum_obs(A, B):
     """dot product and sum over axis 0 (obs) equivalent to np.sum(A * B, 0)"""
 
     warnings.warn(
-        "`prod_sum_obs` is deprecated since scVelo v0.2.3 and will be removed in a "
+        "`prod_sum_obs` is deprecated since scVelo v0.2.4 and will be removed in a "
         "future version. Please use `prod_sum(A, B, axis=0)` from `scvelo/core/` "
         "instead.",
         DeprecationWarning,
@@ -75,7 +75,7 @@ def prod_sum_var(A, B):
     """dot product and sum over axis 1 (var) equivalent to np.sum(A * B, 1)"""
 
     warnings.warn(
-        "`prod_sum_var` is deprecated since scVelo v0.2.3 and will be removed in a "
+        "`prod_sum_var` is deprecated since scVelo v0.2.4 and will be removed in a "
         "future version. Please use `prod_sum(A, B, axis=1)` from `scvelo/core/` "
         "instead.",
         DeprecationWarning,
@@ -91,7 +91,7 @@ def norm(A):
     """
 
     warnings.warn(
-        "`norm` is deprecated since scVelo v0.2.3 and will be removed in a future "
+        "`norm` is deprecated since scVelo v0.2.4 and will be removed in a future "
         "version. Please use `l2_norm(A, axis=1)` from `scvelo/core/` instead.",
         DeprecationWarning,
         stacklevel=2,
@@ -106,7 +106,7 @@ def vector_norm(x):
     """
 
     warnings.warn(
-        "`vector_norm` is deprecated since scVelo v0.2.3 and will be removed in a "
+        "`vector_norm` is deprecated since scVelo v0.2.4 and will be removed in a "
         "future version. Please use `l2_norm(x)` from `scvelo/core/` instead.",
         DeprecationWarning,
         stacklevel=2,

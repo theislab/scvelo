@@ -24,7 +24,7 @@ exp = np.exp
 def log(x, eps=1e-6):  # to avoid invalid values for log.
 
     warnings.warn(
-        "`clipped_log` is deprecated since scVelo v0.2.3 and will be removed in a "
+        "`clipped_log` is deprecated since scVelo v0.2.4 and will be removed in a "
         "future version. Please use `clipped_log(x, eps=1e-6)` from `scvelo/core/`"
         "instead.",
         DeprecationWarning,
@@ -37,7 +37,7 @@ def log(x, eps=1e-6):  # to avoid invalid values for log.
 def inv(x):
 
     warnings.warn(
-        "`inv` is deprecated since scVelo v0.2.3 and will be removed in a future "
+        "`inv` is deprecated since scVelo v0.2.4 and will be removed in a future "
         "version. Please use `invert(x)` from `scvelo/core/` instead.",
         DeprecationWarning,
         stacklevel=2,
@@ -136,7 +136,7 @@ def spliced(tau, s0, u0, alpha, beta, gamma):
 def mRNA(tau, u0, s0, alpha, beta, gamma):
 
     warnings.warn(
-        "`mRNA` is deprecated since scVelo v0.2.3 and will be removed in a future "
+        "`mRNA` is deprecated since scVelo v0.2.4 and will be removed in a future "
         "version. Please use `SplicingDynamics` from `scvelo/core/` instead.",
         DeprecationWarning,
         stacklevel=2,
