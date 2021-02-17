@@ -375,7 +375,8 @@ def test_bimodality(x, bins=30, kde=True, plot=False):
     )
 
     idx = int(bins / 2) - 2
-    idx += np.argmin(kde_grid[idx : idx + 4])
+    finish = idx + 4
+    idx += np.argmin(kde_grid[idx:finish])
 
     peak_0 = kde_grid[:idx].argmax()
     peak_1 = kde_grid[idx:].argmax()

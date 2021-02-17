@@ -12,3 +12,34 @@ from .dynamical_model import differential_kinetic_test, rank_dynamical_genes
 from scanpy.tools import tsne, umap, diffmap, dpt, louvain
 from .score_genes_cell_cycle import score_genes_cell_cycle
 from .paga import paga
+
+
+__all__ = [
+    "align_dynamics",
+    "differential_kinetic_test",
+    "diffmap",
+    "dpt",
+    "DynamicsRecovery",
+    "eigs",
+    "latent_time",
+    "louvain",
+    "paga",
+    "rank_dynamical_genes",
+    "rank_velocity_genes",
+    "recover_dynamics",
+    "recover_latent_time",
+    "score_genes_cell_cycle",
+    "terminal_states",
+    "transition_matrix",
+    "tsne",
+    "umap",
+    "velocity",
+    "velocity_clusters",
+    "velocity_confidence",
+    "velocity_confidence_transition",
+    "velocity_embedding",
+    "velocity_genes",
+    "velocity_graph",
+    "velocity_map",
+    "velocity_pseudotime",
+]

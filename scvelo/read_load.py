@@ -1,7 +1,8 @@
 from . import logging as logg
 from .preprocessing.utils import set_initial_size
 
-import os, re
+import os
+import re
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_categorical_dtype
@@ -9,7 +10,6 @@ from urllib.request import urlretrieve
 from pathlib import Path
 from scipy.sparse import issparse
 from anndata import AnnData
-from scanpy import read, read_loom
 
 
 def load(filename, backup_url=None, header="infer", index_col="infer", **kwargs):
@@ -50,7 +50,8 @@ def load(filename, backup_url=None, header="infer", index_col="infer", **kwargs)
     else:
         raise ValueError(
             f"'{filename}' does not end on a valid extension.\n"
-            f"Please, provide one of the available extensions.\n{numpy_ext | pandas_ext}\n"
+            "Please, provide one of the available extensions.\n"
+            f"{numpy_ext | pandas_ext}\n"
         )
 
 
@@ -229,8 +230,8 @@ def obs_df(adata, keys, layer=None):
         )
 
     df = pd.DataFrame(index=adata.obs_names)
-    for l in lookup_keys:
-        df[l] = adata.obs_vector(l, layer=layer)
+    for lookup_key in lookup_keys:
+        df[lookup_key] = adata.obs_vector(lookup_key, layer=layer)
     return df
 
 
@@ -243,8 +244,8 @@ def var_df(adata, keys, layer=None):
         )
 
     df = pd.DataFrame(index=adata.var_names)
-    for l in lookup_keys:
-        df[l] = adata.var_vector(l, layer=layer)
+    for lookup_key in lookup_keys:
+        df[lookup_key] = adata.var_vector(lookup_key, layer=layer)
     return df
 
 

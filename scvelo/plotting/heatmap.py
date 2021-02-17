@@ -98,7 +98,7 @@ def heatmap(
         for gene in var_names:
             try:
                 df[gene] = np.convolve(df[gene].values, weights, mode="same")
-            except:
+            except Exception:
                 pass  # e.g. all-zero counts or nans cannot be convolved
 
     if sort:
@@ -141,7 +141,7 @@ def heatmap(
     )
     try:
         cm = sns.clustermap(df.T, **kwargs)
-    except:
+    except Exception:
         logg.warn("Please upgrade seaborn with `pip install -U seaborn`.")
         kwargs.pop("dendrogram_ratio")
         kwargs.pop("cbar_pos")
@@ -319,12 +319,12 @@ def heatmap_deprecated(
 
                     idx_group = [adata.obs[groupby] == group]
                     idx_group = np.array(idx_group[0].tolist())
-                    idx_var = [vn in var_names for vn in adata.var_names]
+
                     idx_pt = np.array(adata.obs.velocity_pseudotime).argsort()
                     idx_pt = idx_pt[
                         np.array(
                             isnull(np.array(dat.obs.velocity_pseudotime)[idx_pt])
-                            == False
+                            is False
                         )
                     ]
 
@@ -333,8 +333,10 @@ def heatmap_deprecated(
                     else:
                         laydat = dat.layers[layer]
 
-                    t1, t2, t3 = idx_group, idx_var, idx_pt
+                    t1, t3 = idx_group, idx_pt
                     t1 = t1[t3]
+                    # idx_var = [vn in var_names for vn in adata.var_names]
+                    # t2 = idx_var
                     # laydat = laydat[:, t2]  # select vars
                     laydat = laydat[t3]
                     laydat = laydat[t1]  # select ordered groups
@@ -412,7 +414,7 @@ def heatmap_deprecated(
                     else:
                         Y = np.array(interpret_colorkey(adata, anno))[t3][t1]
                         Y = Y.reshape(1, len(Y))
-                    img = anno_axis.imshow(
+                    _ = anno_axis.imshow(
                         Y, aspect="auto", interpolation="nearest", cmap=color_map_anno
                     )
                     if igroup == 0:
@@ -450,7 +452,7 @@ def heatmap_deprecated(
                 idx = np.array(dat.obs.velocity_pseudotime).argsort()
                 idx = idx[
                     np.array(
-                        isnull(np.array(dat.obs.velocity_pseudotime)[idx]) == False
+                        isnull(np.array(dat.obs.velocity_pseudotime)[idx]) is False
                     )
                 ]
 
@@ -526,7 +528,7 @@ def heatmap_deprecated(
                     Y = np.array(interpret_colorkey(dat, anno)[idx]).reshape(
                         1, len(idx)
                     )
-                img = anno_axis.imshow(
+                _ = anno_axis.imshow(
                     Y, aspect="auto", interpolation="nearest", cmap=color_map_anno
                 )
 

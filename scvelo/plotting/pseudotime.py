@@ -1,4 +1,7 @@
-from .utils import *
+import numpy as np
+
+import matplotlib.pyplot as pl
+from matplotlib.ticker import MaxNLocator
 
 
 def principal_curve(adata):

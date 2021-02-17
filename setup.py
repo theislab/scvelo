@@ -7,7 +7,8 @@ setup(
     setup_requires=["setuptools_scm"],
     python_requires=">=3.6",
     install_requires=[
-        l.strip() for l in Path("requirements.txt").read_text("utf-8").splitlines()
+        library.strip()
+        for library in Path("requirements.txt").read_text("utf-8").splitlines()
     ],
     extras_require=dict(
         louvain=["python-igraph", "louvain"],

@@ -1,3 +1,5 @@
+from typing import Mapping, Sequence
+
 """Color palettes in addition to matplotlib's palettes."""
 
 from matplotlib import cm, colors
@@ -78,9 +80,6 @@ additional_colors = {
     'plum3': '#cd96cd', 'palevioletred3': '#cd6889'
 }
 # fmt: on
-
-
-from typing import Mapping, Sequence
 
 
 def _plot_color_cylce(clists: Mapping[str, Sequence[str]]):

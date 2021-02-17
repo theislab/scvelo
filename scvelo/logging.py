@@ -7,7 +7,6 @@ from datetime import datetime
 from time import time as get_time
 from platform import python_version
 from anndata.logging import get_memory_usage
-from anndata.logging import print_memory_usage
 
 
 _VERBOSITY_LEVELS_FROM_STRINGS = {"error": 0, "warn": 1, "info": 2, "hint": 3}
@@ -89,7 +88,7 @@ def msg(
         if reset:
             try:
                 settings._previous_memory_usage, _ = get_memory_usage()
-            except:
+            except Exception:
                 pass
             settings._previous_time = get_time()
         if time:
@@ -164,7 +163,7 @@ def timeout(func, args=(), timeout_duration=2, default=None, **kwargs):
         def run(self):
             try:
                 self.result = func(*args, **kwargs)
-            except:
+            except Exception:
                 pass
 
     it = InterruptableThread()
@@ -297,7 +296,8 @@ def profiler(command, filename="profile.stats", n_stats=10):
     n_stats: int or None
         Number of top stats to show.
     """
-    import cProfile, pstats
+    import cProfile
+    import pstats
 
     cProfile.run(command, filename)
     stats = pstats.Stats(filename).strip_dirs().sort_stats("time")

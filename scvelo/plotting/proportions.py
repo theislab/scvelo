@@ -57,8 +57,8 @@ def proportions(
     if use_raw:
         ikey, obs = "initial_size_", adata.obs
         counts_layers = [
-            obs[ikey + l] if ikey + l in obs.keys() else c
-            for l, c in zip(layers_keys, counts_layers)
+            obs[ikey + layer_key] if ikey + layer_key in obs.keys() else c
+            for layer_key, c in zip(layers_keys, counts_layers)
         ]
     counts_total = np.sum(counts_layers, 0)
     counts_total += counts_total == 0
@@ -71,7 +71,10 @@ def proportions(
     ax = pl.subplot(gspec[0])
     if highlight is None:
         highlight = "none"
-    explode = [0.1 if (l == highlight or l in highlight) else 0 for l in layers_keys]
+    explode = [
+        0.1 if (layer_key == highlight or layer_key in highlight) else 0
+        for layer_key in layers_keys
+    ]
 
     autopct = "%1.0f%%" if add_labels_pie else None
     pie = ax.pie(

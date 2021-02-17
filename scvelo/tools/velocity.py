@@ -1,6 +1,6 @@
 from .. import settings
 from .. import logging as logg
-from ..preprocessing.moments import moments, second_order_moments, get_connectivities
+from ..preprocessing.moments import moments, second_order_moments
 from .optimization import leastsq_NxN, leastsq_generalized, maximum_likelihood
 from .utils import R_squared, groups_to_bool, make_dense, strings_to_categoricals
 
@@ -237,7 +237,8 @@ def velocity(
     generalizes RNA velocity estimation to transient systems. It is also capable of
     capturing non-observed steady states.
 
-    .. image:: https://user-images.githubusercontent.com/31883718/69636491-ff057100-1056-11ea-90b7-d04098112ce1.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/69636491-ff057100-1056-11ea-90b7-d04098112ce1.png
 
     Arguments
     ---------
@@ -512,8 +513,8 @@ def velocity_genes(
 
     if np.sum(vgenes) < 2:
         logg.warn(
-            f"You seem to have very low signal in splicing dynamics.\n"
-            f"Consider reducing the thresholds and be cautious with interpretations.\n"
+            "You seem to have very low signal in splicing dynamics.\n"
+            "Consider reducing the thresholds and be cautious with interpretations.\n"
         )
 
     adata.var[f"{vkey}_genes"] = vgenes

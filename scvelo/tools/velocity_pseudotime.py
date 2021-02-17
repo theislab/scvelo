@@ -149,7 +149,8 @@ def velocity_pseudotime(
         scv.tl.velocity_pseudotime(adata)
         scv.pl.scatter(adata, color='velocity_pseudotime', color_map='gnuplot')
 
-    .. image:: https://user-images.githubusercontent.com/31883718/69545487-33fbc000-0f92-11ea-969b-194dc68400b0.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/69545487-33fbc000-0f92-11ea-969b-194dc68400b0.png
        :width: 600px
 
     Arguments

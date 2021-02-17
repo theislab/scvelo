@@ -241,7 +241,8 @@ def velocity_graph(
 
     .. math::
         \\pi_{ij} = \\cos\\angle(\\delta_{ij}, \\nu_i)
-        = \\frac{\\delta_{ij}^T \\nu_i}{\\left\\lVert\\delta_{ij}\\right\\rVert \\left\\lVert \\nu_i \\right\\rVert}.
+        = \\frac{\\delta_{ij}^T \\nu_i}{\\left\\lVert\\delta_{ij}\\right\\rVert
+        \\left\\lVert \\nu_i \\right\\rVert}.
 
     Arguments
     ---------

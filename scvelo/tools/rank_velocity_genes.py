@@ -77,7 +77,8 @@ def velocity_clusters(
         scv.tl.velocity_clusters(adata)
         scv.pl.scatter(adata, color='velocity_clusters')
 
-    .. image:: https://user-images.githubusercontent.com/31883718/69625627-484dc480-1047-11ea-847f-6607a3430427.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/69625627-484dc480-1047-11ea-847f-6607a3430427.png
        :width: 600px
 
 
@@ -217,13 +218,17 @@ def rank_velocity_genes(
     .. code:: python
 
         scv.tl.rank_velocity_genes(adata, groupby='clusters')
-        scv.pl.scatter(adata, basis=adata.uns['rank_velocity_genes']['names']['Beta'][:3])
+        scv.pl.scatter(
+            adata, basis=adata.uns['rank_velocity_genes']['names']['Beta'][:3]
+        )
         pd.DataFrame(adata.uns['rank_velocity_genes']['names']).head()
 
-    .. image:: https://user-images.githubusercontent.com/31883718/69626017-11c47980-1048-11ea-89f4-df3769df5ad5.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/69626017-11c47980-1048-11ea-89f4-df3769df5ad5.png
        :width: 600px
 
-    .. image:: https://user-images.githubusercontent.com/31883718/69626572-30774000-1049-11ea-871f-e8a30c42f10e.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/69626572-30774000-1049-11ea-871f-e8a30c42f10e.png
        :width: 600px
 
     Arguments
@@ -314,9 +319,9 @@ def rank_velocity_genes(
         tmp_filter &= dispersions > min_dispersion
 
     if "fit_likelihood" in adata.var.keys():
-        l = adata.var["fit_likelihood"]
+        fit_likelihood = adata.var["fit_likelihood"]
         min_likelihood = 0.1 if min_likelihood is None else min_likelihood
-        tmp_filter &= l > min_likelihood
+        tmp_filter &= fit_likelihood > min_likelihood
 
     X = adata[:, tmp_filter].layers[vkey]
     groups, groups_masks = select_groups(adata, key=groupby)
