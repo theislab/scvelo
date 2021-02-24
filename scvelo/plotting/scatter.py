@@ -1,10 +1,17 @@
 from .docs import doc_scatter, doc_params
-from .utils import *
 
 from inspect import signature
 import matplotlib.pyplot as pl
+from matplotlib.colors import is_color_like
 import numpy as np
 import pandas as pd
+from pandas import unique
+
+from anndata import AnnData
+from scvelo import settings
+import scvelo.logging as logg
+from scvelo.preprocessing.neighbors import get_connectivities
+from .utils import *
 
 
 @doc_params(scatter=doc_scatter)
@@ -311,8 +318,6 @@ def scatter(
                 groups = [groups]
             if use_raw is None and basis not in adata.var_names:
                 use_raw = layer is None and adata.raw is not None
-            if projection == "3d":
-                from mpl_toolkits.mplot3d import Axes3D
 
             ax, show = get_ax(ax, show, figsize, dpi, projection)
 
@@ -494,7 +499,7 @@ def scatter(
                     try:
                         c += rescale_color[0] - np.nanmin(c)
                         c *= rescale_color[1] / np.nanmax(c)
-                    except:
+                    except Exception:
                         logg.warn("Could not rescale colors. Pass a tuple, e.g. [0,1].")
 
             # set vmid to 0 if color values obtained from velocity expression

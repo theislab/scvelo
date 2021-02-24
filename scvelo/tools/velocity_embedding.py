@@ -45,13 +45,15 @@ def velocity_embedding(
     """Projects the single cell velocities into any embedding.
 
     Given normalized difference of the embedding positions
-    :math:`\\tilde \\delta_{ij} = \\frac{x_j-x_i}{\\left\\lVert x_j-x_i \\right\\rVert}`.
+    :math:
+    `\\tilde \\delta_{ij} = \\frac{x_j-x_i}{\\left\\lVert x_j-x_i \\right\\rVert}`.
     the projections are obtained as expected displacements with respect to the
     transition matrix :math:`\\tilde \\pi_{ij}` as
 
     .. math::
         \\tilde \\nu_i = E_{\\tilde \\pi_{i\\cdot}} [\\tilde \\delta_{i \\cdot}]
-        = \\sum_{j \\neq i} \left( \\tilde \\pi_{ij} - \\frac1n \\right) \\tilde \\delta_{ij}.
+        = \\sum_{j \\neq i} \\left( \\tilde \\pi_{ij} - \\frac1n \\right) \\tilde \\
+        delta_{ij}.
 
 
     Arguments
@@ -107,9 +109,12 @@ def velocity_embedding(
 
     if direct_pca_projection and "pca" in basis:
         logg.warn(
-            "Directly projecting velocities into PCA space is for exploratory analysis on principal components.\n"
-            "         It does not reflect the actual velocity field from high dimensional gene expression space.\n"
-            "         To visualize velocities, consider applying `direct_pca_projection=False`.\n"
+            "Directly projecting velocities into PCA space is for exploratory analysis "
+            "on principal components.\n"
+            "         It does not reflect the actual velocity field from high "
+            "dimensional gene expression space.\n"
+            "         To visualize velocities, consider applying "
+            "`direct_pca_projection=False`.\n"
         )
 
     logg.info("computing velocity embedding", r=True)

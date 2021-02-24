@@ -8,7 +8,6 @@ from .rank_velocity_genes import velocity_clusters
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
-from pandas.api.types import is_categorical
 from scanpy.tools._paga import PAGA
 
 
@@ -25,7 +24,7 @@ def get_igraph_from_adjacency(adjacency, directed=None):
     g.add_edges(list(zip(sources, targets)))
     try:
         g.es["weight"] = weights
-    except:
+    except Exception:
         pass
     if g.vcount() != adjacency.shape[0]:
         logg.warn(
@@ -55,7 +54,9 @@ def get_sparse_from_igraph(graph, weight_attr=None):
 def set_row_csr(csr, rows, value=0):
     """Set all nonzero elements to the given value. Useful to set to 0 mostly."""
     for row in rows:
-        csr.data[csr.indptr[row] : csr.indptr[row + 1]] = value
+        start = csr.indptr[row]
+        end = csr.indptr[row + 1]
+        csr.data[start:end] = value
     if value == 0:
         csr.eliminate_zeros()
 
@@ -233,12 +234,6 @@ def paga(
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."
         )
-    try:
-        import igraph
-    except ImportError:
-        raise ImportError(
-            "To run paga, you need to install `pip install python-igraph`"
-        )
 
     adata = adata.copy() if copy else adata
     strings_to_categoricals(adata)
@@ -260,7 +255,7 @@ def paga(
 
     priors = [p for p in [use_time_prior, root_key, end_key] if p in adata.obs.keys()]
     logg.info(
-        f"running PAGA",
+        "running PAGA",
         f"using priors: {priors}" if len(priors) > 0 else "",
         r=True,
     )

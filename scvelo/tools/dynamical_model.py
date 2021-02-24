@@ -67,11 +67,11 @@ class DynamicsRecovery(BaseDynamics):
 
         # initialize switching from u quantiles and alpha from s quantiles
         try:
-            tstat_u, pval_u, means_u = test_bimodality(u_w, kde=True)
-            tstat_s, pval_s, means_s = test_bimodality(s_w, kde=True)
-        except:
+            _, pval_u, means_u = test_bimodality(u_w, kde=True)
+            _, pval_s, means_s = test_bimodality(s_w, kde=True)
+        except Exception:
             logg.warn("skipping bimodality check for", self.gene)
-            tstat_u, tstat_s, pval_u, pval_s = 0, 0, 1, 1
+            _, _, pval_u, pval_s = 0, 0, 1, 1
             means_u, means_s = [0, 0], [0, 0]
 
         self.pval_steady = max(pval_u, pval_s)
@@ -370,7 +370,8 @@ def recover_dynamics(
     as well as cell-specific latent time and transcriptional states,
     estimated iteratively by expectation-maximization.
 
-    .. image:: https://user-images.githubusercontent.com/31883718/69636459-ef862800-1056-11ea-8803-0a787ede5ce9.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/69636459-ef862800-1056-11ea-8803-0a787ede5ce9.png
 
     Arguments
     ---------
@@ -415,7 +416,8 @@ def recover_dynamics(
     n_jobs: `int` or `None` (default: `None`)
         Number of parallel jobs.
     backend: `str` (default: "loky")
-        Backend used for multiprocessing. See :class:`joblib.Parallel` for valid options.
+        Backend used for multiprocessing. See :class:`joblib.Parallel` for valid
+        options.
 
     Returns
     -------
@@ -549,14 +551,17 @@ def recover_dynamics(
 
     if L:  # is False if only one invalid / irrecoverable gene was given in var_names
         cur_len = adata.varm["loss"].shape[1] if "loss" in adata.varm.keys() else 2
-        max_len = max(np.max([len(l) for l in L]), cur_len) if L else cur_len
+        max_len = max(np.max([len(loss) for loss in L]), cur_len) if L else cur_len
         loss = np.ones((adata.n_vars, max_len)) * np.nan
 
         if "loss" in adata.varm.keys():
             loss[:, :cur_len] = adata.varm["loss"]
 
         loss[idx] = np.vstack(
-            [np.concatenate([l, np.ones(max_len - len(l)) * np.nan]) for l in L]
+            [
+                np.concatenate([loss, np.ones(max_len - len(loss)) * np.nan])
+                for loss in L
+            ]
         )
         adata.varm["loss"] = loss
 
@@ -721,7 +726,8 @@ def latent_time(
     universal gene-shared latent time, which represents the cell’s internal clock and
     is based only on its transcriptional dynamics.
 
-    .. image:: https://user-images.githubusercontent.com/31883718/69636500-03318e80-1057-11ea-9e14-ae9f907711cc.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/69636500-03318e80-1057-11ea-9e14-ae9f907711cc.png
 
     Arguments
     ---------
@@ -900,7 +906,8 @@ def differential_kinetic_test(
     for the overall dynamics. Each cell type is tested whether an independent fit yields
     a significantly improved likelihood.
 
-    .. image:: https://user-images.githubusercontent.com/31883718/78930730-dc737200-7aa4-11ea-92f6-269b7609c3a5.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/78930730-dc737200-7aa4-11ea-92f6-269b7609c3a5.png
 
     Arguments
     ---------
@@ -1202,7 +1209,8 @@ def _parallelize(
     use_ixs
         Whether to pass indices to the callback.
     backend
-        Which backend to use for multiprocessing. See :class:`joblib.Parallel` for valid options.
+        Which backend to use for multiprocessing. See :class:`joblib.Parallel` for valid
+        options.
     extractor
         Function to apply to the result after all jobs have finished.
     show_progress_bar

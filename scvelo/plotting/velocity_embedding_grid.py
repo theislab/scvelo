@@ -1,8 +1,20 @@
 from ..tools.velocity_embedding import quiver_autoscale, velocity_embedding
 from ..tools.utils import groups_to_bool
-from .utils import *
 from .scatter import scatter
 from .docs import doc_scatter, doc_params
+from .utils import (
+    default_arrow,
+    default_basis,
+    default_color,
+    default_size,
+    get_basis,
+    get_ax,
+    get_components,
+    get_figure_params,
+    make_unique_list,
+    savefig_or_show,
+    velocity_embedding_changed,
+)
 
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import norm as normal

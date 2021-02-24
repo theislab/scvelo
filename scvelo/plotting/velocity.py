@@ -1,4 +1,3 @@
-from .. import settings
 from ..preprocessing.moments import second_order_moments
 from ..tools.rank_velocity_genes import rank_velocity_genes
 from .scatter import scatter
@@ -193,8 +192,8 @@ def velocity(
         )
 
         # velocity and expression plots
-        for l, layer in enumerate(layers):
-            ax = pl.subplot(gs[v * nplts + l + 1])
+        for layer_id, layer in enumerate(layers):
+            ax = pl.subplot(gs[v * nplts + layer_id + 1])
             title = "expression" if layer in ["X", skey] else layer
             # _kwargs = {} if title == 'expression' else kwargs
             cmap = color_map

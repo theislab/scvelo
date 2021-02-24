@@ -179,7 +179,7 @@ def neighbors(
         adata.obsp["connectivities"] = neighbors.connectivities
         adata.uns["neighbors"]["connectivities_key"] = "connectivities"
         adata.uns["neighbors"]["distances_key"] = "distances"
-    except:
+    except Exception:
         adata.uns["neighbors"]["distances"] = neighbors.distances
         adata.uns["neighbors"]["connectivities"] = neighbors.connectivities
 
@@ -427,15 +427,15 @@ def compute_connectivities_umap(
 def get_duplicate_cells(data):
     if isinstance(data, AnnData):
         X = data.X
-        l = list(np.sum(np.abs(data.obsm["X_pca"]), 1) + get_initial_size(data))
+        lst = list(np.sum(np.abs(data.obsm["X_pca"]), 1) + get_initial_size(data))
     else:
         X = data
-        l = list(np.sum(X, 1).A1 if issparse(X) else np.sum(X, 1))
+        lst = list(np.sum(X, 1).A1 if issparse(X) else np.sum(X, 1))
 
-    l_set = set(l)
+    l_set = set(lst)
     idx_dup = []
-    if len(l_set) < len(l):
-        idx_dup = np.array([i for i, x in enumerate(l) if l.count(x) > 1])
+    if len(l_set) < len(lst):
+        idx_dup = np.array([i for i, x in enumerate(lst) if lst.count(x) > 1])
 
         X_new = np.array(X[idx_dup].A if issparse(X) else X[idx_dup])
         sorted_idx = np.lexsort(X_new.T)

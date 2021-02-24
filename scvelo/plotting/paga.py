@@ -1,7 +1,6 @@
 from .. import settings
 from .. import logging as logg
 
-from ..tools.utils import groups_to_bool
 from ..tools.paga import get_igraph_from_adjacency
 from .utils import default_basis, default_size, default_color, get_components
 from .utils import make_unique_list, make_unique_valid_list, savefig_or_show
@@ -280,11 +279,6 @@ def paga(
         size = default_size(adata) / 2 if size is None else size
 
         paga_groups = adata.uns["paga"]["groups"]
-        _adata = (
-            adata[groups_to_bool(adata, groups, groupby=paga_groups)]
-            if groups is not None and paga_groups in adata.obs.keys()
-            else adata
-        )
 
         if isinstance(node_colors, dict):
             paga_kwargs["colorbar"] = False
@@ -376,7 +370,7 @@ def _compute_pos(
     if layout == "fa":
         try:
             import fa2
-        except:
+        except Exception:
             logg.warn(
                 "Package 'fa2' is not installed, falling back to layout 'fr'."
                 "To use the faster and better ForceAtlas2 layout, "

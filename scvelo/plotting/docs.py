@@ -17,7 +17,8 @@ def doc_params(**kwds):
 
 doc_scatter = """\
 basis: `str` or list of `str` (default: `None`)
-    Key for embedding. If not specified, use 'umap', 'tsne' or 'pca' (ordered by preference).
+    Key for embedding. If not specified, use 'umap', 'tsne' or 'pca' (ordered by
+    preference).
 vkey: `str` or list of `str` (default: `None`)
     Key for velocity / steady-state ratio to be visualized.
 color: `str`,  list of `str` or `None` (default: `None`)
@@ -44,10 +45,10 @@ perc: tuple, e.g. [2,98] (default: `None`)
     Specify percentile for continuous coloring.
 groups: `str` or list of `str` (default: `all groups`)
     Restrict to a few categories in categorical observation annotation.
-    Multiple categories can be passed as list with ['cluster_1', 'cluster_3'], 
+    Multiple categories can be passed as list with ['cluster_1', 'cluster_3'],
     or as string with 'cluster_1, cluster_3'.
 sort_order: `bool` (default: `True`)
-    For continuous annotations used as color parameter, 
+    For continuous annotations used as color parameter,
     plot data points with higher values on top of others.
 components: `str` or list of `str` (default: '1,2')
     For instance, ['1,2', '2,3'].
@@ -60,7 +61,7 @@ legend_fontsize: `int` (default: `None`)
     Legend font size.
 legend_fontweight: {'normal', 'bold', ...} (default: `None`)
     Legend font weight. A numeric value in range 0-1000 or a string.
-    Defaults to 'bold' if `legend_loc = 'on data'`, otherwise to 'normal'. 
+    Defaults to 'bold' if `legend_loc = 'on data'`, otherwise to 'normal'.
     Available are `['light', 'normal', 'medium', 'semibold', 'bold', 'heavy', 'black']`.
 legend_fontoutline
     Line width of the legend font outline in pt. Draws a white outline using
@@ -84,41 +85,41 @@ xlim: tuple, e.g. [0,1] or `None` (default: `None`)
 ylim: tuple, e.g. [0,1] or `None` (default: `None`)
     Restrict y-limits of the axis.
 add_density: `bool` or `str` or `None` (default: `None`)
-    Whether to show density of values along x and y axes. 
+    Whether to show density of values along x and y axes.
     Color of the density plot can also be passed as `str`.
 add_assignments: `bool` or `str` or `None` (default: `None`)
-    Whether to add assignments to the model curve. 
+    Whether to add assignments to the model curve.
     Color of the assignments can also be passed as `str`.
 add_linfit: `bool` or `str` or `None` (default: `None`)
-    Whether to add linear regression fit to the data points. 
+    Whether to add linear regression fit to the data points.
     Color of the line can also be passed as `str`.
-    Fitting with or without an intercept by passing `'intercept'` or `'no_intercept'`. 
+    Fitting with or without an intercept by passing `'intercept'` or `'no_intercept'`.
     A colored regression line with intercept is obtained with `'intercept, blue'`.
 add_polyfit: `bool` or `str` or `int` or `None` (default: `None`)
-    Whether to add polynomial fit to the data points. Color of the polyfit plot can also 
-    be passed as `str`. The degree of the polynomial fit can be passed as `int` 
-    (default is 2 for quadratic fit). 
-    Fitting with or without an intercept by passing `'intercept'` or `'no_intercept'`. 
+    Whether to add polynomial fit to the data points. Color of the polyfit plot can also
+    be passed as `str`. The degree of the polynomial fit can be passed as `int`
+    (default is 2 for quadratic fit).
+    Fitting with or without an intercept by passing `'intercept'` or `'no_intercept'`.
     A colored regression line with intercept is obtained with `'intercept, blue'`.
 add_rug: `str` or `None` (default: `None`)
-    If categorical observation annotation (e.g. 'clusters') is given, a rugplot is 
+    If categorical observation annotation (e.g. 'clusters') is given, a rugplot is
     attached to the x-axis showing the data membership to each of the categories.
 add_text: `str` (default: `None`)
     Text to be added to the plot, passed as `str`.
-add_text_pos: `tuple`, e.g. [0.05, 0.95] (defaut: `[0.05, 0.95]`) 
+add_text_pos: `tuple`, e.g. [0.05, 0.95] (defaut: `[0.05, 0.95]`)
     Text position. Default is `[0.05, 0.95]`, positioning the text at top right corner.
 add_outline: `bool` or `str` (default: `False`)
-    Whether to show an outline around scatter plot dots. 
+    Whether to show an outline around scatter plot dots.
     Alternatively a string of cluster names can be passed, e.g. 'cluster_1, clusters_3'.
 outline_width: tuple type `scalar` or `None` (default: `(0.3, 0.05)`)
     Width of the inner and outer outline
 outline_color: tuple of type `str` or `None` (default: `('black', 'white')`)
     Inner and outer matplotlib color of the outline
 n_convolve: `int` or `None` (default: `None`)
-    If `int` is given, data is smoothed by convolution 
+    If `int` is given, data is smoothed by convolution
     along the x-axis with kernel size `n_convolve`.
 smooth: `bool` or `int` (default: `None`)
-    Whether to convolve/average the color values over the nearest neighbors. 
+    Whether to convolve/average the color values over the nearest neighbors.
     If `int`, it specifies number of neighbors.
 rescale_color: `tuple` (default: `None`)
     Boundaries for color rescaling, e.g. [0, 1], setting min/max values of the colorbar.
@@ -139,7 +140,7 @@ hspace : `float` (default: None)
 show: `bool`, optional (default: `None`)
     Show the plot, do not return axis.
 save: `bool` or `str`, optional (default: `None`)
-    If `True` or a `str`, save the figure. A string is appended to the default filename. 
+    If `True` or a `str`, save the figure. A string is appended to the default filename.
     Infer the filetype if ending on {'.pdf', '.png', '.svg'}.
 ax: `matplotlib.Axes`, optional (default: `None`)
     A matplotlib axes object. Only works if plotting a single component.\

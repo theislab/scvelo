@@ -56,8 +56,7 @@ def cell_fate(
     _adata.uns["velocity_graph_neg"] = vgraph.graph_neg
 
     T = transition_matrix(_adata, self_transitions=self_transitions)
-    I = np.eye(_adata.n_obs)
-    fate = np.linalg.inv(I - T)
+    fate = np.linalg.inv(np.eye(_adata.n_obs) - T)
     if issparse(T):
         fate = fate.A
     cell_fates = np.array(_adata.obs[groupby][fate.argmax(1)])
@@ -124,8 +123,7 @@ def cell_origin(
     _adata.uns["velocity_graph_neg"] = vgraph.graph_neg
 
     T = transition_matrix(_adata, self_transitions=self_transitions, backward=True)
-    I = np.eye(_adata.n_obs)
-    fate = np.linalg.inv(I - T)
+    fate = np.linalg.inv(np.eye(_adata.n_obs) - T)
     if issparse(T):
         fate = fate.A
     cell_fates = np.array(_adata.obs[groupby][fate.argmax(1)])
@@ -167,7 +165,7 @@ def eigs(T, k=10, eps=1e-3, perc=None, random_state=None, v0=None):
             eigvecs = np.clip(eigvecs, 0, ubs)
             eigvecs /= eigvecs.max(0)
 
-    except:
+    except Exception:
         eigvals, eigvecs = np.empty(0), np.zeros(shape=(T.shape[0], 0))
 
     return eigvals, eigvecs
@@ -222,7 +220,7 @@ def terminal_states(
     which is given by left eigenvectors corresponding to an eigenvalue of 1, i.e.
 
     .. math::
-        μ^{\\textrm{end}}=μ^{\\textrm{end}} \\pi, \quad
+        μ^{\\textrm{end}}=μ^{\\textrm{end}} \\pi, \\quad
         μ^{\\textrm{root}}=μ^{\\textrm{root}} \\pi^{\\small \\textrm{T}}.
 
     .. code:: python
@@ -230,7 +228,8 @@ def terminal_states(
         scv.tl.terminal_states(adata)
         scv.pl.scatter(adata, color=['root_cells', 'end_points'])
 
-    .. image:: https://user-images.githubusercontent.com/31883718/69496183-bcfdf300-0ecf-11ea-9aae-685300a0b1ba.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/69496183-bcfdf300-0ecf-11ea-9aae-685300a0b1ba.png
 
     Alternatively, we recommend to use :func:`cellrank.tl.terminal_states`
     providing an improved/generalized approach of identifying terminal states.

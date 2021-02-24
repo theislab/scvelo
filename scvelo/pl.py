@@ -1,1 +1,1 @@
-from scvelo.plotting import *
+from scvelo.plotting import *  # noqa
