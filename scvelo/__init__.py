@@ -8,12 +8,13 @@ try:
 except (LookupError, ImportError):
     try:
         from importlib_metadata import version  # Python < 3.8
-    except:
+    except Exception:
         from importlib.metadata import version  # Python = 3.8
     __version__ = version(__name__)
     del version
 
-from .read_load import AnnData, read, read_loom, load, read_csv, get_df, DataFrame
+from scanpy import read, read_loom
+from .read_load import AnnData, load, read_csv, get_df, DataFrame
 from .preprocessing.neighbors import Neighbors
 from .tools.run import run_all, test
 from .tools.utils import round
@@ -29,3 +30,29 @@ from . import utils
 from . import datasets
 from . import logging
 from . import settings
+
+
+__all__ = [
+    "AnnData",
+    "DataFrame",
+    "datasets",
+    "get_df",
+    "GridSpec",
+    "load",
+    "logging",
+    "Neighbors",
+    "pl",
+    "pp",
+    "read",
+    "read_csv",
+    "read_loom",
+    "round",
+    "run_all",
+    "set_figure_params",
+    "settings",
+    "test",
+    "tl",
+    "utils",
+    "Velocity",
+    "VelocityGraph",
+]

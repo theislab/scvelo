@@ -1,7 +1,5 @@
 from .. import settings
 from .. import logging as logg
-from .. import AnnData
-from ..preprocessing.moments import get_connectivities
 from ..tools.utils import strings_to_categoricals
 from . import palettes
 
@@ -17,7 +15,7 @@ from matplotlib.gridspec import SubplotSpec
 from matplotlib import patheffects
 import matplotlib.transforms as tx
 from matplotlib import rcParams
-from pandas import unique, Index
+from pandas import Index
 from scipy.sparse import issparse
 from scipy.stats import pearsonr
 from cycler import Cycler, cycler
@@ -81,7 +79,9 @@ def is_list_of_str(key, max_len=None):
 
 
 def is_list_of_list(lst):
-    return lst is not None and any(isinstance(l, list) for l in lst)
+    return lst is not None and any(
+        isinstance(list_element, list) for list_element in lst
+    )
 
 
 def is_list_of_int(lst):
@@ -347,7 +347,7 @@ def default_color_map(adata, c):
         try:
             if np.min(c) in [-1, 0, False] and np.max(c) in [1, True]:
                 cmap = "viridis_r"
-        except:
+        except Exception:
             cmap = None
     return cmap
 
@@ -640,7 +640,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
     if is_categorical(adata, c):
         c = get_colors(adata, c)
     elif isinstance(c, str):
-        if is_color_like(c) and not c in adata.var_names:
+        if is_color_like(c) and c not in adata.var_names:
             pass
         elif c in adata.obs.keys():  # color by observation key
             c = adata.obs[c]
@@ -649,15 +649,22 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
         ):  # by gene
             if layer in adata.layers.keys():
                 if perc is None and any(
-                    l in layer for l in ["spliced", "unspliced", "Ms", "Mu", "velocity"]
+                    layer_name in layer
+                    for layer_name in ["spliced", "unspliced", "Ms", "Mu", "velocity"]
                 ):
                     perc = [1, 99]  # to ignore outliers in non-logarithmized layers
                 c = adata.obs_vector(c, layer=layer)
             elif layer is not None and np.any(
-                [l in layer or "X" in layer for l in adata.layers.keys()]
+                [
+                    layer_name in layer or "X" in layer
+                    for layer_name in adata.layers.keys()
+                ]
             ):
                 l_array = np.hstack(
-                    [adata.obs_vector(c, layer=l)[:, None] for l in adata.layers.keys()]
+                    [
+                        adata.obs_vector(c, layer=layer)[:, None]
+                        for layer in adata.layers.keys()
+                    ]
                 )
                 l_array = pd.DataFrame(l_array, columns=adata.layers.keys())
                 l_array.insert(0, "X", adata.obs_vector(c))
@@ -731,7 +738,6 @@ def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
 
     if palette is None and color_key in adata.uns:
         # Check if colors already exist in adata.uns and if they are a valid palette
-        _palette = []
         color_keys = (
             adata.uns[color_key].values()
             if isinstance(adata.uns[color_key], dict)
@@ -906,9 +912,11 @@ def rgb_custom_colormap(colors=None, alpha=None, N=256):
     n = int(N / ints)
 
     for j in range(ints):
+        start = n * j
+        end = n * (j + 1)
         for i in range(3):
-            vals[n * j : n * (j + 1), i] = np.linspace(c[j][i], c[j + 1][i], n)
-        vals[n * j : n * (j + 1), -1] = np.linspace(alpha[j], alpha[j + 1], n)
+            vals[start:end, i] = np.linspace(c[j][i], c[j + 1][i], n)
+        vals[start:end, -1] = np.linspace(alpha[j], alpha[j + 1], n)
     return ListedColormap(vals)
 
 
@@ -959,7 +967,8 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
         try:
             filename += f"{settings.plot_suffix}.{ext}"
             pl.savefig(filename, dpi=dpi, bbox_inches="tight")
-        except:  # save as .png if .pdf is not feasible (e.g. specific streamplots)
+        except Exception:
+            # save as .png if .pdf is not feasible (e.g. specific streamplots)
             logg.msg(f"figure cannot be saved as {ext}, using png instead.", v=1)
             filename = f"{settings.figdir}{settings.plot_prefix}{writekey}"
             filename += f"{settings.plot_suffix}.png"
@@ -1422,7 +1431,7 @@ def hist(
             kwargs.update({"color": ci, "label": li})
             try:
                 ax.hist(x_vals, bins=bins, alpha=alpha, density=normed, **kwargs)
-            except:
+            except Exception:
                 ax.hist(x_vals, bins=bins, alpha=alpha, **kwargs)
     if xlabel is None:
         xlabel = ""
@@ -1465,20 +1474,19 @@ def hist(
     pdf = [pdf] if isinstance(pdf, str) else pdf
     if pdf is not None:
         fits = []
-        for i, pd in enumerate(pdf):
-            from scipy import stats
-
+        for i, pdf_name in enumerate(pdf):
             xt = ax.get_xticks()
             xmin, xmax = min(xt), max(xt)
             lnspc = np.linspace(xmin, xmax, len(bins))
 
-            if "(" in pd:  # used passed parameters
-                args, pd = eval(pd[pd.rfind("(") :]), pd[: pd.rfind("(")]
+            if "(" in pdf_name:  # used passed parameters
+                start = pdf_name.rfind("(")
+                args, pdf_name = eval(pd[start:]), pdf_name[: pdf_name.rfind("(")]
             else:  # fit parameters
-                args = eval(f"stats.{pd}.fit(x_vals)")
-            pd_vals = eval(f"stats.{pd}.pdf(lnspc, *args)")
-            logg.info("Fitting", pd, np.round(args, 4), ".")
-            fit = ax.plot(lnspc, pd_vals, label=pd, color=colors[i])
+                args = eval(f"stats.{pdf_name}.fit(x_vals)")
+            pd_vals = eval(f"stats.{pdf_name}.pdf(lnspc, *args)")
+            logg.info("Fitting", pdf_name, np.round(args, 4), ".")
+            fit = ax.plot(lnspc, pd_vals, label=pdf_name, color=colors[i])
             fits.extend(fit)
         ax.legend(handles=fits, labels=pdf, fontsize=legend_fontsize)
 

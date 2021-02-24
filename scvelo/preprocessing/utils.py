@@ -54,8 +54,8 @@ def show_proportions(adata, layers=None, use_raw=True):
     if use_raw:
         size_key, obs = "initial_size_", adata.obs
         counts_layers = [
-            obs[size_key + l] if size_key + l in obs.keys() else c
-            for l, c in zip(layers_keys, counts_layers)
+            obs[size_key + layer] if size_key + layer in obs.keys() else c
+            for layer, c in zip(layers_keys, counts_layers)
         ]
 
     counts_per_cell_sum = np.sum(counts_layers, 0)
@@ -72,7 +72,7 @@ def show_proportions(adata, layers=None, use_raw=True):
 def verify_dtypes(adata):
     try:
         _ = adata[:, 0]
-    except:
+    except Exception:
         uns = adata.uns
         adata.uns = {}
         try:
@@ -81,7 +81,7 @@ def verify_dtypes(adata):
                 "Safely deleted unstructured annotations (adata.uns), \n"
                 "as these do not comply with permissible anndata datatypes."
             )
-        except:
+        except Exception:
             logg.warn(
                 "The data might be corrupted. Please verify all annotation datatypes."
             )
@@ -694,7 +694,7 @@ def normalize_per_cell(
                     adata.var["gene_count_corr"] = np.round(
                         csr_vcorrcoef(X.T, np.ravel((X > 0).sum(1))), 4
                     )
-                except:
+                except Exception:
                     pass
         else:
             logg.warn(

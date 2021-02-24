@@ -1,3 +1,8 @@
+from matplotlib import rcParams, cm, colors, cbook
+from cycler import cycler
+import warnings
+
+
 """Settings
 """
 
@@ -79,10 +84,6 @@ _rcParams_style = None
 # --------------------------------------------------------------------------------
 # Functions
 # --------------------------------------------------------------------------------
-
-from matplotlib import rcParams, cm, colors, cbook
-from cycler import cycler
-import warnings
 
 warnings.filterwarnings("ignore", category=cbook.mplDeprecation)
 
@@ -298,7 +299,7 @@ def set_figure_params(
         if isinstance(ipython_format, str):
             ipython_format = [ipython_format]
         IPython.display.set_matplotlib_formats(*ipython_format)
-    except:
+    except Exception:
         pass
 
     global _rcParams_style

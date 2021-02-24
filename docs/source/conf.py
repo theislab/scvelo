@@ -2,12 +2,22 @@ import sys
 import os
 import inspect
 import logging
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from datetime import datetime
 from typing import Optional, Union, Mapping
+from urllib.request import urlretrieve
+from typing import Dict, List, Tuple
+from docutils import nodes
 
+from jinja2.defaults import DEFAULT_FILTERS
+import sphinx_autodoc_typehints
+from sphinx import addnodes
 from sphinx.application import Sphinx
+from sphinx.domains.python import PyTypedField, PyObject
+from sphinx.environment import BuildEnvironment
 from sphinx.ext import autosummary
+
+import scvelo
 
 # remove PyCharm’s old six module
 if "six" in sys.modules:
@@ -24,14 +34,11 @@ matplotlib.use("agg")
 HERE = Path(__file__).parent
 sys.path.insert(0, f"{HERE.parent.parent}")
 sys.path.insert(0, os.path.abspath("_ext"))
-import scvelo
 
 logger = logging.getLogger(__name__)
 
 
 # -- Retrieve notebooks ------------------------------------------------
-
-from urllib.request import urlretrieve
 
 notebooks_url = "https://github.com/theislab/scvelo_notebooks/raw/master/"
 notebooks = [
@@ -44,7 +51,7 @@ notebooks = [
 for nb in notebooks:
     try:
         urlretrieve(notebooks_url + nb, nb)
-    except:
+    except Exception:
         pass
 
 
@@ -218,7 +225,6 @@ github_url_scvelo = "https://github.com/theislab/scvelo/tree/master"
 github_url_read_loom = "https://github.com/theislab/anndata/tree/master/anndata"
 github_url_read = "https://github.com/theislab/scanpy/tree/master"
 github_url_scanpy = "https://github.com/theislab/scanpy/tree/master/scanpy"
-from pathlib import PurePosixPath
 
 
 def modurl(qualname):
@@ -253,13 +259,10 @@ def api_image(qualname: str) -> Optional[str]:
 
 
 # modify the default filters
-from jinja2.defaults import DEFAULT_FILTERS
 
 DEFAULT_FILTERS.update(modurl=modurl, api_image=api_image)
 
 # -- Override some classnames in autodoc --------------------------------------------
-
-import sphinx_autodoc_typehints
 
 qualname_overrides = {
     "anndata.base.AnnData": "anndata.AnnData",
@@ -291,12 +294,6 @@ sphinx_autodoc_typehints.format_annotation = format_annotation
 
 
 # -- Prettier Param docs --------------------------------------------
-
-from typing import Dict, List, Tuple
-from docutils import nodes
-from sphinx import addnodes
-from sphinx.domains.python import PyTypedField, PyObject
-from sphinx.environment import BuildEnvironment
 
 
 class PrettyTypedField(PyTypedField):

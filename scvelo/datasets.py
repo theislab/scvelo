@@ -1,6 +1,8 @@
 """Builtin Datasets.
 """
-from .read_load import read, load
+
+from scanpy import read
+from .read_load import load
 from .preprocessing.utils import cleanup
 from anndata import AnnData
 import numpy as np
@@ -54,7 +56,8 @@ def dentategyrus(adjusted=True):
     types that are fully differentiated (e.g. Cajal-Retzius cells) or cell types that
     form a sub-lineage (e.g. GABA cells).
 
-    .. image:: https://user-images.githubusercontent.com/31883718/79433223-255b8700-7fcd-11ea-8ecf-3dc9eb1a6159.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/79433223-255b8700-7fcd-11ea-8ecf-3dc9eb1a6159.png
        :width: 600px
 
     Returns
@@ -117,7 +120,8 @@ def pancreas():
     α-cells, insulin-producing β-cells, somatostatin-producing δ-cells and
     ghrelin-producing ε-cells.
 
-    .. image:: https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png
        :width: 600px
 
     Returns
@@ -155,7 +159,8 @@ def simulation(
     and time events follow the Poisson law. The total time spent in a transcriptional
     state is varied between two and ten hours.
 
-    .. image:: https://user-images.githubusercontent.com/31883718/79432471-16c0a000-7fcc-11ea-8d62-6971bcf4181a.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/79432471-16c0a000-7fcc-11ea-8d62-6971bcf4181a.png
        :width: 600px
 
     Returns

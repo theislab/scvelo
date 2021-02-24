@@ -835,7 +835,7 @@ class BaseDynamics:
         self.recoverable = True
         try:
             self.initialize_weights()
-        except:
+        except Exception:
             self.recoverable = False
             logg.warn(f"Model for {self.gene} could not be instantiated.")
 
@@ -1191,9 +1191,13 @@ class BaseDynamics:
 
         kwargs = dict(std_u=self.std_u, std_s=self.std_s, scaling=scaling)
         dist, dist_ = curve_dists(u, s, alpha, beta, gamma, t_, **kwargs)
-        l = -0.5 / len(dist) * np.sum(dist) / varx - 0.5 * np.log(2 * np.pi * varx)
-        l_ = -0.5 / len(dist_) * np.sum(dist_) / varx - 0.5 * np.log(2 * np.pi * varx)
-        likelihood = np.exp(np.max([l, l_]))
+        log_likelihood = -0.5 / len(dist) * np.sum(dist) / varx - 0.5 * np.log(
+            2 * np.pi * varx
+        )
+        log_likelihood_ = -0.5 / len(dist_) * np.sum(dist_) / varx - 0.5 * np.log(
+            2 * np.pi * varx
+        )
+        likelihood = np.exp(np.max([log_likelihood, log_likelihood_]))
         return likelihood
 
     def get_variance(self, **kwargs):
@@ -1294,14 +1298,13 @@ class BaseDynamics:
         assignment_mode = self.assignment_mode
         self.assignment_mode = None
 
-        fp = lambda x, y: self.get_likelihood(
-            **{xkey: x, ykey: y}, refit_time=refit_time
-        )
-
+        # TODO: Check if list comprehension can be used
         zp = np.zeros((len(x), len(x)))
         for i, xi in enumerate(x):
             for j, yi in enumerate(y):
-                zp[i, j] = fp(xi, yi)
+                zp[i, j] = self.get_likelihood(
+                    **{xkey: xi, ykey: yi}, refit_time=refit_time
+                )
         log_zp = np.log1p(zp.T)
 
         if vmin is None:
@@ -1365,10 +1368,10 @@ class BaseDynamics:
         assignment_mode = self.assignment_mode
         self.assignment_mode = None
 
-        fp = lambda x: self.get_likelihood(**{xkey: x}, refit_time=True)
+        # TODO: Check if list comprehension can be used
         zp = np.zeros((len(x)))
         for i, xi in enumerate(x):
-            zp[i] = fp(xi)
+            zp[i] = self.get_likelihood(**{xkey: xi}, refit_time=True)
 
         log_zp = np.log1p(zp.T)
         if vmin is None:

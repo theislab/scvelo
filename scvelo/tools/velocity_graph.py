@@ -5,6 +5,7 @@ from ..preprocessing.neighbors import get_neighs, get_n_neighs
 from ..preprocessing.moments import get_moments
 from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
+from scvelo.core import l2_norm
 
 from scipy.sparse import coo_matrix, issparse
 import numpy as np
@@ -241,7 +242,8 @@ def velocity_graph(
 
     .. math::
         \\pi_{ij} = \\cos\\angle(\\delta_{ij}, \\nu_i)
-        = \\frac{\\delta_{ij}^T \\nu_i}{\\left\\lVert\\delta_{ij}\\right\\rVert \\left\\lVert \\nu_i \\right\\rVert}.
+        = \\frac{\\delta_{ij}^T \\nu_i}{\\left\\lVert\\delta_{ij}\\right\\rVert
+        \\left\\lVert \\nu_i \\right\\rVert}.
 
     Arguments
     ---------

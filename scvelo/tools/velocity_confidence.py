@@ -16,7 +16,8 @@ def velocity_confidence(data, vkey="velocity", copy=False):
         scv.tl.velocity_confidence(adata)
         scv.pl.scatter(adata, color='velocity_confidence', perc=[2,98])
 
-    .. image:: https://user-images.githubusercontent.com/31883718/69626334-b6df5200-1048-11ea-9171-495845c5bc7a.png
+    .. image::
+    https://user-images.githubusercontent.com/31883718/69626334-b6df5200-1048-11ea-9171-495845c5bc7a.png
        :width: 600px
 
 
@@ -150,7 +151,7 @@ def score_robustness(
     V = adata[subset].layers[vkey]
     V_subset = adata_subset.layers[vkey]
 
-    score = np.nan * (subset == False)
+    score = np.nan * (subset is False)
     score[subset] = prod_sum(V, V_subset, axis=1) / (
         l2_norm(V, axis=1) * l2_norm(V_subset, axis=1)
     )

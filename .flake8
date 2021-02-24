@@ -1,0 +1,11 @@
+[flake8]
+max-line-length = 88
+filename = *.py
+exclude =
+    .git,
+    __pycache__,
+    docs/*
+# F403: unable to detect undefined names
+# F405: undefined, or defined from star imports
+# W503: Linebreak before binary operator
+ignore = F403, F405, W503
