@@ -912,13 +912,11 @@ def rgb_custom_colormap(colors=None, alpha=None, N=256):
     n = int(N / ints)
 
     for j in range(ints):
-        for i in range(3):
-            start = n * j
-            finish = n * (j + 1)
-            vals[start:finish, i] = np.linspace(c[j][i], c[j + 1][i], n)
         start = n * j
-        finish = n * (j + 1)
-        vals[start:finish, -1] = np.linspace(alpha[j], alpha[j + 1], n)
+        end = n * (j + 1)
+        for i in range(3):
+            vals[start:end, i] = np.linspace(c[j][i], c[j + 1][i], n)
+        vals[start:end, -1] = np.linspace(alpha[j], alpha[j + 1], n)
     return ListedColormap(vals)
 
 
@@ -1482,13 +1480,13 @@ def hist(
             lnspc = np.linspace(xmin, xmax, len(bins))
 
             if "(" in pdf_name:  # used passed parameters
-                start = pd.rfind("(")
-                args, pdf_name = eval(pd[start:]), pd[: pdf_name.rfind("(")]
+                start = pdf_name.rfind("(")
+                args, pdf_name = eval(pd[start:]), pdf_name[: pdf_name.rfind("(")]
             else:  # fit parameters
-                args = eval(f"stats.{pd}.fit(x_vals)")
-            pd_vals = eval(f"stats.{pd}.pdf(lnspc, *args)")
-            logg.info("Fitting", pd, np.round(args, 4), ".")
-            fit = ax.plot(lnspc, pd_vals, label=pd, color=colors[i])
+                args = eval(f"stats.{pdf_name}.fit(x_vals)")
+            pd_vals = eval(f"stats.{pdf_name}.pdf(lnspc, *args)")
+            logg.info("Fitting", pdf_name, np.round(args, 4), ".")
+            fit = ax.plot(lnspc, pd_vals, label=pdf_name, color=colors[i])
             fits.extend(fit)
         ax.legend(handles=fits, labels=pdf, fontsize=legend_fontsize)
 
