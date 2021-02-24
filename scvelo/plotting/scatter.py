@@ -11,48 +11,7 @@ from anndata import AnnData
 from scvelo import settings
 import scvelo.logging as logg
 from scvelo.preprocessing.neighbors import get_connectivities
-from .utils import (
-    default_basis,
-    default_color,
-    default_color_map,
-    default_legend_loc,
-    default_size,
-    default_xkey,
-    default_ykey,
-    get_ax,
-    get_components,
-    get_figure_params,
-    get_kwargs,
-    get_obs_vector,
-    gets_vals_from_color_gradients,
-    get_value_counts,
-    groups_to_bool,
-    interpret_colorkey,
-    is_categorical,
-    is_int,
-    is_list,
-    is_list_of_int,
-    is_list_of_list,
-    is_list_of_str,
-    make_dense,
-    plot_density,
-    plot_linfit,
-    plot_outline,
-    plot_polyfit,
-    plot_rug,
-    plot_velocity_fits,
-    rgb_custom_colormap,
-    savefig_or_show,
-    set_colorbar,
-    set_colors_for_categorical_obs,
-    set_label,
-    set_legend,
-    set_title,
-    to_list,
-    to_val,
-    to_valid_bases_list,
-    update_axes,
-)
+from .utils import *
 
 
 @doc_params(scatter=doc_scatter)
