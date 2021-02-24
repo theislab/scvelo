@@ -55,8 +55,8 @@ def set_row_csr(csr, rows, value=0):
     """Set all nonzero elements to the given value. Useful to set to 0 mostly."""
     for row in rows:
         start = csr.indptr[row]
-        finish = csr.indptr[row + 1]
-        csr.data[start:finish] = value
+        end = csr.indptr[row + 1]
+        csr.data[start:end] = value
     if value == 0:
         csr.eliminate_zeros()
 
