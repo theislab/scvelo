@@ -142,11 +142,9 @@ def mRNA(tau, u0, s0, alpha, beta, gamma):
         stacklevel=2,
     )
 
-    expu, exps = exp(-beta * tau), exp(-gamma * tau)
-    expus = (alpha - u0 * beta) * invert(gamma - beta) * (exps - expu)
-    u = u0 * expu + alpha / beta * (1 - expu)
-    s = s0 * exps + alpha / gamma * (1 - exps) + expus
-    return u, s
+    return SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
+        tau, stacked=False
+    )
 
 
 def adjust_increments(tau, tau_=None):
@@ -299,28 +297,12 @@ def compute_divergence(
 
     # adjust increments of tau, tau_ to avoid meaningless jumps
     if constraint_time_increments:
-        state = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(tau)
-        if state.shape[0] == 1:
-            ut = state[0, 0]
-            st = state[1, 1]
-        elif tau.ndim == 1:
-            ut = state[:, 0]
-            st = state[:, 1]
-        elif tau.ndim == 2:
-            ut = state[:, :, 0]
-            st = state[:, :, 1]
-        state_ = SplicingDynamics(
+        ut, st = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
+            tau, stacked=False
+        )
+        ut_, st_ = SplicingDynamics(
             alpha=0, beta=beta, gamma=gamma, initial_state=initial_state_
-        ).get_solution(tau_)
-        if state_.shape[0] == 1:
-            ut_ = state_[0, 0]
-            st_ = state_[1, 1]
-        elif tau.ndim == 1:
-            ut_ = state_[:, 0]
-            st_ = state_[:, 1]
-        elif tau.ndim == 2:
-            ut_ = state_[:, :, 0]
-            st_ = state_[:, :, 1]
+        ).get_solution(tau_, stacked=False)
 
         distu, distu_ = (u - ut) / std_u, (u - ut_) / std_u
         dists, dists_ = (s - st) / std_s, (s - st_) / std_s
@@ -344,29 +326,12 @@ def compute_divergence(
             tau_[off] = adjust_increments(tau_[off])
 
     # compute induction/repression state distances
-    state = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(tau)
-    if state.shape[0] == 1:
-        ut = state[0, 0]
-        st = state[1, 1]
-    elif tau.ndim == 1:
-        ut = state[:, 0]
-        st = state[:, 1]
-    elif tau.ndim == 2:
-        ut = state[:, :, 0]
-        st = state[:, :, 1]
-
-    state_ = SplicingDynamics(
+    ut, st = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
+        tau, stacked=False
+    )
+    ut_, st_ = SplicingDynamics(
         alpha=0, beta=beta, gamma=gamma, initial_state=initial_state_
-    ).get_solution(tau_)
-    if state_.shape[0] == 1:
-        ut_ = state_[0, 0]
-        st_ = state_[1, 1]
-    elif tau_.ndim == 1:
-        ut_ = state_[:, 0]
-        st_ = state_[:, 1]
-    elif tau.ndim == 2:
-        ut_ = state_[:, :, 0]
-        st_ = state_[:, :, 1]
+    ).get_solution(tau_, stacked=False)
 
     if ut.ndim > 1 and ut.shape[1] == 1:
         ut = np.ravel(ut)
@@ -619,18 +584,9 @@ def compute_divergence(
             o = (res < 2) * (t < t_)
             o_ = (res < 2) * (t >= t_)
             tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
-            state = SplicingDynamics(
+            ut, st = SplicingDynamics(
                 alpha=alpha, beta=beta, gamma=gamma, initial_state=[u0, s0]
-            ).get_solution(tau)
-            if state.shape[0] == 1:
-                ut = state[0, 0]
-                st = state[1, 1]
-            elif tau.ndim == 1:
-                ut = state[:, 0]
-                st = state[:, 1]
-            elif tau.ndim == 2:
-                ut = state[:, :, 0]
-                st = state[:, :, 1]
+            ).get_solution(tau, stacked=False)
             ut_, st_ = ut, st
 
         ut = ut * o + ut_ * o_
@@ -666,18 +622,9 @@ def compute_divergence(
             o = (res < 2) * (t < t_)
             o_ = (res < 2) * (t >= t_)
             tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
-            state = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
-                tau
+            ut, st = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
+                tau, stacked=False
             )
-            if state.shape[0] == 1:
-                ut = state[0, 0]
-                st = state[1, 1]
-            elif tau.ndim == 1:
-                ut = state[:, 0]
-                st = state[:, 1]
-            elif tau.ndim == 2:
-                ut = state[:, :, 0]
-                st = state[:, :, 1]
             ut_, st_ = ut, st
 
         alpha = alpha * o
@@ -743,11 +690,9 @@ def curve_dists(
     num=None,
 ):
     if u0_ is None or s0_ is None:
-        initial_state_ = SplicingDynamics(
-            alpha=alpha, beta=beta, gamma=gamma
-        ).get_solution(t_)
-        u0_ = initial_state_[0, 0]
-        s0_ = initial_state_[0, 1]
+        u0_, s0_ = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
+            t_, stacked=False
+        )
 
     x_obs = np.vstack([u, s]).T
     std_x = np.vstack([std_u / scaling, std_s]).T
@@ -761,7 +706,7 @@ def curve_dists(
         tpoints
     )
     curve_t_ = SplicingDynamics(
-        alpha=0, beta=beta, gamma=gamma, initial_state=initial_state_
+        alpha=0, beta=beta, gamma=gamma, initial_state=[u0_, s0_]
     ).get_solution(tpoints_)
 
     # match each curve point to nearest observation
@@ -1099,15 +1044,9 @@ class BaseDynamics:
         )
 
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
-        state = SplicingDynamics(
+        ut, st = SplicingDynamics(
             alpha=alpha, beta=beta, gamma=gamma, initial_state=[u0, s0]
-        ).get_solution(tau)
-        if state.shape[0] == 1:
-            ut = state[0, 0]
-            st = state[1, 1]
-        else:
-            ut = state[:, 0]
-            st = state[:, 1]
+        ).get_solution(tau, stacked=False)
 
         udiff = np.array(ut - u) / self.std_u * scaling
         sdiff = np.array(st - s) / self.std_s
