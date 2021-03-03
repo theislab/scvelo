@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 from numpy import ndarray
@@ -60,14 +60,17 @@ class SplicingDynamics(DynamicsBase):
             self.s0 = val[:, 1]
         self._initial_state = val
 
-    def get_solution(self, t: ndarray, with_keys: bool = False) -> Union[Dict, ndarray]:
+    def get_solution(
+        self, t: ndarray, stacked: bool = True, with_keys: bool = False
+    ) -> Union[Dict, ndarray]:
         """Calculate solution of dynamics.
 
         Arguments
         ---------
         t:
             Time steps at which to evaluate solution.
-
+        stacked:
+            Whether to stack states or return them individually. Defaults to `True`.
         with_keys:
             Whether to return solution labelled by variables in form of a dictionary.
             Defaults to `False`.
@@ -92,6 +95,8 @@ class SplicingDynamics(DynamicsBase):
 
         if with_keys:
             return {"u": unspliced, "s": spliced}
+        elif not stacked:
+            return unspliced, spliced
         else:
             if isinstance(t, np.ndarray) and t.ndim == 2:
                 return np.stack([unspliced, spliced], axis=2)
@@ -99,18 +104,33 @@ class SplicingDynamics(DynamicsBase):
                 return np.column_stack([unspliced, spliced])
 
     # TODO: Handle cases `beta = 0`, `gamma = 0`
-    def get_steady_states(self) -> ndarray:
+    def get_steady_states(
+        self, stacked: bool = True, with_keys: bool = False
+    ) -> Union[Dict[str, ndarray], Tuple[ndarray], ndarray]:
         """Return steady state of system.
 
         Arguments
         ---------
+        stacked:
+            Whether to stack states or return them individually. Defaults to `True`.
+        with_keys:
+            Whether to return solution labelled by variables in form of a dictionary.
+            Defaults to `False`.
 
         Returns
         -------
-        ndarray:
+        Union[Dict[str, ndarray], Tuple[ndarray], ndarray]
             Steady state of system.
 
         """
 
         if (self.beta > 0) and (self.gamma > 0):
-            return np.array([self.alpha / self.beta, self.alpha / self.gamma])
+            unspliced = self.alpha / self.beta
+            spliced = self.alpha / self.gamma
+
+        if with_keys:
+            return {"u": unspliced, "s": spliced}
+        elif not stacked:
+            return unspliced, spliced
+        else:
+            return np.array([unspliced, spliced])
