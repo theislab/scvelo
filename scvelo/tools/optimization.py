@@ -22,6 +22,14 @@ def get_weight(x, y=None, perc=95):
 
 def leastsq_NxN(x, y, fit_offset=False, perc=None, constraint_positive_offset=True):
     """Solves least squares X*b=Y for b."""
+
+    warnings.warn(
+        "`leastsq_NxN` is deprecated since scVelo v0.2.4 and will be removed in a "
+        "future version. Please use `LinearRegression` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if perc is not None:
         if not fit_offset and isinstance(perc, (list, tuple)):
             perc = perc[1]
