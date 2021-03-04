@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import warnings
 
-from scvelo.core import sum
+from scvelo.core import prod_sum, sum
 
 warnings.simplefilter("ignore")
 
@@ -59,18 +59,30 @@ def sum_var(A):
 
 def prod_sum_obs(A, B):
     """dot product and sum over axis 0 (obs) equivalent to np.sum(A * B, 0)"""
-    if issparse(A):
-        return A.multiply(B).sum(0).A1
-    else:
-        return np.einsum("ij, ij -> j", A, B) if A.ndim > 1 else (A * B).sum()
+
+    warnings.warn(
+        "`prod_sum_obs` is deprecated since scVelo v0.2.4 and will be removed in a "
+        "future version. Please use `prod_sum(A, B, axis=0)` from `scvelo/core/` "
+        "instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return prod_sum(A, B, axis=0)
 
 
 def prod_sum_var(A, B):
     """dot product and sum over axis 1 (var) equivalent to np.sum(A * B, 1)"""
-    if issparse(A):
-        return A.multiply(B).sum(1).A1
-    else:
-        return np.einsum("ij, ij -> i", A, B) if A.ndim > 1 else (A * B).sum()
+
+    warnings.warn(
+        "`prod_sum_var` is deprecated since scVelo v0.2.4 and will be removed in a "
+        "future version. Please use `prod_sum(A, B, axis=1)` from `scvelo/core/` "
+        "instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return prod_sum(A, B, axis=1)
 
 
 def norm(A):
@@ -93,9 +105,9 @@ def vector_norm(x):
 def R_squared(residual, total):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        r2 = np.ones(residual.shape[1]) - prod_sum_obs(
-            residual, residual
-        ) / prod_sum_obs(total, total)
+        r2 = np.ones(residual.shape[1]) - prod_sum(
+            residual, residual, axis=0
+        ) / prod_sum(total, total, axis=0)
     r2[np.isnan(r2)] = 0
     return r2
 
