@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import warnings
 
+from scvelo.core import sum
+
 warnings.simplefilter("ignore")
 
 
@@ -31,18 +33,28 @@ def make_dense(X):
 
 def sum_obs(A):
     """summation over axis 0 (obs) equivalent to np.sum(A, 0)"""
-    if issparse(A):
-        return A.sum(0).A1
-    else:
-        return np.einsum("ij -> j", A) if A.ndim > 1 else np.sum(A)
+
+    warnings.warn(
+        "`sum_obs` is deprecated since scVelo v0.2.4 and will be removed in a future "
+        "version. Please use `sum(A, axis=0)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return sum(A, axis=0)
 
 
 def sum_var(A):
     """summation over axis 1 (var) equivalent to np.sum(A, 1)"""
-    if issparse(A):
-        return A.sum(1).A1
-    else:
-        return np.sum(A, axis=1) if A.ndim > 1 else np.sum(A)
+
+    warnings.warn(
+        "`sum_var` is deprecated since scVelo v0.2.4 and will be removed in a future "
+        "version. Please use `sum(A, axis=1)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return sum(A, axis=1)
 
 
 def prod_sum_obs(A, B):
@@ -124,7 +136,7 @@ def get_indices(dist, n_neighbors=None, mode_neighbors="distances"):
     D = dist.copy()
     D.data += 1e-6
 
-    n_counts = sum_var(D > 0)
+    n_counts = sum(D > 0, axis=1)
     n_neighbors = (
         n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
     )

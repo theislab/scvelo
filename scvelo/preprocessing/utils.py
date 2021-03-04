@@ -6,20 +6,33 @@ from anndata import AnnData
 import warnings
 
 from .. import logging as logg
+from scvelo.core import sum
 
 
 def sum_obs(A):
     """summation over axis 0 (obs) equivalent to np.sum(A, 0)"""
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        return A.sum(0).A1 if issparse(A) else np.sum(A, axis=0)
+
+    warnings.warn(
+        "`sum_obs` is deprecated since scVelo v0.2.4 and will be removed in a future "
+        "version. Please use `sum(A, axis=0)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return sum(A, axis=0)
 
 
 def sum_var(A):
     """summation over axis 1 (var) equivalent to np.sum(A, 1)"""
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        return A.sum(1).A1 if issparse(A) else np.sum(A, axis=1)
+
+    warnings.warn(
+        "`sum_var` is deprecated since scVelo v0.2.4 and will be removed in a future "
+        "version. Please use `sum(A, axis=1)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return sum(A, axis=1)
 
 
 def show_proportions(adata, layers=None, use_raw=True):
@@ -37,7 +50,7 @@ def show_proportions(adata, layers=None, use_raw=True):
     if layers is None:
         layers = ["spliced", "unspliced", "ambigious"]
     layers_keys = [key for key in layers if key in adata.layers.keys()]
-    counts_layers = [sum_var(adata.layers[key]) for key in layers_keys]
+    counts_layers = [sum(adata.layers[key], axis=1) for key in layers_keys]
     if use_raw:
         size_key, obs = "initial_size_", adata.obs
         counts_layers = [
@@ -119,7 +132,7 @@ def cleanup(data, clean="layers", keep=None, copy=False):
 
 def get_size(adata, layer=None):
     X = adata.X if layer is None else adata.layers[layer]
-    return sum_var(X)
+    return sum(X, axis=1)
 
 
 def set_initial_size(adata, layers=None):
@@ -164,9 +177,9 @@ def get_initial_size(adata, layer=None, by_total_size=None):
 
 def _filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
     counts = (
-        sum_obs(X)
+        sum(X, axis=0)
         if (min_counts is not None or max_counts is not None)
-        else sum_obs(X > 0)
+        else sum(X > 0, axis=0)
     )
     lb = (
         min_counts
@@ -558,13 +571,13 @@ def csr_vcorrcoef(X, y):
 
 def counts_per_cell_quantile(X, max_proportion_per_cell=0.05, counts_per_cell=None):
     if counts_per_cell is None:
-        counts_per_cell = sum_var(X)
+        counts_per_cell = sum(X, axis=1)
     gene_subset = np.all(
         X <= counts_per_cell[:, None] * max_proportion_per_cell, axis=0
     )
     if issparse(X):
         gene_subset = gene_subset.A1
-    return sum_var(X[:, gene_subset])
+    return sum(X[:, gene_subset], axis=1)
 
 
 def not_yet_normalized(X):

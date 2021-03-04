@@ -1,8 +1,10 @@
-from .utils import sum_obs, prod_sum_obs, make_dense
+from .utils import prod_sum_obs, make_dense
 from scipy.optimize import minimize
 from scipy.sparse import csr_matrix, issparse
 import numpy as np
 import warnings
+
+from scvelo.core import sum
 
 
 def get_weight(x, y=None, perc=95):
@@ -44,9 +46,9 @@ def leastsq_NxN(x, y, fit_offset=False, perc=None, constraint_positive_offset=Tr
         xy_ = prod_sum_obs(x, y)
 
         if fit_offset:
-            n_obs = x.shape[0] if weights is None else sum_obs(weights)
-            x_ = sum_obs(x) / n_obs
-            y_ = sum_obs(y) / n_obs
+            n_obs = x.shape[0] if weights is None else sum(weights, axis=0)
+            x_ = sum(x, axis=0) / n_obs
+            y_ = sum(y, axis=0) / n_obs
             gamma = (xy_ / n_obs - x_ * y_) / (xx_ / n_obs - x_ ** 2)
             offset = y_ - gamma * x_
 
