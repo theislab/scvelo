@@ -13,6 +13,8 @@ import warnings
 import pandas as pd
 import numpy as np
 
+from scvelo.core import invert
+
 exp = np.exp
 
 
@@ -24,10 +26,15 @@ def log(x, eps=1e-6):  # to avoid invalid values for log.
 
 
 def inv(x):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        x_inv = 1 / x * (x != 0)
-    return x_inv
+
+    warnings.warn(
+        "`inv` is deprecated since scVelo v0.2.4 and will be removed in a future "
+        "version. Please use `invert(x)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return invert(x)
 
 
 def normalize(X, axis=0, min_confidence=None):
@@ -112,14 +119,14 @@ def unspliced(tau, u0, alpha, beta):
 
 
 def spliced(tau, s0, u0, alpha, beta, gamma):
-    c = (alpha - u0 * beta) * inv(gamma - beta)
+    c = (alpha - u0 * beta) * invert(gamma - beta)
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
     return s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
 
 
 def mRNA(tau, u0, s0, alpha, beta, gamma):
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
-    expus = (alpha - u0 * beta) * inv(gamma - beta) * (exps - expu)
+    expus = (alpha - u0 * beta) * invert(gamma - beta) * (exps - expu)
     u = u0 * expu + alpha / beta * (1 - expu)
     s = s0 * exps + alpha / gamma * (1 - exps) + expus
     return u, s
@@ -166,7 +173,7 @@ def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
     any_invus = np.any(inv_us) and s is not None
 
     if any_invus:  # tau_inv(u, s)
-        beta_ = beta * inv(gamma - beta)
+        beta_ = beta * invert(gamma - beta)
         xinf = alpha / gamma - beta_ * (alpha / beta)
         tau = -1 / gamma * log((s - beta_ * u - xinf) / (s0 - beta_ * u0 - xinf))
 
