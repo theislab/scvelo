@@ -1,8 +1,12 @@
-from ..tools.velocity_embedding import velocity_embedding
+import numpy as np
+
+import matplotlib.pyplot as pl
+from matplotlib import rcParams
+
 from ..tools.utils import groups_to_bool
-from .velocity_embedding_grid import compute_velocity_on_grid
+from ..tools.velocity_embedding import velocity_embedding
+from .docs import doc_params, doc_scatter
 from .scatter import scatter
-from .docs import doc_scatter, doc_params
 from .utils import (
     default_basis,
     default_color,
@@ -15,10 +19,7 @@ from .utils import (
     savefig_or_show,
     velocity_embedding_changed,
 )
-
-from matplotlib import rcParams
-import matplotlib.pyplot as pl
-import numpy as np
+from .velocity_embedding_grid import compute_velocity_on_grid
 
 
 @doc_params(scatter=doc_scatter)

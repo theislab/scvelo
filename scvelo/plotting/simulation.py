@@ -1,11 +1,11 @@
-from ..tools.dynamical_model_utils import unspliced, vectorize, tau_inv, get_vars
-from .utils import make_dense
-
 import numpy as np
+
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 
 from scvelo.core import SplicingDynamics
+from ..tools.dynamical_model_utils import get_vars, tau_inv, unspliced, vectorize
+from .utils import make_dense
 
 
 def get_dynamics(adata, key="fit", extrapolate=False, sorted=False, t=None):

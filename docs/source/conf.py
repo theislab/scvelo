@@ -1,21 +1,22 @@
-import sys
-import os
 import inspect
 import logging
-from pathlib import Path, PurePosixPath
+import os
+import sys
 from datetime import datetime
-from typing import Optional, Union, Mapping
+from pathlib import Path, PurePosixPath
+from typing import Dict, List, Mapping, Optional, Tuple, Union
 from urllib.request import urlretrieve
-from typing import Dict, List, Tuple
-from docutils import nodes
 
-from jinja2.defaults import DEFAULT_FILTERS
 import sphinx_autodoc_typehints
+from docutils import nodes
+from jinja2.defaults import DEFAULT_FILTERS
 from sphinx import addnodes
 from sphinx.application import Sphinx
-from sphinx.domains.python import PyTypedField, PyObject
+from sphinx.domains.python import PyObject, PyTypedField
 from sphinx.environment import BuildEnvironment
 from sphinx.ext import autosummary
+
+import matplotlib  # noqa
 
 import scvelo
 
@@ -27,7 +28,6 @@ if "six" in sys.modules:
             sys.path.remove(pypath)
     del sys.modules["six"]
 
-import matplotlib  # noqa
 
 matplotlib.use("agg")
 

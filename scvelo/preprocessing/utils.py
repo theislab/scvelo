@@ -1,12 +1,14 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 from scipy.sparse import issparse
 from sklearn.utils import sparsefuncs
-from anndata import AnnData
-import warnings
 
-from .. import logging as logg
+from anndata import AnnData
+
 from scvelo.core import sum
+from .. import logging as logg
 
 
 def sum_obs(A):

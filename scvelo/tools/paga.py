@@ -1,14 +1,16 @@
-# This is adapted from https://github.com/theislab/paga
-from .. import settings
-from .. import logging as logg
-from .utils import strings_to_categoricals
-from .velocity_graph import vals_to_csr
-from .velocity_pseudotime import velocity_pseudotime
-from .rank_velocity_genes import velocity_clusters
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
+
 from scanpy.tools._paga import PAGA
+
+# This is adapted from https://github.com/theislab/paga
+from .. import logging as logg
+from .. import settings
+from .rank_velocity_genes import velocity_clusters
+from .utils import strings_to_categoricals
+from .velocity_graph import vals_to_csr
+from .velocity_pseudotime import velocity_pseudotime
 
 
 def get_igraph_from_adjacency(adjacency, directed=None):

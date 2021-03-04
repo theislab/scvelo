@@ -1,9 +1,10 @@
-import scvelo as scv
 import numpy as np
+
+import scvelo as scv
 
 
 def test_einsum():
-    from scvelo.tools.utils import prod_sum_obs, prod_sum_var, norm
+    from scvelo.tools.utils import norm, prod_sum_obs, prod_sum_var
 
     Ms, Mu = np.random.rand(5, 4), np.random.rand(5, 4)
     assert np.allclose(prod_sum_obs(Ms, Mu), np.sum(Ms * Mu, 0))

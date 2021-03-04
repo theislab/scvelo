@@ -1,13 +1,12 @@
+import numpy as np
+import pandas as pd
+
 from ..tools.dynamical_model import latent_time
-from ..tools.velocity_pseudotime import velocity_pseudotime
 from ..tools.rank_velocity_genes import rank_velocity_genes
 from ..tools.score_genes_cell_cycle import score_genes_cell_cycle
-
-from .utils import make_unique_list
+from ..tools.velocity_pseudotime import velocity_pseudotime
 from .gridspec import GridSpec
-
-import pandas as pd
-import numpy as np
+from .utils import make_unique_list
 
 
 def summary(adata, basis="umap", color="clusters", n_top_genes=12, var_names=None):

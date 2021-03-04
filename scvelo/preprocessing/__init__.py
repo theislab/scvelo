@@ -1,8 +1,15 @@
-from .utils import show_proportions, cleanup, filter_genes, filter_genes_dispersion
-from .utils import normalize_per_cell, filter_and_normalize, log1p, recipe_velocity
-from .neighbors import pca, neighbors, remove_duplicate_cells
 from .moments import moments
-
+from .neighbors import neighbors, pca, remove_duplicate_cells
+from .utils import (
+    cleanup,
+    filter_and_normalize,
+    filter_genes,
+    filter_genes_dispersion,
+    log1p,
+    normalize_per_cell,
+    recipe_velocity,
+    show_proportions,
+)
 
 __all__ = [
     "cleanup",

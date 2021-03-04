@@ -1,11 +1,11 @@
 from typing import List, Optional, Union
 
 from numpy import ndarray
+from pandas import DataFrame
 from scipy.sparse import csr_matrix, issparse, spmatrix
 
-from pandas import DataFrame
-
 from anndata import AnnData
+
 import scvelo.logging as logg
 
 

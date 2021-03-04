@@ -1,13 +1,14 @@
+from functools import partial
+
+import matplotlib.pyplot as pl
+
 # todo: auto-complete and docs wrapper
 from .scatter import scatter
+from .utils import get_figure_params, hist
 from .velocity_embedding import velocity_embedding
 from .velocity_embedding_grid import velocity_embedding_grid
 from .velocity_embedding_stream import velocity_embedding_stream
 from .velocity_graph import velocity_graph
-from .utils import hist, get_figure_params
-
-import matplotlib.pyplot as pl
-from functools import partial
 
 
 def _wraps_plot(wrapper, func):

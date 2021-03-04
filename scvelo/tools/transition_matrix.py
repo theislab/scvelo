@@ -1,12 +1,12 @@
-from ..preprocessing.neighbors import get_connectivities, get_neighs
-from .utils import normalize
+import warnings
 
 import numpy as np
 import pandas as pd
-from scipy.spatial.distance import pdist, squareform
 from scipy.sparse import csr_matrix, SparseEfficiencyWarning
+from scipy.spatial.distance import pdist, squareform
 
-import warnings
+from ..preprocessing.neighbors import get_connectivities, get_neighs
+from .utils import normalize
 
 warnings.simplefilter("ignore", SparseEfficiencyWarning)
 

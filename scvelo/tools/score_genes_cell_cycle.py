@@ -1,8 +1,7 @@
-from .. import logging as logg
-
-import pandas as pd
 import numpy as np
+import pandas as pd
 
+from .. import logging as logg
 
 # fmt: off
 s_genes_list = \

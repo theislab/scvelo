@@ -1,15 +1,17 @@
-from . import logging as logg
-from .preprocessing.utils import set_initial_size
-
 import os
 import re
+from pathlib import Path
+from urllib.request import urlretrieve
+
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_categorical_dtype
-from urllib.request import urlretrieve
-from pathlib import Path
 from scipy.sparse import issparse
+
 from anndata import AnnData
+
+from . import logging as logg
+from .preprocessing.utils import set_initial_size
 
 
 def load(filename, backup_url=None, header="infer", index_col="infer", **kwargs):

@@ -1,26 +1,27 @@
-from .. import settings
-from .. import logging as logg
-from ..tools.utils import strings_to_categoricals
-from . import palettes
-
 import os
+from collections import abc
+
+from cycler import Cycler, cycler
+
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as pl
-from matplotlib.ticker import MaxNLocator
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from matplotlib.colors import is_color_like, ListedColormap, to_rgb, cnames
-from matplotlib.collections import LineCollection
-from matplotlib.gridspec import SubplotSpec
-from matplotlib import patheffects
-import matplotlib.transforms as tx
-from matplotlib import rcParams
 from pandas import Index
 from scipy.sparse import issparse
 from scipy.stats import pearsonr
-from cycler import Cycler, cycler
-from collections import abc
 
+import matplotlib.pyplot as pl
+import matplotlib.transforms as tx
+from matplotlib import patheffects, rcParams
+from matplotlib.collections import LineCollection
+from matplotlib.colors import cnames, is_color_like, ListedColormap, to_rgb
+from matplotlib.gridspec import SubplotSpec
+from matplotlib.ticker import MaxNLocator
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+from .. import logging as logg
+from .. import settings
+from ..tools.utils import strings_to_categoricals
+from . import palettes
 
 """helper functions"""
 
@@ -719,8 +720,9 @@ def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
         a sequence of colors (in a format that can be understood by matplotlib,
         eg. RGB, RGBS, hex, or a cycler object with key='color'
     """
-    from .palettes import additional_colors
     from matplotlib.colors import to_hex
+
+    from .palettes import additional_colors
 
     color_key = f"{value_to_plot}_colors"
     valid = True
@@ -1635,8 +1637,8 @@ def make_unique_valid_list(adata, keys):
 
 
 def get_temporal_connectivities(adata, tkey, n_convolve=30):
-    from ..tools.velocity_graph import vals_to_csr
     from ..tools.utils import normalize
+    from ..tools.velocity_graph import vals_to_csr
 
     # from ..tools.utils import get_indices
     # c_idx = get_indices(get_connectivities(adata, recurse_neighbors=True))[0]

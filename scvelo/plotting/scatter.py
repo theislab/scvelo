@@ -1,16 +1,18 @@
-from .docs import doc_scatter, doc_params
-
 from inspect import signature
-import matplotlib.pyplot as pl
-from matplotlib.colors import is_color_like
+
 import numpy as np
 import pandas as pd
 from pandas import unique
 
+import matplotlib.pyplot as pl
+from matplotlib.colors import is_color_like
+
 from anndata import AnnData
-from scvelo import settings
+
 import scvelo.logging as logg
+from scvelo import settings
 from scvelo.preprocessing.neighbors import get_connectivities
+from .docs import doc_params, doc_scatter
 from .utils import *
 
 

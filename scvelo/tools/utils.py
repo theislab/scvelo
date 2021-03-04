@@ -1,8 +1,10 @@
-from scipy.sparse import csr_matrix, issparse
-import matplotlib.pyplot as pl
-import pandas as pd
-import numpy as np
 import warnings
+
+import numpy as np
+import pandas as pd
+from scipy.sparse import csr_matrix, issparse
+
+import matplotlib.pyplot as pl
 
 from scvelo.core import l2_norm, prod_sum, sum
 
@@ -260,8 +262,8 @@ def randomized_velocity(adata, vkey="velocity", add_key="velocity_random"):
         )
     adata.layers[add_key] = V_rnd
 
-    from .velocity_graph import velocity_graph
     from .velocity_embedding import velocity_embedding
+    from .velocity_graph import velocity_graph
 
     velocity_graph(adata, vkey=add_key)
     velocity_embedding(adata, vkey=add_key, autoscale=False)
@@ -287,8 +289,8 @@ def extract_int_from_str(array):
 
 def strings_to_categoricals(adata):
     """Transform string annotations to categoricals."""
-    from pandas.api.types import is_string_dtype, is_integer_dtype, is_bool_dtype
     from pandas import Categorical
+    from pandas.api.types import is_bool_dtype, is_integer_dtype, is_string_dtype
 
     def is_valid_dtype(values):
         return (
@@ -380,15 +382,15 @@ def cutoff_small_velocities(
 
     adata.layers[key_added] = csr_matrix(W).multiply(adata.layers[vkey]).tocsr()
 
-    from .velocity_graph import velocity_graph
     from .velocity_embedding import velocity_embedding
+    from .velocity_graph import velocity_graph
 
     velocity_graph(adata, vkey=key_added, approx=True)
     velocity_embedding(adata, vkey=key_added)
 
 
 def make_unique_list(key, allow_array=False):
-    from pandas import unique, Index
+    from pandas import Index, unique
 
     if isinstance(key, Index):
         key = key.tolist()

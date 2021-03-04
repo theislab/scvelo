@@ -4,7 +4,6 @@ from ._linear_models import LinearRegression
 from ._metrics import l2_norm
 from ._models import SplicingDynamics
 
-
 __all__ = [
     "clipped_log",
     "get_modality",
