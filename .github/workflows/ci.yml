@@ -57,6 +57,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .
-          pip install pytest pytest-cov
+          pip install hypothesis pytest pytest-cov
       - name: Unit tests
         run: python -m pytest --cov=scvelo
