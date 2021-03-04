@@ -1,7 +1,7 @@
-from ..preprocessing.utils import sum_var
-
 import matplotlib.pyplot as pl
 import numpy as np
+
+from scvelo.core import sum
 
 
 def proportions(
@@ -52,7 +52,7 @@ def proportions(
     if layers is None:
         layers = ["spliced", "unspliced", "ambigious"]
     layers_keys = [key for key in layers if key in adata.layers.keys()]
-    counts_layers = [sum_var(adata.layers[key]) for key in layers_keys]
+    counts_layers = [sum(adata.layers[key], axis=1) for key in layers_keys]
 
     if use_raw:
         ikey, obs = "initial_size_", adata.obs

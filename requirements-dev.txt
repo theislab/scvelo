@@ -3,5 +3,6 @@
 -e .
 
 black==20.8b1
+hypothesis
 flake8==3.8.4
 pre-commit==2.5.1

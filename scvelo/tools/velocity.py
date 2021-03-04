@@ -1,7 +1,8 @@
 from .. import settings
 from .. import logging as logg
+from scvelo.core import LinearRegression
 from ..preprocessing.moments import moments, second_order_moments
-from .optimization import leastsq_NxN, leastsq_generalized, maximum_likelihood
+from .optimization import leastsq_generalized, maximum_likelihood
 from .utils import R_squared, groups_to_bool, make_dense, strings_to_categoricals
 
 import numpy as np
@@ -57,7 +58,11 @@ class Velocity:
         subset = self._groups_for_fit
         Ms = self._Ms if subset is None else self._Ms[subset]
         Mu = self._Mu if subset is None else self._Mu[subset]
-        self._offset, self._gamma = leastsq_NxN(Ms, Mu, fit_offset, perc)
+
+        lr = LinearRegression(fit_intercept=fit_offset, percentile=perc)
+        lr.fit(Ms, Mu)
+        self._offset = lr.intercept_
+        self._gamma = lr.coef_
 
         if self._constrain_ratio is not None:
             if np.size(self._constrain_ratio) < 2:
@@ -72,7 +77,11 @@ class Velocity:
 
         # velocity genes
         if self._r2_adjusted:
-            _offset, _gamma = leastsq_NxN(Ms, Mu, fit_offset)
+            lr = LinearRegression(fit_intercept=fit_offset)
+            lr.fit(Ms, Mu)
+            _offset = lr.intercept_
+            _gamma = lr.coef_
+
             _residual = self._Mu - _gamma * self._Ms
             if fit_offset:
                 _residual -= _offset
@@ -121,7 +130,10 @@ class Velocity:
         var_ss = 2 * _Mss - _Ms
         cov_us = 2 * _Mus + _Mu
 
-        _offset2, _gamma2 = leastsq_NxN(var_ss, cov_us, fit_offset2)
+        lr = LinearRegression(fit_intercept=fit_offset2)
+        lr.fit(var_ss, cov_us)
+        _offset2 = lr.intercept_
+        _gamma2 = lr.coef_
 
         # initialize covariance matrix
         res_std = _residual.std(0)

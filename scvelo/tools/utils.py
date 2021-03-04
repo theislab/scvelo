@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import warnings
 
+from scvelo.core import l2_norm, prod_sum, sum
+
 warnings.simplefilter("ignore")
 
 
@@ -31,72 +33,109 @@ def make_dense(X):
 
 def sum_obs(A):
     """summation over axis 0 (obs) equivalent to np.sum(A, 0)"""
-    if issparse(A):
-        return A.sum(0).A1
-    else:
-        return np.einsum("ij -> j", A) if A.ndim > 1 else np.sum(A)
+
+    warnings.warn(
+        "`sum_obs` is deprecated since scVelo v0.2.4 and will be removed in a future "
+        "version. Please use `sum(A, axis=0)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return sum(A, axis=0)
 
 
 def sum_var(A):
     """summation over axis 1 (var) equivalent to np.sum(A, 1)"""
-    if issparse(A):
-        return A.sum(1).A1
-    else:
-        return np.sum(A, axis=1) if A.ndim > 1 else np.sum(A)
+
+    warnings.warn(
+        "`sum_var` is deprecated since scVelo v0.2.4 and will be removed in a future "
+        "version. Please use `sum(A, axis=1)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return sum(A, axis=1)
 
 
 def prod_sum_obs(A, B):
     """dot product and sum over axis 0 (obs) equivalent to np.sum(A * B, 0)"""
-    if issparse(A):
-        return A.multiply(B).sum(0).A1
-    else:
-        return np.einsum("ij, ij -> j", A, B) if A.ndim > 1 else (A * B).sum()
+
+    warnings.warn(
+        "`prod_sum_obs` is deprecated since scVelo v0.2.4 and will be removed in a "
+        "future version. Please use `prod_sum(A, B, axis=0)` from `scvelo/core/` "
+        "instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return prod_sum(A, B, axis=0)
 
 
 def prod_sum_var(A, B):
     """dot product and sum over axis 1 (var) equivalent to np.sum(A * B, 1)"""
-    if issparse(A):
-        return A.multiply(B).sum(1).A1
-    else:
-        return np.einsum("ij, ij -> i", A, B) if A.ndim > 1 else (A * B).sum()
+
+    warnings.warn(
+        "`prod_sum_var` is deprecated since scVelo v0.2.4 and will be removed in a "
+        "future version. Please use `prod_sum(A, B, axis=1)` from `scvelo/core/` "
+        "instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return prod_sum(A, B, axis=1)
 
 
 def norm(A):
     """computes the L2-norm along axis 1
     (e.g. genes or embedding dimensions) equivalent to np.linalg.norm(A, axis=1)
     """
-    if issparse(A):
-        return np.sqrt(A.multiply(A).sum(1).A1)
-    else:
-        return np.sqrt(np.einsum("ij, ij -> i", A, A) if A.ndim > 1 else np.sum(A * A))
+
+    warnings.warn(
+        "`norm` is deprecated since scVelo v0.2.4 and will be removed in a future "
+        "version. Please use `l2_norm(A, axis=1)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return l2_norm(A, axis=1)
 
 
 def vector_norm(x):
     """computes the L2-norm along axis 1
     (e.g. genes or embedding dimensions) equivalent to np.linalg.norm(A, axis=1)
     """
-    return np.sqrt(np.einsum("i, i -> ", x, x))
+
+    warnings.warn(
+        "`vector_norm` is deprecated since scVelo v0.2.4 and will be removed in a "
+        "future version. Please use `l2_norm(x)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return l2_norm(x)
 
 
 def R_squared(residual, total):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        r2 = np.ones(residual.shape[1]) - prod_sum_obs(
-            residual, residual
-        ) / prod_sum_obs(total, total)
+        r2 = np.ones(residual.shape[1]) - prod_sum(
+            residual, residual, axis=0
+        ) / prod_sum(total, total, axis=0)
     r2[np.isnan(r2)] = 0
     return r2
 
 
 def cosine_correlation(dX, Vi):
     dx = dX - dX.mean(-1)[:, None]
-    Vi_norm = vector_norm(Vi)
+    Vi_norm = l2_norm(Vi, axis=0)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if Vi_norm == 0:
             result = np.zeros(dx.shape[0])
         else:
-            result = np.einsum("ij, j", dx, Vi) / (norm(dx) * Vi_norm)[None, :]
+            result = (
+                np.einsum("ij, j", dx, Vi) / (l2_norm(dx, axis=1) * Vi_norm)[None, :]
+            )
     return result
 
 
@@ -124,7 +163,7 @@ def get_indices(dist, n_neighbors=None, mode_neighbors="distances"):
     D = dist.copy()
     D.data += 1e-6
 
-    n_counts = sum_var(D > 0)
+    n_counts = sum(D > 0, axis=1)
     n_neighbors = (
         n_counts.min() if n_neighbors is None else min(n_counts.min(), n_neighbors)
     )
