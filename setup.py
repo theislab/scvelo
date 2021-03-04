@@ -14,7 +14,7 @@ setup(
     extras_require=dict(
         louvain=["python-igraph", "louvain"],
         hnswlib=["pybind11", "hnswlib"],
-        dev=["black==20.8b1", "flake8==3.8.4", "hypothesis", "pre-commit==2.5.1"],
+        dev=["black==20.8b1", "flake8==3.8.4", "hypothesis", "pre-commit>=2.9.0"],
         docs=[r for r in Path("docs/requirements.txt").read_text("utf-8").splitlines()],
     ),
     packages=find_packages(),
