@@ -8,6 +8,8 @@ from anndata import AnnData
 import numpy as np
 import pandas as pd
 
+from scvelo.core import SplicingDynamics
+
 
 url_datadir = "https://github.com/theislab/scvelo_notebooks/raw/master/"
 
@@ -165,7 +167,7 @@ def simulation(
     -------
     Returns `adata` object
     """
-    from .tools.dynamical_model_utils import vectorize, mRNA
+    from .tools.dynamical_model_utils import vectorize
 
     np.random.seed(random_seed)
 
@@ -177,7 +179,9 @@ def simulation(
         return np.insert(t, 0, 0)  # prepend t0=0
 
     def simulate_dynamics(tau, alpha, beta, gamma, u0, s0, noise_model, noise_level):
-        ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
+        ut, st = SplicingDynamics(
+            alpha=alpha, beta=beta, gamma=gamma, initial_state=[u0, s0]
+        ).get_solution(tau, stacked=False)
         if noise_model == "normal":  # add noise
             ut += np.random.normal(
                 scale=noise_level * np.percentile(ut, 99) / 10, size=len(ut)
