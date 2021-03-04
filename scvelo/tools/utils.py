@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import warnings
 
-from scvelo.core import prod_sum, sum
+from scvelo.core import l2_norm, prod_sum, sum
 
 warnings.simplefilter("ignore")
 
@@ -89,17 +89,30 @@ def norm(A):
     """computes the L2-norm along axis 1
     (e.g. genes or embedding dimensions) equivalent to np.linalg.norm(A, axis=1)
     """
-    if issparse(A):
-        return np.sqrt(A.multiply(A).sum(1).A1)
-    else:
-        return np.sqrt(np.einsum("ij, ij -> i", A, A) if A.ndim > 1 else np.sum(A * A))
+
+    warnings.warn(
+        "`norm` is deprecated since scVelo v0.2.4 and will be removed in a future "
+        "version. Please use `l2_norm(A, axis=1)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return l2_norm(A, axis=1)
 
 
 def vector_norm(x):
     """computes the L2-norm along axis 1
     (e.g. genes or embedding dimensions) equivalent to np.linalg.norm(A, axis=1)
     """
-    return np.sqrt(np.einsum("i, i -> ", x, x))
+
+    warnings.warn(
+        "`vector_norm` is deprecated since scVelo v0.2.4 and will be removed in a "
+        "future version. Please use `l2_norm(x)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return l2_norm(x)
 
 
 def R_squared(residual, total):
@@ -114,13 +127,15 @@ def R_squared(residual, total):
 
 def cosine_correlation(dX, Vi):
     dx = dX - dX.mean(-1)[:, None]
-    Vi_norm = vector_norm(Vi)
+    Vi_norm = l2_norm(Vi, axis=0)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if Vi_norm == 0:
             result = np.zeros(dx.shape[0])
         else:
-            result = np.einsum("ij, j", dx, Vi) / (norm(dx) * Vi_norm)[None, :]
+            result = (
+                np.einsum("ij, j", dx, Vi) / (l2_norm(dx, axis=1) * Vi_norm)[None, :]
+            )
     return result
 
 
