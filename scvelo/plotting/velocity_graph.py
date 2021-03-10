@@ -1,14 +1,21 @@
+import warnings
+
+import numpy as np
+from scipy.sparse import csr_matrix, issparse
+
 from .. import settings
 from ..preprocessing.neighbors import get_neighs
 from ..tools.transition_matrix import transition_matrix
-from .utils import savefig_or_show, default_basis, get_components
-from .utils import get_basis, groups_to_bool, default_size
+from .docs import doc_params, doc_scatter
 from .scatter import scatter
-from .docs import doc_scatter, doc_params
-
-import warnings
-import numpy as np
-from scipy.sparse import issparse, csr_matrix
+from .utils import (
+    default_basis,
+    default_size,
+    get_basis,
+    get_components,
+    groups_to_bool,
+    savefig_or_show,
+)
 
 
 @doc_params(scatter=doc_scatter)
@@ -76,7 +83,7 @@ def velocity_graph(
     )
     ax = scatter(adata, layer=layer, color=color, size=size, ax=ax, zorder=0, **kwargs)
 
-    from networkx import Graph, DiGraph
+    from networkx import DiGraph, Graph
 
     if which_graph in {"neighbors", "connectivities"}:
         T = get_neighs(adata, "connectivities").copy()
@@ -165,11 +172,12 @@ def draw_networkx_edges(
 ):
     """Draw the edges of the graph G. Adjusted from networkx."""
     try:
-        import matplotlib.pyplot as plt
-        from matplotlib.colors import colorConverter, Colormap, Normalize
-        from matplotlib.collections import LineCollection
-        from matplotlib.patches import FancyArrowPatch
         from numbers import Number
+
+        import matplotlib.pyplot as plt
+        from matplotlib.collections import LineCollection
+        from matplotlib.colors import colorConverter, Colormap, Normalize
+        from matplotlib.patches import FancyArrowPatch
     except ImportError:
         raise ImportError("Matplotlib required for draw()")
     except RuntimeError:

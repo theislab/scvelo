@@ -1,14 +1,19 @@
-from .. import settings
+import numpy as np
+from scipy.sparse import coo_matrix, issparse
+
+from scvelo.core import l2_norm
 from .. import logging as logg
-from ..preprocessing.neighbors import pca, neighbors, verify_neighbors
-from ..preprocessing.neighbors import get_neighs, get_n_neighs
+from .. import settings
 from ..preprocessing.moments import get_moments
+from ..preprocessing.neighbors import (
+    get_n_neighs,
+    get_neighs,
+    neighbors,
+    pca,
+    verify_neighbors,
+)
 from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
-from scvelo.core import l2_norm
-
-from scipy.sparse import coo_matrix, issparse
-import numpy as np
 
 
 def vals_to_csr(vals, rows, cols, shape, split_negative=False):

@@ -1,5 +1,5 @@
-from hypothesis import given
 import hypothesis.strategies as st
+from hypothesis import given
 
 import numpy as np
 from numpy.testing import assert_array_equal

@@ -1,12 +1,12 @@
 import random
 from typing import List, Optional, Union
 
-import numpy as np
-from scipy.sparse import issparse, csr_matrix
-
-from hypothesis import given
 import hypothesis.strategies as st
+from hypothesis import given
 from hypothesis.extra.numpy import arrays
+
+import numpy as np
+from scipy.sparse import csr_matrix, issparse
 
 from anndata import AnnData
 

@@ -1,15 +1,15 @@
 """Builtin Datasets.
 """
 
-from scanpy import read
-from .read_load import load
-from .preprocessing.utils import cleanup
-from anndata import AnnData
 import numpy as np
 import pandas as pd
 
-from scvelo.core import SplicingDynamics
+from anndata import AnnData
+from scanpy import read
 
+from scvelo.core import SplicingDynamics
+from .preprocessing.utils import cleanup
+from .read_load import load
 
 url_datadir = "https://github.com/theislab/scvelo_notebooks/raw/master/"
 
@@ -172,7 +172,7 @@ def simulation(
     np.random.seed(random_seed)
 
     def draw_poisson(n):
-        from random import uniform, seed  # draw from poisson
+        from random import seed, uniform  # draw from poisson
 
         seed(random_seed)
         t = np.cumsum([-0.1 * np.log(uniform(0, 1)) for _ in range(n - 1)])

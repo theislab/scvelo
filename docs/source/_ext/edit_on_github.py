@@ -5,7 +5,6 @@ Loosely based on gist.github.com/MantasVaitkunas/7c16de233812adcb7028
 import os
 import warnings
 
-
 __licence__ = "BSD (3 clause)"
 
 

@@ -1,11 +1,10 @@
-from .. import logging as logg
-from ..preprocessing.neighbors import get_neighs
-from .utils import get_indices, random_subsample
-from .transition_matrix import transition_matrix
+import numpy as np
 
 from scvelo.core import l2_norm, prod_sum
-
-import numpy as np
+from .. import logging as logg
+from ..preprocessing.neighbors import get_neighs
+from .transition_matrix import transition_matrix
+from .utils import get_indices, random_subsample
 
 
 def velocity_confidence(data, vkey="velocity", copy=False):

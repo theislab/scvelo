@@ -1,4 +1,15 @@
 """scvelo - RNA velocity generalized through dynamical modeling"""
+from scanpy import read, read_loom
+
+from . import datasets, logging, pl, pp, settings, tl, utils
+from .plotting.gridspec import GridSpec
+from .preprocessing.neighbors import Neighbors
+from .read_load import AnnData, DataFrame, get_df, load, read_csv
+from .settings import set_figure_params
+from .tools.run import run_all, test
+from .tools.utils import round
+from .tools.velocity import Velocity
+from .tools.velocity_graph import VelocityGraph
 
 try:
     from setuptools_scm import get_version
@@ -12,24 +23,6 @@ except (LookupError, ImportError):
         from importlib.metadata import version  # Python = 3.8
     __version__ = version(__name__)
     del version
-
-from scanpy import read, read_loom
-from .read_load import AnnData, load, read_csv, get_df, DataFrame
-from .preprocessing.neighbors import Neighbors
-from .tools.run import run_all, test
-from .tools.utils import round
-from .tools.velocity import Velocity
-from .tools.velocity_graph import VelocityGraph
-from .plotting.gridspec import GridSpec
-from .settings import set_figure_params
-
-from . import pp
-from . import tl
-from . import pl
-from . import utils
-from . import datasets
-from . import logging
-from . import settings
 
 
 __all__ = [

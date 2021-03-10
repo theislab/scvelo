@@ -1,10 +1,10 @@
-from .. import settings
+import numpy as np
+from scipy.sparse import issparse
+
 from .. import logging as logg
+from .. import settings
 from .utils import strings_to_categoricals, vcorrcoef
 from .velocity_pseudotime import velocity_pseudotime
-
-from scipy.sparse import issparse
-import numpy as np
 
 
 def get_mean_var(X, ignore_zeros=False, perc=None):

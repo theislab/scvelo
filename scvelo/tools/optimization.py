@@ -1,10 +1,11 @@
-from .utils import make_dense
-from scipy.optimize import minimize
-from scipy.sparse import csr_matrix, issparse
-import numpy as np
 import warnings
 
+import numpy as np
+from scipy.optimize import minimize
+from scipy.sparse import csr_matrix, issparse
+
 from scvelo.core import prod_sum, sum
+from .utils import make_dense
 
 
 def get_weight(x, y=None, perc=95):

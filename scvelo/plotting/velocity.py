@@ -1,19 +1,20 @@
+import numpy as np
+import pandas as pd
+from scipy.sparse import issparse
+
+import matplotlib.pyplot as pl
+from matplotlib import rcParams
+
 from ..preprocessing.moments import second_order_moments
 from ..tools.rank_velocity_genes import rank_velocity_genes
 from .scatter import scatter
 from .utils import (
-    savefig_or_show,
     default_basis,
     default_size,
     get_basis,
     get_figure_params,
+    savefig_or_show,
 )
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as pl
-from matplotlib import rcParams
-from scipy.sparse import issparse
 
 
 def velocity(

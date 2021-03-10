@@ -1,12 +1,12 @@
-from .. import settings
-from .. import logging as logg
-from .transition_matrix import transition_matrix
+import warnings
+
+import numpy as np
+from scipy.sparse import issparse
 
 from scvelo.core import l2_norm
-
-from scipy.sparse import issparse
-import numpy as np
-import warnings
+from .. import logging as logg
+from .. import settings
+from .transition_matrix import transition_matrix
 
 
 def quiver_autoscale(X_emb, V_emb):

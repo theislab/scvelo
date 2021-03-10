@@ -1,5 +1,5 @@
 from ..preprocessing import filter_and_normalize, moments
-from . import velocity, velocity_graph, velocity_embedding
+from . import velocity, velocity_embedding, velocity_graph
 
 
 def run_all(
@@ -38,6 +38,7 @@ def run_all(
 
 def convert_to_adata(vlm, basis=None):
     from collections import OrderedDict
+
     from .. import AnnData
 
     X = (
@@ -90,9 +91,10 @@ def convert_to_adata(vlm, basis=None):
 
 
 def convert_to_loom(adata, basis=None):
-    from scipy.sparse import issparse
-    import numpy as np
     import velocyto
+
+    import numpy as np
+    from scipy.sparse import issparse
 
     class VelocytoLoom(velocyto.VelocytoLoom):
         def __init__(self, adata, basis=None):
@@ -309,8 +311,8 @@ def convert_to_loom(adata, basis=None):
 
 def test():
     from ..datasets import simulation
-    from .velocity_graph import velocity_graph
     from ..logging import print_version
+    from .velocity_graph import velocity_graph
 
     print_version()
     adata = simulation(n_obs=300, n_vars=30)

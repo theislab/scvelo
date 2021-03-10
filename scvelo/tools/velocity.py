@@ -1,12 +1,13 @@
-from .. import settings
-from .. import logging as logg
-from scvelo.core import LinearRegression
-from ..preprocessing.moments import moments, second_order_moments
-from .optimization import leastsq_generalized, maximum_likelihood
-from .utils import R_squared, groups_to_bool, make_dense, strings_to_categoricals
+import warnings
 
 import numpy as np
-import warnings
+
+from scvelo.core import LinearRegression
+from .. import logging as logg
+from .. import settings
+from ..preprocessing.moments import moments, second_order_moments
+from .optimization import leastsq_generalized, maximum_likelihood
+from .utils import groups_to_bool, make_dense, R_squared, strings_to_categoricals
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -323,7 +324,7 @@ def velocity(
         )
 
     if mode in {"dynamical", "dynamical_residuals"}:
-        from .dynamical_model_utils import get_reads, get_vars, get_divergence
+        from .dynamical_model_utils import get_divergence, get_reads, get_vars
 
         gene_subset = ~np.isnan(adata.var["fit_alpha"].values)
         vdata = adata[:, gene_subset]

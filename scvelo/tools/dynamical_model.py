@@ -1,22 +1,23 @@
-from .. import settings
-from .. import logging as logg
-from ..preprocessing.moments import get_connectivities
-from .utils import make_unique_list, test_bimodality
-from .dynamical_model_utils import BaseDynamics, linreg, convolve, tau_inv, unspliced
-
-from typing import Any, Union, Callable, Optional, Sequence
-from threading import Thread
-from multiprocessing import Manager
-
-from joblib import Parallel, delayed
-from scipy.sparse import issparse, spmatrix
-
 import os
+from multiprocessing import Manager
+from threading import Thread
+from typing import Any, Callable, Optional, Sequence, Union
+
+from joblib import delayed, Parallel
+
 import numpy as np
 import pandas as pd
+from scipy.optimize import minimize
+from scipy.sparse import issparse, spmatrix
+
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
-from scipy.optimize import minimize
+
+from .. import logging as logg
+from .. import settings
+from ..preprocessing.moments import get_connectivities
+from .dynamical_model_utils import BaseDynamics, convolve, linreg, tau_inv, unspliced
+from .utils import make_unique_list, test_bimodality
 
 
 class DynamicsRecovery(BaseDynamics):
@@ -762,9 +763,9 @@ def latent_time(
     """
     adata = data.copy() if copy else data
 
-    from .utils import vcorrcoef, scale
-    from .dynamical_model_utils import root_time, compute_shared_time
+    from .dynamical_model_utils import compute_shared_time, root_time
     from .terminal_states import terminal_states
+    from .utils import scale, vcorrcoef
     from .velocity_graph import velocity_graph
     from .velocity_pseudotime import velocity_pseudotime
 

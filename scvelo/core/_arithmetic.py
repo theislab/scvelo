@@ -1,5 +1,5 @@
-from typing import Optional, Union
 import warnings
+from typing import Optional, Union
 
 import numpy as np
 from numpy import ndarray

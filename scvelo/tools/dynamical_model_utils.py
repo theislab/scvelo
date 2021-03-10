@@ -1,19 +1,19 @@
+import warnings
+
+import numpy as np
+import pandas as pd
+from scipy.sparse import issparse
+from scipy.stats.distributions import chi2, norm
+
+import matplotlib as mpl
+import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as pl
+from matplotlib import rcParams
+
+from scvelo.core import clipped_log, invert, SplicingDynamics
 from .. import logging as logg
 from ..preprocessing.moments import get_connectivities
 from .utils import make_dense, round
-
-import matplotlib as mpl
-import matplotlib.pyplot as pl
-from matplotlib import rcParams
-import matplotlib.gridspec as gridspec
-
-from scipy.stats.distributions import chi2, norm
-from scipy.sparse import issparse
-import warnings
-import pandas as pd
-import numpy as np
-
-from scvelo.core import clipped_log, invert, SplicingDynamics
 
 exp = np.exp
 
@@ -1427,8 +1427,7 @@ class BaseDynamics:
         ax=None,
         **kwargs,
     ):
-        from ..plotting.utils import update_axes
-        from ..plotting.utils import rgb_custom_colormap
+        from ..plotting.utils import rgb_custom_colormap, update_axes
 
         if color_map is None:
             color_map = rgb_custom_colormap(

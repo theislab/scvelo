@@ -1,10 +1,10 @@
-from .. import settings
-from .. import logging as logg
-from .utils import not_yet_normalized, normalize_per_cell
-from .neighbors import neighbors, get_connectivities, get_n_neighs, verify_neighbors
-
-from scipy.sparse import csr_matrix, issparse
 import numpy as np
+from scipy.sparse import csr_matrix, issparse
+
+from .. import logging as logg
+from .. import settings
+from .neighbors import get_connectivities, get_n_neighs, neighbors, verify_neighbors
+from .utils import normalize_per_cell, not_yet_normalized
 
 
 def moments(

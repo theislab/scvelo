@@ -1,14 +1,21 @@
 import numpy as np
+import pandas as pd
+from pandas import isnull, unique
+from scipy.sparse import issparse
+
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 from matplotlib.colors import ColorConverter
-import pandas as pd
-from pandas import unique, isnull
-from scipy.sparse import issparse
 
 from .. import logging as logg
-from .utils import is_categorical, interpret_colorkey, savefig_or_show, to_list
-from .utils import set_colors_for_categorical_obs, strings_to_categoricals
+from .utils import (
+    interpret_colorkey,
+    is_categorical,
+    savefig_or_show,
+    set_colors_for_categorical_obs,
+    strings_to_categoricals,
+    to_list,
+)
 
 
 def heatmap(

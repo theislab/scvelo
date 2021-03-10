@@ -1,13 +1,14 @@
 """Logging and Profiling
 """
 
-from . import settings
-from sys import stdout
 from datetime import datetime
-from time import time as get_time
 from platform import python_version
+from sys import stdout
+from time import time as get_time
+
 from anndata.logging import get_memory_usage
 
+from . import settings
 
 _VERBOSITY_LEVELS_FROM_STRINGS = {"error": 0, "warn": 1, "info": 2, "hint": 3}
 
@@ -173,7 +174,7 @@ def timeout(func, args=(), timeout_duration=2, default=None, **kwargs):
 
 
 def get_latest_pypi_version():
-    from subprocess import check_output, CalledProcessError
+    from subprocess import CalledProcessError, check_output
 
     try:  # needs to work offline as well
         result = check_output(["pip", "search", "scvelo"])

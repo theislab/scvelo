@@ -1,7 +1,8 @@
-from matplotlib import rcParams, cm, colors, cbook
-from cycler import cycler
 import warnings
 
+from cycler import cycler
+
+from matplotlib import cbook, cm, colors, rcParams
 
 """Settings
 """

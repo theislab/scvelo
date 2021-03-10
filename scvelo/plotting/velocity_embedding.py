@@ -1,7 +1,13 @@
-from ..tools.velocity_embedding import velocity_embedding as compute_velocity_embedding
+import numpy as np
+
+import matplotlib.pyplot as pl
+from matplotlib import rcParams
+from matplotlib.colors import is_color_like
+
 from ..tools.utils import groups_to_bool
+from ..tools.velocity_embedding import velocity_embedding as compute_velocity_embedding
+from .docs import doc_params, doc_scatter
 from .scatter import scatter
-from .docs import doc_scatter, doc_params
 from .utils import (
     default_arrow,
     default_basis,
@@ -17,11 +23,6 @@ from .utils import (
     savefig_or_show,
     velocity_embedding_changed,
 )
-
-from matplotlib import rcParams
-from matplotlib.colors import is_color_like
-import matplotlib.pyplot as pl
-import numpy as np
 
 
 @doc_params(scatter=doc_scatter)
