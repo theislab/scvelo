@@ -29,5 +29,5 @@ no_lines_before = "LOCALFOLDER"
 balanced_wrapping = true
 length_sort = "0"
 indent = "    "
-float_to_top=true
+float_to_top = true
 order_by_type = false
