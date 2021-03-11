@@ -15,11 +15,9 @@ setup(
         louvain=["python-igraph", "louvain"],
         hnswlib=["pybind11", "hnswlib"],
         dev=[
-            "black==20.8b1",
-            "flake8==3.8.4",
-            "hypothesis",
-            "isort==5.7.0",
-            "pre-commit>=2.9.0",
+            library.strip()
+            for library in Path("requirements-dev.txt").read_text("utf-8").splitlines()
+            if not library.startswith("-")
         ],
         docs=[r for r in Path("docs/requirements.txt").read_text("utf-8").splitlines()],
     ),

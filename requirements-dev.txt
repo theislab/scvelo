@@ -3,7 +3,12 @@
 -e .
 
 black==20.8b1
+hnswlib
 hypothesis
 flake8==3.8.4
 isort==5.7.0
+louvain
 pre-commit>=2.9.0
+pybind11
+pytest>=6.2.2
+python-igraph
