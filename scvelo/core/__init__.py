@@ -3,15 +3,18 @@ from ._arithmetic import clipped_log, invert, prod_sum, sum
 from ._linear_models import LinearRegression
 from ._metrics import l2_norm
 from ._models import SplicingDynamics
+from ._parallelize import get_n_jobs, parallelize
 
 __all__ = [
     "clipped_log",
     "get_modality",
+    "get_n_jobs",
     "invert",
     "l2_norm",
     "LinearRegression",
     "make_dense",
     "make_sparse",
+    "parallelize",
     "prod_sum",
     "set_modality",
     "SplicingDynamics",
