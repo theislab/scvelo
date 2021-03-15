@@ -7,7 +7,7 @@ from scipy.optimize import minimize
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 
-from scvelo.core import _parallelize, get_n_jobs
+from scvelo.core import get_n_jobs, parallelize
 from .. import logging as logg
 from .. import settings
 from ..preprocessing.moments import get_connectivities
@@ -483,7 +483,7 @@ def recover_dynamics(
 
     conn = get_connectivities(adata) if fit_connected_states else None
 
-    res = _parallelize(
+    res = parallelize(
         _fit_recovery,
         var_names,
         n_jobs,

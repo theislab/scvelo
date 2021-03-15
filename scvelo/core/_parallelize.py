@@ -24,7 +24,7 @@ def get_n_jobs(n_jobs):
         return n_jobs
 
 
-def _parallelize(
+def parallelize(
     callback: Callable[[Any], Any],
     collection: Union[spmatrix, Sequence[Any]],
     n_jobs: Optional[int] = None,
