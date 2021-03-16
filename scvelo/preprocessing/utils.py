@@ -9,6 +9,7 @@ from anndata import AnnData
 
 from scvelo.core import get_initial_size as _get_initial_size
 from scvelo.core import get_size as _get_size
+from scvelo.core import set_initial_size as _set_initial_size
 from scvelo.core import sum
 from scvelo.core._anndata import verify_dtypes as _verify_dtypes
 from .. import logging as logg
@@ -140,19 +141,15 @@ def get_size(adata, layer=None):
 
 
 def set_initial_size(adata, layers=None):
-    if layers is None:
-        layers = ["spliced", "unspliced"]
-    _verify_dtypes(adata)
-    layers = [
-        layer
-        for layer in layers
-        if layer in adata.layers.keys()
-        and f"initial_size_{layer}" not in adata.obs.keys()
-    ]
-    for layer in layers:
-        adata.obs[f"initial_size_{layer}"] = _get_size(adata, layer)
-    if "initial_size" not in adata.obs.keys():
-        adata.obs["initial_size"] = _get_size(adata)
+    warnings.warn(
+        "`scvelo.preprocessing.utils.set_initial_size` is deprecated since scVelo "
+        "v0.2.4 and will be removed in a future version. Please use "
+        "`scvelo.core.set_initial_size` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return _set_initial_size(adata=adata, layers=layers)
 
 
 def get_initial_size(adata, layer=None, by_total_size=None):
@@ -249,7 +246,7 @@ def filter_genes(
     adata = data.copy() if copy else data
 
     # set initial cell sizes before filtering
-    set_initial_size(adata)
+    _set_initial_size(adata)
 
     layers = [
         layer for layer in ["spliced", "unspliced"] if layer in adata.layers.keys()
@@ -435,7 +432,7 @@ def filter_genes_dispersion(
     `copy`. It filters the `adata` and adds the annotations
     """
     adata = data.copy() if copy else data
-    set_initial_size(adata)
+    _set_initial_size(adata)
 
     mean, var = materialize_as_ndarray(get_mean_var(adata.X))
 
@@ -638,7 +635,7 @@ def normalize_per_cell(
 
     if isinstance(counts_per_cell, str):
         if counts_per_cell not in adata.obs.keys():
-            set_initial_size(adata, layers)
+            _set_initial_size(adata, layers)
         counts_per_cell = (
             adata.obs[counts_per_cell].values
             if counts_per_cell in adata.obs.keys()

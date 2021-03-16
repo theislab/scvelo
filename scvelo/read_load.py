@@ -10,8 +10,8 @@ from scipy.sparse import issparse
 
 from anndata import AnnData
 
+from scvelo.core import set_initial_size
 from . import logging as logg
-from .preprocessing.utils import set_initial_size
 
 
 def load(filename, backup_url=None, header="infer", index_col="infer", **kwargs):
