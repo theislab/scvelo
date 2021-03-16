@@ -1,5 +1,5 @@
 import os
-import re
+import warnings
 from pathlib import Path
 from urllib.request import urlretrieve
 
@@ -10,6 +10,7 @@ from scipy.sparse import issparse
 
 from anndata import AnnData
 
+from scvelo.core import clean_obs_names as _clean_obs_names
 from scvelo.core import set_initial_size
 from . import logging as logg
 
@@ -61,80 +62,15 @@ read_csv = load
 
 
 def clean_obs_names(data, base="[AGTCBDHKMNRSVWY]", ID_length=12, copy=False):
-    """Clean up the obs_names.
+    warnings.warn(
+        "`scvelo.read_load.clean_obs_names` is deprecated since scVelo v0.2.4 and will "
+        "be removed in a future version. Please use `scvelo.core.clean_obs_names` "
+        "instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
-    For example an obs_name 'sample1_AGTCdate' is changed to 'AGTC' of the sample
-    'sample1_date'. The sample name is then saved in obs['sample_batch'].
-    The genetic codes are identified according to according to
-    https://www.neb.com/tools-and-resources/usage-guidelines/the-genetic-code.
-
-    Arguments
-    ---------
-    adata: :class:`~anndata.AnnData`
-        Annotated data matrix.
-    base: `str` (default: `[AGTCBDHKMNRSVWY]`)
-        Genetic code letters to be identified.
-    ID_length: `int` (default: 12)
-        Length of the Genetic Codes in the samples.
-    copy: `bool` (default: `False`)
-        Return a copy instead of writing to adata.
-
-    Returns
-    -------
-    Returns or updates `adata` with the attributes
-    obs_names: list
-        updated names of the observations
-    sample_batch: `.obs`
-        names of the identified sample batches
-    """
-
-    def get_base_list(name, base):
-        base_list = base
-        while re.search(base_list + base, name) is not None:
-            base_list += base
-        if len(base_list) == 0:
-            raise ValueError("Encountered an invalid ID in obs_names: ", name)
-        return base_list
-
-    adata = data.copy() if copy else data
-
-    names = adata.obs_names
-    base_list = get_base_list(names[0], base)
-
-    if len(np.unique([len(name) for name in adata.obs_names])) == 1:
-        start, end = re.search(base_list, names[0]).span()
-        newIDs = [name[start:end] for name in names]
-        start, end = 0, len(newIDs[0])
-        for i in range(end - ID_length):
-            if np.any([ID[i] not in base for ID in newIDs]):
-                start += 1
-            if np.any([ID[::-1][i] not in base for ID in newIDs]):
-                end -= 1
-
-        newIDs = [ID[start:end] for ID in newIDs]
-        prefixes = [names[i].replace(newIDs[i], "") for i in range(len(names))]
-    else:
-        prefixes, newIDs = [], []
-        for name in names:
-            match = re.search(base_list, name)
-            newID = (
-                re.search(get_base_list(name, base), name).group()
-                if match is None
-                else match.group()
-            )
-            newIDs.append(newID)
-            prefixes.append(name.replace(newID, ""))
-
-    adata.obs_names = newIDs
-    if len(prefixes[0]) > 0 and len(np.unique(prefixes)) > 1:
-        adata.obs["sample_batch"] = (
-            pd.Categorical(prefixes)
-            if len(np.unique(prefixes)) < adata.n_obs
-            else prefixes
-        )
-
-    adata.obs_names_make_unique()
-    return adata if copy else None
+    return _clean_obs_names(data=data, base=base, ID_length=ID_length, copy=copy)
 
 
 def merge(adata, ldata, copy=True):
@@ -169,8 +105,8 @@ def merge(adata, ldata, copy=True):
     common_vars = pd.unique(adata.var_names.intersection(ldata.var_names))
 
     if len(common_obs) == 0:
-        clean_obs_names(adata)
-        clean_obs_names(ldata)
+        _clean_obs_names(adata)
+        _clean_obs_names(ldata)
         common_obs = adata.obs_names.intersection(ldata.obs_names)
 
     if copy:

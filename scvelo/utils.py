@@ -1,4 +1,4 @@
-from scvelo.core import get_initial_size, set_initial_size
+from scvelo.core import clean_obs_names, get_initial_size, set_initial_size
 from .plotting.simulation import compute_dynamics
 from .plotting.utils import (
     clip,
@@ -11,7 +11,6 @@ from .preprocessing.moments import get_moments
 from .preprocessing.neighbors import get_connectivities
 from .preprocessing.utils import cleanup, show_proportions
 from .read_load import (
-    clean_obs_names,
     convert_to_ensembl,
     convert_to_gene_names,
     gene_info,
