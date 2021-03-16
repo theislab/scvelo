@@ -1,5 +1,6 @@
 from ._anndata import (
     clean_obs_names,
+    cleanup,
     get_initial_size,
     get_modality,
     get_size,
@@ -16,6 +17,7 @@ from ._parallelize import get_n_jobs, parallelize
 
 __all__ = [
     "clean_obs_names",
+    "cleanup",
     "clipped_log",
     "get_initial_size",
     "get_modality",

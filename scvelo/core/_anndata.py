@@ -90,6 +90,48 @@ def clean_obs_names(data, base="[AGTCBDHKMNRSVWY]", ID_length=12, copy=False):
     return adata if copy else None
 
 
+def cleanup(data, clean="layers", keep=None, copy=False):
+    """Delete not needed attributes.
+
+    Arguments
+    ---------
+    data: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    clean: `str` or list of `str` (default: `layers`)
+        Which attributes to consider for freeing memory.
+    keep: `str` or list of `str` (default: None)
+        Which attributes to keep.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to adata.
+
+    Returns
+    -------
+    Returns or updates `adata` with selection of attributes kept.
+    """
+    adata = data.copy() if copy else data
+    verify_dtypes(adata)
+
+    keep = list([keep] if isinstance(keep, str) else {} if keep is None else keep)
+    keep.extend(["spliced", "unspliced", "Ms", "Mu", "clusters", "neighbors"])
+
+    ann_dict = {
+        "obs": adata.obs_keys(),
+        "var": adata.var_keys(),
+        "uns": adata.uns_keys(),
+        "layers": list(adata.layers.keys()),
+    }
+
+    if "all" not in clean:
+        ann_dict = {ann: values for (ann, values) in ann_dict.items() if ann in clean}
+
+    for (ann, values) in ann_dict.items():
+        for value in values:
+            if value not in keep:
+                del getattr(adata, ann)[value]
+
+    return adata if copy else None
+
+
 def get_initial_size(adata, layer=None, by_total_size=None):
     if by_total_size:
         sizes = [
