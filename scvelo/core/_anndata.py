@@ -1,5 +1,6 @@
 from typing import List, Optional, Union
 
+import numpy as np
 from numpy import ndarray
 from pandas import DataFrame
 from scipy.sparse import csr_matrix, issparse, spmatrix
@@ -8,6 +9,30 @@ from anndata import AnnData
 
 import scvelo.logging as logg
 from ._arithmetic import sum
+
+
+def get_initial_size(adata, layer=None, by_total_size=None):
+    if by_total_size:
+        sizes = [
+            adata.obs[f"initial_size_{layer}"]
+            for layer in {"spliced", "unspliced"}
+            if f"initial_size_{layer}" in adata.obs.keys()
+        ]
+        return np.sum(sizes, axis=0)
+    elif layer in adata.layers.keys():
+        return (
+            np.array(adata.obs[f"initial_size_{layer}"])
+            if f"initial_size_{layer}" in adata.obs.keys()
+            else get_size(adata, layer)
+        )
+    elif layer is None or layer == "X":
+        return (
+            np.array(adata.obs["initial_size"])
+            if "initial_size" in adata.obs.keys()
+            else get_size(adata)
+        )
+    else:
+        return None
 
 
 def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
