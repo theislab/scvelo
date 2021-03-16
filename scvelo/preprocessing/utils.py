@@ -7,6 +7,7 @@ from sklearn.utils import sparsefuncs
 
 from anndata import AnnData
 
+from scvelo.core import get_size as _get_size
 from scvelo.core import sum
 from .. import logging as logg
 
@@ -133,8 +134,14 @@ def cleanup(data, clean="layers", keep=None, copy=False):
 
 
 def get_size(adata, layer=None):
-    X = adata.X if layer is None else adata.layers[layer]
-    return sum(X, axis=1)
+    warnings.warn(
+        "`scvelo.preprocessing.get_size` is deprecated since scVelo v0.2.4 and will be "
+        "removed in a future version. Please use `scvelo.core.get_size` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return _get_size(adata=adata, layer=layer)
 
 
 def set_initial_size(adata, layers=None):
@@ -148,9 +155,9 @@ def set_initial_size(adata, layers=None):
         and f"initial_size_{layer}" not in adata.obs.keys()
     ]
     for layer in layers:
-        adata.obs[f"initial_size_{layer}"] = get_size(adata, layer)
+        adata.obs[f"initial_size_{layer}"] = _get_size(adata, layer)
     if "initial_size" not in adata.obs.keys():
-        adata.obs["initial_size"] = get_size(adata)
+        adata.obs["initial_size"] = _get_size(adata)
 
 
 def get_initial_size(adata, layer=None, by_total_size=None):
@@ -165,13 +172,13 @@ def get_initial_size(adata, layer=None, by_total_size=None):
         return (
             np.array(adata.obs[f"initial_size_{layer}"])
             if f"initial_size_{layer}" in adata.obs.keys()
-            else get_size(adata, layer)
+            else _get_size(adata, layer)
         )
     elif layer is None or layer == "X":
         return (
             np.array(adata.obs["initial_size"])
             if "initial_size" in adata.obs.keys()
-            else get_size(adata)
+            else _get_size(adata)
         )
     else:
         return None
@@ -665,7 +672,7 @@ def normalize_per_cell(
                 if counts_per_cell is not None
                 else get_initial_size(adata, layer)
                 if use_initial_size
-                else get_size(adata, layer)
+                else _get_size(adata, layer)
             )
             if max_proportion_per_cell is not None and (
                 0 < max_proportion_per_cell < 1
@@ -704,7 +711,7 @@ def normalize_per_cell(
                 "To enforce normalization, set `enforce=True`."
             )
 
-    adata.obs["n_counts" if key_n_counts is None else key_n_counts] = get_size(adata)
+    adata.obs["n_counts" if key_n_counts is None else key_n_counts] = _get_size(adata)
     if len(modified_layers) > 0:
         logg.info("Normalized count data:", f"{', '.join(modified_layers)}.")
 
