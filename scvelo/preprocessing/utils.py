@@ -10,6 +10,7 @@ from anndata import AnnData
 from scvelo.core import get_initial_size as _get_initial_size
 from scvelo.core import get_size as _get_size
 from scvelo.core import sum
+from scvelo.core._anndata import verify_dtypes as _verify_dtypes
 from .. import logging as logg
 
 
@@ -74,22 +75,15 @@ def show_proportions(adata, layers=None, use_raw=True):
 
 
 def verify_dtypes(adata):
-    try:
-        _ = adata[:, 0]
-    except Exception:
-        uns = adata.uns
-        adata.uns = {}
-        try:
-            _ = adata[:, 0]
-            logg.warn(
-                "Safely deleted unstructured annotations (adata.uns), \n"
-                "as these do not comply with permissible anndata datatypes."
-            )
-        except Exception:
-            logg.warn(
-                "The data might be corrupted. Please verify all annotation datatypes."
-            )
-            adata.uns = uns
+    warnings.warn(
+        "`scvelo.preprocessing.utils.verify_dtypes` is deprecated since scVelo v0.2.4 "
+        "and will be removed in a future version. Please use "
+        "`scvelo.core._anndata.verify_dtypes` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return _verify_dtypes(adata=adata)
 
 
 def cleanup(data, clean="layers", keep=None, copy=False):
@@ -111,7 +105,7 @@ def cleanup(data, clean="layers", keep=None, copy=False):
     Returns or updates `adata` with selection of attributes kept.
     """
     adata = data.copy() if copy else data
-    verify_dtypes(adata)
+    _verify_dtypes(adata)
 
     keep = list([keep] if isinstance(keep, str) else {} if keep is None else keep)
     keep.extend(["spliced", "unspliced", "Ms", "Mu", "clusters", "neighbors"])
@@ -148,7 +142,7 @@ def get_size(adata, layer=None):
 def set_initial_size(adata, layers=None):
     if layers is None:
         layers = ["spliced", "unspliced"]
-    verify_dtypes(adata)
+    _verify_dtypes(adata)
     layers = [
         layer
         for layer in layers
