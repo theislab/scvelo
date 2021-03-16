@@ -7,6 +7,7 @@ from sklearn.utils import sparsefuncs
 
 from anndata import AnnData
 
+from scvelo.core import get_initial_size as _get_initial_size
 from scvelo.core import get_size as _get_size
 from scvelo.core import sum
 from .. import logging as logg
@@ -161,27 +162,15 @@ def set_initial_size(adata, layers=None):
 
 
 def get_initial_size(adata, layer=None, by_total_size=None):
-    if by_total_size:
-        sizes = [
-            adata.obs[f"initial_size_{layer}"]
-            for layer in {"spliced", "unspliced"}
-            if f"initial_size_{layer}" in adata.obs.keys()
-        ]
-        return np.sum(sizes, axis=0)
-    elif layer in adata.layers.keys():
-        return (
-            np.array(adata.obs[f"initial_size_{layer}"])
-            if f"initial_size_{layer}" in adata.obs.keys()
-            else _get_size(adata, layer)
-        )
-    elif layer is None or layer == "X":
-        return (
-            np.array(adata.obs["initial_size"])
-            if "initial_size" in adata.obs.keys()
-            else _get_size(adata)
-        )
-    else:
-        return None
+    warnings.warn(
+        "`scvelo.preprocessing.get_initial_size` is deprecated since scVelo v0.2.4 and "
+        "will be  removed in a future version. Please use "
+        "`scvelo.core.get_initial_size` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return _get_initial_size(adata=adata, layer=layer, by_total_size=by_total_size)
 
 
 def _filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
@@ -670,7 +659,7 @@ def normalize_per_cell(
             counts = (
                 counts_per_cell
                 if counts_per_cell is not None
-                else get_initial_size(adata, layer)
+                else _get_initial_size(adata, layer)
                 if use_initial_size
                 else _get_size(adata, layer)
             )
