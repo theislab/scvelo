@@ -184,3 +184,22 @@ def set_modality(
 
     if not inplace:
         return adata
+
+
+def verify_dtypes(adata):
+    try:
+        _ = adata[:, 0]
+    except Exception:
+        uns = adata.uns
+        adata.uns = {}
+        try:
+            _ = adata[:, 0]
+            logg.warn(
+                "Safely deleted unstructured annotations (adata.uns), \n"
+                "as these do not comply with permissible anndata datatypes."
+            )
+        except Exception:
+            logg.warn(
+                "The data might be corrupted. Please verify all annotation datatypes."
+            )
+            adata.uns = uns
