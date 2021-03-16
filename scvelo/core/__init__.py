@@ -1,4 +1,5 @@
 from ._anndata import (
+    clean_obs_names,
     get_initial_size,
     get_modality,
     get_size,
@@ -14,6 +15,7 @@ from ._models import SplicingDynamics
 from ._parallelize import get_n_jobs, parallelize
 
 __all__ = [
+    "clean_obs_names",
     "clipped_log",
     "get_initial_size",
     "get_modality",

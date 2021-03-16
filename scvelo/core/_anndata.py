@@ -1,6 +1,8 @@
+import re
 from typing import List, Optional, Union
 
 import numpy as np
+import pandas as pd
 from numpy import ndarray
 from pandas import DataFrame
 from scipy.sparse import csr_matrix, issparse, spmatrix
@@ -9,6 +11,83 @@ from anndata import AnnData
 
 import scvelo.logging as logg
 from ._arithmetic import sum
+
+
+def clean_obs_names(data, base="[AGTCBDHKMNRSVWY]", ID_length=12, copy=False):
+    """Clean up the obs_names.
+
+    For example an obs_name 'sample1_AGTCdate' is changed to 'AGTC' of the sample
+    'sample1_date'. The sample name is then saved in obs['sample_batch'].
+    The genetic codes are identified according to according to
+    https://www.neb.com/tools-and-resources/usage-guidelines/the-genetic-code.
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+    base: `str` (default: `[AGTCBDHKMNRSVWY]`)
+        Genetic code letters to be identified.
+    ID_length: `int` (default: 12)
+        Length of the Genetic Codes in the samples.
+    copy: `bool` (default: `False`)
+        Return a copy instead of writing to adata.
+
+    Returns
+    -------
+    Returns or updates `adata` with the attributes
+    obs_names: list
+        updated names of the observations
+    sample_batch: `.obs`
+        names of the identified sample batches
+    """
+
+    def get_base_list(name, base):
+        base_list = base
+        while re.search(base_list + base, name) is not None:
+            base_list += base
+        if len(base_list) == 0:
+            raise ValueError("Encountered an invalid ID in obs_names: ", name)
+        return base_list
+
+    adata = data.copy() if copy else data
+
+    names = adata.obs_names
+    base_list = get_base_list(names[0], base)
+
+    if len(np.unique([len(name) for name in adata.obs_names])) == 1:
+        start, end = re.search(base_list, names[0]).span()
+        newIDs = [name[start:end] for name in names]
+        start, end = 0, len(newIDs[0])
+        for i in range(end - ID_length):
+            if np.any([ID[i] not in base for ID in newIDs]):
+                start += 1
+            if np.any([ID[::-1][i] not in base for ID in newIDs]):
+                end -= 1
+
+        newIDs = [ID[start:end] for ID in newIDs]
+        prefixes = [names[i].replace(newIDs[i], "") for i in range(len(names))]
+    else:
+        prefixes, newIDs = [], []
+        for name in names:
+            match = re.search(base_list, name)
+            newID = (
+                re.search(get_base_list(name, base), name).group()
+                if match is None
+                else match.group()
+            )
+            newIDs.append(newID)
+            prefixes.append(name.replace(newID, ""))
+
+    adata.obs_names = newIDs
+    if len(prefixes[0]) > 0 and len(np.unique(prefixes)) > 1:
+        adata.obs["sample_batch"] = (
+            pd.Categorical(prefixes)
+            if len(np.unique(prefixes)) < adata.n_obs
+            else prefixes
+        )
+
+    adata.obs_names_make_unique()
+    return adata if copy else None
 
 
 def get_initial_size(adata, layer=None, by_total_size=None):
