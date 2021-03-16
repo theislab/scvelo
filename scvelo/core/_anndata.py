@@ -7,6 +7,7 @@ from scipy.sparse import csr_matrix, issparse, spmatrix
 from anndata import AnnData
 
 import scvelo.logging as logg
+from ._arithmetic import sum
 
 
 def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
@@ -35,6 +36,11 @@ def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
             return adata.obsm[modality].values
         else:
             return adata.obsm[modality]
+
+
+def get_size(adata, layer=None):
+    X = adata.X if layer is None else adata.layers[layer]
+    return sum(X, axis=1)
 
 
 def make_dense(
