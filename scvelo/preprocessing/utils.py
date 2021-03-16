@@ -7,6 +7,7 @@ from sklearn.utils import sparsefuncs
 
 from anndata import AnnData
 
+from scvelo.core import cleanup as _cleanup
 from scvelo.core import get_initial_size as _get_initial_size
 from scvelo.core import get_size as _get_size
 from scvelo.core import set_initial_size as _set_initial_size
@@ -88,45 +89,14 @@ def verify_dtypes(adata):
 
 
 def cleanup(data, clean="layers", keep=None, copy=False):
-    """Deletes attributes not needed.
+    warnings.warn(
+        "`scvelo.preprocessing.cleanup` is deprecated since scVelo v0.2.4 and will be "
+        "removed in a future version. Please use `scvelo.core.cleanup` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
-    Arguments
-    ---------
-    data: :class:`~anndata.AnnData`
-        Annotated data matrix.
-    clean: `str` or list of `str` (default: `layers`)
-        Which attributes to consider for freeing memory.
-    keep: `str` or list of `str` (default: None)
-        Which attributes to keep.
-    copy: `bool` (default: `False`)
-        Return a copy instead of writing to adata.
-
-    Returns
-    -------
-    Returns or updates `adata` with selection of attributes kept.
-    """
-    adata = data.copy() if copy else data
-    _verify_dtypes(adata)
-
-    keep = list([keep] if isinstance(keep, str) else {} if keep is None else keep)
-    keep.extend(["spliced", "unspliced", "Ms", "Mu", "clusters", "neighbors"])
-
-    ann_dict = {
-        "obs": adata.obs_keys(),
-        "var": adata.var_keys(),
-        "uns": adata.uns_keys(),
-        "layers": list(adata.layers.keys()),
-    }
-
-    if "all" not in clean:
-        ann_dict = {ann: values for (ann, values) in ann_dict.items() if ann in clean}
-
-    for (ann, values) in ann_dict.items():
-        for value in values:
-            if value not in keep:
-                del getattr(adata, ann)[value]
-
-    return adata if copy else None
+    return _cleanup(data=data, clean=clean, keep=keep, copy=copy)
 
 
 def get_size(adata, layer=None):
