@@ -145,6 +145,22 @@ def make_sparse(
     return adata if not inplace else None
 
 
+def set_initial_size(adata, layers=None):
+    if layers is None:
+        layers = ["spliced", "unspliced"]
+    verify_dtypes(adata)
+    layers = [
+        layer
+        for layer in layers
+        if layer in adata.layers.keys()
+        and f"initial_size_{layer}" not in adata.obs.keys()
+    ]
+    for layer in layers:
+        adata.obs[f"initial_size_{layer}"] = get_size(adata, layer)
+    if "initial_size" not in adata.obs.keys():
+        adata.obs["initial_size"] = get_size(adata)
+
+
 def set_modality(
     adata: AnnData,
     new_value: Union[ndarray, spmatrix, DataFrame],

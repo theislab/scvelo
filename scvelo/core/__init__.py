@@ -4,6 +4,7 @@ from ._anndata import (
     get_size,
     make_dense,
     make_sparse,
+    set_initial_size,
     set_modality,
 )
 from ._arithmetic import clipped_log, invert, prod_sum, sum
@@ -25,6 +26,7 @@ __all__ = [
     "make_sparse",
     "parallelize",
     "prod_sum",
+    "set_initial_size",
     "set_modality",
     "SplicingDynamics",
     "sum",
