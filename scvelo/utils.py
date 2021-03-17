@@ -1,4 +1,10 @@
-from scvelo.core import clean_obs_names, cleanup, get_initial_size, set_initial_size
+from scvelo.core import (
+    clean_obs_names,
+    cleanup,
+    get_initial_size,
+    merge,
+    set_initial_size,
+)
 from .plotting.simulation import compute_dynamics
 from .plotting.utils import (
     clip,
@@ -15,7 +21,6 @@ from .read_load import (
     convert_to_gene_names,
     gene_info,
     load_biomart,
-    merge,
 )
 from .tools.optimization import get_weight, leastsq
 from .tools.rank_velocity_genes import get_mean_var
