@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from numpy import ndarray
 from pandas import DataFrame
+from pandas.api.types import is_categorical_dtype
 from scipy.sparse import csr_matrix, issparse, spmatrix
 
 from anndata import AnnData
@@ -130,6 +131,173 @@ def cleanup(data, clean="layers", keep=None, copy=False):
                 del getattr(adata, ann)[value]
 
     return adata if copy else None
+
+
+def get_df(
+    data,
+    keys=None,
+    layer=None,
+    index=None,
+    columns=None,
+    sort_values=None,
+    dropna="all",
+    precision=None,
+):
+    """Get dataframe for a specified adata key.
+
+    Return values for specified key
+    (in obs, var, obsm, varm, obsp, varp, uns, or layers) as a dataframe.
+
+    Arguments
+    ------
+    adata
+        AnnData object or a numpy array to get values from.
+    keys
+        Keys from `.var_names`, `.obs_names`, `.var`, `.obs`,
+        `.obsm`, `.varm`, `.obsp`, `.varp`, `.uns`, or `.layers`.
+    layer
+        Layer of `adata` to use as expression values.
+    index
+        List to set as index.
+    columns
+        List to set as columns names.
+    sort_values
+        Wether to sort values by first column (sort_values=True) or a specified column.
+    dropna
+        Drop columns/rows that contain NaNs in all ('all') or in any entry ('any').
+    precision
+        Set precision for pandas dataframe.
+
+    Returns
+    -------
+    A dataframe.
+    """
+    if precision is not None:
+        pd.set_option("precision", precision)
+
+    if isinstance(data, AnnData):
+        keys, keys_split = (
+            keys.split("*") if isinstance(keys, str) and "*" in keys else (keys, None)
+        )
+        keys, key_add = (
+            keys.split("/") if isinstance(keys, str) and "/" in keys else (keys, None)
+        )
+        keys = [keys] if isinstance(keys, str) else keys
+        key = keys[0]
+
+        s_keys = ["obs", "var", "obsm", "varm", "uns", "layers"]
+        d_keys = [
+            data.obs.keys(),
+            data.var.keys(),
+            data.obsm.keys(),
+            data.varm.keys(),
+            data.uns.keys(),
+            data.layers.keys(),
+        ]
+
+        if hasattr(data, "obsp") and hasattr(data, "varp"):
+            s_keys.extend(["obsp", "varp"])
+            d_keys.extend([data.obsp.keys(), data.varp.keys()])
+
+        if keys is None:
+            df = data.to_df()
+        elif key in data.var_names:
+            df = obs_df(data, keys, layer=layer)
+        elif key in data.obs_names:
+            df = var_df(data, keys, layer=layer)
+        else:
+            if keys_split is not None:
+                keys = [
+                    k
+                    for k in list(data.obs.keys()) + list(data.var.keys())
+                    if key in k and keys_split in k
+                ]
+                key = keys[0]
+            s_key = [s for (s, d_key) in zip(s_keys, d_keys) if key in d_key]
+            if len(s_key) == 0:
+                raise ValueError(f"'{key}' not found in any of {', '.join(s_keys)}.")
+            if len(s_key) > 1:
+                logg.warn(f"'{key}' found multiple times in {', '.join(s_key)}.")
+
+            s_key = s_key[-1]
+            df = getattr(data, s_key)[keys if len(keys) > 1 else key]
+            if key_add is not None:
+                df = df[key_add]
+            if index is None:
+                index = (
+                    data.var_names
+                    if s_key == "varm"
+                    else data.obs_names
+                    if s_key in {"obsm", "layers"}
+                    else None
+                )
+                if index is None and s_key == "uns" and hasattr(df, "shape"):
+                    key_cats = np.array(
+                        [
+                            key
+                            for key in data.obs.keys()
+                            if is_categorical_dtype(data.obs[key])
+                        ]
+                    )
+                    num_cats = [
+                        len(data.obs[key].cat.categories) == df.shape[0]
+                        for key in key_cats
+                    ]
+                    if np.sum(num_cats) == 1:
+                        index = data.obs[key_cats[num_cats][0]].cat.categories
+                        if (
+                            columns is None
+                            and len(df.shape) > 1
+                            and df.shape[0] == df.shape[1]
+                        ):
+                            columns = index
+            elif isinstance(index, str) and index in data.obs.keys():
+                index = pd.Categorical(data.obs[index]).categories
+            if columns is None and s_key == "layers":
+                columns = data.var_names
+            elif isinstance(columns, str) and columns in data.obs.keys():
+                columns = pd.Categorical(data.obs[columns]).categories
+    elif isinstance(data, pd.DataFrame):
+        if isinstance(keys, str) and "*" in keys:
+            keys, keys_split = keys.split("*")
+            keys = [k for k in data.columns if keys in k and keys_split in k]
+        df = data[keys] if keys is not None else data
+    else:
+        df = data
+
+    if issparse(df):
+        df = np.array(df.A)
+    if columns is None and hasattr(df, "names"):
+        columns = df.names
+
+    df = pd.DataFrame(df, index=index, columns=columns)
+
+    if dropna:
+        df.replace("", np.nan, inplace=True)
+        how = dropna if isinstance(dropna, str) else "any" if dropna is True else "all"
+        df.dropna(how=how, axis=0, inplace=True)
+        df.dropna(how=how, axis=1, inplace=True)
+
+    if sort_values:
+        sort_by = (
+            sort_values
+            if isinstance(sort_values, str) and sort_values in df.columns
+            else df.columns[0]
+        )
+        df = df.sort_values(by=sort_by, ascending=False)
+
+    if hasattr(data, "var_names"):
+        if df.index[0] in data.var_names:
+            df.var_names = df.index
+        elif df.columns[0] in data.var_names:
+            df.var_names = df.columns
+    if hasattr(data, "obs_names"):
+        if df.index[0] in data.obs_names:
+            df.obs_names = df.index
+        elif df.columns[0] in data.obs_names:
+            df.obs_names = df.columns
+
+    return df
 
 
 def get_initial_size(adata, layer=None, by_total_size=None):

@@ -1,6 +1,7 @@
 from ._anndata import (
     clean_obs_names,
     cleanup,
+    get_df,
     get_initial_size,
     get_modality,
     get_size,
@@ -20,6 +21,7 @@ __all__ = [
     "clean_obs_names",
     "cleanup",
     "clipped_log",
+    "get_df",
     "get_initial_size",
     "get_modality",
     "get_n_jobs",
