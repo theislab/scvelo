@@ -12,6 +12,7 @@ from anndata import AnnData
 
 from scvelo.core import clean_obs_names as _clean_obs_names
 from scvelo.core import merge as _merge
+from scvelo.core._anndata import obs_df as _obs_df
 from . import logging as logg
 
 
@@ -85,17 +86,15 @@ def merge(adata, ldata, copy=True):
 
 
 def obs_df(adata, keys, layer=None):
-    lookup_keys = [k for k in keys if k in adata.var_names]
-    if len(lookup_keys) < len(keys):
-        logg.warn(
-            f"Keys {[k for k in keys if k not in adata.var_names]} "
-            f"were not found in `adata.var_names`."
-        )
+    warnings.warn(
+        "`scvelo.read_load.obs_df` is deprecated since scVelo v0.2.4 and will be "
+        "removed in a future version. Please use `scvelo.core._anndata.obs_df` "
+        "instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
-    df = pd.DataFrame(index=adata.obs_names)
-    for lookup_key in lookup_keys:
-        df[lookup_key] = adata.obs_vector(lookup_key, layer=layer)
-    return df
+    return _obs_df(adata=adata, keys=keys, layer=layer)
 
 
 def var_df(adata, keys, layer=None):
@@ -181,7 +180,7 @@ def get_df(
         if keys is None:
             df = data.to_df()
         elif key in data.var_names:
-            df = obs_df(data, keys, layer=layer)
+            df = _obs_df(data, keys, layer=layer)
         elif key in data.obs_names:
             df = var_df(data, keys, layer=layer)
         else:
