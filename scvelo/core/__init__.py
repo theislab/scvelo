@@ -6,6 +6,7 @@ from ._anndata import (
     get_size,
     make_dense,
     make_sparse,
+    merge,
     set_initial_size,
     set_modality,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "LinearRegression",
     "make_dense",
     "make_sparse",
+    "merge",
     "parallelize",
     "prod_sum",
     "set_initial_size",
