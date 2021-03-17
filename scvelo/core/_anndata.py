@@ -423,6 +423,20 @@ def set_modality(
         return adata
 
 
+def var_df(adata, keys, layer=None):
+    lookup_keys = [k for k in keys if k in adata.obs_names]
+    if len(lookup_keys) < len(keys):
+        logg.warn(
+            f"Keys {[k for k in keys if k not in adata.obs_names]} "
+            f"were not found in `adata.obs_names`."
+        )
+
+    df = pd.DataFrame(index=adata.var_names)
+    for lookup_key in lookup_keys:
+        df[lookup_key] = adata.var_vector(lookup_key, layer=layer)
+    return df
+
+
 def verify_dtypes(adata):
     try:
         _ = adata[:, 0]
