@@ -1,8 +1,186 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 
-from scvelo.core import get_modality, set_modality
+from scvelo.core import (
+    clipped_log,
+    get_modality,
+    invert,
+    LinearRegression,
+    set_modality,
+    SplicingDynamics,
+)
 from scvelo.preprocessing.neighbors import get_connectivities
+from scvelo.tools.dynamical_model_utils import convolve
+from ._recovery_base import DynamicsRecoveryBase
+
+
+# TODO: Add docstrings
+# TODO: Finish type hints
+# TODO: Remove argument `model_parameters` and infer them from the class `dynamics`.
+class SplicingDynamicsRecovery(DynamicsRecoveryBase):
+    def _initialize_parameters(self, weighted_counts):
+        # TODO: Remove hard coded percentile
+        _weights = weighted_counts >= np.percentile(weighted_counts, 98, axis=0)
+
+        u_inf = weighted_counts[:, 0][_weights[:, 0] | _weights[:, 1]].mean()
+        s_inf = weighted_counts[:, 1][_weights[:, 1]].mean()
+
+        weights_g = _weights[:, 1] | self.steady_state_prior[self.weights_]
+
+        self.gamma = (
+            LinearRegression()
+            .fit(
+                convolve(weighted_counts[:, 1], weights_g),
+                convolve(weighted_counts[:, 0], weights_g),
+            )
+            .coef_
+            + 1e-6
+        )
+
+        if self.gamma < 0.05 / self.scaling[0]:
+            self.gamma *= 1.2
+        elif self.gamma > 1.5 / self.scaling[0]:
+            self.gamma /= 1.2
+
+        if self.pval_steady < 1e-3:
+            u_inf = np.mean([u_inf, self.steady_state[0]])
+            self.alpha = self.gamma * s_inf
+            self.beta = self.alpha / u_inf
+            self.initial_state_ = np.array([u_inf, s_inf])
+        else:
+            self.initial_state_ = np.array([u_inf, s_inf])
+            self.alpha = u_inf
+            self.beta = 1
+
+        self.alpha_ = 0
+
+    def _set_steady_state_ratio(self, **model_params):
+        self.steady_state_ratio = model_params["gamma"] / model_params["beta"]
+
+    # TODO: Find better name
+    def _check_projection(self, **model_parameters):
+        if model_parameters["beta"] < model_parameters["gamma"]:
+            return True
+        else:
+            return False
+
+    def tau_inv(
+        self,
+        state,
+        alpha,
+        beta,
+        gamma,
+        initial_state=[0, 0],
+        full_projection=False,
+    ):
+        u = state[:, 0]
+        s = state[:, 1]
+
+        if full_projection:
+            u = np.min(state[s > 0, 0])
+
+        u0 = initial_state[0]
+        s0 = initial_state[1]
+
+        if (gamma >= beta) or full_projection:
+            uinf = alpha / beta
+            tau = -1 / beta * clipped_log((u - uinf) / (u0 - uinf))
+        elif not full_projection:
+            beta_ = beta * invert(gamma - beta)
+            xinf = alpha / gamma - beta_ * (alpha / beta)
+            tau = (
+                -1
+                / gamma
+                * clipped_log((s - beta_ * u - xinf) / (s0 - beta_ * u0 - xinf))
+            )
+
+        if tau.size == 1 and not np.isscalar(tau):
+            return tau[0]
+        else:
+            return tau
+
+    def _set_parameters_after_switch(self, model_parameters):
+        model_parameters["alpha"] = 0
+
+        return model_parameters
+
+    def get_residuals(
+        self,
+        t=None,
+        t_=None,
+        scaling=None,
+        initial_state_=None,
+        refit_time=None,
+        weighted=True,
+        weights_cluster=None,
+        return_model_kwargs=False,
+        **model_parameters,
+    ):
+        model_parameters = self.get_model_parameters(**model_parameters)
+        scaling, t_ = self.get_vars(scaling, t_, initial_state_, **model_parameters)
+
+        weighted_counts = self.get_counts(
+            scaling, weighted=weighted, weights_cluster=weights_cluster
+        )
+
+        t, tau, o = self.get_time_assignment(
+            scaling,
+            t_,
+            initial_state_,
+            t,
+            refit_time,
+            weighted=weighted,
+            weights_cluster=weights_cluster,
+            **model_parameters,
+        )
+
+        tau, alpha, initial_state = self._vectorize(t, t_, **model_parameters)
+        model_parameters.update({"alpha": alpha})
+
+        sol = self.dynamics(
+            initial_state=initial_state, **model_parameters
+        ).get_solution(tau)
+
+        if return_model_kwargs:
+            return model_parameters, (sol - weighted_counts) / self.std_ * scaling
+        else:
+            return (sol - weighted_counts) / self.std_ * scaling
+
+    def _get_regularization(self, weighted_counts, **model_parameters):
+        beta = model_parameters["beta"]
+        gamma = model_parameters["gamma"]
+        return (
+            (gamma / beta - self.steady_state_ratio)
+            * weighted_counts[:, 1]
+            / self.std_[1]
+        )
+
+    # TODO: Add as method to a base class for dynamical models
+    def _vectorize(
+        self, t, t_, alpha_=0, initial_state=[0, 0], sorted=False, **model_parameters
+    ):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            o = np.array(t < t_, dtype=int)
+        tau = t * o + (t - t_) * (1 - o)
+
+        state_after_switch = self.dynamics(
+            initial_state=initial_state, **model_parameters
+        ).get_solution(t_)
+
+        # vectorize u0, s0 and alpha
+        initial_state = (
+            np.array(initial_state) * o[:, None] + state_after_switch * (1 - o)[:, None]
+        )
+        alpha = model_parameters["alpha"] * o + alpha_ * (1 - o)
+
+        if sorted:
+            idx = np.argsort(t)
+            tau, alpha = tau[idx], alpha[idx]
+            initial_state = initial_state[idx, :]
+        return tau, alpha, initial_state
 
 
 # TODO: Add docstrings
@@ -29,6 +207,9 @@ def recover_dynamics(
     if not isinstance(dynamics, str):
         DynamicsRecovery = dynamics[1]
         dynamics = dynamics[0]
+    elif dynamics.lower() == "splicing":
+        dynamics = SplicingDynamics
+        DynamicsRecovery = SplicingDynamicsRecovery
 
     if not inplace:
         adata = adata.copy()
