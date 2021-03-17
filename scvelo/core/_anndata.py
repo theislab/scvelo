@@ -352,6 +352,20 @@ def merge(adata, ldata, copy=True):
     return _adata if copy else None
 
 
+def obs_df(adata, keys, layer=None):
+    lookup_keys = [k for k in keys if k in adata.var_names]
+    if len(lookup_keys) < len(keys):
+        logg.warn(
+            f"Keys {[k for k in keys if k not in adata.var_names]} "
+            f"were not found in `adata.var_names`."
+        )
+
+    df = pd.DataFrame(index=adata.obs_names)
+    for lookup_key in lookup_keys:
+        df[lookup_key] = adata.obs_vector(lookup_key, layer=layer)
+    return df
+
+
 def set_initial_size(adata, layers=None):
     if layers is None:
         layers = ["spliced", "unspliced"]
