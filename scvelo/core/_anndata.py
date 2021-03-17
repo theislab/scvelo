@@ -14,6 +14,7 @@ import scvelo.logging as logg
 from ._arithmetic import sum
 
 
+# TODO: Add type hints
 def clean_obs_names(data, base="[AGTCBDHKMNRSVWY]", ID_length=12, copy=False):
     """Clean up the obs_names.
 
@@ -91,6 +92,7 @@ def clean_obs_names(data, base="[AGTCBDHKMNRSVWY]", ID_length=12, copy=False):
     return adata if copy else None
 
 
+# TODO: Add type hints
 def cleanup(data, clean="layers", keep=None, copy=False):
     """Delete not needed attributes.
 
@@ -133,6 +135,8 @@ def cleanup(data, clean="layers", keep=None, copy=False):
     return adata if copy else None
 
 
+# TODO: Fix docstrings
+# TODO: Add type hints
 def get_df(
     data,
     keys=None,
@@ -300,6 +304,9 @@ def get_df(
     return df
 
 
+# TODO: Add docstrings
+# TODO: Add type hints
+# TODO: Generalize to arbitrary modality
 def get_initial_size(adata, layer=None, by_total_size=None):
     if by_total_size:
         sizes = [
@@ -352,6 +359,9 @@ def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
             return adata.obsm[modality]
 
 
+# TODO: Add docstrings
+# TODO: Add type hints
+# TODO: Generalize to arbitray modality
 def get_size(adata, layer=None):
     X = adata.X if layer is None else adata.layers[layer]
     return sum(X, axis=1)
@@ -434,6 +444,8 @@ def make_sparse(
     return adata if not inplace else None
 
 
+# TODO: Finish docstrings
+# TODO: Add type hints
 def merge(adata, ldata, copy=True):
     """Merge two annotated data matrices.
 
@@ -520,6 +532,8 @@ def merge(adata, ldata, copy=True):
     return _adata if copy else None
 
 
+# TODO: Add docstrings
+# TODO: Add type hints
 def obs_df(adata, keys, layer=None):
     lookup_keys = [k for k in keys if k in adata.var_names]
     if len(lookup_keys) < len(keys):
@@ -534,6 +548,9 @@ def obs_df(adata, keys, layer=None):
     return df
 
 
+# TODO: Add docstrings
+# TODO: Add type hints
+# TODO: Generalize to arbitrary modality
 def set_initial_size(adata, layers=None):
     if layers is None:
         layers = ["spliced", "unspliced"]
@@ -591,6 +608,8 @@ def set_modality(
         return adata
 
 
+# TODO: Finish docstrings
+# TODO: Add type hints
 def show_proportions(adata, layers=None, use_raw=True):
     """Proportions of spliced/unspliced abundances
 
@@ -626,6 +645,8 @@ def show_proportions(adata, layers=None, use_raw=True):
     print(f"Abundance of {layers_keys}: {np.round(mean_abundances, 2)}")
 
 
+# TODO: Add docstrings
+# TODO: Add type hints
 def var_df(adata, keys, layer=None):
     lookup_keys = [k for k in keys if k in adata.obs_names]
     if len(lookup_keys) < len(keys):
@@ -640,6 +661,9 @@ def var_df(adata, keys, layer=None):
     return df
 
 
+# TODO: Find better function name
+# TODO: Add docstrings
+# TODO: Add type hints
 def verify_dtypes(adata):
     try:
         _ = adata[:, 0]
