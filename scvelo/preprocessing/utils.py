@@ -80,8 +80,9 @@ def cleanup(data, clean="layers", keep=None, copy=False):
 
 def get_size(adata, layer=None):
     warnings.warn(
-        "`scvelo.preprocessing.get_size` is deprecated since scVelo v0.2.4 and will be "
-        "removed in a future version. Please use `scvelo.core.get_size` instead.",
+        "`scvelo.preprocessing.utils.get_size` is deprecated since scVelo v0.2.4 and "
+        "will be removed in a future version. Please use `scvelo.core.get_size` "
+        "instead.",
         DeprecationWarning,
         stacklevel=2,
     )
