@@ -3,11 +3,11 @@ import os
 import numpy as np
 from scipy.sparse import coo_matrix, issparse
 
+from scvelo import logging as logg
+from scvelo import settings
 from scvelo.core import get_n_jobs, l2_norm, parallelize
-from .. import logging as logg
-from .. import settings
-from ..preprocessing.moments import get_moments
-from ..preprocessing.neighbors import (
+from scvelo.preprocessing.moments import get_moments
+from scvelo.preprocessing.neighbors import (
     get_n_neighs,
     get_neighs,
     neighbors,
