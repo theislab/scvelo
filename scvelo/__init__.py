@@ -1,10 +1,12 @@
 """scvelo - RNA velocity generalized through dynamical modeling"""
+from anndata import AnnData
 from scanpy import read, read_loom
 
+from scvelo.core import get_df
 from . import datasets, logging, pl, pp, settings, tl, utils
 from .plotting.gridspec import GridSpec
 from .preprocessing.neighbors import Neighbors
-from .read_load import AnnData, DataFrame, get_df, load, read_csv
+from .read_load import DataFrame, load, read_csv
 from .settings import set_figure_params
 from .tools.run import run_all, test
 from .tools.utils import round

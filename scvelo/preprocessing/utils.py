@@ -7,7 +7,13 @@ from sklearn.utils import sparsefuncs
 
 from anndata import AnnData
 
+from scvelo.core import cleanup as _cleanup
+from scvelo.core import get_initial_size as _get_initial_size
+from scvelo.core import get_size as _get_size
+from scvelo.core import set_initial_size as _set_initial_size
+from scvelo.core import show_proportions as _show_proportions
 from scvelo.core import sum
+from scvelo.core._anndata import verify_dtypes as _verify_dtypes
 from .. import logging as logg
 
 
@@ -38,143 +44,74 @@ def sum_var(A):
 
 
 def show_proportions(adata, layers=None, use_raw=True):
-    """Proportions of spliced/unspliced abundances
+    warnings.warn(
+        "`scvelo.preprocessing.show_proportions` is deprecated since scVelo v0.2.4 "
+        "and will be removed in a future version. Please use "
+        "`scvelo.core.show_proportions` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
-    Arguments
-    ---------
-    adata: :class:`~anndata.AnnData`
-        Annotated data matrix.
-
-    Returns
-    -------
-    Prints the fractions of abundances.
-    """
-    if layers is None:
-        layers = ["spliced", "unspliced", "ambigious"]
-    layers_keys = [key for key in layers if key in adata.layers.keys()]
-    counts_layers = [sum(adata.layers[key], axis=1) for key in layers_keys]
-    if use_raw:
-        size_key, obs = "initial_size_", adata.obs
-        counts_layers = [
-            obs[size_key + layer] if size_key + layer in obs.keys() else c
-            for layer, c in zip(layers_keys, counts_layers)
-        ]
-
-    counts_per_cell_sum = np.sum(counts_layers, 0)
-    counts_per_cell_sum += counts_per_cell_sum == 0
-
-    mean_abundances = [
-        np.mean(counts_per_cell / counts_per_cell_sum)
-        for counts_per_cell in counts_layers
-    ]
-
-    print(f"Abundance of {layers_keys}: {np.round(mean_abundances, 2)}")
+    _show_proportions(adata=adata, layers=layers, use_raw=use_raw)
 
 
 def verify_dtypes(adata):
-    try:
-        _ = adata[:, 0]
-    except Exception:
-        uns = adata.uns
-        adata.uns = {}
-        try:
-            _ = adata[:, 0]
-            logg.warn(
-                "Safely deleted unstructured annotations (adata.uns), \n"
-                "as these do not comply with permissible anndata datatypes."
-            )
-        except Exception:
-            logg.warn(
-                "The data might be corrupted. Please verify all annotation datatypes."
-            )
-            adata.uns = uns
+    warnings.warn(
+        "`scvelo.preprocessing.utils.verify_dtypes` is deprecated since scVelo v0.2.4 "
+        "and will be removed in a future version. Please use "
+        "`scvelo.core._anndata.verify_dtypes` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return _verify_dtypes(adata=adata)
 
 
 def cleanup(data, clean="layers", keep=None, copy=False):
-    """Deletes attributes not needed.
+    warnings.warn(
+        "`scvelo.preprocessing.cleanup` is deprecated since scVelo v0.2.4 and will be "
+        "removed in a future version. Please use `scvelo.core.cleanup` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
-    Arguments
-    ---------
-    data: :class:`~anndata.AnnData`
-        Annotated data matrix.
-    clean: `str` or list of `str` (default: `layers`)
-        Which attributes to consider for freeing memory.
-    keep: `str` or list of `str` (default: None)
-        Which attributes to keep.
-    copy: `bool` (default: `False`)
-        Return a copy instead of writing to adata.
-
-    Returns
-    -------
-    Returns or updates `adata` with selection of attributes kept.
-    """
-    adata = data.copy() if copy else data
-    verify_dtypes(adata)
-
-    keep = list([keep] if isinstance(keep, str) else {} if keep is None else keep)
-    keep.extend(["spliced", "unspliced", "Ms", "Mu", "clusters", "neighbors"])
-
-    ann_dict = {
-        "obs": adata.obs_keys(),
-        "var": adata.var_keys(),
-        "uns": adata.uns_keys(),
-        "layers": list(adata.layers.keys()),
-    }
-
-    if "all" not in clean:
-        ann_dict = {ann: values for (ann, values) in ann_dict.items() if ann in clean}
-
-    for (ann, values) in ann_dict.items():
-        for value in values:
-            if value not in keep:
-                del getattr(adata, ann)[value]
-
-    return adata if copy else None
+    return _cleanup(data=data, clean=clean, keep=keep, copy=copy)
 
 
 def get_size(adata, layer=None):
-    X = adata.X if layer is None else adata.layers[layer]
-    return sum(X, axis=1)
+    warnings.warn(
+        "`scvelo.preprocessing.utils.get_size` is deprecated since scVelo v0.2.4 and "
+        "will be removed in a future version. Please use `scvelo.core.get_size` "
+        "instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return _get_size(adata=adata, layer=layer)
 
 
 def set_initial_size(adata, layers=None):
-    if layers is None:
-        layers = ["spliced", "unspliced"]
-    verify_dtypes(adata)
-    layers = [
-        layer
-        for layer in layers
-        if layer in adata.layers.keys()
-        and f"initial_size_{layer}" not in adata.obs.keys()
-    ]
-    for layer in layers:
-        adata.obs[f"initial_size_{layer}"] = get_size(adata, layer)
-    if "initial_size" not in adata.obs.keys():
-        adata.obs["initial_size"] = get_size(adata)
+    warnings.warn(
+        "`scvelo.preprocessing.utils.set_initial_size` is deprecated since scVelo "
+        "v0.2.4 and will be removed in a future version. Please use "
+        "`scvelo.core.set_initial_size` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return _set_initial_size(adata=adata, layers=layers)
 
 
 def get_initial_size(adata, layer=None, by_total_size=None):
-    if by_total_size:
-        sizes = [
-            adata.obs[f"initial_size_{layer}"]
-            for layer in {"spliced", "unspliced"}
-            if f"initial_size_{layer}" in adata.obs.keys()
-        ]
-        return np.sum(sizes, axis=0)
-    elif layer in adata.layers.keys():
-        return (
-            np.array(adata.obs[f"initial_size_{layer}"])
-            if f"initial_size_{layer}" in adata.obs.keys()
-            else get_size(adata, layer)
-        )
-    elif layer is None or layer == "X":
-        return (
-            np.array(adata.obs["initial_size"])
-            if "initial_size" in adata.obs.keys()
-            else get_size(adata)
-        )
-    else:
-        return None
+    warnings.warn(
+        "`scvelo.preprocessing.get_initial_size` is deprecated since scVelo v0.2.4 and "
+        "will be  removed in a future version. Please use "
+        "`scvelo.core.get_initial_size` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return _get_initial_size(adata=adata, layer=layer, by_total_size=by_total_size)
 
 
 def _filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
@@ -259,7 +196,7 @@ def filter_genes(
     adata = data.copy() if copy else data
 
     # set initial cell sizes before filtering
-    set_initial_size(adata)
+    _set_initial_size(adata)
 
     layers = [
         layer for layer in ["spliced", "unspliced"] if layer in adata.layers.keys()
@@ -445,7 +382,7 @@ def filter_genes_dispersion(
     `copy`. It filters the `adata` and adds the annotations
     """
     adata = data.copy() if copy else data
-    set_initial_size(adata)
+    _set_initial_size(adata)
 
     mean, var = materialize_as_ndarray(get_mean_var(adata.X))
 
@@ -648,7 +585,7 @@ def normalize_per_cell(
 
     if isinstance(counts_per_cell, str):
         if counts_per_cell not in adata.obs.keys():
-            set_initial_size(adata, layers)
+            _set_initial_size(adata, layers)
         counts_per_cell = (
             adata.obs[counts_per_cell].values
             if counts_per_cell in adata.obs.keys()
@@ -663,9 +600,9 @@ def normalize_per_cell(
             counts = (
                 counts_per_cell
                 if counts_per_cell is not None
-                else get_initial_size(adata, layer)
+                else _get_initial_size(adata, layer)
                 if use_initial_size
-                else get_size(adata, layer)
+                else _get_size(adata, layer)
             )
             if max_proportion_per_cell is not None and (
                 0 < max_proportion_per_cell < 1
@@ -704,7 +641,7 @@ def normalize_per_cell(
                 "To enforce normalization, set `enforce=True`."
             )
 
-    adata.obs["n_counts" if key_n_counts is None else key_n_counts] = get_size(adata)
+    adata.obs["n_counts" if key_n_counts is None else key_n_counts] = _get_size(adata)
     if len(modified_layers) > 0:
         logg.info("Normalized count data:", f"{', '.join(modified_layers)}.")
 

@@ -7,9 +7,9 @@ from anndata import AnnData
 from scanpy import Neighbors
 from scanpy.preprocessing import pca
 
+from scvelo.core import get_initial_size
 from .. import logging as logg
 from .. import settings
-from .utils import get_initial_size
 
 
 def neighbors(

@@ -1,3 +1,11 @@
+from scvelo.core import (
+    clean_obs_names,
+    cleanup,
+    get_initial_size,
+    merge,
+    set_initial_size,
+    show_proportions,
+)
 from .plotting.simulation import compute_dynamics
 from .plotting.utils import (
     clip,
@@ -8,19 +16,11 @@ from .plotting.utils import (
 from .plotting.velocity_embedding_grid import compute_velocity_on_grid
 from .preprocessing.moments import get_moments
 from .preprocessing.neighbors import get_connectivities
-from .preprocessing.utils import (
-    cleanup,
-    get_initial_size,
-    set_initial_size,
-    show_proportions,
-)
 from .read_load import (
-    clean_obs_names,
     convert_to_ensembl,
     convert_to_gene_names,
     gene_info,
     load_biomart,
-    merge,
 )
 from .tools.optimization import get_weight, leastsq
 from .tools.rank_velocity_genes import get_mean_var
