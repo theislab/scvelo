@@ -591,6 +591,41 @@ def set_modality(
         return adata
 
 
+def show_proportions(adata, layers=None, use_raw=True):
+    """Proportions of spliced/unspliced abundances
+
+    Arguments
+    ---------
+    adata: :class:`~anndata.AnnData`
+        Annotated data matrix.
+
+    Returns
+    -------
+    Prints the fractions of abundances.
+    """
+
+    if layers is None:
+        layers = ["spliced", "unspliced", "ambigious"]
+    layers_keys = [key for key in layers if key in adata.layers.keys()]
+    counts_layers = [sum(adata.layers[key], axis=1) for key in layers_keys]
+    if use_raw:
+        size_key, obs = "initial_size_", adata.obs
+        counts_layers = [
+            obs[size_key + layer] if size_key + layer in obs.keys() else c
+            for layer, c in zip(layers_keys, counts_layers)
+        ]
+
+    counts_per_cell_sum = np.sum(counts_layers, 0)
+    counts_per_cell_sum += counts_per_cell_sum == 0
+
+    mean_abundances = [
+        np.mean(counts_per_cell / counts_per_cell_sum)
+        for counts_per_cell in counts_layers
+    ]
+
+    print(f"Abundance of {layers_keys}: {np.round(mean_abundances, 2)}")
+
+
 def var_df(adata, keys, layer=None):
     lookup_keys = [k for k in keys if k in adata.obs_names]
     if len(lookup_keys) < len(keys):

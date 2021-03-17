@@ -10,6 +10,7 @@ from ._anndata import (
     merge,
     set_initial_size,
     set_modality,
+    show_proportions,
 )
 from ._arithmetic import clipped_log, invert, prod_sum, sum
 from ._linear_models import LinearRegression
@@ -36,6 +37,7 @@ __all__ = [
     "prod_sum",
     "set_initial_size",
     "set_modality",
+    "show_proportions",
     "SplicingDynamics",
     "sum",
 ]
