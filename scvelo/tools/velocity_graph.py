@@ -169,6 +169,7 @@ class VelocityGraph:
 
         n_obs = self.X.shape[0]
 
+        # TODO: Use batches and vectorize calculation of dX in self._calculate_cosines
         res = parallelize(
             self._compute_cosines,
             range(self.X.shape[0]),
