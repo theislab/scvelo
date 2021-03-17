@@ -11,6 +11,7 @@ from scvelo.core import cleanup as _cleanup
 from scvelo.core import get_initial_size as _get_initial_size
 from scvelo.core import get_size as _get_size
 from scvelo.core import set_initial_size as _set_initial_size
+from scvelo.core import show_proportions as _show_proportions
 from scvelo.core import sum
 from scvelo.core._anndata import verify_dtypes as _verify_dtypes
 from .. import logging as logg
@@ -43,37 +44,15 @@ def sum_var(A):
 
 
 def show_proportions(adata, layers=None, use_raw=True):
-    """Proportions of spliced/unspliced abundances
+    warnings.warn(
+        "`scvelo.preprocessing.show_proportions` is deprecated since scVelo v0.2.4 "
+        "and will be removed in a future version. Please use "
+        "`scvelo.core.show_proportions` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
-    Arguments
-    ---------
-    adata: :class:`~anndata.AnnData`
-        Annotated data matrix.
-
-    Returns
-    -------
-    Prints the fractions of abundances.
-    """
-    if layers is None:
-        layers = ["spliced", "unspliced", "ambigious"]
-    layers_keys = [key for key in layers if key in adata.layers.keys()]
-    counts_layers = [sum(adata.layers[key], axis=1) for key in layers_keys]
-    if use_raw:
-        size_key, obs = "initial_size_", adata.obs
-        counts_layers = [
-            obs[size_key + layer] if size_key + layer in obs.keys() else c
-            for layer, c in zip(layers_keys, counts_layers)
-        ]
-
-    counts_per_cell_sum = np.sum(counts_layers, 0)
-    counts_per_cell_sum += counts_per_cell_sum == 0
-
-    mean_abundances = [
-        np.mean(counts_per_cell / counts_per_cell_sum)
-        for counts_per_cell in counts_layers
-    ]
-
-    print(f"Abundance of {layers_keys}: {np.round(mean_abundances, 2)}")
+    _show_proportions(adata=adata, layers=layers, use_raw=use_raw)
 
 
 def verify_dtypes(adata):
