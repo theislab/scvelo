@@ -8,7 +8,7 @@ from scipy.sparse import issparse
 from anndata import AnnData
 
 from scvelo.core import get_modality, make_dense, make_sparse, set_modality
-from scvelo.core.tests import get_adata, TestBase
+from .test_base import get_adata, TestBase
 
 
 class TestGetModality(TestBase):
