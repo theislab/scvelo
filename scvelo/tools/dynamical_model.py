@@ -7,10 +7,10 @@ from scipy.optimize import minimize
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 
+from scvelo import logging as logg
+from scvelo import settings
 from scvelo.core import get_n_jobs, parallelize
-from .. import logging as logg
-from .. import settings
-from ..preprocessing.moments import get_connectivities
+from scvelo.preprocessing.moments import get_connectivities
 from .dynamical_model_utils import BaseDynamics, convolve, linreg, tau_inv, unspliced
 from .utils import make_unique_list, test_bimodality
 

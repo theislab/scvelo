@@ -1,8 +1,8 @@
 import numpy as np
 
+from scvelo import logging as logg
 from scvelo.core import l2_norm, prod_sum
-from .. import logging as logg
-from ..preprocessing.neighbors import get_neighs
+from scvelo.preprocessing.neighbors import get_neighs
 from .transition_matrix import transition_matrix
 from .utils import get_indices, random_subsample
 
@@ -133,8 +133,8 @@ def score_robustness(
     adata = data.copy() if copy else data
 
     if adata_subset is None:
-        from ..preprocessing.moments import moments
-        from ..preprocessing.neighbors import neighbors
+        from scvelo.preprocessing.moments import moments
+        from scvelo.preprocessing.neighbors import neighbors
         from .velocity import velocity
 
         logg.switch_verbosity("off")

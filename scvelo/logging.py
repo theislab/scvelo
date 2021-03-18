@@ -8,7 +8,7 @@ from time import time as get_time
 
 from anndata.logging import get_memory_usage
 
-from . import settings
+from scvelo import settings
 
 _VERBOSITY_LEVELS_FROM_STRINGS = {"error": 0, "warn": 1, "info": 2, "hint": 3}
 

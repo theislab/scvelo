@@ -160,7 +160,7 @@ def scale(X, min=0, max=1):
 
 
 def get_indices(dist, n_neighbors=None, mode_neighbors="distances"):
-    from ..preprocessing.neighbors import compute_connectivities_umap
+    from scvelo.preprocessing.neighbors import compute_connectivities_umap
 
     D = dist.copy()
     D.data += 1e-6
@@ -519,7 +519,7 @@ def indices_to_bool(indices, n):
 
 
 def convolve(adata, x):
-    from ..preprocessing.neighbors import get_connectivities
+    from scvelo.preprocessing.neighbors import get_connectivities
 
     conn = get_connectivities(adata)
     if isinstance(x, str) and x in adata.layers.keys():

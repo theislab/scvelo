@@ -5,8 +5,8 @@ from scipy.sparse import issparse
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 
-from ..preprocessing.moments import second_order_moments
-from ..tools.rank_velocity_genes import rank_velocity_genes
+from scvelo.preprocessing.moments import second_order_moments
+from scvelo.tools.rank_velocity_genes import rank_velocity_genes
 from .scatter import scatter
 from .utils import (
     default_basis,

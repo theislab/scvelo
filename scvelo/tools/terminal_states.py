@@ -1,10 +1,10 @@
 import numpy as np
 from scipy.sparse import csr_matrix, issparse, linalg
 
-from .. import logging as logg
-from .. import settings
-from ..preprocessing.moments import get_connectivities
-from ..preprocessing.neighbors import verify_neighbors
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.preprocessing.moments import get_connectivities
+from scvelo.preprocessing.neighbors import verify_neighbors
 from .transition_matrix import transition_matrix
 from .utils import get_plasticity_score, groups_to_bool, scale, strings_to_categoricals
 from .velocity_graph import VelocityGraph

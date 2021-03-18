@@ -10,9 +10,9 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 
+from scvelo import logging as logg
 from scvelo.core import clipped_log, invert, SplicingDynamics
-from .. import logging as logg
-from ..preprocessing.moments import get_connectivities
+from scvelo.preprocessing.moments import get_connectivities
 from .utils import make_dense, round
 
 exp = np.exp
@@ -1168,7 +1168,7 @@ class BaseDynamics:
         show_assignments=None,
         **kwargs,
     ):
-        from ..plotting.scatter import scatter
+        from scvelo.plotting.scatter import scatter
 
         if np.all([x is None for x in [alpha, beta, gamma, scaling, t_]]):
             refit_time = False
@@ -1219,7 +1219,7 @@ class BaseDynamics:
         return_color_scale=False,
         **kwargs,
     ):
-        from ..plotting.utils import update_axes
+        from scvelo.plotting.utils import update_axes
 
         x_var = getattr(self, xkey)
         y_var = getattr(self, ykey)
@@ -1292,7 +1292,7 @@ class BaseDynamics:
         vmax=None,
         show=True,
     ):
-        from ..plotting.utils import update_axes
+        from scvelo.plotting.utils import update_axes
 
         x_var = getattr(self, xkey)
         x = np.linspace(-sight, sight, num=num) * x_var + x_var
@@ -1427,7 +1427,7 @@ class BaseDynamics:
         ax=None,
         **kwargs,
     ):
-        from ..plotting.utils import rgb_custom_colormap, update_axes
+        from scvelo.plotting.utils import rgb_custom_colormap, update_axes
 
         if color_map is None:
             color_map = rgb_custom_colormap(

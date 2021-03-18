@@ -7,6 +7,7 @@ from sklearn.utils import sparsefuncs
 
 from anndata import AnnData
 
+from scvelo import logging as logg
 from scvelo.core import cleanup as _cleanup
 from scvelo.core import get_initial_size as _get_initial_size
 from scvelo.core import get_size as _get_size
@@ -14,7 +15,6 @@ from scvelo.core import set_initial_size as _set_initial_size
 from scvelo.core import show_proportions as _show_proportions
 from scvelo.core import sum
 from scvelo.core._anndata import verify_dtypes as _verify_dtypes
-from .. import logging as logg
 
 
 def sum_obs(A):

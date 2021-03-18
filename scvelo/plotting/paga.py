@@ -8,9 +8,9 @@ import matplotlib.pyplot as pl
 from matplotlib import rcParams
 from matplotlib.path import get_path_collection_extents
 
-from .. import logging as logg
-from .. import settings
-from ..tools.paga import get_igraph_from_adjacency
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.tools.paga import get_igraph_from_adjacency
 from .docs import doc_params, doc_scatter
 from .scatter import scatter
 from .utils import (

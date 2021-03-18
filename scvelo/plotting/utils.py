@@ -18,9 +18,9 @@ from matplotlib.gridspec import SubplotSpec
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-from .. import logging as logg
-from .. import settings
-from ..tools.utils import strings_to_categoricals
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.tools.utils import strings_to_categoricals
 from . import palettes
 
 """helper functions"""
@@ -1637,10 +1637,10 @@ def make_unique_valid_list(adata, keys):
 
 
 def get_temporal_connectivities(adata, tkey, n_convolve=30):
-    from ..tools.utils import normalize
-    from ..tools.velocity_graph import vals_to_csr
+    from scvelo.tools.utils import normalize
+    from scvelo.tools.velocity_graph import vals_to_csr
 
-    # from ..tools.utils import get_indices
+    # from scvelo.tools.utils import get_indices
     # c_idx = get_indices(get_connectivities(adata, recurse_neighbors=True))[0]
     # lspace = np.linspace(0, len(c_idx) - 1, len(c_idx), dtype=int)
     # c_idx = np.hstack([c_idx, lspace[:, None]])

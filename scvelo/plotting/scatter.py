@@ -9,7 +9,7 @@ from matplotlib.colors import is_color_like
 
 from anndata import AnnData
 
-import scvelo.logging as logg
+from scvelo import logging as logg
 from scvelo import settings
 from scvelo.preprocessing.neighbors import get_connectivities
 from .docs import doc_params, doc_scatter
