@@ -14,7 +14,7 @@ from scvelo.core import clipped_log, invert, prod_sum, sum
 class TestClippedLog:
     @given(
         a=arrays(
-            np.float,
+            float,
             shape=st.integers(min_value=1, max_value=100),
             elements=st.floats(
                 min_value=-1e3, max_value=1e3, allow_infinity=False, allow_nan=False
@@ -50,7 +50,7 @@ class TestClippedLog:
 
     @given(
         a=arrays(
-            np.float,
+            float,
             shape=st.tuples(
                 st.integers(min_value=1, max_value=100),
                 st.integers(min_value=1, max_value=100),
@@ -91,7 +91,7 @@ class TestClippedLog:
 class TestInvert:
     @given(
         a=arrays(
-            np.float,
+            float,
             shape=st.integers(min_value=1, max_value=100),
             elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
         )
@@ -111,7 +111,7 @@ class TestInvert:
 
     @given(
         a=arrays(
-            np.float,
+            float,
             shape=st.tuples(
                 st.integers(min_value=1, max_value=100),
                 st.integers(min_value=1, max_value=100),
@@ -139,7 +139,7 @@ class TestInvert:
 class TestProdSum:
     @given(
         a=arrays(
-            np.float,
+            float,
             shape=st.integers(min_value=1, max_value=100),
             elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
         ),
@@ -150,7 +150,7 @@ class TestProdSum:
 
     @given(
         a=arrays(
-            np.float,
+            float,
             shape=st.tuples(
                 st.integers(min_value=1, max_value=100),
                 st.integers(min_value=1, max_value=100),
@@ -167,7 +167,7 @@ class TestProdSum:
 class TestSum:
     @given(
         a=arrays(
-            np.float,
+            float,
             shape=st.integers(min_value=1, max_value=100),
             elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
         ),
@@ -179,7 +179,7 @@ class TestSum:
 
     @given(
         a=arrays(
-            np.float,
+            float,
             shape=st.tuples(
                 st.integers(min_value=1, max_value=100),
                 st.integers(min_value=1, max_value=100),

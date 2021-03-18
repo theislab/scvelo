@@ -359,7 +359,7 @@ def rank_velocity_genes(
 
     all_names = rankings_gene_names.T.flatten()
     all_scores = rankings_gene_scores.T.flatten()
-    vscore = np.zeros(adata.n_vars, dtype=np.int)
+    vscore = np.zeros(adata.n_vars, dtype=int)
     for i, name in enumerate(adata.var_names):
         if name in all_names:
             vscore[i] = all_scores[np.where(name == all_names)[0][0]]

@@ -16,9 +16,9 @@ def round(k, dec=2, as_str=None):
         return [round(ki, dec) for ki in k]
     if "e" in f"{k}":
         k_str = f"{k}".split("e")
-        result = f"{np.round(np.float(k_str[0]), dec)}1e{k_str[1]}"
-        return f"{result}" if as_str else np.float(result)
-    result = np.round(np.float(k), dec)
+        result = f"{np.round(float(k_str[0]), dec)}1e{k_str[1]}"
+        return f"{result}" if as_str else float(result)
+    result = np.round(float(k), dec)
     return f"{result}" if as_str else result
 
 

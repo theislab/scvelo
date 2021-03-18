@@ -11,7 +11,7 @@ from scvelo.core import l2_norm
 # TODO: Extend test to generate sparse inputs as well
 @given(
     a=arrays(
-        np.float,
+        float,
         shape=st.integers(min_value=1, max_value=100),
         elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
     ),
