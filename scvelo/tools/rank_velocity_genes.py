@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.sparse import issparse
 
-from .. import logging as logg
-from .. import settings
+from scvelo import logging as logg
+from scvelo import settings
 from .utils import strings_to_categoricals, vcorrcoef
 from .velocity_pseudotime import velocity_pseudotime
 
@@ -134,7 +134,7 @@ def velocity_clusters(
     if "fit_likelihood" in adata.var.keys() and min_likelihood is not None:
         tmp_filter &= adata.var["fit_likelihood"] > min_likelihood
 
-    from .. import AnnData
+    from anndata import AnnData
 
     vdata = AnnData(adata.layers[vkey][:, tmp_filter])
     vdata.obs = adata.obs.copy()

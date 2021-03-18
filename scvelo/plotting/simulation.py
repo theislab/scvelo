@@ -4,7 +4,7 @@ import matplotlib.pyplot as pl
 from matplotlib import rcParams
 
 from scvelo.core import SplicingDynamics
-from ..tools.dynamical_model_utils import get_vars, tau_inv, unspliced, vectorize
+from scvelo.tools.dynamical_model_utils import get_vars, tau_inv, unspliced, vectorize
 from .utils import make_dense
 
 
@@ -120,7 +120,7 @@ def simulation(
     colors=None,
     **kwargs,
 ):
-    from ..tools.utils import make_dense
+    from scvelo.tools.utils import make_dense
     from .scatter import scatter
 
     if ykey is None:

@@ -7,7 +7,7 @@ import matplotlib.pyplot as pl
 from matplotlib import rcParams
 from matplotlib.colors import ColorConverter
 
-from .. import logging as logg
+from scvelo import logging as logg
 from .utils import (
     interpret_colorkey,
     is_categorical,

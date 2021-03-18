@@ -3,9 +3,9 @@ import warnings
 import numpy as np
 from scipy.sparse import issparse
 
+from scvelo import logging as logg
+from scvelo import settings
 from scvelo.core import l2_norm
-from .. import logging as logg
-from .. import settings
 from .transition_matrix import transition_matrix
 
 

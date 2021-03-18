@@ -133,7 +133,7 @@ class VelocityGraph:
                     mode="connectivity"
                 ).indices.reshape((-1, n_neighbors + 1))
             else:
-                from .. import Neighbors
+                from scvelo import Neighbors
 
                 neighs = Neighbors(adata)
                 neighs.compute_neighbors(

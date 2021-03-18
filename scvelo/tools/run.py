@@ -1,4 +1,4 @@
-from ..preprocessing import filter_and_normalize, moments
+from scvelo.preprocessing import filter_and_normalize, moments
 from . import velocity, velocity_embedding, velocity_graph
 
 
@@ -39,7 +39,7 @@ def run_all(
 def convert_to_adata(vlm, basis=None):
     from collections import OrderedDict
 
-    from .. import AnnData
+    from anndata import AnnData
 
     X = (
         vlm.S_norm.T
@@ -120,7 +120,7 @@ def convert_to_loom(adata, basis=None):
                 self.initial_cell_size = self.S.sum(0)
                 self.initial_Ucell_size = self.U.sum(0)
 
-            from ..preprocessing.utils import not_yet_normalized
+            from scvelo.preprocessing.utils import not_yet_normalized
 
             if not not_yet_normalized(adata.layers["spliced"]):
                 self.S_sz = self.S
@@ -310,8 +310,8 @@ def convert_to_loom(adata, basis=None):
 
 
 def test():
-    from ..datasets import simulation
-    from ..logging import print_version
+    from scvelo.datasets import simulation
+    from scvelo.logging import print_version
     from .velocity_graph import velocity_graph
 
     print_version()

@@ -5,8 +5,8 @@ from scipy.sparse import csr_matrix
 from scanpy.tools._paga import PAGA
 
 # This is adapted from https://github.com/theislab/paga
-from .. import logging as logg
-from .. import settings
+from scvelo import logging as logg
+from scvelo import settings
 from .rank_velocity_genes import velocity_clusters
 from .utils import strings_to_categoricals
 from .velocity_graph import vals_to_csr

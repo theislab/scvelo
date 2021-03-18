@@ -3,9 +3,9 @@ import warnings
 import numpy as np
 from scipy.sparse import csr_matrix, issparse
 
-from .. import settings
-from ..preprocessing.neighbors import get_neighs
-from ..tools.transition_matrix import transition_matrix
+from scvelo import settings
+from scvelo.preprocessing.neighbors import get_neighs
+from scvelo.tools.transition_matrix import transition_matrix
 from .docs import doc_params, doc_scatter
 from .scatter import scatter
 from .utils import (

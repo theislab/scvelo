@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
 
-from ..tools.utils import groups_to_bool
-from ..tools.velocity_embedding import velocity_embedding
+from scvelo.tools.utils import groups_to_bool
+from scvelo.tools.velocity_embedding import velocity_embedding
 from .docs import doc_params, doc_scatter
 from .scatter import scatter
 from .utils import (
