@@ -1,11 +1,13 @@
+import os
+
 import numpy as np
 from scipy.sparse import coo_matrix, issparse
 
-from scvelo.core import l2_norm
-from .. import logging as logg
-from .. import settings
-from ..preprocessing.moments import get_moments
-from ..preprocessing.neighbors import (
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.core import get_n_jobs, l2_norm, parallelize
+from scvelo.preprocessing.moments import get_moments
+from scvelo.preprocessing.neighbors import (
     get_n_neighs,
     get_neighs,
     neighbors,
@@ -162,46 +164,20 @@ class VelocityGraph:
         self.report = report
         self.adata = adata
 
-    def compute_cosines(self):
-        vals, rows, cols, uncertainties, n_obs = [], [], [], [], self.X.shape[0]
-        progress = logg.ProgressReporter(n_obs)
+    def compute_cosines(self, n_jobs=None, backend="loky"):
+        n_jobs = get_n_jobs(n_jobs=n_jobs)
 
-        if self.compute_uncertainties:
-            m = get_moments(self.adata, np.sign(self.V_raw), second_order=True)
+        n_obs = self.X.shape[0]
 
-        for i in range(n_obs):
-            if self.V[i].max() != 0 or self.V[i].min() != 0:
-                neighs_idx = get_iterative_indices(
-                    self.indices, i, self.n_recurse_neighbors, self.max_neighs
-                )
-
-                if self.t0 is not None:
-                    t0, t1 = self.t0[i], self.t1[i]
-                    if t0 >= 0 and t1 > 0:
-                        t1_idx = np.where(self.t0 == t1)[0]
-                        if len(t1_idx) > len(neighs_idx):
-                            t1_idx = np.random.choice(
-                                t1_idx, len(neighs_idx), replace=False
-                            )
-                        if len(t1_idx) > 0:
-                            neighs_idx = np.unique(np.concatenate([neighs_idx, t1_idx]))
-
-                dX = self.X[neighs_idx] - self.X[i, None]  # 60% of runtime
-                if self.sqrt_transform:
-                    dX = np.sqrt(np.abs(dX)) * np.sign(dX)
-                val = cosine_correlation(dX, self.V[i])  # 40% of runtime
-
-                if self.compute_uncertainties:
-                    dX /= l2_norm(dX)[:, None]
-                    uncertainties.extend(np.nansum(dX ** 2 * m[i][None, :], 1))
-
-                vals.extend(val)
-                rows.extend(np.ones(len(neighs_idx)) * i)
-                cols.extend(neighs_idx)
-                if self.report:
-                    progress.update()
-        if self.report:
-            progress.finish()
+        # TODO: Use batches and vectorize calculation of dX in self._calculate_cosines
+        res = parallelize(
+            self._compute_cosines,
+            range(self.X.shape[0]),
+            n_jobs=n_jobs,
+            unit="cells",
+            backend=backend,
+        )()
+        uncertainties, vals, rows, cols = map(_flatten, zip(*res))
 
         vals = np.hstack(vals)
         vals[np.isnan(vals)] = 0
@@ -220,6 +196,55 @@ class VelocityGraph:
         confidence = self.graph.max(1).A.flatten()
         self.self_prob = np.clip(np.percentile(confidence, 98) - confidence, 0, 1)
 
+    def _compute_cosines(self, obs_idx, queue):
+        vals, rows, cols, uncertainties = [], [], [], []
+        if self.compute_uncertainties:
+            moments = get_moments(self.adata, np.sign(self.V_raw), second_order=True)
+
+        for obs_id in obs_idx:
+            if self.V[obs_id].max() != 0 or self.V[obs_id].min() != 0:
+                neighs_idx = get_iterative_indices(
+                    self.indices, obs_id, self.n_recurse_neighbors, self.max_neighs
+                )
+
+                if self.t0 is not None:
+                    t0, t1 = self.t0[obs_id], self.t1[obs_id]
+                    if t0 >= 0 and t1 > 0:
+                        t1_idx = np.where(self.t0 == t1)[0]
+                        if len(t1_idx) > len(neighs_idx):
+                            t1_idx = np.random.choice(
+                                t1_idx, len(neighs_idx), replace=False
+                            )
+                        if len(t1_idx) > 0:
+                            neighs_idx = np.unique(np.concatenate([neighs_idx, t1_idx]))
+
+                dX = self.X[neighs_idx] - self.X[obs_id, None]  # 60% of runtime
+                if self.sqrt_transform:
+                    dX = np.sqrt(np.abs(dX)) * np.sign(dX)
+                val = cosine_correlation(dX, self.V[obs_id])  # 40% of runtime
+
+                if self.compute_uncertainties:
+                    dX /= l2_norm(dX)[:, None]
+                    uncertainties.extend(
+                        np.nansum(dX ** 2 * moments[obs_id][None, :], 1)
+                    )
+
+                vals.extend(val)
+                rows.extend(np.ones(len(neighs_idx)) * obs_id)
+                cols.extend(neighs_idx)
+
+            if queue is not None:
+                queue.put(1)
+
+        if queue is not None:
+            queue.put(None)
+
+        return uncertainties, vals, rows, cols
+
+
+def _flatten(iterable):
+    return [i for it in iterable for i in it]
+
 
 def velocity_graph(
     data,
@@ -237,6 +262,8 @@ def velocity_graph(
     approx=None,
     mode_neighbors="distances",
     copy=False,
+    n_jobs=None,
+    backend="loky",
 ):
     """Computes velocity graph based on cosine similarities.
 
@@ -284,6 +311,11 @@ def velocity_graph(
         'connectivities'. The latter yields a symmetric graph.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to adata.
+    n_jobs: `int` or `None` (default: `None`)
+        Number of parallel jobs.
+    backend: `str` (default: "loky")
+        Backend used for multiprocessing. See :class:`joblib.Parallel` for valid
+        options.
 
     Returns
     -------
@@ -322,8 +354,11 @@ def velocity_graph(
             f"        on full expression space by not specifying basis.\n"
         )
 
-    logg.info("computing velocity graph", r=True)
-    vgraph.compute_cosines()
+    n_jobs = get_n_jobs(n_jobs=n_jobs)
+    logg.info(
+        f"computing velocity graph (using {n_jobs}/{os.cpu_count()} cores)", r=True
+    )
+    vgraph.compute_cosines(n_jobs=n_jobs, backend=backend)
 
     adata.uns[f"{vkey}_graph"] = vgraph.graph
     adata.uns[f"{vkey}_graph_neg"] = vgraph.graph_neg
