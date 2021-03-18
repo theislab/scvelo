@@ -795,7 +795,7 @@ def latent_time(
         idx_roots[pd.isnull(idx_roots)] = 0
         if np.any([isinstance(ix, str) for ix in idx_roots]):
             idx_roots = np.array([isinstance(ix, str) for ix in idx_roots], dtype=int)
-        idx_roots = idx_roots.astype(np.float) > 1 - 1e-3
+        idx_roots = idx_roots.astype(float) > 1 - 1e-3
         if np.sum(idx_roots) > 0:
             roots = roots[idx_roots]
         else:
@@ -813,7 +813,7 @@ def latent_time(
         idx_fates[pd.isnull(idx_fates)] = 0
         if np.any([isinstance(ix, str) for ix in idx_fates]):
             idx_fates = np.array([isinstance(ix, str) for ix in idx_fates], dtype=int)
-        idx_fates = idx_fates.astype(np.float) > 1 - 1e-3
+        idx_fates = idx_fates.astype(float) > 1 - 1e-3
         if np.sum(idx_fates) > 0:
             fates = fates[idx_fates]
     else:

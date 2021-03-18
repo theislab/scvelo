@@ -109,7 +109,7 @@ def get_adata(
         st.dictionaries(
             st.text(min_size=1) if layer_keys is None else st.sampled_from(layer_keys),
             arrays(
-                dtype=np.int,
+                dtype=int,
                 elements=st.integers(min_value=0, max_value=1e2),
                 shape=(n_obs, n_vars),
             ),
@@ -122,7 +122,7 @@ def get_adata(
         st.dictionaries(
             st.text(min_size=1) if obsm_keys is None else st.sampled_from(obsm_keys),
             arrays(
-                dtype=np.int,
+                dtype=int,
                 elements=st.integers(min_value=0, max_value=1e2),
                 shape=st.tuples(
                     st.integers(min_value=n_obs, max_value=n_obs),
@@ -192,6 +192,6 @@ class TestBase:
         """Convert AnnData entries in `layer` and `obsm` into floats."""
 
         for layer in adata.layers:
-            adata.layers[layer] = adata.layers[layer].astype(np.float)
+            adata.layers[layer] = adata.layers[layer].astype(float)
         for obs in adata.obsm:
-            adata.obsm[obs] = adata.obsm[obs].astype(np.float)
+            adata.obsm[obs] = adata.obsm[obs].astype(float)
