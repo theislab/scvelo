@@ -10,7 +10,7 @@ from scipy.sparse import csr_matrix, issparse, spmatrix
 
 from anndata import AnnData
 
-import scvelo.logging as logg
+from scvelo import logging as logg
 from ._arithmetic import sum
 
 
