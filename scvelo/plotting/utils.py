@@ -47,7 +47,7 @@ def is_view(adata):
 
 
 def is_categorical(data, c=None):
-    from pandas.api.types import is_categorical as cat
+    from pandas.api.types import is_categorical_dtype as cat
 
     if c is None:
         return cat(data)  # if data is categorical/array
