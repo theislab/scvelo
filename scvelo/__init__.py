@@ -2,16 +2,16 @@
 from anndata import AnnData
 from scanpy import read, read_loom
 
+from scvelo import datasets, logging, pl, pp, settings, tl, utils
 from scvelo.core import get_df
-from . import datasets, logging, pl, pp, settings, tl, utils
-from .plotting.gridspec import GridSpec
-from .preprocessing.neighbors import Neighbors
-from .read_load import DataFrame, load, read_csv
-from .settings import set_figure_params
-from .tools.run import run_all, test
-from .tools.utils import round
-from .tools.velocity import Velocity
-from .tools.velocity_graph import VelocityGraph
+from scvelo.plotting.gridspec import GridSpec
+from scvelo.preprocessing.neighbors import Neighbors
+from scvelo.read_load import DataFrame, load, read_csv
+from scvelo.settings import set_figure_params
+from scvelo.tools.run import run_all, test
+from scvelo.tools.utils import round
+from scvelo.tools.velocity import Velocity
+from scvelo.tools.velocity_graph import VelocityGraph
 
 try:
     from setuptools_scm import get_version
