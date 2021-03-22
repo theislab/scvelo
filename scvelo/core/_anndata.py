@@ -31,7 +31,7 @@ def clean_obs_names(
 
     Arguments
     ---------
-    adata
+    data
         Annotated data matrix.
     base
         Genetic code letters to be identified.
@@ -150,7 +150,6 @@ def cleanup(
     return adata if copy else None
 
 
-# TODO: Fix docstrings
 def get_df(
     data: AnnData,
     keys: Optional[Union[str, List[str]]] = None,
@@ -167,8 +166,8 @@ def get_df(
     (in obs, var, obsm, varm, obsp, varp, uns, or layers) as a dataframe.
 
     Arguments
-    ------
-    adata
+    ---------
+    data
         AnnData object or a numpy array to get values from.
     keys
         Keys from `.var_names`, `.obs_names`, `.var`, `.obs`,
@@ -319,11 +318,27 @@ def get_df(
     return df
 
 
-# TODO: Add docstrings
 # TODO: Generalize to arbitrary modality
 def get_initial_size(
     adata: AnnData, layer: Optional[str] = None, by_total_size: bool = False
 ) -> Optional[ndarray]:
+    """Get initial counts per observation of a layer.
+
+    Arguments
+    ---------
+    adata
+        Annotated data matrix.
+    layer
+        Name of layer for which to retrieve initial size.
+    by_total_size:
+        Whether or not to return the combined initial size of the spliced and unspliced
+        layers.
+
+    Returns
+    -------
+    np.ndarray
+        Initial counts per observation in the specified layer.
+    """
     if by_total_size:
         sizes = [
             adata.obs[f"initial_size_{layer}"]
@@ -375,9 +390,22 @@ def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
             return adata.obsm[modality]
 
 
-# TODO: Add docstrings
 # TODO: Generalize to arbitray modality
 def get_size(adata: AnnData, layer: Optional[str] = None) -> ndarray:
+    """Get counts per observation in a layer.
+
+    Arguments
+    ---------
+    adata
+        Annotated data matrix.
+    layer
+        Name of later for which to retrieve initial size.
+
+    Returns
+    -------
+    np.ndarray
+        Initial counts per observation in the specified layer.
+    """
     X = adata.X if layer is None else adata.layers[layer]
     return sum(X, axis=1)
 
@@ -459,7 +487,6 @@ def make_sparse(
     return adata if not inplace else None
 
 
-# TODO: Finish docstrings
 def merge(adata: AnnData, ldata: AnnData, copy: bool = True) -> Optional[AnnData]:
     """Merge two annotated data matrices.
 
@@ -469,6 +496,8 @@ def merge(adata: AnnData, ldata: AnnData, copy: bool = True) -> Optional[AnnData
         Annotated data matrix (reference data set).
     ldata
         Annotated data matrix (to be merged into adata).
+    copy
+        Boolean flag to manipulate original AnnData or a copy of it.
 
     Returns
     -------
@@ -547,8 +576,24 @@ def merge(adata: AnnData, ldata: AnnData, copy: bool = True) -> Optional[AnnData
     return _adata if copy else None
 
 
-# TODO: Add docstrings
 def obs_df(adata: AnnData, keys: List[str], layer: Optional[str] = None) -> DataFrame:
+    """Extract layer as Pandas DataFrame indexed by observation.
+
+    Arguments
+    ---------
+    adata
+        Annotated data matrix (reference data set).
+    keys
+        Variables for which to extract data.
+    layer
+        Name of layer to turn into a Pandas DataFrame.
+
+    Returns
+    -------
+    DataFrame
+        DataFrame indexed by observations. Columns correspond to variables of specified
+        layer.
+    """
     lookup_keys = [k for k in keys if k in adata.var_names]
     if len(lookup_keys) < len(keys):
         logg.warn(
@@ -562,9 +607,24 @@ def obs_df(adata: AnnData, keys: List[str], layer: Optional[str] = None) -> Data
     return df
 
 
-# TODO: Add docstrings
 # TODO: Generalize to arbitrary modality
 def set_initial_size(adata: AnnData, layers: Optional[str] = None) -> None:
+    """Set current counts per observation of a layer as its initial size.
+
+    The initial size is only set if it does not already exist.
+
+    Arguments
+    ---------
+    adata
+        Annotated data matrix.
+    layers
+        Name of layers for which to calculate initial size.
+
+    Returns
+    -------
+    None
+    """
+
     if layers is None:
         layers = ["spliced", "unspliced"]
     verify_dtypes(adata)
@@ -621,20 +681,25 @@ def set_modality(
         return adata
 
 
-# TODO: Finish docstrings
 def show_proportions(
     adata: AnnData, layers: Optional[str] = None, use_raw: bool = True
 ) -> None:
-    """Proportions of spliced/unspliced abundances
+    """Proportions of abundances of modalities in layers.
+
+    The proportions are printed.
 
     Arguments
     ---------
-    adata: :class:`~anndata.AnnData`
+    adata
         Annotated data matrix.
+    layers
+        Layers to consider.
+    use_raw
+        Use initial sizes, i.e., raw data, to determine proportions.
 
     Returns
     -------
-    Prints the fractions of abundances.
+    None
     """
 
     if layers is None:
@@ -659,8 +724,24 @@ def show_proportions(
     print(f"Abundance of {layers_keys}: {np.round(mean_abundances, 2)}")
 
 
-# TODO: Add docstrings
 def var_df(adata: AnnData, keys: List[str], layer: Optional[str] = None):
+    """Extract layer as Pandas DataFrame indexed by features.
+
+    Arguments
+    ---------
+    adata
+        Annotated data matrix (reference data set).
+    keys
+        Observations for which to extract data.
+    layer
+        Name of layer to turn into a Pandas DataFrame.
+
+    Returns
+    -------
+    DataFrame
+        DataFrame indexed by features. Columns correspond to observations of specified
+        layer.
+    """
     lookup_keys = [k for k in keys if k in adata.obs_names]
     if len(lookup_keys) < len(keys):
         logg.warn(
@@ -675,8 +756,18 @@ def var_df(adata: AnnData, keys: List[str], layer: Optional[str] = None):
 
 
 # TODO: Find better function name
-# TODO: Add docstrings
-def verify_dtypes(adata: AnnData):
+def verify_dtypes(adata: AnnData) -> None:
+    """Verify that AnnData object is not corrupted.
+
+    Arguments
+    ---------
+    adata
+        Annotated data matrix to check.
+
+    Returns
+    -------
+    None
+    """
     try:
         _ = adata[:, 0]
     except Exception:
