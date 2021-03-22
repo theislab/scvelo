@@ -1,6 +1,8 @@
 import re
 from typing import List, Optional, Union
 
+from typing_extensions import Literal
+
 import numpy as np
 import pandas as pd
 from numpy import ndarray
@@ -14,8 +16,12 @@ from scvelo import logging as logg
 from ._arithmetic import sum
 
 
-# TODO: Add type hints
-def clean_obs_names(data, base="[AGTCBDHKMNRSVWY]", ID_length=12, copy=False):
+def clean_obs_names(
+    data: AnnData,
+    base: str = "[AGTCBDHKMNRSVWY]",
+    ID_length: int = 12,
+    copy: bool = False,
+) -> Optional[AnnData]:
     """Clean up the obs_names.
 
     For example an obs_name 'sample1_AGTCdate' is changed to 'AGTC' of the sample
@@ -25,22 +31,23 @@ def clean_obs_names(data, base="[AGTCBDHKMNRSVWY]", ID_length=12, copy=False):
 
     Arguments
     ---------
-    adata: :class:`~anndata.AnnData`
+    adata
         Annotated data matrix.
-    base: `str` (default: `[AGTCBDHKMNRSVWY]`)
+    base
         Genetic code letters to be identified.
-    ID_length: `int` (default: 12)
+    ID_length
         Length of the Genetic Codes in the samples.
-    copy: `bool` (default: `False`)
+    copy
         Return a copy instead of writing to adata.
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
-    obs_names: list
-        updated names of the observations
-    sample_batch: `.obs`
-        names of the identified sample batches
+    Optional[AnnData]
+        Returns or updates `adata` with the attributes
+        obs_names: list
+            updated names of the observations
+        sample_batch: `.obs`
+            names of the identified sample batches
     """
 
     def get_base_list(name, base):
@@ -92,24 +99,32 @@ def clean_obs_names(data, base="[AGTCBDHKMNRSVWY]", ID_length=12, copy=False):
     return adata if copy else None
 
 
-# TODO: Add type hints
-def cleanup(data, clean="layers", keep=None, copy=False):
+def cleanup(
+    data: AnnData,
+    clean: Union[
+        Literal["layers", "obs", "var", "uns"],
+        List[Literal["layers", "obs", "var", "uns"]],
+    ] = "layers",
+    keep: Optional[Union[str, List[str]]] = None,
+    copy: bool = False,
+) -> Optional[AnnData]:
     """Delete not needed attributes.
 
     Arguments
     ---------
-    data: :class:`~anndata.AnnData`
+    data
         Annotated data matrix.
-    clean: `str` or list of `str` (default: `layers`)
+    clean
         Which attributes to consider for freeing memory.
-    keep: `str` or list of `str` (default: None)
+    keep
         Which attributes to keep.
-    copy: `bool` (default: `False`)
+    copy
         Return a copy instead of writing to adata.
 
     Returns
     -------
-    Returns or updates `adata` with selection of attributes kept.
+    Optional[AnnData]
+        Returns or updates `adata` with selection of attributes kept.
     """
     adata = data.copy() if copy else data
     verify_dtypes(adata)
@@ -136,17 +151,16 @@ def cleanup(data, clean="layers", keep=None, copy=False):
 
 
 # TODO: Fix docstrings
-# TODO: Add type hints
 def get_df(
-    data,
-    keys=None,
-    layer=None,
-    index=None,
-    columns=None,
-    sort_values=None,
-    dropna="all",
-    precision=None,
-):
+    data: AnnData,
+    keys: Optional[Union[str, List[str]]] = None,
+    layer: Optional[str] = None,
+    index: List = None,
+    columns: List = None,
+    sort_values: bool = None,
+    dropna: Literal["all", "any"] = "all",
+    precision: int = None,
+) -> DataFrame:
     """Get dataframe for a specified adata key.
 
     Return values for specified key
@@ -174,7 +188,8 @@ def get_df(
 
     Returns
     -------
-    A dataframe.
+    :class:`pd.DataFrame`
+        A dataframe.
     """
     if precision is not None:
         pd.set_option("precision", precision)
@@ -305,9 +320,10 @@ def get_df(
 
 
 # TODO: Add docstrings
-# TODO: Add type hints
 # TODO: Generalize to arbitrary modality
-def get_initial_size(adata, layer=None, by_total_size=None):
+def get_initial_size(
+    adata: AnnData, layer: Optional[str] = None, by_total_size: bool = False
+) -> Optional[ndarray]:
     if by_total_size:
         sizes = [
             adata.obs[f"initial_size_{layer}"]
@@ -360,9 +376,8 @@ def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
 
 
 # TODO: Add docstrings
-# TODO: Add type hints
 # TODO: Generalize to arbitray modality
-def get_size(adata, layer=None):
+def get_size(adata: AnnData, layer: Optional[str] = None) -> ndarray:
     X = adata.X if layer is None else adata.layers[layer]
     return sum(X, axis=1)
 
@@ -445,20 +460,20 @@ def make_sparse(
 
 
 # TODO: Finish docstrings
-# TODO: Add type hints
-def merge(adata, ldata, copy=True):
+def merge(adata: AnnData, ldata: AnnData, copy: bool = True) -> Optional[AnnData]:
     """Merge two annotated data matrices.
 
     Arguments
     ---------
-    adata: :class:`~anndata.AnnData`
+    adata
         Annotated data matrix (reference data set).
-    ldata: :class:`~anndata.AnnData`
+    ldata
         Annotated data matrix (to be merged into adata).
 
     Returns
     -------
-    Returns a :class:`~anndata.AnnData` object
+    Optional[:class:`anndata.AnnData`]
+        Returns a :class:`~anndata.AnnData` object
     """
     adata.var_names_make_unique()
     ldata.var_names_make_unique()
@@ -533,8 +548,7 @@ def merge(adata, ldata, copy=True):
 
 
 # TODO: Add docstrings
-# TODO: Add type hints
-def obs_df(adata, keys, layer=None):
+def obs_df(adata: AnnData, keys: List[str], layer: Optional[str] = None) -> DataFrame:
     lookup_keys = [k for k in keys if k in adata.var_names]
     if len(lookup_keys) < len(keys):
         logg.warn(
@@ -549,9 +563,8 @@ def obs_df(adata, keys, layer=None):
 
 
 # TODO: Add docstrings
-# TODO: Add type hints
 # TODO: Generalize to arbitrary modality
-def set_initial_size(adata, layers=None):
+def set_initial_size(adata: AnnData, layers: Optional[str] = None) -> None:
     if layers is None:
         layers = ["spliced", "unspliced"]
     verify_dtypes(adata)
@@ -609,8 +622,9 @@ def set_modality(
 
 
 # TODO: Finish docstrings
-# TODO: Add type hints
-def show_proportions(adata, layers=None, use_raw=True):
+def show_proportions(
+    adata: AnnData, layers: Optional[str] = None, use_raw: bool = True
+) -> None:
     """Proportions of spliced/unspliced abundances
 
     Arguments
@@ -646,8 +660,7 @@ def show_proportions(adata, layers=None, use_raw=True):
 
 
 # TODO: Add docstrings
-# TODO: Add type hints
-def var_df(adata, keys, layer=None):
+def var_df(adata: AnnData, keys: List[str], layer: Optional[str] = None):
     lookup_keys = [k for k in keys if k in adata.obs_names]
     if len(lookup_keys) < len(keys):
         logg.warn(
@@ -663,8 +676,7 @@ def var_df(adata, keys, layer=None):
 
 # TODO: Find better function name
 # TODO: Add docstrings
-# TODO: Add type hints
-def verify_dtypes(adata):
+def verify_dtypes(adata: AnnData):
     try:
         _ = adata[:, 0]
     except Exception:
