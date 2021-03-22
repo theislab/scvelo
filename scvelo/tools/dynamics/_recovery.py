@@ -1,7 +1,13 @@
 import warnings
+from typing import Dict, List, Optional, Tuple, Union
+
+from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
+from numpy import ndarray
+
+from anndata import AnnData
 
 from scvelo.core import (
     clipped_log,
@@ -17,10 +23,9 @@ from ._recovery_base import DynamicsRecoveryBase
 
 
 # TODO: Add docstrings
-# TODO: Finish type hints
 # TODO: Remove argument `model_parameters` and infer them from the class `dynamics`.
 class SplicingDynamicsRecovery(DynamicsRecoveryBase):
-    def _initialize_parameters(self, weighted_counts):
+    def _initialize_parameters(self, weighted_counts: ndarray):
         # TODO: Remove hard coded percentile
         _weights = weighted_counts >= np.percentile(weighted_counts, 98, axis=0)
 
@@ -68,12 +73,12 @@ class SplicingDynamicsRecovery(DynamicsRecoveryBase):
 
     def tau_inv(
         self,
-        state,
-        alpha,
-        beta,
-        gamma,
-        initial_state=[0, 0],
-        full_projection=False,
+        state: ndarray,
+        alpha: Union[float, ndarray],
+        beta: Union[float, ndarray],
+        gamma: Union[float, ndarray],
+        initial_state: Union[ndarray, List] = [0, 0],
+        full_projection: bool = False,
     ):
         u = state[:, 0]
         s = state[:, 1]
@@ -108,14 +113,14 @@ class SplicingDynamicsRecovery(DynamicsRecoveryBase):
 
     def get_residuals(
         self,
-        t=None,
-        t_=None,
-        scaling=None,
-        initial_state_=None,
-        refit_time=None,
-        weighted=True,
-        weights_cluster=None,
-        return_model_kwargs=False,
+        t: Optional[ndarray] = None,
+        t_: Optional[float] = None,
+        scaling: Optional[float, ndarray] = None,
+        initial_state_: Optional[ndarray] = None,
+        refit_time: Optional[bool] = None,
+        weighted: bool = True,
+        weights_cluster: Optional[List] = None,
+        return_model_kwargs: bool = False,
         **model_parameters,
     ):
         model_parameters = self.get_model_parameters(**model_parameters)
@@ -148,7 +153,7 @@ class SplicingDynamicsRecovery(DynamicsRecoveryBase):
         else:
             return (sol - weighted_counts) / self.std_ * scaling
 
-    def _get_regularization(self, weighted_counts, **model_parameters):
+    def _get_regularization(self, weighted_counts: ndarray, **model_parameters):
         beta = model_parameters["beta"]
         gamma = model_parameters["gamma"]
         return (
@@ -159,7 +164,13 @@ class SplicingDynamicsRecovery(DynamicsRecoveryBase):
 
     # TODO: Add as method to a base class for dynamical models
     def _vectorize(
-        self, t, t_, alpha_=0, initial_state=[0, 0], sorted=False, **model_parameters
+        self,
+        t: ndarray,
+        t_: float,
+        alpha_: float = 0,
+        initial_state: Union[ndarray, List] = [0, 0],
+        sorted: bool = False,
+        **model_parameters,
     ):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -186,21 +197,23 @@ class SplicingDynamicsRecovery(DynamicsRecoveryBase):
 # TODO: Add docstrings
 # TODO: Finish type hints
 def recover_dynamics(
-    adata,
-    modalities,
-    dynamics,
-    model_parameters,
-    initial_parameter_fit,
-    pretrain,
-    train,
+    adata: AnnData,
+    modalities: List,
+    dynamics: Union[List, Tuple],
+    model_parameters: List,
+    initial_parameter_fit: Dict,
+    pretrain: List[List[str]],
+    train: List[List[str]],
     max_iter: int = 10,
-    var_names="velocity_genes",
+    var_names: str = "velocity_genes",
     fit_connected_states: bool = True,
     fit_scaling: bool = True,
-    assignment_mode="projection",
-    align=True,
-    t_max=None,
-    inplace=True,
+    assignment_mode: Optional[
+        Literal["full_projection", "partial_projection", "projection"]
+    ] = "projection",
+    align: bool = True,
+    t_max: Optional[float] = None,
+    inplace: bool = True,
 ):
     """"""
 
@@ -307,7 +320,11 @@ def recover_dynamics(
 # TODO: Add docstrings
 # TODO: Finish type hints
 def align_dynamics(
-    adata, model_parameters, t_max=None, var_idx=None, mode="align_total_time"
+    adata: AnnData,
+    model_parameters: List,
+    t_max: Optional[float] = None,
+    var_idx: Optional[List] = None,
+    mode: Literal["align_total_time"] = "align_total_time",
 ):
     """"""
 

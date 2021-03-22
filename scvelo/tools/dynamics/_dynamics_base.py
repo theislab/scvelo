@@ -1,24 +1,27 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Union
 
+from typing_extensions import Literal
+
 import numpy as np
 import pandas as pd
 from numpy import ndarray
 from scipy.optimize import minimize
 
+from scvelo.core._base import DynamicsBase
 from scvelo.tools.dynamical_model_utils import adjust_increments
 from scvelo.tools.utils import test_bimodality
 
 
 # TODO: Add docstrings
-# TODO: Finish type hints
 # TODO: Remove argument `model_parameters` and infer them from the class `dynamics`.
 # TODO: Combine `initialize` and `fit` in single method
+# TODO: Check if refit_time needs to be `None` or simply boolean
 class DynamicsRecoveryBase(ABC):
     def __init__(
         self,
-        dynamics,
-        model_parameters,
+        dynamics: DynamicsBase,
+        model_parameters: List,
         connectivities=None,
         percentile: Union[int, float] = 99,
         max_iter: int = 10,
@@ -55,7 +58,7 @@ class DynamicsRecoveryBase(ABC):
 
     def initialize(
         self,
-        counts,
+        counts: ndarray,
         weighted: bool = True,
         initial_parameter_fit: Optional[Union[Dict, List[Dict]]] = None,
     ):
@@ -145,7 +148,9 @@ class DynamicsRecoveryBase(ABC):
         return self
 
     # TODO: Add case `weighted == "outer"`
-    def get_weights(self, weighted=False, weights_cluster=None):
+    def get_weights(
+        self, weighted: bool = False, weights_cluster: Optional[List] = None
+    ):
         if not weighted:
             weights = np.ones(len(self.weights_), bool)
         elif weighted == "upper":
@@ -158,7 +163,12 @@ class DynamicsRecoveryBase(ABC):
         return weights
 
     # TODO: Try to remove function
-    def get_counts(self, scaling=None, weighted=False, weights_cluster=None):
+    def get_counts(
+        self,
+        scaling: Optional[ndarray] = None,
+        weighted: bool = False,
+        weights_cluster: Optional[List] = None,
+    ):
         scaling = self.scaling if scaling is None else scaling
 
         counts = self.raw_counts / scaling
@@ -171,7 +181,13 @@ class DynamicsRecoveryBase(ABC):
 
         return counts
 
-    def get_vars(self, scaling=None, t_=None, initial_state_=None, **model_parameters):
+    def get_vars(
+        self,
+        scaling: Optional[ndarray] = None,
+        t_: Optional[ndarray] = None,
+        initial_state_: Optional[ndarray] = None,
+        **model_parameters,
+    ):
         scaling = self.scaling if scaling is None else scaling
         if t_ is None or t_ == 0:
             t_ = (
@@ -184,7 +200,7 @@ class DynamicsRecoveryBase(ABC):
             )
         return scaling, t_
 
-    def get_model_parameters(self, after_switch=False, **kwargs):
+    def get_model_parameters(self, after_switch: bool = False, **kwargs):
         model_parameters = {
             model_parameter: kwargs.get(model_parameter, getattr(self, model_parameter))
             for model_parameter in self.model_parameters
@@ -196,21 +212,21 @@ class DynamicsRecoveryBase(ABC):
         return model_parameters
 
     @abstractmethod
-    def _set_parameters_after_switch(self, model_parameters):
+    def _set_parameters_after_switch(self, model_parameters: List):
         return model_parameters
 
     def set_model_parameters(self, **model_parameters):
         for parameter, value in model_parameters.items():
             setattr(self, parameter, value)
 
-    def _get_parameter_dict(self, parameter_names, parameter_values):
+    def _get_parameter_dict(self, parameter_names: List, parameter_values: List):
         parameter_dict = dict(zip(parameter_names, parameter_values))
         if "scaling" in parameter_dict:
             parameter_dict["scaling"] = np.append(parameter_dict["scaling"], 1)
 
         return parameter_dict
 
-    def get_variance(self, regularize=False, **kwargs):
+    def get_variance(self, regularize: bool = False, **kwargs):
         if "weighted" not in kwargs:
             kwargs.update({"weighted": "upper"})
         residuals = self.get_residuals(**kwargs)
@@ -222,7 +238,12 @@ class DynamicsRecoveryBase(ABC):
             - np.mean(np.sign(residuals[:, -1]) * np.sqrt(sum_squares)) ** 2
         )
 
-    def get_loglikelihood(self, varx=None, noise_model="normal", **kwargs):
+    def get_loglikelihood(
+        self,
+        varx: Optional[ndarray] = None,
+        noise_model: Literal["laplace", "normal"] = "normal",
+        **kwargs,
+    ):
         dist = self.get_distances(**kwargs)
         n = np.clip(len(dist) - self.raw_counts.shape[0] * 0.01, 2, None)
 
@@ -247,14 +268,16 @@ class DynamicsRecoveryBase(ABC):
         return np.exp(self.get_loglikelihood(**kwargs))
 
     @abstractmethod
-    def _initialize_parameters(self, weighted_counts):
+    def _initialize_parameters(self, weighted_counts: ndarray):
         pass
 
     @abstractmethod
     def _set_steady_state_ratio(self, **model_params):
         pass
 
-    def initial_parameter_fit(self, parameter_names, sight=0.5, num=4):
+    def initial_parameter_fit(
+        self, parameter_names: Union[str, List], sight: float = 0.5, num: int = 4
+    ):
         if isinstance(parameter_names, str):
             parameter_names = [parameter_names]
 
@@ -299,12 +322,12 @@ class DynamicsRecoveryBase(ABC):
     def get_time_assignment(
         self,
         scaling=None,
-        t_=None,
-        initial_state_=None,
-        t=None,
-        refit_time=None,
-        weighted=None,
-        weights_cluster=None,
+        t_: Optional[float, ndarray] = None,
+        initial_state_: Optional[ndarray] = None,
+        t: Optional[ndarray] = None,
+        refit_time: Optional[bool] = None,
+        weighted: Optional[bool] = None,
+        weights_cluster: Optional[List] = None,
         **model_parameters,
     ):
         model_parameters = self.get_model_parameters(**model_parameters)
@@ -340,7 +363,14 @@ class DynamicsRecoveryBase(ABC):
         return True
 
     def assign_tau(
-        self, state, initial_state_, t_, assignment_mode=None, **model_parameters
+        self,
+        state: ndarray,
+        initial_state_: ndarray,
+        t_: float,
+        assignment_mode: Optional[
+            Literal["full_projection", "partial_projection", "projection"]
+        ] = None,
+        **model_parameters,
     ):
         model_parameters_ = self.get_model_parameters(
             after_switch=True, **model_parameters
@@ -386,15 +416,15 @@ class DynamicsRecoveryBase(ABC):
         return tau, tau_
 
     @abstractmethod
-    def tau_inv(self, state, initial_state, **model_parameters):
+    def tau_inv(self, state: ndarray, initial_state: ndarray, **model_parameters):
         pass
 
     def get_divergence(
         self,
-        scaling=None,
-        t_=None,
-        initial_state_=None,
-        mode=None,
+        scaling: Optional[ndarray] = None,
+        t_: float = None,
+        initial_state_: ndarray = None,
+        mode: Literal["tau", "assign_timepoints", "time"] = None,
         **kwargs,
     ):
         model_parameters = self.get_model_parameters(**kwargs)
@@ -414,19 +444,21 @@ class DynamicsRecoveryBase(ABC):
 
     def compute_divergence(
         self,
-        state,
-        scaling=1,
-        t_=None,
-        initial_state_=None,
-        tau=None,
-        tau_=None,
-        std=1,
-        mode="distance",
-        assignment_mode=None,
-        var_scale=False,
-        kernel_width=None,
-        constraint_time_increments=True,
-        noise_model="chi",
+        state: ndarray,
+        scaling: Union[float, ndarray] = 1,
+        t_: Optional[float] = None,
+        initial_state_: Optional[ndarray] = None,
+        tau: Optional[ndarray] = None,
+        tau_: Optional[ndarray] = None,
+        std: Union[float, ndarray] = 1,
+        mode: Literal["tau", "assign_timepoints", "time"] = "distance",
+        assignment_mode: Optional[
+            Literal["full_projection", "partial_projection", "projection"]
+        ] = None,
+        var_scale: bool = False,
+        kernel_width: Optional[ndarray] = None,
+        constraint_time_increments: bool = True,
+        noise_model: Literal["chi"] = "chi",
         **model_parameters,
     ):
         """"""
@@ -560,24 +592,28 @@ class DynamicsRecoveryBase(ABC):
     @abstractmethod
     def get_residuals(
         self,
-        t=None,
-        t_=None,
-        scaling=None,
-        initial_state_=None,
-        refit_time=None,
-        weighted=True,
-        weights_cluster=None,
-        return_model_kwargs=False,
+        t: Optional[ndarray] = None,
+        t_: Optional[float] = None,
+        scaling: Optional[float, ndarray] = None,
+        initial_state_: Optional[ndarray] = None,
+        refit_time: Optional[bool] = None,
+        weighted: bool = True,
+        weights_cluster: Optional[List] = None,
+        return_model_kwargs: bool = False,
         **model_parameters,
     ):
         pass
 
     @abstractmethod
-    def _get_regularization(self, weighted_counts, **model_parameters):
+    def _get_regularization(self, weighted_counts: ndarray, **model_parameters):
         pass
 
     def get_regularization(
-        self, scaling=None, weighted=True, weights_cluster=None, **model_parameters
+        self,
+        scaling: Optional[ndarray] = None,
+        weighted: bool = True,
+        weights_cluster: Optional[List] = None,
+        **model_parameters,
     ):
         model_parameters = self.get_model_parameters(**model_parameters)
 
@@ -592,14 +628,14 @@ class DynamicsRecoveryBase(ABC):
 
     def get_distances(
         self,
-        t=None,
-        t_=None,
-        scaling=None,
-        initial_state_=None,
-        refit_time=None,
-        weighted=True,
-        weights_cluster=None,
-        regularize=True,
+        t: Optional[ndarray] = None,
+        t_: Optional[float] = None,
+        scaling: Optional[ndarray] = None,
+        initial_state_: Optional[ndarray] = None,
+        refit_time: Optional[bool] = None,
+        weighted: bool = True,
+        weights_cluster: Optional[List] = None,
+        regularize: bool = True,
         **model_parameters,
     ):
         model_parameters, diff = self.get_residuals(
@@ -627,13 +663,13 @@ class DynamicsRecoveryBase(ABC):
 
     def get_loss(
         self,
-        kind="se",
-        regularize=True,
-        t=None,
-        t_=None,
-        scaling=None,
-        initial_state_=None,
-        refit_time=None,
+        kind: Literal["mse", "se"] = "se",
+        regularize: bool = True,
+        t: Optional[ndarray] = None,
+        t_: Optional[float] = None,
+        scaling: Optional[ndarray] = None,
+        initial_state_: Optional[ndarray] = None,
+        refit_time: Optional[bool] = None,
         **model_parameters,
     ):
         kwargs = {
@@ -657,7 +693,12 @@ class DynamicsRecoveryBase(ABC):
 
     # TODO: Add adjust_t_ part from original implementation
     def update(
-        self, t=None, t_=None, scaling=None, initial_state_=None, **model_parameters
+        self,
+        t: Optional[ndarray] = None,
+        t_: Optional[float] = None,
+        scaling: Optional[ndarray] = None,
+        initial_state_: Optional[ndarray] = None,
+        **model_parameters,
     ):
         loss_prev = self.loss_[-1] if len(self.loss_) > 0 else 1e6
 
@@ -707,7 +748,7 @@ class DynamicsRecoveryBase(ABC):
             self.loss_.append(loss)
 
     # TODO: Generalize to more general scaling attributes, e.g. for a 3D model.
-    def fit_parameters(self, parameters, **kwargs):
+    def fit_parameters(self, parameters: List, **kwargs):
         def mse(x):
             return self.get_loss(
                 kind="mse",
@@ -740,7 +781,14 @@ class DynamicsRecoveryBase(ABC):
 
     # TODO: Use better argument names: pretrain runs everything with non-optimal time
     # assignment
-    def fit(self, pretrain, train, assignment_mode=None):
+    def fit(
+        self,
+        pretrain: List[List[str]],
+        train: List[List[str]],
+        assignment_mode: Optional[
+            Literal["full_projection", "partial_projection", "projection"]
+        ] = None,
+    ):
         if self.max_iter > 0:
             # for comparison with exact time assignment
             if assignment_mode == "full_projection":
@@ -764,5 +812,12 @@ class DynamicsRecoveryBase(ABC):
 
     # TODO: Add as method to a base class for dynamical models
     @abstractmethod
-    def _vectorize(self, t, t_, initial_state, sorted=False, **model_paramers):
+    def _vectorize(
+        self,
+        t: ndarray,
+        t_: float,
+        initial_state: ndarray,
+        sorted: bool = False,
+        **model_parameters,
+    ):
         pass
