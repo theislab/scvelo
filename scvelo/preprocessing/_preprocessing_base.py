@@ -1,8 +1,9 @@
 from abc import abstractmethod
-from typing import List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
 import numpy as np
 from numpy import ndarray
+from pandas import DataFrame
 from scipy.sparse import issparse
 
 from anndata import AnnData
@@ -224,3 +225,45 @@ class PreprocessingBase(ScveloBase):
         adata = self._transform(adata=adata, modalities=modalities, **kwargs)
 
         return adata if not self.inplace else None
+
+
+class FilterBase(PreprocessingBase):
+    def __init__(
+        self,
+        inplace: bool = True,
+        enforce: bool = False,
+        keep: Optional[Dict[str, List[Union[str, int]]]] = None,
+    ):
+        """Base class for filtering of annotated data.
+
+        Arguments
+        ---------
+        inplace
+            Boolean flag to indicate whether operations on annotaded data should be
+            performed inplace or not. Otherwise, it is ignored.
+        enforce
+            Boolean flag to enforce preprocessing step.
+        """
+
+        super().__init__(inplace=inplace, enforce=enforce)
+
+    def _subset_var(self, adata: AnnData, modality: str, filter_mask: ndarray):
+        """Subset variables using a filter mask.
+
+        Arguments
+        ---------
+        data
+            Annotated data to subset from.
+        modality
+            Modality to subset.
+        filter_mask
+            Boolean ndarray indicating which variables to subset.
+        """
+
+        if modality in adata.obsm.keys():
+            if isinstance(adata.obsm[modality], DataFrame):
+                adata.obsm[modality] = adata.obsm[modality].loc[:, filter_mask]
+            else:
+                adata.obsm[modality] = adata.obsm[modality][:, filter_mask]
+        else:
+            adata._inplace_subset_var(filter_mask)
