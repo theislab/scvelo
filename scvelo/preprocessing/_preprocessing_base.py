@@ -1,10 +1,11 @@
 from abc import abstractmethod
+from functools import reduce
 from typing import Dict, List, Optional, Set, Union
 
 import numpy as np
 from numpy import ndarray
 from pandas import DataFrame
-from scipy.sparse import issparse
+from scipy.sparse import issparse, spmatrix
 
 from anndata import AnnData
 
@@ -267,3 +268,121 @@ class FilterBase(PreprocessingBase):
                 adata.obsm[modality] = adata.obsm[modality][:, filter_mask]
         else:
             adata._inplace_subset_var(filter_mask)
+
+
+class CountFilterBase(FilterBase):
+    def __init__(
+        self,
+        inplace: bool = True,
+        enforce: bool = False,
+        lower_bound: Optional[int] = None,
+        upper_bound: Optional[int] = None,
+        shared_counts: bool = False,
+    ):
+        """Base class for filtering variables based on their counts.
+
+        Arguments
+        ---------
+        inplace
+            Boolean flag to indicate whether operations on annotaded data should be
+            performed inplace or not. Otherwise, it is ignored.
+        enforce
+            Boolean flag to enforce filtering modalities.
+        lower_bound
+            Minimum number of occurances to not be filtered out.
+        upper_bound
+            Maximum number of occurances to not be filtered out.
+        shared_counts
+            Boolearn flag to filter by shared counts.
+        """
+
+        super().__init__(inplace=inplace, enforce=enforce)
+
+        self.lower_bound = lower_bound if lower_bound is not None else -np.inf
+        self.upper_bound = upper_bound if upper_bound is not None else np.inf
+        self.shared_counts = shared_counts
+
+    def _update_modalities(self, adata: AnnData, modalities: Set):
+        """Remove already normalized modalities
+
+        Arguments
+        ---------
+        adata
+            Annotated data to applt count filter to.
+        modalities
+            Candidate modalities for filtering.
+        """
+
+        self._remove_normalized_modalities(
+            adata=adata, modalities=modalities, task="filtering"
+        )
+
+    def _sum_shared_counts(
+        self, adata: AnnData, modalities: Set
+    ) -> Union[ndarray, spmatrix]:
+        """Sum counts across modalities.
+
+        If a count entry is trivial, i.e. `0`, the shared counts will be set to `0`.
+
+        Arguments
+        ---------
+        adata
+            Annotated data from which shared counts are calculated.
+        modalities
+            Set of modalities for which to calculate shared counts.
+
+        Returns
+        -------
+        Union[ndarray, spmatrix]
+            Summed counts across modalities.
+        """
+
+        count_matrices = [
+            get_modality(adata=adata, modality=modality) for modality in modalities
+        ]
+
+        nonzeros = reduce(
+            lambda x, y: (x > 0).multiply(y > 0) if issparse(x) else (x > 0) * (y > 0),
+            count_matrices,
+        )
+
+        if issparse(nonzeros):
+            return nonzeros.multiply(np.array(count_matrices).sum(axis=0))
+        else:
+            return nonzeros * np.array(count_matrices).sum(axis=0)
+
+    def get_filter_mask(
+        self, adata: AnnData, modality: ndarray, vars_to_keep: List[Union[int, str]]
+    ) -> ndarray:
+        """Create filter for genes of a given modality.
+
+        Arguments
+        ---------
+        adata
+            Annotated data to apply count filter to.
+        modality
+            Modality to find filter mask for.
+        vars_to_keep
+            List of variables to exclude from filtering.
+
+        Returns
+        -------
+        ndarray
+            Mask to filter out genes.
+        """
+
+        summed_counts = sum(modality, axis=0)
+        filter_mask = (self.lower_bound <= summed_counts) & (
+            summed_counts <= self.upper_bound
+        )
+
+        # `len(vars_to_keep) > 0` assures that `vars_to_keep` is not empty and that
+        # `isinstance(vars_to_keep[0], str)`, thus, does not fail
+        if len(vars_to_keep) > 0 and isinstance(vars_to_keep[0], str):
+            vars_to_keep = [
+                adata.var.index.get_loc(variable) for variable in vars_to_keep
+            ]
+
+        filter_mask[vars_to_keep] = True
+
+        return filter_mask
