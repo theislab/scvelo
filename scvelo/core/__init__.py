@@ -13,6 +13,7 @@ from ._anndata import (
     show_proportions,
 )
 from ._arithmetic import clipped_log, invert, prod_sum, sum
+from ._base import ScveloBase
 from ._linear_models import LinearRegression
 from ._metrics import l2_norm
 from ._models import SplicingDynamics
@@ -35,6 +36,7 @@ __all__ = [
     "merge",
     "parallelize",
     "prod_sum",
+    "ScveloBase",
     "set_initial_size",
     "set_modality",
     "show_proportions",
