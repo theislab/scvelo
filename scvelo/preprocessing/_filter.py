@@ -68,6 +68,7 @@ def _log_progress(
             )
 
 
+# TODO: Find better name
 class CellCountFilter(CountFilterBase):
     def __init__(
         self,
@@ -179,6 +180,7 @@ class CellCountFilter(CountFilterBase):
         return adata if not self.inplace else None
 
 
+# TODO: Find better name
 class GeneCountFilter(CountFilterBase):
     def __init__(
         self,
