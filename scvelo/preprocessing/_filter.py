@@ -73,8 +73,8 @@ class CellCountFilter(CountFilterBase):
         self,
         inplace: bool = True,
         enforce: bool = False,
-        min_n_obs: Optional[int] = None,
-        max_n_obs: Optional[int] = None,
+        min_cells: Optional[int] = None,
+        max_cells: Optional[int] = None,
         shared_counts: bool = False,
     ):
         """Class to filter variables based on number of observations expressing them.
@@ -86,10 +86,10 @@ class CellCountFilter(CountFilterBase):
             performed inplace or not. Otherwise, it is ignored.
         enforce
             Boolean flag to enforce filtering modalities.
-        min_n_obs
+        min_cells
             Minimum number of observations in which a variable is expressed to not be
             filtered out.
-        max_n_obs
+        max_cells
             Maximum number of observations in which a variable is expressed to not be
             filtered out.
         shared_counts
@@ -99,8 +99,8 @@ class CellCountFilter(CountFilterBase):
         super().__init__(
             inplace=inplace,
             enforce=enforce,
-            lower_bound=min_n_obs,
-            upper_bound=max_n_obs,
+            lower_bound=min_cells,
+            upper_bound=max_cells,
             shared_counts=shared_counts,
         )
 

@@ -14,9 +14,9 @@ from scvelo.preprocessing._filter import CellCountFilter, GeneCountFilter
 # TODO: Decouple function `_get_n_vars_final` as it is the same for
 # `TestGeneCountFilter`
 class TestCellCountFilter(TestBase):
-    def _get_n_vars_final(self, adata, modalities_to_filter, min_n_obs, max_n_obs):
+    def _get_n_vars_final(self, adata, modalities_to_filter, min_cells, max_cells):
         n_vars_final = {
-            key: ((val.sum(axis=0) >= min_n_obs) & (val.sum(axis=0) <= max_n_obs)).sum()
+            key: ((val.sum(axis=0) >= min_cells) & (val.sum(axis=0) <= max_cells)).sum()
             for key, val in modalities_to_filter.items()
             if key in adata.obsm
         }
@@ -32,8 +32,8 @@ class TestCellCountFilter(TestBase):
                     np.all,
                     zip(
                         *[
-                            (val.sum(axis=0) >= min_n_obs)
-                            & (val.sum(axis=0) <= max_n_obs)
+                            (val.sum(axis=0) >= min_cells)
+                            & (val.sum(axis=0) <= max_cells)
                             for key, val in x_or_layers.items()
                         ]
                     ),
@@ -48,8 +48,8 @@ class TestCellCountFilter(TestBase):
         adata=get_adata(),
         inplace=st.booleans(),
         enforce=st.booleans(),
-        min_n_obs=st.integers(min_value=-1000, max_value=1000),
-        max_n_obs=st.integers(min_value=-1000, max_value=1000),
+        min_cells=st.integers(min_value=-1000, max_value=1000),
+        max_cells=st.integers(min_value=-1000, max_value=1000),
         n_modalities=st.integers(min_value=0),
     )
     def test_cell_count_filter(
@@ -57,8 +57,8 @@ class TestCellCountFilter(TestBase):
         adata: AnnData,
         inplace: bool,
         enforce: bool,
-        min_n_obs: int,
-        max_n_obs: int,
+        min_cells: int,
+        max_cells: int,
         n_modalities: int,
     ):
         n_obs, n_vars = adata.shape
@@ -70,11 +70,11 @@ class TestCellCountFilter(TestBase):
         }
 
         n_vars_final = self._get_n_vars_final(
-            adata, modalities_to_filter, min_n_obs, max_n_obs
+            adata, modalities_to_filter, min_cells, max_cells
         )
 
         cell_count_filter = CellCountFilter(
-            inplace=inplace, enforce=enforce, min_n_obs=min_n_obs, max_n_obs=max_n_obs
+            inplace=inplace, enforce=enforce, min_cells=min_cells, max_cells=max_cells
         )
 
         if inplace:
