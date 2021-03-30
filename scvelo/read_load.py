@@ -155,6 +155,7 @@ def load_biomart():
     df2.index = df2.pop("ensembl")
 
     df = pd.concat([df, df2])
+    df = df.drop_duplicates()
     return df
 
 
@@ -163,7 +164,7 @@ def convert_to_gene_names(ensembl_names=None):
     df = load_biomart()
     if ensembl_names is not None:
         if isinstance(ensembl_names, str):
-            ensembl_names = ensembl_names
+            ensembl_names = [ensembl_names]
         valid_names = [name for name in ensembl_names if name in df.index]
         if len(valid_names) > 0:
             df = df.loc[valid_names]
