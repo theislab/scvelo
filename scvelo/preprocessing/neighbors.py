@@ -1,4 +1,5 @@
 import warnings
+from collections import Counter
 
 import numpy as np
 from scipy.sparse import coo_matrix, issparse
@@ -434,10 +435,9 @@ def get_duplicate_cells(data):
         X = data
         lst = list(np.sum(X, 1).A1 if issparse(X) else np.sum(X, 1))
 
-    l_set = set(lst)
     idx_dup = []
-    if len(l_set) < len(lst):
-        idx_dup = np.array([i for i, x in enumerate(lst) if lst.count(x) > 1])
+    if len(set(lst)) < len(lst):
+        idx_dup = [i for i, (_, count) in enumerate(Counter(lst).items()) if count > 1]
 
         X_new = np.array(X[idx_dup].A if issparse(X) else X[idx_dup])
         sorted_idx = np.lexsort(X_new.T)
@@ -445,7 +445,7 @@ def get_duplicate_cells(data):
 
         row_mask = np.invert(np.append([True], np.any(np.diff(sorted_data, axis=0), 1)))
         idx = sorted_idx[row_mask]
-        idx_dup = idx_dup[idx]
+        idx_dup = np.array(idx_dup)[idx]
     return idx_dup
 
 
