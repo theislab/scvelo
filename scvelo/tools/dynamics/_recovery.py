@@ -19,7 +19,7 @@ from scvelo.core import (
 )
 from scvelo.preprocessing.neighbors import get_connectivities
 from scvelo.tools.dynamical_model_utils import convolve
-from ._recovery_base import DynamicsRecoveryBase
+from ._dynamics_base import DynamicsRecoveryBase
 
 
 # TODO: Add docstrings
@@ -115,7 +115,7 @@ class SplicingDynamicsRecovery(DynamicsRecoveryBase):
         self,
         t: Optional[ndarray] = None,
         t_: Optional[float] = None,
-        scaling: Optional[float, ndarray] = None,
+        scaling: Optional[Union[float, ndarray]] = None,
         initial_state_: Optional[ndarray] = None,
         refit_time: Optional[bool] = None,
         weighted: bool = True,

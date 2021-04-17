@@ -322,7 +322,7 @@ class DynamicsRecoveryBase(ABC):
     def get_time_assignment(
         self,
         scaling=None,
-        t_: Optional[float, ndarray] = None,
+        t_: Optional[Union[float, ndarray]] = None,
         initial_state_: Optional[ndarray] = None,
         t: Optional[ndarray] = None,
         refit_time: Optional[bool] = None,
@@ -594,7 +594,7 @@ class DynamicsRecoveryBase(ABC):
         self,
         t: Optional[ndarray] = None,
         t_: Optional[float] = None,
-        scaling: Optional[float, ndarray] = None,
+        scaling: Optional[Union[float, ndarray]] = None,
         initial_state_: Optional[ndarray] = None,
         refit_time: Optional[bool] = None,
         weighted: bool = True,
