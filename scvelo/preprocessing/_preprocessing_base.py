@@ -221,3 +221,34 @@ class PreprocessingBase(ScveloBase):
         adata = self._transform(adata=adata, modalities=modalities, **kwargs)
 
         return adata if not self.inplace else None
+
+
+class NormalizerBase(PreprocessingBase):
+    def __init__(self, inplace: bool = True, enforce: bool = False):
+        """Base class for normalizing count data.
+
+        Arguments
+        ---------
+        inplace
+            Boolean flag to indicate whether operations on annotated data should be
+            performed inplace or not. Otherwise, it is ignored.
+        enforce
+            Boolean flag to enforce normalizing modalities.
+        """
+
+        super().__init__(inplace=inplace, enforce=enforce)
+
+    def _update_modalities(self, adata: AnnData, modalities: Set):
+        """Remove normalized modalities.
+
+        Arguments
+        ---------
+        adata
+            Annotated data to apply normalization to.
+        modalities
+            Set of modalities to normalize.
+        """
+
+        self._remove_normalized_modalities(
+            adata=adata, modalities=modalities, task="normalization"
+        )
