@@ -55,3 +55,17 @@ class DynamicsBase(ABC):
         """
 
         return
+
+
+class ScveloBase(ABC):
+    def __init__(self, inplace: bool = True):
+        """Abstract base class for protein velocity.
+
+        Arguments
+        ---------
+        inplace
+            Boolean flag to indicate whether operations on annotared data should be
+            performed inplace or not. Otherwise, it is ignored.
+        """
+
+        self.inplace = inplace
