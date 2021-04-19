@@ -2,6 +2,7 @@ import warnings
 from collections import Counter
 
 import numpy as np
+import pandas as pd
 from scipy.sparse import coo_matrix, issparse
 
 from anndata import AnnData
@@ -437,7 +438,8 @@ def get_duplicate_cells(data):
 
     idx_dup = []
     if len(set(lst)) < len(lst):
-        idx_dup = [i for i, (_, count) in enumerate(Counter(lst).items()) if count > 1]
+        vals = [val for val, count in Counter(lst).items() if count > 1]
+        idx_dup = np.where(pd.Series(lst).isin(vals))[0]
 
         X_new = np.array(X[idx_dup].A if issparse(X) else X[idx_dup])
         sorted_idx = np.lexsort(X_new.T)
@@ -458,4 +460,5 @@ def remove_duplicate_cells(adata):
         mask[idx_duplicates] = 0
         logg.info("Removed", len(idx_duplicates), "duplicate cells.")
         adata._inplace_subset_obs(mask)
-        neighbors(adata)
+        if "neighbors" in adata.uns.keys():
+            neighbors(adata)

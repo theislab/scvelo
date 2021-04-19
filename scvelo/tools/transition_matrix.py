@@ -208,6 +208,8 @@ def get_cell_transitions(
         if n_neighbors is not None and n_neighbors < len(p):
             idx = np.argsort(t.data)[::-1][:n_neighbors]
             indices, p = indices[idx], p[idx]
+        if len(p) == 0:
+            indices, p = [X[-1]], [1]
         p /= np.sum(p)
         ix = np.random.choice(indices, p=p)
         X.append(ix)
