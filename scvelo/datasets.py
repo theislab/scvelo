@@ -245,10 +245,13 @@ def simulation(
     U = np.zeros(shape=(len(t), n_vars))
     S = np.zeros(shape=(len(t), n_vars))
 
+    def is_list(x):
+        return isinstance(x, (tuple, list, np.ndarray))
+
     for i in range(n_vars):
-        alpha_i = alpha[i] if isinstance(alpha, (tuple, list, np.ndarray)) else alpha
-        beta_i = beta[i] if isinstance(beta, (tuple, list, np.ndarray)) else beta
-        gamma_i = gamma[i] if isinstance(gamma, (tuple, list, np.ndarray)) else gamma
+        alpha_i = alpha[i] if is_list(alpha) and len(alpha) != n_obs else alpha
+        beta_i = beta[i] if is_list(beta) and len(beta) != n_obs else beta
+        gamma_i = gamma[i] if is_list(gamma) and len(gamma) != n_obs else gamma
         tau, alpha_vec, u0_vec, s0_vec = vectorize(
             t, t_[i], alpha_i, beta_i, gamma_i, alpha_=alpha_, u0=0, s0=0
         )
@@ -266,6 +269,13 @@ def simulation(
                 noise_model,
                 noise_level[i],
             )
+
+    if is_list(alpha) and len(alpha) == n_obs:
+        alpha = np.nan
+    if is_list(beta) and len(beta) == n_obs:
+        beta = np.nan
+    if is_list(gamma) and len(gamma) == n_obs:
+        gamma = np.nan
 
     obs = {"true_t": t.round(2)}
     var = {
