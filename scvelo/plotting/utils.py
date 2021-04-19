@@ -733,18 +733,19 @@ def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
         palette = palettes.default_26 if length <= 28 else palettes.default_64
     if isinstance(palette, str) and palette in adata.uns:
         palette = (
-            adata.uns[palette].values()
+            [adata.uns[palette][c] for c in categories]
             if isinstance(adata.uns[palette], dict)
             else adata.uns[palette]
         )
-
     if palette is None and color_key in adata.uns:
+        color_keys = adata.uns[color_key]
         # Check if colors already exist in adata.uns and if they are a valid palette
-        color_keys = (
-            adata.uns[color_key].values()
-            if isinstance(adata.uns[color_key], dict)
-            else adata.uns[color_key]
-        )
+        if isinstance(color_keys, (list, np.ndarray)) and isinstance(color_keys, dict):
+            adata.uns[color_key] = adata.uns[color_key][0]
+        # Flatten the dict to a list (mainly for anndata compatibilities)
+        if isinstance(color_keys, dict):
+            adata.uns[color_key] = [adata.uns[color_key][c] for c in categories]
+        color_keys = adata.uns[color_key]
         for color in color_keys:
             if not is_color_like(color):
                 # check if valid color translate to a hex color value
@@ -768,6 +769,13 @@ def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
             colors_list = [to_hex(x) for x in cmap(np.linspace(0, 1, length))]
 
         else:
+            # check if palette is an array of length n_obs
+            if isinstance(palette, (list, np.ndarray)) or is_categorical(palette):
+                if len(adata.obs[value_to_plot]) == len(palette):
+                    cats = pd.Categorical(adata.obs[value_to_plot])
+                    colors = pd.Categorical(palette)
+                    if len(cats) == len(colors):
+                        palette = dict(zip(cats, colors))
             # check if palette is as dict and convert it to an ordered list
             if isinstance(palette, dict):
                 palette = [palette[c] for c in categories]
@@ -1429,7 +1437,7 @@ def hist(
             ax.fill_between(bins, 0, kde_bins, alpha=0.4, color=ci, label=li)
             ylim = np.min(kde_bins) if ylim is None else ylim
         if hist:
-            ci, li = colors[i], labels[i] if labels is not None else None
+            ci, li = colors[i], labels[i] if labels is not None and not kde else None
             kwargs.update({"color": ci, "label": li})
             try:
                 ax.hist(x_vals, bins=bins, alpha=alpha, density=normed, **kwargs)
@@ -1515,7 +1523,7 @@ def plot(
     dpi=None,
     show=True,
 ):
-    ax = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
+    ax, show = get_ax(ax, show, figsize, dpi)
     arrays = np.array(arrays)
     arrays = (
         arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
@@ -1527,21 +1535,19 @@ def plot(
     for i, array in enumerate(arrays):
         X = array[np.isfinite(array)]
         X = X / np.max(X) if normalize else X
-        pl.plot(X, color=colors[i], label=labels[i] if labels is not None else None)
+        ax.plot(X, color=colors[i], label=labels[i] if labels is not None else None)
 
-    pl.xlabel(xlabel if xlabel is not None else "")
-    pl.ylabel(ylabel if xlabel is not None else "")
+    ax.set_xlabel(xlabel if xlabel is not None else "")
+    ax.set_ylabel(ylabel if xlabel is not None else "")
     if labels is not None:
-        pl.legend()
+        ax.legend()
     if xscale is not None:
-        pl.xscale(xscale)
+        ax.xscale(xscale)
     if yscale is not None:
-        pl.yscale(yscale)
+        ax.yscale(yscale)
 
     if not show:
         return ax
-    else:
-        pl.show()
 
 
 def fraction_timeseries(
