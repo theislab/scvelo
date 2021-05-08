@@ -294,15 +294,7 @@ def set_figure_params(
         Only concerns the notebook/IPython environment; see
         `IPython.core.display.set_matplotlib_formats` for more details.
     """
-    try:
-        import IPython
-
-        if isinstance(ipython_format, str):
-            ipython_format = [ipython_format]
-        IPython.display.set_matplotlib_formats(*ipython_format)
-    except Exception:
-        pass
-
+    _set_ipython(ipython_format)
     global _rcParams_style
     _rcParams_style = style
     global _vector_friendly
@@ -334,6 +326,30 @@ def set_rcParams_defaults():
     rcParams.update(rcParamsDefault)
 
 
+def _set_ipython(ipython_format="png2x"):
+    try:
+        __IPYTHON__
+        run_from_ipython = True
+    except NameError:
+        run_from_ipython = False
+
+    if run_from_ipython:
+        try:
+            import IPython
+
+            if isinstance(ipython_format, str):
+                ipython_format = [ipython_format]
+            IPython.display.set_matplotlib_formats(*ipython_format)
+        except ImportError:
+            pass
+
+
+def _set_start_time():
+    from time import time
+
+    return time()
+
+
 # ------------------------------------------------------------------------------
 # Private global variables & functions
 # ------------------------------------------------------------------------------
@@ -344,13 +360,6 @@ _vector_friendly = False
 
 _low_resolution_warning = True
 """Print warning when saving a figure with low resolution."""
-
-
-def _set_start_time():
-    from time import time
-
-    return time()
-
 
 _start = _set_start_time()
 """Time when the settings module is first imported."""
