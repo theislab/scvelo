@@ -984,7 +984,7 @@ def differential_kinetic_test(
     if "fit_diff_kinetics" in adata.var.keys():
         diff_kinetics = np.array(adata.var["fit_diff_kinetics"])
     else:
-        diff_kinetics = np.empty(adata.n_vars, dtype="|S6")
+        diff_kinetics = np.empty(adata.n_vars, dtype="object")
     idx = []
 
     progress = logg.ProgressReporter(len(var_names))
