@@ -108,6 +108,8 @@ add_text: `str` (default: `None`)
     Text to be added to the plot, passed as `str`.
 add_text_pos: `tuple`, e.g. [0.05, 0.95] (defaut: `[0.05, 0.95]`)
     Text position. Default is `[0.05, 0.95]`, positioning the text at top right corner.
+add_margin: `float` (default: `None`)
+    A value between [-1, 1] to add (positive) and reduce (negative) figure margins.
 add_outline: `bool` or `str` (default: `False`)
     Whether to show an outline around scatter plot dots.
     Alternatively a string of cluster names can be passed, e.g. 'cluster_1, clusters_3'.
@@ -121,6 +123,8 @@ n_convolve: `int` or `None` (default: `None`)
 smooth: `bool` or `int` (default: `None`)
     Whether to convolve/average the color values over the nearest neighbors.
     If `int`, it specifies number of neighbors.
+normalize_data: `bool` (default: `None`)
+    Whether to rescale values for x, y to [0,1].
 rescale_color: `tuple` (default: `None`)
     Boundaries for color rescaling, e.g. [0, 1], setting min/max values of the colorbar.
 color_gradients: `str` or `np.ndarray` (default: `None`)

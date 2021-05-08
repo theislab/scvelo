@@ -57,11 +57,13 @@ def scatter(
     add_rug=None,
     add_text=None,
     add_text_pos=None,
+    add_margin=None,
     add_outline=None,
     outline_width=None,
     outline_color=None,
     n_convolve=None,
     smooth=None,
+    normalize_data=None,
     rescale_color=None,
     color_gradients=None,
     dpi=None,
@@ -106,7 +108,7 @@ def scatter(
 
     # keys for figures (fkeys) and multiple plots (mkeys)
     fkeys = ["adata", "show", "save", "groups", "ncols", "nrows", "wspace", "hspace"]
-    fkeys += ["ax", "kwargs"]
+    fkeys += ["add_margin", "ax", "kwargs"]
     mkeys = ["color", "layer", "basis", "components", "x", "y", "xlabel", "ylabel"]
     mkeys += ["title", "color_map", "add_text"]
     scatter_kwargs = {"show": False, "save": False}
@@ -167,7 +169,7 @@ def scatter(
             nrows = int(np.ceil(len(multikey) / ncols))
         else:
             ncols = int(np.ceil(len(multikey) / nrows))
-        if not frameon:
+        if not frameon or frameon == "artist":
             lloc, llines = "legend_loc", "legend_loc_lines"
             if lloc in scatter_kwargs and scatter_kwargs[lloc] is None:
                 scatter_kwargs[lloc] = "none"
@@ -528,12 +530,12 @@ def scatter(
             if len(x) != len(y):
                 raise ValueError("x or y do not share the same dimension.")
 
+            if normalize_data:
+                x = (x - np.nanmin(x)) / (np.nanmax(x) - np.nanmin(x))
+                y = (y - np.nanmin(x)) / (np.nanmax(y) - np.nanmin(y))
+
             if not isinstance(c, str):
                 c = np.ravel(c) if len(np.ravel(c)) == len(x) else c
-                if len(c) != len(x):
-                    c = "grey"
-                    if not isinstance(color, str) or color != default_color(adata):
-                        logg.warn("Invalid color key. Using grey instead.")
 
             # store original order of color values
             color_array, scatter_array = c, np.stack([x, y]).T
@@ -583,6 +585,13 @@ def scatter(
                             title = groups[0]
                     else:  # if nothing to be highlighted
                         add_linfit, add_polyfit, add_density = None, None, None
+            else:
+                idx = None
+
+            if not isinstance(c, str) and len(c) != len(x):
+                c = "grey"
+                if not isinstance(color, str) or color != default_color(adata):
+                    logg.warn("Invalid color key. Using grey instead.")
 
             # check if higher value points should be plotted on top
             if not isinstance(c, str) and len(c) == len(x):
@@ -590,7 +599,9 @@ def scatter(
                 if sort_order and not is_categorical(adata, color):
                     order = np.argsort(c)
                 elif not sort_order and is_categorical(adata, color):
-                    counts = get_value_counts(adata, color)
+                    counts = get_value_counts(
+                        adata[idx] if idx is not None else adata, color
+                    )
                     np.random.seed(0)
                     nums, p = np.arange(0, len(x)), counts / np.sum(counts)
                     order = np.random.choice(nums, len(x), replace=False, p=p)
@@ -717,7 +728,8 @@ def scatter(
             set_label(xlabel, ylabel, fontsize, basis, ax=ax)
             set_title(title, layer, color, fontsize, ax=ax)
             update_axes(ax, xlim, ylim, fontsize, is_embedding, frameon, figsize)
-
+            if add_margin:
+                set_margin(ax, x, y, add_margin)
             if colorbar is not False:
                 if not isinstance(c, str) and not is_categorical(adata, color):
                     labelsize = fontsize * 0.75 if fontsize is not None else None

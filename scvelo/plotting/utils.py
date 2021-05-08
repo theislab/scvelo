@@ -600,6 +600,16 @@ def set_legend(
             ax.legend(loc=legend_loc, **kwargs)
 
 
+def set_margin(ax, x, y, add_margin):
+    add_margin = 0.1 if add_margin is True else add_margin
+    xmin, xmax = np.min(x), np.max(x)
+    ymin, ymax = np.min(y), np.max(y)
+    xmargin = (xmax - xmin) * add_margin
+    ymargin = (ymax - ymin) * add_margin
+    ax.set_xlim(xmin - xmargin, xmax + xmargin)
+    ax.set_ylim(ymin - ymargin, ymax + ymargin)
+
+
 """get color values"""
 
 
