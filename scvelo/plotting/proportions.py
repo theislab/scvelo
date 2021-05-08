@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as pl
 
 from scvelo.core import sum
+from .utils import savefig_or_show
 
 
 def proportions(
@@ -17,6 +18,7 @@ def proportions(
     dpi=100,
     use_raw=True,
     show=True,
+    save=None,
 ):
     """Plot pie chart of spliced/unspliced proprtions.
 
@@ -44,6 +46,9 @@ def proportions(
         Use initial cell sizes before normalization and filtering.
     show: `bool` (default: True)
         Show the plot, do not return axis.
+    save: `bool` or `str`, optional (default: `None`)
+        If `True` or a `str`, save the figure. A string is appended to the default
+        filename. Infer the filetype if ending on {'.pdf', '.png', '.svg'}.
 
     Returns
     -------
@@ -155,7 +160,7 @@ def proportions(
         ax2.set_ylabel(groupby, fontweight="bold", fontsize=fontsize * 1.2)
         ax2.tick_params(axis="both", which="major", labelsize=fontsize)
         ax = [ax, ax2]
-    if show:
-        pl.show()
-    else:
+
+    savefig_or_show("proportions", dpi=dpi, save=save, show=show)
+    if show is False:
         return ax
