@@ -462,7 +462,7 @@ def set_artist_frame(ax, length=0.2, figsize=None):
     figsize = rcParams["figure.figsize"] if figsize is None else figsize
     aspect_ratio = figsize[0] / figsize[1]
     ax.xaxis.set_label_coords(length * 0.45, -0.035)
-    ax.yaxis.set_label_coords(-0.0175, length * aspect_ratio * 0.45)
+    ax.yaxis.set_label_coords(-0.025, length * aspect_ratio * 0.45)
     ax.xaxis.label.set_size(ax.xaxis.label.get_size() / 1.2)
     ax.yaxis.label.set_size(ax.yaxis.label.get_size() / 1.2)
 
@@ -740,10 +740,10 @@ def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
     if palette is None and color_key in adata.uns:
         color_keys = adata.uns[color_key]
         # Check if colors already exist in adata.uns and if they are a valid palette
-        if isinstance(color_keys, (list, np.ndarray)) and isinstance(color_keys, dict):
+        if isinstance(color_keys, np.ndarray) and isinstance(color_keys[0], dict):
             adata.uns[color_key] = adata.uns[color_key][0]
         # Flatten the dict to a list (mainly for anndata compatibilities)
-        if isinstance(color_keys, dict):
+        if isinstance(adata.uns[color_key], dict):
             adata.uns[color_key] = [adata.uns[color_key][c] for c in categories]
         color_keys = adata.uns[color_key]
         for color in color_keys:
@@ -943,6 +943,8 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
                     save = save.replace(try_ext, "")
                     break
         # append it
+        if "/" in save:
+            writekey = None
         writekey = (
             f"{writekey}_{save}" if writekey is not None and len(writekey) > 0 else save
         )
@@ -973,16 +975,17 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
                 os.makedirs(settings.figdir)
         if ext is None:
             ext = settings.file_format_figs
-        filename = f"{settings.figdir}{settings.plot_prefix}{writekey}"
+        filepath = f"{settings.figdir}{settings.plot_prefix}{writekey}"
+        if "/" in writekey:
+            filepath = f"{writekey}"
         try:
-            filename += f"{settings.plot_suffix}.{ext}"
+            filename = filepath + f"{settings.plot_suffix}.{ext}"
             pl.savefig(filename, dpi=dpi, bbox_inches="tight")
         except Exception:
             # save as .png if .pdf is not feasible (e.g. specific streamplots)
-            logg.msg(f"figure cannot be saved as {ext}, using png instead.", v=1)
-            filename = f"{settings.figdir}{settings.plot_prefix}{writekey}"
-            filename += f"{settings.plot_suffix}.png"
+            filename = filepath + f"{settings.plot_suffix}.png"
             pl.savefig(filename, dpi=dpi, bbox_inches="tight")
+            logg.msg(f"figure cannot be saved as {ext}, using png instead.", v=1)
         logg.msg("saving figure to file", filename, v=1)
     if show:
         pl.show()
