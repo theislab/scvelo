@@ -1,10 +1,11 @@
 """Logging and Profiling
 """
-
 from datetime import datetime
 from platform import python_version
 from sys import stdout
 from time import time as get_time
+
+from packaging.version import parse
 
 from anndata.logging import get_memory_usage
 
@@ -189,7 +190,7 @@ def check_if_latest_version():
     latest_version = timeout(
         get_latest_pypi_version, timeout_duration=2, default="0.0.0"
     )
-    if __version__.rsplit(".dev")[0] < latest_version.rsplit(".dev")[0]:
+    if parse(__version__.rsplit(".dev")[0]) < parse(latest_version.rsplit(".dev")[0]):
         warn(
             "There is a newer scvelo version available on PyPI:\n",
             "Your version: \t\t",

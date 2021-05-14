@@ -1,6 +1,7 @@
 import warnings
 
 from cycler import cycler
+from packaging.version import parse
 
 from matplotlib import cbook, cm, colors, rcParams
 
@@ -339,7 +340,13 @@ def _set_ipython(ipython_format="png2x"):
 
             if isinstance(ipython_format, str):
                 ipython_format = [ipython_format]
-            IPython.display.set_matplotlib_formats(*ipython_format)
+            ipython_version = parse(IPython.__version__)
+            if ipython_version < parse("7.23"):
+                IPython.display.set_matplotlib_formats(*ipython_format)
+            else:
+                from matplotlib_inline.backend_inline import set_matplotlib_formats
+
+                set_matplotlib_formats(*ipython_format)
         except ImportError:
             pass
 
