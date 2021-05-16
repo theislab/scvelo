@@ -1,17 +1,328 @@
 import os
+import warnings
 from typing import Dict, List, Optional, Tuple, Union
 
 from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
+from numpy import ndarray
 
 from anndata import AnnData
 
 from scvelo import logging as logg
 from scvelo import settings
-from scvelo.core import get_modality, get_n_jobs, parallelize, set_modality
+from scvelo.core import (
+    clipped_log,
+    get_modality,
+    get_n_jobs,
+    invert,
+    LinearRegression,
+    parallelize,
+    set_modality,
+    SplicingDynamics,
+)
 from scvelo.preprocessing.neighbors import get_connectivities
+from scvelo.tools.dynamical_model_utils import convolve
+from ._dynamics_base import DynamicsRecoveryBase
+
+
+# TODO: Remove argument `model_parameters` and infer them from the class `dynamics`.
+class SplicingDynamicsRecovery(DynamicsRecoveryBase):
+    def _initialize_parameters(self, subsetted_counts: ndarray):
+        """Initialize model parameters.
+
+        Arguments
+        ---------
+        obs_subset_counts
+            Filter mask to subset observations.
+        """
+
+        # TODO: Remove hard coded percentile
+        _obs_subset = subsetted_counts >= np.percentile(subsetted_counts, 98, axis=0)
+
+        u_inf = subsetted_counts[:, 0][_obs_subset[:, 0] | _obs_subset[:, 1]].mean()
+        s_inf = subsetted_counts[:, 1][_obs_subset[:, 1]].mean()
+
+        obs_subset_g = _obs_subset[:, 1] | self.steady_state_prior[self.obs_subset_]
+
+        self.gamma = (
+            LinearRegression()
+            .fit(
+                convolve(subsetted_counts[:, 1], obs_subset_g),
+                convolve(subsetted_counts[:, 0], obs_subset_g),
+            )
+            .coef_
+            + 1e-6
+        )
+
+        if self.gamma < 0.05 / self.scaling[0]:
+            self.gamma *= 1.2
+        elif self.gamma > 1.5 / self.scaling[0]:
+            self.gamma /= 1.2
+
+        if self.pval_steady < 1e-3:
+            u_inf = np.mean([u_inf, self.steady_state[0]])
+            self.alpha = self.gamma * s_inf
+            self.beta = self.alpha / u_inf
+            self.initial_state_ = np.array([u_inf, s_inf])
+        else:
+            self.initial_state_ = np.array([u_inf, s_inf])
+            self.alpha = u_inf
+            self.beta = 1
+
+        self.alpha_ = 0
+
+    def _set_steady_state_ratio(self, **model_params):
+        """Set ratio between steady states of dynamical system.
+
+        Arguments
+        ---------
+        model_params
+            Parameters of dynamical system and their values.
+        """
+
+        self.steady_state_ratio = model_params["gamma"] / model_params["beta"]
+
+    # TODO: Finish docstrings
+    # TODO: Find better name
+    def _check_projection(self, **model_parameters) -> bool:
+        """
+
+        Arguments
+        ---------
+        model_parameters
+            Parameters of dynamical system and their values.
+
+        Returns
+        -------
+        bool
+        """
+
+        if model_parameters["beta"] < model_parameters["gamma"]:
+            return True
+        else:
+            return False
+
+    def get_approx_time_assignment(
+        self,
+        state: ndarray,
+        alpha: Union[float, ndarray],
+        beta: Union[float, ndarray],
+        gamma: Union[float, ndarray],
+        initial_state: Union[ndarray, List] = [0, 0],
+        full_projection: bool = False,
+    ) -> ndarray:
+        """Get approximate time assignment.
+
+        Arguments
+        ---------
+        state
+            Observed values considered.
+        initial_state
+            Initial state of dynamical system.
+        model_parameters
+            Parameters of dynamical system and their values.
+
+        Returns
+        -------
+        ndarray
+            Approximate time assignment.
+        """
+
+        u = state[:, 0]
+        s = state[:, 1]
+
+        if full_projection:
+            u = np.min(state[s > 0, 0])
+
+        u0 = initial_state[0]
+        s0 = initial_state[1]
+
+        if (gamma >= beta) or full_projection:
+            uinf = alpha / beta
+            tau = -1 / beta * clipped_log((u - uinf) / (u0 - uinf))
+        elif not full_projection:
+            beta_ = beta * invert(gamma - beta)
+            xinf = alpha / gamma - beta_ * (alpha / beta)
+            tau = (
+                -1
+                / gamma
+                * clipped_log((s - beta_ * u - xinf) / (s0 - beta_ * u0 - xinf))
+            )
+
+        if tau.size == 1 and not np.isscalar(tau):
+            return tau[0]
+        else:
+            return tau
+
+    def _set_parameters_after_switch(self, model_parameters):
+        """Set model parameters during repression phase.
+
+        Arguments
+        ---------
+        model_parameters
+            Dictionary of model parameters and their current values.
+
+        Returns
+        -------
+        Dict
+            Model parameters during repression.
+        """
+
+        model_parameters["alpha"] = 0
+
+        return model_parameters
+
+    def get_residuals(
+        self,
+        t: Optional[ndarray] = None,
+        t_: Optional[float] = None,
+        scaling: Optional[Union[float, ndarray]] = None,
+        initial_state_: Optional[ndarray] = None,
+        refit_time: Optional[bool] = None,
+        subsetted: bool = True,
+        obs_subset_cluster: Optional[List] = None,
+        return_model_kwargs: bool = False,
+        **model_parameters,
+    ) -> ndarray:
+        """Get residuals of estimated trajectory and measurements.
+
+        Arguments
+        ---------
+        t
+            Time assigned to observations.
+        t_
+            Time when system switches states.
+        scaling
+            Scaling for counts. If not specified, `self.scaling` will be used.
+        initial_state_
+            State of system at switching point.
+        refit_time
+            Boolean flag to refit time assignment or not.
+        subsetted
+            Boolean flag to subset observations or not.
+        obs_subset_cluster
+            TODO: Add description.
+        return_model_kwargs
+            Boolean flag to return model parameters in addition to residuals.
+        model_parameters
+            Parameters of dynamical system and their values.
+
+        Returns
+        -------
+        ndarray
+            Residuals.
+        """
+
+        model_parameters = self.get_model_parameters(**model_parameters)
+        scaling, t_ = self.get_vars(scaling, t_, initial_state_, **model_parameters)
+
+        subsetted_counts = self.get_counts(
+            scaling, subsetted=subsetted, obs_subset_cluster=obs_subset_cluster
+        )
+
+        t, tau, o = self.get_time_assignment(
+            scaling,
+            t_,
+            initial_state_,
+            t,
+            refit_time,
+            subsetted=subsetted,
+            obs_subset_cluster=obs_subset_cluster,
+            **model_parameters,
+        )
+
+        tau, alpha, initial_state = self._vectorize(t, t_, **model_parameters)
+        model_parameters.update({"alpha": alpha})
+
+        sol = self.dynamics(
+            initial_state=initial_state, **model_parameters
+        ).get_solution(tau)
+
+        if return_model_kwargs:
+            return model_parameters, (sol - subsetted_counts) / self.std_ * scaling
+        else:
+            return (sol - subsetted_counts) / self.std_ * scaling
+
+    def _get_regularization(
+        self, subsetted_counts: ndarray, **model_parameters
+    ) -> ndarray:
+        """Calculate regularization term.
+
+        Arguments
+        ---------
+        subsetted_counts
+            Count matrix of subsetted observations.
+        model_parameters
+            Parameters of dynamical system and their values.
+
+        Returns
+        -------
+        ndarray
+            Regularization term.
+        """
+
+        beta = model_parameters["beta"]
+        gamma = model_parameters["gamma"]
+        return (
+            (gamma / beta - self.steady_state_ratio)
+            * subsetted_counts[:, 1]
+            / self.std_[1]
+        )
+
+    # TODO: Add as method to a base class for dynamical models
+    def _vectorize(
+        self,
+        t: ndarray,
+        t_: float,
+        alpha_: float = 0,
+        initial_state: Union[ndarray, List] = [0, 0],
+        sorted: bool = False,
+        **model_parameters,
+    ) -> Tuple[ndarray, ndarray, ndarray]:
+        """Vectorize parameters and initial states.
+
+        Arguments
+        ---------
+        t
+            Time assigned to observations.
+        t_
+            Time when system switches states.
+        initial_state
+            Initial state of system.
+        sorted
+            Boolean flag to sort vectorized variables according to time assigment.
+        model_parameters
+            Parameters of dynamical system and their values.
+
+        Returns
+        -------
+        Tuple[ndarray, ndarray, ndarray]
+            Time assignments w.r.t. state of system, vectorized value of transcription
+            and initial state.
+        """
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            o = np.array(t < t_, dtype=int)
+        tau = t * o + (t - t_) * (1 - o)
+
+        state_after_switch = self.dynamics(
+            initial_state=initial_state, **model_parameters
+        ).get_solution(t_)
+
+        # vectorize u0, s0 and alpha
+        initial_state = (
+            np.array(initial_state) * o[:, None] + state_after_switch * (1 - o)[:, None]
+        )
+        alpha = model_parameters["alpha"] * o + alpha_ * (1 - o)
+
+        if sorted:
+            idx = np.argsort(t)
+            tau, alpha = tau[idx], alpha[idx]
+            initial_state = initial_state[idx, :]
+        return tau, alpha, initial_state
 
 
 # TODO: Add docstrings
@@ -97,6 +408,9 @@ def recover_dynamics(
     if not isinstance(dynamics, str):
         DynamicsRecovery = dynamics[1]
         dynamics = dynamics[0]
+    elif dynamics.lower() == "splicing":
+        dynamics = SplicingDynamics
+        DynamicsRecovery = SplicingDynamicsRecovery
 
     if not inplace:
         adata = adata.copy()
