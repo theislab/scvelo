@@ -77,7 +77,7 @@ For further information visit `scvelo.org <https://scvelo.org>`_.
    VelocityBasics
    DynamicalModeling
    DifferentialKinetics
-   vignettes
+   vignettes/index
 
 .. toctree::
    :caption: Perspectives
