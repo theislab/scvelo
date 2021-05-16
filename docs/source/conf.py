@@ -67,9 +67,10 @@ notebooks = [
     "FigS9_runtime.ipynb",
     "FigSuppl.ipynb",
 ]
+notebooks = [f"vignettes/{v}" for v in notebooks]
 for nb in notebooks:
     try:
-        urlretrieve(notebooks_url + nb, f"vignettes/{nb}")
+        urlretrieve(notebooks_url + nb, nb)
     except Exception:
         pass
 
