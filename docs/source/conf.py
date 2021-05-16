@@ -38,9 +38,22 @@ matplotlib.use("agg")
 logger = logging.getLogger(__name__)
 
 
-# -- Retrieve notebooks ------------------------------------------------
+# -- Retrieve basic notebooks ---------------------------------------------
 
 notebooks_url = "https://github.com/theislab/scvelo_notebooks/raw/master/"
+notebooks = [
+    "VelocityBasics.ipynb",
+    "DynamicalModeling.ipynb",
+    "DifferentialKinetics.ipynb",
+]
+for nb in notebooks:
+    try:
+        urlretrieve(notebooks_url + nb, nb)
+    except Exception:
+        pass
+
+# -- Retrieve other notebooks and store under /vignettes directory --------
+
 notebooks = [
     "VelocityBasics.ipynb",
     "DynamicalModeling.ipynb",
@@ -56,7 +69,7 @@ notebooks = [
 ]
 for nb in notebooks:
     try:
-        urlretrieve(notebooks_url + nb, nb)
+        urlretrieve(notebooks_url + nb, f"vignettes/{nb}")
     except Exception:
         pass
 
