@@ -47,6 +47,12 @@ notebooks = [
     "DifferentialKinetics.ipynb",
     "Pancreas.ipynb",
     "DentateGyrus.ipynb",
+    "NatureBiotechCover.ipynb",
+    "Fig1_concept.ipynb",
+    "Fig2_dentategyrus.ipynb",
+    "Fig3_pancreas.ipynb",
+    "FigS9_runtime.ipynb",
+    "FigSuppl.ipynb",
 ]
 for nb in notebooks:
     try:

@@ -77,14 +77,15 @@ For further information visit `scvelo.org <https://scvelo.org>`_.
    VelocityBasics
    DynamicalModeling
    DifferentialKinetics
+   vignettes
 
 .. toctree::
-   :caption: Example Datasets
+   :caption: Perspectives
    :maxdepth: 1
    :hidden:
 
-   Pancreas
-   DentateGyrus
+   perspectives
+
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
    :target: https://pypi.org/project/scvelo
