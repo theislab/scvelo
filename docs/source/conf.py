@@ -18,9 +18,14 @@ from sphinx.ext import autosummary
 
 import matplotlib  # noqa
 
-import scvelo
+HERE = Path(__file__).parent
+sys.path.insert(0, str(HERE.parent.parent))
+sys.path.insert(0, os.path.abspath("_ext"))
+
+import scvelo  # isort:skip
 
 # remove PyCharm’s old six module
+
 if "six" in sys.modules:
     print(*sys.path, sep="\n")
     for pypath in list(sys.path):
@@ -28,12 +33,7 @@ if "six" in sys.modules:
             sys.path.remove(pypath)
     del sys.modules["six"]
 
-
 matplotlib.use("agg")
-
-HERE = Path(__file__).parent
-sys.path.insert(0, f"{HERE.parent.parent}")
-sys.path.insert(0, os.path.abspath("_ext"))
 
 logger = logging.getLogger(__name__)
 
