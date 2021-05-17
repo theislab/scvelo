@@ -1,3 +1,4 @@
+import builtins
 import warnings
 
 from cycler import cycler
@@ -295,7 +296,8 @@ def set_figure_params(
         Only concerns the notebook/IPython environment; see
         `IPython.core.display.set_matplotlib_formats` for more details.
     """
-    _set_ipython(ipython_format)
+    if ipython_format is not None:
+        _set_ipython(ipython_format)
     global _rcParams_style
     _rcParams_style = style
     global _vector_friendly
@@ -328,20 +330,13 @@ def set_rcParams_defaults():
 
 
 def _set_ipython(ipython_format="png2x"):
-    try:
-        __IPYTHON__
-        run_from_ipython = True
-    except NameError:
-        run_from_ipython = False
-
-    if run_from_ipython:
+    if getattr(builtins, "__IPYTHON__", None):
         try:
             import IPython
 
             if isinstance(ipython_format, str):
                 ipython_format = [ipython_format]
-            ipython_version = parse(IPython.__version__)
-            if ipython_version < parse("7.23"):
+            if parse(IPython.__version__) < parse("7.23"):
                 IPython.display.set_matplotlib_formats(*ipython_format)
             else:
                 from matplotlib_inline.backend_inline import set_matplotlib_formats
