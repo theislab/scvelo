@@ -12,12 +12,16 @@ Contributing to scVelo requires a developer installation. As a first step, we su
     conda create -n ENV_NAME python=PYTHON_VERSION && conda activate ENV_NAME
 
 
-Following, clone scVelo from source and install development mode
+Following, fork the scVelo repo on GitHub `here <https://github.com/theislab/scvelo>`.
+If you are unsure on how to do so, please checkout the corresponding
+`GitHub docs <https://docs.github.com/en/github/getting-started-with-github/quickstart/fork-a-repo>`.
+You can now clone your fork of scVelo and install the development mode
 
 .. code:: bash
 
-    git clone https://github.com/theislab/scvelo.git
+    git clone https://github.com/YOUR-USER-NAME/scvelo.git
     cd scvelo
+    git checkout --track origin/develop
     pip install -e '.[dev]'
 
 The last line can, alternatively, be replaced by
