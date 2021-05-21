@@ -540,6 +540,7 @@ def set_legend(
     legend_fontweight,
     legend_fontsize,
     legend_fontoutline,
+    legend_align_text,
     groups,
 ):
     """
@@ -578,10 +579,14 @@ def set_legend(
             text = ax.text(x_pos, y_pos, label, path_effects=pe, **kwargs)
             texts.append(text)
 
-        # todo: adjust text positions to minimize overlaps,
-        #  e.g. using https://github.com/Phlya/adjustText
-        # from adjustText import adjust_text
-        # adjust_text(texts, ax=ax)
+        if legend_align_text:
+            autoalign = "y" if legend_align_text is True else legend_align_text
+            try:
+                from adjustText import adjust_text as adj_text
+
+                adj_text(texts, autoalign=autoalign, text_from_points=False, ax=ax)
+            except ImportError:
+                print("Please `pip install adjustText` for auto-aligning texts")
 
     else:
         for idx, label in enumerate(categories):
@@ -1161,16 +1166,25 @@ def plot_velocity_fits(
     if "true_alpha" in adata.var.keys() and (
         vkey is not None and "true_dynamics" in vkey
     ):
-        line, fit = show_full_dynamics(adata, basis, "true", use_raw, linewidth, ax=ax)
+        line, fit = show_full_dynamics(
+            adata,
+            basis,
+            key="true",
+            use_raw=use_raw,
+            linewidth=linewidth,
+            linecolor=linecolor,
+            ax=ax,
+        )
         fits.append(fit)
         lines.append(line)
     if "fit_alpha" in adata.var.keys() and (vkey is None or "dynamics" in vkey):
         line, fit = show_full_dynamics(
             adata,
             basis,
-            "fit",
-            use_raw,
-            linewidth,
+            key="fit",
+            use_raw=use_raw,
+            linewidth=linewidth,
+            linecolor=linecolor,
             show_assignments=show_assignments,
             ax=ax,
         )

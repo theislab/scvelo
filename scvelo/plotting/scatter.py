@@ -43,6 +43,7 @@ def scatter(
     legend_fontsize=None,
     legend_fontweight=None,
     legend_fontoutline=None,
+    legend_align_text=None,
     xlabel=None,
     ylabel=None,
     title=None,
@@ -674,6 +675,7 @@ def scatter(
                     legend_fontweight,
                     legend_fontsize,
                     legend_fontoutline,
+                    legend_align_text,
                     groups,
                 )
             if add_density:

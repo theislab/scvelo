@@ -62,11 +62,18 @@ def compute_dynamics(
 
 
 def show_full_dynamics(
-    adata, basis, key="true", use_raw=False, linewidth=1, show_assignments=None, ax=None
+    adata,
+    basis,
+    key="true",
+    use_raw=False,
+    linewidth=1,
+    linecolor=None,
+    show_assignments=None,
+    ax=None,
 ):
     if ax is None:
         ax = pl.gca()
-    color = "grey" if key == "true" else "purple"
+    color = linecolor if linecolor else "grey" if key == "true" else "purple"
     linewidth = 0.5 * linewidth if key == "true" else linewidth
     label = "learned dynamics" if key == "fit" else "true dynamics"
     line = None

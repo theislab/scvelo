@@ -63,9 +63,13 @@ legend_fontweight: {'normal', 'bold', ...} (default: `None`)
     Legend font weight. A numeric value in range 0-1000 or a string.
     Defaults to 'bold' if `legend_loc = 'on data'`, otherwise to 'normal'.
     Available are `['light', 'normal', 'medium', 'semibold', 'bold', 'heavy', 'black']`.
-legend_fontoutline
+legend_fontoutline: float (default: `None`)
     Line width of the legend font outline in pt. Draws a white outline using
     the path effect :class:`~matplotlib.patheffects.withStroke`.
+legend_align_text: bool or str (default: `None`)
+    Aligns the positions of the legend texts. Set the axis along which the best
+    alignment should be determined. This can be 'y' or True (vertically),
+    'x' (horizontally), or 'xy' (best alignment in both directions).
 right_margin: `float` or list of `float` (default: `None`)
     Adjust the width of the space right of each plotting panel.
 left_margin: `float` or list of `float` (default: `None`)
