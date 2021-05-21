@@ -26,6 +26,18 @@ class SplicingDynamics(DynamicsBase):
 
     Attributes
     ----------
+    alpha
+        Transcription rate.
+    beta
+        Translation rate.
+    gamma
+        Splicing degradation rate.
+    initial_state
+        Initial state of system. Defaults to `[0, 0]`.
+    u0
+        Initial abundance of unspliced RNA.
+    s0
+        Initial abundance of spliced RNA.
 
     """
 
