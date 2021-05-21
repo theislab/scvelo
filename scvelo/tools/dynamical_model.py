@@ -366,8 +366,7 @@ def recover_dynamics(
     as well as cell-specific latent time and transcriptional states,
     estimated iteratively by expectation-maximization.
 
-    .. image::
-    https://user-images.githubusercontent.com/31883718/69636459-ef862800-1056-11ea-8803-0a787ede5ce9.png
+    .. image:: https://user-images.githubusercontent.com/31883718/69636459-ef862800-1056-11ea-8803-0a787ede5ce9.png
 
     Arguments
     ---------
@@ -418,7 +417,7 @@ def recover_dynamics(
     Returns
     -------
     Returns or updates `adata`
-    """
+    """  # noqa E501
     adata = data.copy() if copy else data
 
     n_jobs = get_n_jobs(n_jobs=n_jobs)
@@ -722,8 +721,7 @@ def latent_time(
     universal gene-shared latent time, which represents the cell’s internal clock and
     is based only on its transcriptional dynamics.
 
-    .. image::
-    https://user-images.githubusercontent.com/31883718/69636500-03318e80-1057-11ea-9e14-ae9f907711cc.png
+    .. image:: https://user-images.githubusercontent.com/31883718/69636500-03318e80-1057-11ea-9e14-ae9f907711cc.png
 
     Arguments
     ---------
@@ -755,7 +753,7 @@ def latent_time(
     Returns or updates `adata` with the attributes
     latent_time: `.obs`
         latent time from learned dynamics for each cell
-    """
+    """  # noqa E501
     adata = data.copy() if copy else data
 
     from .dynamical_model_utils import compute_shared_time, root_time
@@ -902,8 +900,7 @@ def differential_kinetic_test(
     for the overall dynamics. Each cell type is tested whether an independent fit yields
     a significantly improved likelihood.
 
-    .. image::
-    https://user-images.githubusercontent.com/31883718/78930730-dc737200-7aa4-11ea-92f6-269b7609c3a5.png
+    .. image:: https://user-images.githubusercontent.com/31883718/78930730-dc737200-7aa4-11ea-92f6-269b7609c3a5.png
 
     Arguments
     ---------
@@ -923,7 +920,7 @@ def differential_kinetic_test(
     Returns
     -------
     Returns or updates `adata`
-    """
+    """  # noqa E501
     adata = data.copy() if copy else data
 
     if "Ms" not in adata.layers.keys() or "Mu" not in adata.layers.keys():
