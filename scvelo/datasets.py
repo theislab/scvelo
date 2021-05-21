@@ -27,8 +27,6 @@ def toy_data(n_obs=None):
     Returns `adata` object
     """
 
-    """Random samples from Dentate Gyrus.
-    """
     adata_dg = dentategyrus()
 
     if n_obs is not None:
