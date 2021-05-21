@@ -221,6 +221,7 @@ def paga(
     copy : `bool`, optional (default: `False`)
         Copy `adata` before computation and return a copy.
         Otherwise, perform computation inplace and return `None`.
+
     Returns
     -------
     **connectivities** : (adata.uns['connectivities'])

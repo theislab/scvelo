@@ -186,6 +186,7 @@ def get_cell_transitions(
         Set to `int` for reproducibility, otherwise `None` for a random seed.
     **kwargs:
         To be passed to tl.transition_matrix.
+
     Returns
     -------
     Returns embedding coordinates (if basis is specified),

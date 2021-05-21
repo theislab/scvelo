@@ -376,7 +376,6 @@ def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
     -------
     Union[ndarray, spmatrix]
         Retrieved modality from :class:`~anndata.AnnData` object.
-
     """
 
     if modality == "X":
@@ -428,7 +427,6 @@ def make_dense(
     -------
     Optional[AnnData]
         Copy of annotated data `adata` if `inplace=True` with dense modalities.
-
     """
 
     if not inplace:
@@ -465,7 +463,6 @@ def make_sparse(
     -------
     Optional[AnnData]
         Copy of annotated data `adata` with sparse modalities if `inplace=True`.
-
     """
 
     if not inplace:
@@ -664,7 +661,6 @@ def set_modality(
     -------
     Optional[AnnData]
         Copy of annotated data `adata` with updated modality if `inplace=True`.
-
     """
 
     if not inplace:

@@ -31,6 +31,7 @@ def get_phase_marker_genes(adata):
     adata
         The annotated data matrix.
     phase
+
     Returns
     -------
     List of S and/or G2M phase marker genes.
@@ -69,6 +70,7 @@ def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kw
     **kwargs
         Are passed to :func:`~scanpy.tl.score_genes`. `ctrl_size` is not
         possible, as it's set as `min(len(s_genes), len(g2m_genes))`.
+
     Returns
     -------
     Depending on `copy`, returns or updates `adata` with the following fields.

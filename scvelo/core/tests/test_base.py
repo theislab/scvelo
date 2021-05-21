@@ -77,7 +77,6 @@ def get_adata(
     -------
     AnnData
         Generated :class:`~anndata.AnnData` object.
-
     """
 
     if n_obs is None:

@@ -617,7 +617,8 @@ def align_dynamics(
         Whether to remove outliers.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
-     Returns
+
+    Returns
     -------
     Returns or updates `adata` with the attributes
     alpha, beta, gamma, t_, alignment_scaling: `.var`
@@ -748,7 +749,8 @@ def latent_time(
         If not set, a overall transcriptional timescale of 20 hours is used as prior.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
-     Returns
+
+    Returns
     -------
     Returns or updates `adata` with the attributes
     latent_time: `.obs`

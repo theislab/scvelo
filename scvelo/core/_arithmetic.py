@@ -24,7 +24,6 @@ def clipped_log(x: ndarray, lb: float = 0, ub: float = 1, eps: float = 1e-6) -> 
     -------
     ndarray
         Logarithm of clipped array.
-
     """
 
     return np.log(np.clip(x, lb + eps, ub - eps))
@@ -42,7 +41,6 @@ def invert(x: ndarray) -> ndarray:
     -------
     ndarray
         Inverted array.
-
     """
 
     with warnings.catch_warnings():
@@ -70,7 +68,6 @@ def prod_sum(
     -------
     ndarray
         Sum of product of arrays along given axis.
-
     """
 
     if issparse(a1):
@@ -96,7 +93,6 @@ def sum(a: Union[ndarray, spmatrix], axis: Optional[int] = None) -> ndarray:
     -------
     ndarray
         Sum of array along given axis.
-
     """
 
     if a.ndim == 1:

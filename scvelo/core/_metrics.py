@@ -20,7 +20,6 @@ def l2_norm(x: Union[ndarray, spmatrix], axis: int = 1) -> Union[float, ndarray]
     -------
     Union[float, ndarray]
         L2 norm along a given axis.
-
     """
 
     if issparse(x):

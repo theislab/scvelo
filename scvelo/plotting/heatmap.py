@@ -82,7 +82,7 @@ def heatmap(
 
     Returns
     -------
-        If `show==False` a `matplotlib.Axis`
+    If `show==False` a `matplotlib.Axis`
     """
 
     import seaborn as sns

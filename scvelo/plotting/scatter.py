@@ -93,7 +93,7 @@ def scatter(
 
     Returns
     -------
-        If `show==False` a `matplotlib.Axis`
+    If `show==False` a `matplotlib.Axis`
     """
     if adata is None and (x is not None and y is not None):
         adata = AnnData(np.stack([x, y]).T)

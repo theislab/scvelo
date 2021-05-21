@@ -657,6 +657,7 @@ def log1p(data, copy=False):
         Annotated data matrix.
     copy: `bool` (default: `False`)
         Return a copy of `adata` instead of updating it.
+
     Returns
     -------
     Returns or updates `adata` depending on `copy`.

@@ -27,7 +27,6 @@ class DynamicsBase(ABC):
             Solution of system. If `with_keys=True`, the solution is returned in form of
             a dictionary with variables as keys. Otherwise, the solution is given as
             a `numpy.ndarray` of form `(n_steps, n_vars)`.
-
         """
 
         return
@@ -50,7 +49,6 @@ class DynamicsBase(ABC):
         -------
         Union[Dict[str, ndarray], Tuple[ndarray], ndarray]
             Steady state of system.
-
         """
 
         return

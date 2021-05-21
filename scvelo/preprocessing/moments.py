@@ -186,6 +186,7 @@ def get_moments(
         Whether to compute centered (=variance) or uncentered second order moments.
     mode: `'connectivities'` or `'distances'`  (default: `'connectivities'`)
         Distance metric to use for moment computation.
+
     Returns
     -------
     Mx: first or second order moments
