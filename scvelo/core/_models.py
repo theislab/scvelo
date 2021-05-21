@@ -15,16 +15,13 @@ class SplicingDynamics(DynamicsBase):
 
     Arguments
     ---------
-    alpha:
+    alpha
         Transcription rate.
-
-    beta:
+    beta
         Translation rate.
-
-    gamma:
+    gamma
         Splicing degradation rate.
-
-    initial_state:
+    initial_state
         Initial state of system. Defaults to `[0, 0]`.
 
     Attributes
@@ -67,11 +64,11 @@ class SplicingDynamics(DynamicsBase):
 
         Arguments
         ---------
-        t:
+        t
             Time steps at which to evaluate solution.
-        stacked:
+        stacked
             Whether to stack states or return them individually. Defaults to `True`.
-        with_keys:
+        with_keys
             Whether to return solution labelled by variables in form of a dictionary.
             Defaults to `False`.
 
@@ -111,9 +108,9 @@ class SplicingDynamics(DynamicsBase):
 
         Arguments
         ---------
-        stacked:
+        stacked
             Whether to stack states or return them individually. Defaults to `True`.
-        with_keys:
+        with_keys
             Whether to return solution labelled by variables in form of a dictionary.
             Defaults to `False`.
 

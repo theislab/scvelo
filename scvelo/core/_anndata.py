@@ -330,7 +330,7 @@ def get_initial_size(
         Annotated data matrix.
     layer
         Name of layer for which to retrieve initial size.
-    by_total_size:
+    by_total_size
         Whether or not to return the combined initial size of the spliced and unspliced
         layers.
 
@@ -367,9 +367,9 @@ def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
 
     Arguments
     ---------
-    adata:
+    adata
         Annotated data to extract modality from.
-    modality:
+    modality
         Modality for which data is needed.
 
     Returns
@@ -417,11 +417,11 @@ def make_dense(
 
     Arguments
     ---------
-    adata:
+    adata
         Annotated data object.
-    modality:
+    modality
         Modality to make dense.
-    inplace:
+    inplace
         Boolean flag to perform operations inplace or not. Defaults to `True`.
 
     Returns
@@ -454,11 +454,11 @@ def make_sparse(
 
     Arguments
     ---------
-    adata:
+    adata
         Annotated data object.
-    modality:
+    modality
         Modality to make sparse.
-    inplace:
+    inplace
         Boolean flag to perform operations inplace or not. Defaults to `True`.
 
     Returns
@@ -650,13 +650,13 @@ def set_modality(
 
     Arguments
     ---------
-    adata:
+    adata
         Annotated data object.
-    new_value:
+    new_value
         New value of modality.
-    modality:
+    modality
         Modality to overwrite with new value. Defaults to `None`.
-    inplace:
+    inplace
         Boolean flag to indicate whether setting of modality should be inplace or
             not. Defaults to `True`.
 

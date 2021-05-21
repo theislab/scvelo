@@ -12,28 +12,25 @@ class LinearRegression:
 
     Arguments
     ---------
-    percentile:
+    percentile
         Percentile of data on which linear regression line is fit. If `None`, all data
         is used, if a single value is given, it is interpreted as the upper quantile.
         Defaults to `None`.
-
-    fit_intercept:
+    fit_intercept
         Whether to calculate the intercept for model. Defaults to `False`.
-
-    positive_intercept:
+    positive_intercept
         Whether the intercept it constraint to positive values. Only plays a role when
         `fit_intercept=True`. Defaults to `True`.
-
-    constrain_ratio:
+    constrain_ratio
         Ratio to which coefficients are clipped. If `None`, the coefficients are not
         constraint. Defaults to `None`.
 
     Attributes
     ----------
-    coef_:
+    coef_
         Estimated coefficients of the linear regression line.
 
-    intercept_:
+    intercept_
         Fitted intercept of linear model. Set to `0.0` if `fit_intercept=False`.
 
     """
@@ -64,7 +61,7 @@ class LinearRegression:
 
         Arguments
         ---------
-        data:
+        data
             Data to be trimmed to extreme quantiles.
 
         Returns
@@ -103,14 +100,14 @@ class LinearRegression:
 
         Arguments
         ---------
-        x:
+        x
             Training data of shape `(n_obs, n_vars)`.
-        y:
+        y
             Target values of shape `(n_obs, n_vars)`.
 
         Returns
         -------
-        self:
+        self
             Returns an instance of self.
         """
 

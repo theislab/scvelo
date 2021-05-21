@@ -11,15 +11,14 @@ def l2_norm(x: Union[ndarray, spmatrix], axis: int = 1) -> Union[float, ndarray]
 
     Arguments
     ---------
-    x:
+    x
         Array to calculate l2 norm of.
-
-    axis:
+    axis
         Axis along which to calculate l2 norm.
 
     Returns
     -------
-    Union[float, ndarray]:
+    Union[float, ndarray]
         L2 norm along a given axis.
 
     """

@@ -13,12 +13,11 @@ class DynamicsBase(ABC):
 
         Arguments
         ---------
-        t:
+        t
             Time steps at which to evaluate solution.
-        stacked:
+        stacked
             Whether to stack states or return them individually. Defaults to `True`.
-
-        with_keys:
+        with_keys
             Whether to return solution labelled by variables in form of a dictionary.
             Defaults to `False`.
 
@@ -41,9 +40,9 @@ class DynamicsBase(ABC):
 
         Arguments
         ---------
-        stacked:
+        stacked
             Whether to stack states or return them individually. Defaults to `True`.
-        with_keys:
+        with_keys
             Whether to return solution labelled by variables in form of a dictionary.
             Defaults to `False`.
 
