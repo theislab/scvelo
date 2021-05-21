@@ -221,6 +221,7 @@ def paga(
     copy : `bool`, optional (default: `False`)
         Copy `adata` before computation and return a copy.
         Otherwise, perform computation inplace and return `None`.
+
     Returns
     -------
     **connectivities** : (adata.uns['connectivities'])
@@ -232,6 +233,7 @@ def paga(
         The adjacency matrix of the abstracted directed graph, weights correspond to
         confidence in the transitions between partitions.
     """
+
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."

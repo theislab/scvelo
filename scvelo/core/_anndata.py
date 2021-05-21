@@ -126,6 +126,7 @@ def cleanup(
     Optional[AnnData]
         Returns or updates `adata` with selection of attributes kept.
     """
+
     adata = data.copy() if copy else data
     verify_dtypes(adata)
 
@@ -190,6 +191,7 @@ def get_df(
     :class:`pd.DataFrame`
         A dataframe.
     """
+
     if precision is not None:
         pd.set_option("precision", precision)
 
@@ -330,7 +332,7 @@ def get_initial_size(
         Annotated data matrix.
     layer
         Name of layer for which to retrieve initial size.
-    by_total_size:
+    by_total_size
         Whether or not to return the combined initial size of the spliced and unspliced
         layers.
 
@@ -339,6 +341,7 @@ def get_initial_size(
     np.ndarray
         Initial counts per observation in the specified layer.
     """
+
     if by_total_size:
         sizes = [
             adata.obs[f"initial_size_{layer}"]
@@ -367,16 +370,15 @@ def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
 
     Arguments
     ---------
-    adata:
+    adata
         Annotated data to extract modality from.
-    modality:
+    modality
         Modality for which data is needed.
 
     Returns
     -------
     Union[ndarray, spmatrix]
         Retrieved modality from :class:`~anndata.AnnData` object.
-
     """
 
     if modality == "X":
@@ -406,6 +408,7 @@ def get_size(adata: AnnData, layer: Optional[str] = None) -> ndarray:
     np.ndarray
         Initial counts per observation in the specified layer.
     """
+
     X = adata.X if layer is None else adata.layers[layer]
     return sum(X, axis=1)
 
@@ -417,18 +420,17 @@ def make_dense(
 
     Arguments
     ---------
-    adata:
+    adata
         Annotated data object.
-    modality:
+    modality
         Modality to make dense.
-    inplace:
+    inplace
         Boolean flag to perform operations inplace or not. Defaults to `True`.
 
     Returns
     -------
     Optional[AnnData]
         Copy of annotated data `adata` if `inplace=True` with dense modalities.
-
     """
 
     if not inplace:
@@ -454,18 +456,17 @@ def make_sparse(
 
     Arguments
     ---------
-    adata:
+    adata
         Annotated data object.
-    modality:
+    modality
         Modality to make sparse.
-    inplace:
+    inplace
         Boolean flag to perform operations inplace or not. Defaults to `True`.
 
     Returns
     -------
     Optional[AnnData]
         Copy of annotated data `adata` with sparse modalities if `inplace=True`.
-
     """
 
     if not inplace:
@@ -504,6 +505,7 @@ def merge(adata: AnnData, ldata: AnnData, copy: bool = True) -> Optional[AnnData
     Optional[:class:`anndata.AnnData`]
         Returns a :class:`~anndata.AnnData` object
     """
+
     adata.var_names_make_unique()
     ldata.var_names_make_unique()
 
@@ -594,6 +596,7 @@ def obs_df(adata: AnnData, keys: List[str], layer: Optional[str] = None) -> Data
         DataFrame indexed by observations. Columns correspond to variables of specified
         layer.
     """
+
     lookup_keys = [k for k in keys if k in adata.var_names]
     if len(lookup_keys) < len(keys):
         logg.warn(
@@ -650,13 +653,13 @@ def set_modality(
 
     Arguments
     ---------
-    adata:
+    adata
         Annotated data object.
-    new_value:
+    new_value
         New value of modality.
-    modality:
+    modality
         Modality to overwrite with new value. Defaults to `None`.
-    inplace:
+    inplace
         Boolean flag to indicate whether setting of modality should be inplace or
             not. Defaults to `True`.
 
@@ -664,7 +667,6 @@ def set_modality(
     -------
     Optional[AnnData]
         Copy of annotated data `adata` with updated modality if `inplace=True`.
-
     """
 
     if not inplace:
@@ -742,6 +744,7 @@ def var_df(adata: AnnData, keys: List[str], layer: Optional[str] = None):
         DataFrame indexed by features. Columns correspond to observations of specified
         layer.
     """
+
     lookup_keys = [k for k in keys if k in adata.obs_names]
     if len(lookup_keys) < len(keys):
         logg.warn(
@@ -768,6 +771,7 @@ def verify_dtypes(adata: AnnData) -> None:
     -------
     None
     """
+
     try:
         _ = adata[:, 0]
     except Exception:

@@ -11,20 +11,19 @@ def clipped_log(x: ndarray, lb: float = 0, ub: float = 1, eps: float = 1e-6) -> 
 
     Arguments
     ---------
-    x:
+    x
         Array to invert.
-    lb:
+    lb
         Lower bound of interval to which array entries are clipped.
-    ub:
+    ub
         Upper bound of interval to which array entries are clipped.
-    eps:
+    eps
         Offset of boundaries of clipping interval.
 
     Returns
     -------
     ndarray
         Logarithm of clipped array.
-
     """
 
     return np.log(np.clip(x, lb + eps, ub - eps))
@@ -35,14 +34,13 @@ def invert(x: ndarray) -> ndarray:
 
     Arguments
     ---------
-    x:
+    x
         Array to invert.
 
     Returns
     -------
     ndarray
         Inverted array.
-
     """
 
     with warnings.catch_warnings():
@@ -58,11 +56,11 @@ def prod_sum(
 
     Arguments
     ---------
-    a1:
+    a1
         First array.
-    a2:
+    a2
         Second array.
-    axis:
+    axis
         Axis along which to sum elements. If `None`, all elements will be summed.
         Defaults to `None`.
 
@@ -70,7 +68,6 @@ def prod_sum(
     -------
     ndarray
         Sum of product of arrays along given axis.
-
     """
 
     if issparse(a1):
@@ -86,9 +83,9 @@ def sum(a: Union[ndarray, spmatrix], axis: Optional[int] = None) -> ndarray:
 
     Arguments
     ---------
-    a:
+    a
         Elements to sum.
-    axis:
+    axis
         Axis along which to sum elements. If `None`, all elements will be summed.
         Defaults to `None`.
 
@@ -96,7 +93,6 @@ def sum(a: Union[ndarray, spmatrix], axis: Optional[int] = None) -> ndarray:
     -------
     ndarray
         Sum of array along given axis.
-
     """
 
     if a.ndim == 1:

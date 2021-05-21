@@ -250,8 +250,7 @@ def velocity(
     generalizes RNA velocity estimation to transient systems. It is also capable of
     capturing non-observed steady states.
 
-    .. image::
-    https://user-images.githubusercontent.com/31883718/69636491-ff057100-1056-11ea-90b7-d04098112ce1.png
+    .. image:: https://user-images.githubusercontent.com/31883718/69636491-ff057100-1056-11ea-90b7-d04098112ce1.png
 
     Arguments
     ---------
@@ -307,7 +306,8 @@ def velocity(
         velocity vectors for the cell variances
     velocity_offset, velocity_beta, velocity_gamma, velocity_r2: `.var`
         parameters
-    """
+    """  # noqa E501
+
     adata = data.copy() if copy else data
     if not use_raw and "Ms" not in adata.layers.keys():
         moments(adata)
@@ -506,6 +506,7 @@ def velocity_genes(
     velocity_genes: `.var`
         genes to be used for further velocity analysis (velocity graph and embedding)
     """
+
     adata = data.copy() if copy else data
     if f"{vkey}_genes" not in adata.var.keys():
         velocity(adata, vkey)

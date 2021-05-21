@@ -1642,6 +1642,7 @@ class BaseDynamics:
         -------
         p-value
         """
+
         if (
             "weights_cluster" in kwargs
             and np.sum(kwargs["weights_cluster"]) < min_cells

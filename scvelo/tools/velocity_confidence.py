@@ -15,8 +15,7 @@ def velocity_confidence(data, vkey="velocity", copy=False):
         scv.tl.velocity_confidence(adata)
         scv.pl.scatter(adata, color='velocity_confidence', perc=[2,98])
 
-    .. image::
-    https://user-images.githubusercontent.com/31883718/69626334-b6df5200-1048-11ea-9171-495845c5bc7a.png
+    .. image:: https://user-images.githubusercontent.com/31883718/69626334-b6df5200-1048-11ea-9171-495845c5bc7a.png
        :width: 600px
 
 
@@ -36,7 +35,8 @@ def velocity_confidence(data, vkey="velocity", copy=False):
         Length of the velocity vectors for each individual cell
     velocity_confidence: `.obs`
         Confidence for each cell
-    """
+    """  # noqa E501
+
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
         raise ValueError("You need to run `tl.velocity` first.")
@@ -96,6 +96,7 @@ def velocity_confidence_transition(data, vkey="velocity", scale=10, copy=False):
     velocity_confidence_transition: `.obs`
         Confidence of transition for each cell
     """
+
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
         raise ValueError("You need to run `tl.velocity` first.")

@@ -43,6 +43,7 @@ def cell_fate(
     cell_fate_confidence: `.obs`
         confidence of transitioning to the assigned fate
     """
+
     adata = data.copy() if copy else data
     logg.info("computing cell fates", r=True)
 
@@ -110,6 +111,7 @@ def cell_origin(
     cell_origin_confidence: `.obs`
         confidence of coming from assigned origin
     """
+
     adata = data.copy() if copy else data
     logg.info("computing cell fates", r=True)
 
@@ -228,8 +230,7 @@ def terminal_states(
         scv.tl.terminal_states(adata)
         scv.pl.scatter(adata, color=['root_cells', 'end_points'])
 
-    .. image::
-    https://user-images.githubusercontent.com/31883718/69496183-bcfdf300-0ecf-11ea-9aae-685300a0b1ba.png
+    .. image:: https://user-images.githubusercontent.com/31883718/69496183-bcfdf300-0ecf-11ea-9aae-685300a0b1ba.png
 
     Alternatively, we recommend to use :func:`cellrank.tl.terminal_states`
     providing an improved/generalized approach of identifying terminal states.
@@ -267,7 +268,8 @@ def terminal_states(
         sparse matrix with transition probabilities.
     end_points: `.obs`
         sparse matrix with transition probabilities.
-    """
+    """  # noqa E501
+
     adata = data.copy() if copy else data
     verify_neighbors(adata)
 

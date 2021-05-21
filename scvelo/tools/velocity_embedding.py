@@ -94,6 +94,7 @@ def velocity_embedding(
     velocity_basis: `.obsm`
         coordinates of velocity projection on embedding
     """
+
     adata = data.copy() if copy else data
 
     if basis is None:

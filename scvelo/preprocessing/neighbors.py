@@ -75,6 +75,7 @@ def neighbors(
         Number of threads to be used (for runtime).
     copy
         Return a copy instead of writing to adata.
+
     Returns
     -------
     Depending on `copy`, updates or returns `adata` with the following:
@@ -85,6 +86,7 @@ def neighbors(
         Instead of decaying weights, this stores distances for each pair of
         neighbors.
     """
+
     adata = adata.copy() if copy else adata
 
     if use_rep is None:

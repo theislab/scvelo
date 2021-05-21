@@ -910,8 +910,9 @@ def rgb_custom_colormap(colors=None, alpha=None, N=256):
 
     Returns
     -------
-        A ListedColormap
+    :class:`~matplotlib.colors.ListedColormap`
     """
+
     if colors is None:
         colors = ["royalblue", "white", "forestgreen"]
     c = []
@@ -1391,7 +1392,7 @@ def hist(
 
     Returns
     -------
-        If `show==False` a `matplotlib.Axis`
+    If `show==False` a `matplotlib.Axis`
     """
 
     if ax is None:

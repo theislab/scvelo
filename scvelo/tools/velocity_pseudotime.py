@@ -21,12 +21,14 @@ def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False
         Number of pricipal components to be used.
     copy: `bool`, (default: `False`)
         Return a copy instead of writing to adata.
+
     Returns
     -------
     Returns or updates `adata` with the attributes
     principal_curve: `.uns`
         dictionary containing `projections`, `ixsort` and `arclength`
     """
+
     adata = data.copy() if copy else data
     import rpy2.robjects as robjects
     from rpy2.robjects.packages import importr
@@ -150,8 +152,7 @@ def velocity_pseudotime(
         scv.tl.velocity_pseudotime(adata)
         scv.pl.scatter(adata, color='velocity_pseudotime', color_map='gnuplot')
 
-    .. image::
-    https://user-images.githubusercontent.com/31883718/69545487-33fbc000-0f92-11ea-969b-194dc68400b0.png
+    .. image:: https://user-images.githubusercontent.com/31883718/69545487-33fbc000-0f92-11ea-969b-194dc68400b0.png
        :width: 600px
 
     Arguments
@@ -184,12 +185,13 @@ def velocity_pseudotime(
     **kwargs:
         Further arguments to pass to VPT (e.g. min_group_size, allow_kendall_tau_shift).
 
-     Returns
+    Returns
     -------
     Updates `adata` with the attributes
     velocity_pseudotime: `.obs`
         Velocity pseudotime obtained from velocity graph.
-    """
+    """  # noqa E501
+
     strings_to_categoricals(adata)
     if root_key is None and "root_cells" in adata.obs.keys():
         root0 = adata.obs["root_cells"][0]

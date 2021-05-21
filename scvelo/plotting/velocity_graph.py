@@ -66,8 +66,9 @@ def velocity_graph(
 
     Returns
     -------
-        `matplotlib.Axis` if `show==False`
+    `matplotlib.Axis` if `show==False`
     """
+
     basis = default_basis(adata, **kwargs) if basis is None else get_basis(adata, basis)
     kwargs.update(
         {

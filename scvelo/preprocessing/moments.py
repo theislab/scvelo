@@ -54,6 +54,7 @@ def moments(
     Mu: `.layers`
         dense matrix with first order moments of unspliced counts.
     """
+
     adata = data.copy() if copy else data
 
     layers = [layer for layer in {"spliced", "unspliced"} if layer in adata.layers]
@@ -114,6 +115,7 @@ def second_order_moments(adata, adjusted=False):
     Mss: Second order moments for spliced abundances
     Mus: Second order moments for spliced with unspliced abundances
     """
+
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."
@@ -143,6 +145,7 @@ def second_order_moments_u(adata):
     -------
     Muu: Second order moments for unspliced abundances
     """
+
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."
@@ -186,10 +189,12 @@ def get_moments(
         Whether to compute centered (=variance) or uncentered second order moments.
     mode: `'connectivities'` or `'distances'`  (default: `'connectivities'`)
         Distance metric to use for moment computation.
+
     Returns
     -------
     Mx: first or second order moments
     """
+
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."

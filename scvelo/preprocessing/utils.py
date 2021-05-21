@@ -193,6 +193,7 @@ def filter_genes(
     -------
     Filters the object and adds `n_counts` to `adata.var`.
     """
+
     adata = data.copy() if copy else data
 
     # set initial cell sizes before filtering
@@ -381,6 +382,7 @@ def filter_genes_dispersion(
     If an AnnData `adata` is passed, returns or updates `adata` depending on \
     `copy`. It filters the `adata` and adds the annotations
     """
+
     adata = data.copy() if copy else data
     _set_initial_size(adata)
 
@@ -573,6 +575,7 @@ def normalize_per_cell(
     -------
     Returns or updates `adata` with normalized counts.
     """
+
     adata = data.copy() if copy else data
     if layers is None:
         layers = ["spliced", "unspliced"]
@@ -657,10 +660,12 @@ def log1p(data, copy=False):
         Annotated data matrix.
     copy: `bool` (default: `False`)
         Return a copy of `adata` instead of updating it.
+
     Returns
     -------
     Returns or updates `adata` depending on `copy`.
     """
+
     adata = data.copy() if copy else data
     X = (
         (adata.X.data if issparse(adata.X) else adata.X)
@@ -745,6 +750,7 @@ def filter_and_normalize(
     -------
     Returns or updates `adata` depending on `copy`.
     """
+
     adata = data.copy() if copy else data
 
     if "spliced" not in adata.layers.keys() or "unspliced" not in adata.layers.keys():

@@ -73,6 +73,7 @@ def transition_matrix(
     -------
     Returns sparse matrix with transition probabilities.
     """
+
     if f"{vkey}_graph" not in adata.uns:
         raise ValueError(
             "You need to run `tl.velocity_graph` first to compute cosine correlations."
@@ -186,11 +187,13 @@ def get_cell_transitions(
         Set to `int` for reproducibility, otherwise `None` for a random seed.
     **kwargs:
         To be passed to tl.transition_matrix.
+
     Returns
     -------
     Returns embedding coordinates (if basis is specified),
     otherwise return indices of simulated cell transitions.
     """
+
     np.random.seed(random_state)
     if isinstance(starting_cell, str) and starting_cell in adata.obs_names:
         starting_cell = adata.obs_names.get_loc(starting_cell)

@@ -77,8 +77,7 @@ def velocity_clusters(
         scv.tl.velocity_clusters(adata)
         scv.pl.scatter(adata, color='velocity_clusters')
 
-    .. image::
-    https://user-images.githubusercontent.com/31883718/69625627-484dc480-1047-11ea-847f-6607a3430427.png
+    .. image:: https://user-images.githubusercontent.com/31883718/69625627-484dc480-1047-11ea-847f-6607a3430427.png
        :width: 600px
 
 
@@ -106,7 +105,8 @@ def velocity_clusters(
     Returns or updates `data` with the attributes
     velocity_clusters : `.obs`
         Clusters obtained from applying louvain modularity on velocity expression.
-    """
+    """  # noqa E501
+
     adata = data.copy() if copy else data
 
     logg.info("computing velocity clusters", r=True)
@@ -223,12 +223,10 @@ def rank_velocity_genes(
         )
         pd.DataFrame(adata.uns['rank_velocity_genes']['names']).head()
 
-    .. image::
-    https://user-images.githubusercontent.com/31883718/69626017-11c47980-1048-11ea-89f4-df3769df5ad5.png
+    .. image:: https://user-images.githubusercontent.com/31883718/69626017-11c47980-1048-11ea-89f4-df3769df5ad5.png
        :width: 600px
 
-    .. image::
-    https://user-images.githubusercontent.com/31883718/69626572-30774000-1049-11ea-871f-e8a30c42f10e.png
+    .. image:: https://user-images.githubusercontent.com/31883718/69626572-30774000-1049-11ea-871f-e8a30c42f10e.png
        :width: 600px
 
     Arguments
@@ -266,7 +264,8 @@ def rank_velocity_genes(
         names. Ordered according to scores.
     velocity_score : `.var`
         Storing the score for each gene for each group. Ordered according to scores.
-    """
+    """  # noqa E501
+
     adata = data.copy() if copy else data
 
     if groupby is None or groupby == "velocity_clusters":
