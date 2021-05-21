@@ -86,6 +86,7 @@ def neighbors(
         Instead of decaying weights, this stores distances for each pair of
         neighbors.
     """
+
     adata = adata.copy() if copy else adata
 
     if use_rep is None:

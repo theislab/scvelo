@@ -325,6 +325,7 @@ def velocity_graph(
     velocity_graph: `.uns`
         sparse matrix with transition probabilities
     """
+
     adata = data.copy() if copy else data
     verify_neighbors(adata)
     if vkey not in adata.layers.keys():

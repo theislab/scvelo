@@ -95,6 +95,7 @@ def scatter(
     -------
     If `show==False` a `matplotlib.Axis`
     """
+
     if adata is None and (x is not None and y is not None):
         adata = AnnData(np.stack([x, y]).T)
 
@@ -763,6 +764,7 @@ def trimap(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     return scatter(adata, basis="trimap", **kwargs)
 
 
@@ -779,6 +781,7 @@ def umap(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     return scatter(adata, basis="umap", **kwargs)
 
 
@@ -795,6 +798,7 @@ def tsne(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     return scatter(adata, basis="tsne", **kwargs)
 
 
@@ -811,6 +815,7 @@ def diffmap(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     return scatter(adata, basis="diffmap", **kwargs)
 
 
@@ -827,6 +832,7 @@ def phate(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     return scatter(adata, basis="phate", **kwargs)
 
 
@@ -843,6 +849,7 @@ def draw_graph(adata, layout=None, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     if layout is None:
         layout = f"{adata.uns['draw_graph']['params']['layout']}"
     basis = f"draw_graph_{layout}"
@@ -864,4 +871,5 @@ def pca(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     return scatter(adata, basis="pca", **kwargs)

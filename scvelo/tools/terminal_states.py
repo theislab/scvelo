@@ -43,6 +43,7 @@ def cell_fate(
     cell_fate_confidence: `.obs`
         confidence of transitioning to the assigned fate
     """
+
     adata = data.copy() if copy else data
     logg.info("computing cell fates", r=True)
 
@@ -110,6 +111,7 @@ def cell_origin(
     cell_origin_confidence: `.obs`
         confidence of coming from assigned origin
     """
+
     adata = data.copy() if copy else data
     logg.info("computing cell fates", r=True)
 
@@ -267,6 +269,7 @@ def terminal_states(
     end_points: `.obs`
         sparse matrix with transition probabilities.
     """  # noqa E501
+
     adata = data.copy() if copy else data
     verify_neighbors(adata)
 

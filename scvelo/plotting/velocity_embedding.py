@@ -89,6 +89,7 @@ def velocity_embedding(
     -------
     `matplotlib.Axis` if `show==False`
     """
+
     if vkey == "all":
         lkeys = list(adata.layers.keys())
         vkey = [key for key in lkeys if "velocity" in key and "_u" not in key]

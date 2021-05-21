@@ -36,6 +36,7 @@ def get_phase_marker_genes(adata):
     -------
     List of S and/or G2M phase marker genes.
     """
+
     name, gene_names = adata.var_names[0], adata.var_names
     up, low = name.isupper(), name.islower()
     s_genes_list_ = [
@@ -81,6 +82,7 @@ def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kw
     **phase** : `adata.obs`, dtype `object`
         The cell cycle phase (`S`, `G2M` or `G1`) for each cell.
     """
+
     logg.info("calculating cell cycle phase")
     from scanpy.tools._score_genes import score_genes
 

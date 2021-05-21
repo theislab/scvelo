@@ -126,6 +126,7 @@ def cleanup(
     Optional[AnnData]
         Returns or updates `adata` with selection of attributes kept.
     """
+
     adata = data.copy() if copy else data
     verify_dtypes(adata)
 
@@ -190,6 +191,7 @@ def get_df(
     :class:`pd.DataFrame`
         A dataframe.
     """
+
     if precision is not None:
         pd.set_option("precision", precision)
 
@@ -339,6 +341,7 @@ def get_initial_size(
     np.ndarray
         Initial counts per observation in the specified layer.
     """
+
     if by_total_size:
         sizes = [
             adata.obs[f"initial_size_{layer}"]
@@ -405,6 +408,7 @@ def get_size(adata: AnnData, layer: Optional[str] = None) -> ndarray:
     np.ndarray
         Initial counts per observation in the specified layer.
     """
+
     X = adata.X if layer is None else adata.layers[layer]
     return sum(X, axis=1)
 
@@ -501,6 +505,7 @@ def merge(adata: AnnData, ldata: AnnData, copy: bool = True) -> Optional[AnnData
     Optional[:class:`anndata.AnnData`]
         Returns a :class:`~anndata.AnnData` object
     """
+
     adata.var_names_make_unique()
     ldata.var_names_make_unique()
 
@@ -591,6 +596,7 @@ def obs_df(adata: AnnData, keys: List[str], layer: Optional[str] = None) -> Data
         DataFrame indexed by observations. Columns correspond to variables of specified
         layer.
     """
+
     lookup_keys = [k for k in keys if k in adata.var_names]
     if len(lookup_keys) < len(keys):
         logg.warn(
@@ -738,6 +744,7 @@ def var_df(adata: AnnData, keys: List[str], layer: Optional[str] = None):
         DataFrame indexed by features. Columns correspond to observations of specified
         layer.
     """
+
     lookup_keys = [k for k in keys if k in adata.obs_names]
     if len(lookup_keys) < len(keys):
         logg.warn(
@@ -764,6 +771,7 @@ def verify_dtypes(adata: AnnData) -> None:
     -------
     None
     """
+
     try:
         _ = adata[:, 0]
     except Exception:

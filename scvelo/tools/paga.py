@@ -233,6 +233,7 @@ def paga(
         The adjacency matrix of the abstracted directed graph, weights correspond to
         confidence in the transitions between partitions.
     """
+
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."

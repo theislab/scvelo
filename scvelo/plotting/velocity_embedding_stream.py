@@ -97,6 +97,7 @@ def velocity_embedding_stream(
     -------
     `matplotlib.Axis` if `show==False`
     """
+
     basis = default_basis(adata, **kwargs) if basis is None else get_basis(adata, basis)
     if vkey == "all":
         lkeys = list(adata.layers.keys())

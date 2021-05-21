@@ -307,6 +307,7 @@ def velocity(
     velocity_offset, velocity_beta, velocity_gamma, velocity_r2: `.var`
         parameters
     """  # noqa E501
+
     adata = data.copy() if copy else data
     if not use_raw and "Ms" not in adata.layers.keys():
         moments(adata)
@@ -505,6 +506,7 @@ def velocity_genes(
     velocity_genes: `.var`
         genes to be used for further velocity analysis (velocity graph and embedding)
     """
+
     adata = data.copy() if copy else data
     if f"{vkey}_genes" not in adata.var.keys():
         velocity(adata, vkey)

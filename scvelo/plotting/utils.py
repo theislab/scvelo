@@ -912,6 +912,7 @@ def rgb_custom_colormap(colors=None, alpha=None, N=256):
     -------
     :class:`~matplotlib.colors.ListedColormap`
     """
+
     if colors is None:
         colors = ["royalblue", "white", "forestgreen"]
     c = []

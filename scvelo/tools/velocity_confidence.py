@@ -36,6 +36,7 @@ def velocity_confidence(data, vkey="velocity", copy=False):
     velocity_confidence: `.obs`
         Confidence for each cell
     """  # noqa E501
+
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
         raise ValueError("You need to run `tl.velocity` first.")
@@ -95,6 +96,7 @@ def velocity_confidence_transition(data, vkey="velocity", scale=10, copy=False):
     velocity_confidence_transition: `.obs`
         Confidence of transition for each cell
     """
+
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
         raise ValueError("You need to run `tl.velocity` first.")

@@ -106,6 +106,7 @@ def velocity_clusters(
     velocity_clusters : `.obs`
         Clusters obtained from applying louvain modularity on velocity expression.
     """  # noqa E501
+
     adata = data.copy() if copy else data
 
     logg.info("computing velocity clusters", r=True)
@@ -264,6 +265,7 @@ def rank_velocity_genes(
     velocity_score : `.var`
         Storing the score for each gene for each group. Ordered according to scores.
     """  # noqa E501
+
     adata = data.copy() if copy else data
 
     if groupby is None or groupby == "velocity_clusters":

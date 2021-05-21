@@ -28,6 +28,7 @@ def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False
     principal_curve: `.uns`
         dictionary containing `projections`, `ixsort` and `arclength`
     """
+
     adata = data.copy() if copy else data
     import rpy2.robjects as robjects
     from rpy2.robjects.packages import importr
@@ -190,6 +191,7 @@ def velocity_pseudotime(
     velocity_pseudotime: `.obs`
         Velocity pseudotime obtained from velocity graph.
     """  # noqa E501
+
     strings_to_categoricals(adata)
     if root_key is None and "root_cells" in adata.obs.keys():
         root0 = adata.obs["root_cells"][0]

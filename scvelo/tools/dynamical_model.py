@@ -418,6 +418,7 @@ def recover_dynamics(
     -------
     Returns or updates `adata`
     """  # noqa E501
+
     adata = data.copy() if copy else data
 
     n_jobs = get_n_jobs(n_jobs=n_jobs)
@@ -756,6 +757,7 @@ def latent_time(
     latent_time: `.obs`
         latent time from learned dynamics for each cell
     """  # noqa E501
+
     adata = data.copy() if copy else data
 
     from .dynamical_model_utils import compute_shared_time, root_time
@@ -923,6 +925,7 @@ def differential_kinetic_test(
     -------
     Returns or updates `adata`
     """  # noqa E501
+
     adata = data.copy() if copy else data
 
     if "Ms" not in adata.layers.keys() or "Mu" not in adata.layers.keys():
@@ -1050,6 +1053,7 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
         Structured array to be indexed by group id storing the gene
         names. Ordered according to scores.
     """
+
     from .dynamical_model_utils import get_divergence
 
     adata = data.copy() if copy else data
