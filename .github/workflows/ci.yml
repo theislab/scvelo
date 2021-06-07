@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master, develop]
+    branches: [master, develop, 'release/**']
   pull_request:
-    branches: [master, develop]
+    branches: [master, develop, 'release/**']
 
 jobs:
   # Skip CI if commit message contains `[ci skip]` in the subject
