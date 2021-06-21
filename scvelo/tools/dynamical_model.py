@@ -373,7 +373,9 @@ def recover_dynamics(
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
     var_names: `str`,  list of `str` (default: `'velocity_genes'`)
-        Names of variables/genes to use for the fitting.
+        Names of variables/genes to use for the fitting. If `var_names='velocity_genes'`
+        but there is no column `'velocity_genes'` in `adata.var`, velocity genes are
+        estimated using the steady state model.
     n_top_genes: `int` or `None` (default: `None`)
         Number of top velocity genes to use for the dynamical model.
     max_iter:`int` (default: `10`)
