@@ -372,7 +372,7 @@ def recover_dynamics(
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
-    var_names: `str`,  list of `str` (default: `'velocity_genes`)
+    var_names: `str`,  list of `str` (default: `'velocity_genes'`)
         Names of variables/genes to use for the fitting.
     n_top_genes: `int` or `None` (default: `None`)
         Number of top velocity genes to use for the dynamical model.
