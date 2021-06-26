@@ -17,7 +17,9 @@ assignees: ''
 
 
 <!-- Error Output -->
-<details> <summary> Error output </summary>
+<details>
+
+<summary> Error output </summary>
 
 ```pytb
 # paste the error output here, if applicable
