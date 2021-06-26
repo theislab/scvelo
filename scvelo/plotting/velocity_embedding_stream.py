@@ -27,11 +27,15 @@ def velocity_embedding_stream(
     adata,
     basis=None,
     vkey="velocity",
-    density=None,
+    density=2,
     smooth=None,
     min_mass=None,
     cutoff_perc=None,
     arrow_color=None,
+    arrow_size=1,
+    arrow_style="-|>",
+    max_length=4,
+    integration_direction="both",
     linewidth=None,
     n_neighbors=None,
     recompute=None,
@@ -74,8 +78,11 @@ def velocity_embedding_stream(
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
-    density: `float` (default: 1)
-        Amount of velocities to show - 0 none to 1 all
+    density: `float` (default: 2)
+        Controls the closeness of streamlines. When density = 2 (default), the domain
+        is divided into a 60x60 grid, whereas density linearly scales this grid.
+        Each cell in the grid can have, at most, one traversing streamline.
+        For different densities in each direction, use a tuple (density_x, density_y).
     smooth: `float` (default: 0.5)
         Multiplication factor for scale in Gaussian kernel around grid point.
     min_mass: `float` (default: 1)
@@ -85,12 +92,23 @@ def velocity_embedding_stream(
         If set, mask small velocities below a percentile threshold (between 0 and 100).
     linewidth: `float` (default: 1)
         Line width for streamplot.
+    arrow_color: `str` or 2D array (default: 'k')
+        The streamline color. If given an array, it must have the same shape as u and v.
+    arrow_size: `float` (default: 1)
+        Scaling factor for the arrow size.
+    arrow_style: `str` (default: '-|>')
+        Arrow style specification, '-|>' or '->'.
+    max_length: `float` (default: 4)
+        Maximum length of streamline in axes coordinates.
+    integration_direction: `str` (default: 'both')
+        Integrate the streamline in 'forward', 'backward' or 'both' directions.
     n_neighbors: `int` (default: None)
         Number of neighbors to consider around grid point.
     X: `np.ndarray` (default: None)
-        Embedding grid point coordinates
+        Embedding coordinates. Using `adata.obsm['X_umap']` per default.
     V: `np.ndarray` (default: None)
-        Embedding grid velocity coordinates
+        Embedding velocity coordinates. Using `adata.obsm['velocity_umap']` per default.
+
     {scatter}
 
     Returns
@@ -161,6 +179,17 @@ def velocity_embedding_stream(
         "save": False,
     }
 
+    stream_kwargs = {
+        "linewidth": linewidth,
+        "density": density or 2,
+        "zorder": 3,
+        "arrow_color": arrow_color or "k",
+        "arrowsize": arrow_size or 1,
+        "arrowstyle": arrow_style or "-|>",
+        "maxlength": max_length or 4,
+        "integration_direction": integration_direction or "both",
+    }
+
     multikey = (
         colors
         if len(colors) > 1
@@ -188,11 +217,9 @@ def velocity_embedding_stream(
                 ax.append(
                     velocity_embedding_stream(
                         adata,
-                        density=density,
                         size=size,
                         smooth=smooth,
                         n_neighbors=n_neighbors,
-                        linewidth=linewidth,
                         ax=pl.subplot(gs),
                         color=colors[i] if len(colors) > 1 else color,
                         layer=layers[i] if len(layers) > 1 else layer,
@@ -201,6 +228,7 @@ def velocity_embedding_stream(
                         X_grid=None if len(vkeys) > 1 else X_grid,
                         V_grid=None if len(vkeys) > 1 else V_grid,
                         **scatter_kwargs,
+                        **stream_kwargs,
                         **kwargs,
                     )
                 )
@@ -210,19 +238,14 @@ def velocity_embedding_stream(
 
     else:
         ax, show = get_ax(ax, show, figsize, dpi)
-        density = 1 if density is None else density
-        stream_kwargs = {
-            "linewidth": linewidth,
-            "density": 2 * density,
-            "zorder": 3,
-            "color": "k" if arrow_color is None else arrow_color,
-        }
+
         for arg in list(kwargs):
             if arg in stream_kwargs:
                 stream_kwargs.update({arg: kwargs[arg]})
             else:
                 scatter_kwargs.update({arg: kwargs[arg]})
 
+        stream_kwargs["color"] = stream_kwargs.pop("arrow_color", "k")
         ax.streamplot(X_grid[0], X_grid[1], V_grid[0], V_grid[1], **stream_kwargs)
 
         size = 8 * default_size(adata) if size is None else size
