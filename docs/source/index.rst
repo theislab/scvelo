@@ -84,7 +84,7 @@ For further information visit `scvelo.org <https://scvelo.org>`_.
    :maxdepth: 1
    :hidden:
 
-   perspectives
+   perspectives/index
 
 
 .. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
