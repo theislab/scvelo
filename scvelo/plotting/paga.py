@@ -1049,7 +1049,9 @@ def _paga_graph(
                 color_single.append("grey")
                 fracs.append(1 - sum(fracs))
             wedgeprops = dict(linewidth=0, edgecolor="k", antialiased=True)
-            pie_axs[count].pie(fracs, colors=color_single, wedgeprops=wedgeprops)
+            pie_axs[count].pie(
+                fracs, colors=color_single, wedgeprops=wedgeprops, normalize=True
+            )
         if node_labels is not None:
             text_kwds.update(dict(verticalalignment="center", fontweight=fontweight))
             text_kwds.update(dict(horizontalalignment="center", size=fontsize))
@@ -1094,6 +1096,6 @@ def getbb(sc, ax):
             result = get_path_collection_extents(
                 transform.frozen(), [p], [t], [o], transOffset.frozen()
             )
-            bboxes.append(result.inverse_transformed(ax.transData))
+            bboxes.append(result.transformed(ax.transData.inverted()))
 
     return bboxes
