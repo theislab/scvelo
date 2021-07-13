@@ -65,7 +65,7 @@ def clean_obs_names(
     names = adata.obs_names
     base_list = get_base_list(names[0], base)
 
-    if len(np.unique([len(name) for name in adata.obs_names])) == 1:
+    if adata.obs_names.map(len).unique().size == 1:
         start, end = re.search(base_list, names[0]).span()
         newIDs = [name[start:end] for name in names]
         start, end = 0, len(newIDs[0])
