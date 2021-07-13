@@ -1,4 +1,5 @@
 import hypothesis.strategies as st
+import pytest
 from hypothesis import given
 
 import numpy as np
@@ -7,8 +8,59 @@ from scipy.sparse import issparse
 
 from anndata import AnnData
 
-from scvelo.core import get_modality, make_dense, make_sparse, set_modality
+from scvelo.core import (
+    clean_obs_names,
+    get_modality,
+    make_dense,
+    make_sparse,
+    set_modality,
+)
 from .test_base import get_adata, TestBase
+
+
+# TODO: Make more sophisticated
+class TestCleanObsNames:
+    @pytest.mark.parametrize(
+        "obs_names, obs_names_cleaned",
+        [
+            (
+                ["sample1_ABCD", "sample2_ABCD", "sample3_DCBA"],
+                ["ABCD", "ABCD-1", "DCBA"],
+            ),
+            (
+                ["sample1_ABCD0815", "sample2_AMNC0707", "sample3_AAAA0902"],
+                ["ABCD", "AMNC", "AAAA"],
+            ),
+        ],
+    )
+    def test_equal_obs_id_length(self, obs_names, obs_names_cleaned):
+        adata = AnnData(np.eye(3))
+        adata.obs_names = obs_names
+
+        clean_obs_names(adata)
+
+        assert (adata.obs_names == obs_names_cleaned).all()
+        assert "sample_batch" in adata.obs
+        assert adata.obs["sample_batch"].str.startswith("sample").all()
+
+    @pytest.mark.parametrize(
+        "obs_names, obs_names_cleaned",
+        [
+            (
+                ["sample1_ABCDE0815", "sample2_AMNC0707", "sample3_AAAA0902"],
+                ["ABCD", "AMNC", "AAAA"],
+            )
+        ],
+    )
+    def test_different_obs_id_length(self, obs_names, obs_names_cleaned):
+        adata = AnnData(np.eye(3))
+        adata.obs_names = obs_names
+
+        clean_obs_names(adata)
+
+        assert (adata.obs_names == obs_names_cleaned).all()
+        assert "sample_batch" in adata.obs
+        assert adata.obs["sample_batch"].str.startswith("sample").all()
 
 
 class TestGetModality(TestBase):
