@@ -11,16 +11,18 @@ from pandas.api.types import is_categorical_dtype
 from scipy.sparse import csr_matrix, issparse, spmatrix
 
 from anndata import AnnData
+from scanpy._utils import deprecated_arg_names
 
 from scvelo import logging as logg
 from ._arithmetic import sum
 
 
+@deprecated_arg_names({"copy": "inplace"})
 def clean_obs_names(
     data: AnnData,
     base: str = "[AGTCBDHKMNRSVWY]",
     ID_length: int = 12,
-    copy: bool = False,
+    inplace: bool = True,
 ) -> Optional[AnnData]:
     """Clean up the obs_names.
 
@@ -37,8 +39,8 @@ def clean_obs_names(
         Genetic code letters to be identified.
     ID_length
         Length of the Genetic Codes in the samples.
-    copy
-        Return a copy instead of writing to adata.
+    inplace
+        Whether to update `adata` inplace or not.
 
     Returns
     -------
@@ -58,7 +60,7 @@ def clean_obs_names(
             raise ValueError("Encountered an invalid ID in obs_names: ", name)
         return base_list
 
-    adata = data.copy() if copy else data
+    adata = data.copy() if not inplace else data
 
     names = adata.obs_names
     base_list = get_base_list(names[0], base)
@@ -96,7 +98,9 @@ def clean_obs_names(
         )
 
     adata.obs_names_make_unique()
-    return adata if copy else None
+
+    if not inplace:
+        return adata
 
 
 def cleanup(
