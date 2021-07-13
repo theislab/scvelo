@@ -62,12 +62,11 @@ def clean_obs_names(
 
     adata = data.copy() if not inplace else data
 
-    names = adata.obs_names
-    base_list = get_base_list(names[0], base)
+    base_list = get_base_list(adata.obs_names[0], base)
 
     if adata.obs_names.map(len).unique().size == 1:
-        start, end = re.search(base_list, names[0]).span()
-        new_obs_names = [name[start:end] for name in names]
+        start, end = re.search(base_list, adata.obs_names[0]).span()
+        new_obs_names = [obs_name[start:end] for obs_name in adata.obs_names]
         start, end = 0, len(new_obs_names[0])
         for i in range(end - id_length):
             if np.any([new_obs_name[i] not in base for new_obs_name in new_obs_names]):
@@ -78,10 +77,13 @@ def clean_obs_names(
                 end -= 1
 
         new_obs_names = [new_obs_name[start:end] for new_obs_name in new_obs_names]
-        prefixes = [names[i].replace(new_obs_names[i], "") for i in range(len(names))]
+        prefixes = [
+            obs_name.replace(new_obs_names[obs_id], "")
+            for obs_id, obs_name in enumerate(adata.obs_names)
+        ]
     else:
         prefixes, new_obs_names = [], []
-        for name in names:
+        for name in adata.obs_names:
             match = re.search(base_list, name)
             new_obs_name = (
                 re.search(get_base_list(name, base), name).group()
