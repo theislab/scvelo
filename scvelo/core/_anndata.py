@@ -17,10 +17,10 @@ from scvelo import logging as logg
 from ._arithmetic import sum
 
 
-@deprecated_arg_names({"copy": "inplace", "ID_length": "id_length"})
+@deprecated_arg_names({"copy": "inplace", "ID_length": "id_length", "base": "alphabet"})
 def clean_obs_names(
     data: AnnData,
-    base: str = "[AGTCBDHKMNRSVWY]",
+    alphabet: str = "[AGTCBDHKMNRSVWY]",
     id_length: int = 12,
     inplace: bool = True,
 ) -> Optional[AnnData]:
@@ -35,7 +35,7 @@ def clean_obs_names(
     ---------
     data
         Annotated data matrix.
-    base
+    alphabet
         Genetic code letters to be identified.
     ID_length
         Length of the Genetic Codes in the samples.
@@ -52,27 +52,32 @@ def clean_obs_names(
             names of the identified sample batches
     """
 
-    def get_base_list(name, base):
-        base_list = base
-        while re.search(base_list + base, name) is not None:
-            base_list += base
+    def get_base_list(name, alphabet):
+        base_list = alphabet
+        while re.search(base_list + alphabet, name) is not None:
+            base_list += alphabet
         if len(base_list) == 0:
             raise ValueError("Encountered an invalid ID in obs_names: ", name)
         return base_list
 
     adata = data.copy() if not inplace else data
 
-    base_list = get_base_list(adata.obs_names[0], base)
+    base_list = get_base_list(adata.obs_names[0], alphabet)
 
     if adata.obs_names.map(len).unique().size == 1:
         start, end = re.search(base_list, adata.obs_names[0]).span()
         new_obs_names = [obs_name[start:end] for obs_name in adata.obs_names]
         start, end = 0, len(new_obs_names[0])
         for i in range(end - id_length):
-            if np.any([new_obs_name[i] not in base for new_obs_name in new_obs_names]):
+            if np.any(
+                [new_obs_name[i] not in alphabet for new_obs_name in new_obs_names]
+            ):
                 start += 1
             if np.any(
-                [new_obs_name[::-1][i] not in base for new_obs_name in new_obs_names]
+                [
+                    new_obs_name[::-1][i] not in alphabet
+                    for new_obs_name in new_obs_names
+                ]
             ):
                 end -= 1
 
@@ -86,7 +91,7 @@ def clean_obs_names(
         for name in adata.obs_names:
             match = re.search(base_list, name)
             new_obs_name = (
-                re.search(get_base_list(name, base), name).group()
+                re.search(get_base_list(name, alphabet), name).group()
                 if match is None
                 else match.group()
             )
