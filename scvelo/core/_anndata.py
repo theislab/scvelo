@@ -17,11 +17,11 @@ from scvelo import logging as logg
 from ._arithmetic import sum
 
 
-@deprecated_arg_names({"copy": "inplace"})
+@deprecated_arg_names({"copy": "inplace", "ID_length": "id_length"})
 def clean_obs_names(
     data: AnnData,
     base: str = "[AGTCBDHKMNRSVWY]",
-    ID_length: int = 12,
+    id_length: int = 12,
     inplace: bool = True,
 ) -> Optional[AnnData]:
     """Clean up the obs_names.
@@ -67,29 +67,31 @@ def clean_obs_names(
 
     if adata.obs_names.map(len).unique().size == 1:
         start, end = re.search(base_list, names[0]).span()
-        newIDs = [name[start:end] for name in names]
-        start, end = 0, len(newIDs[0])
-        for i in range(end - ID_length):
-            if np.any([ID[i] not in base for ID in newIDs]):
+        new_obs_names = [name[start:end] for name in names]
+        start, end = 0, len(new_obs_names[0])
+        for i in range(end - id_length):
+            if np.any([new_obs_name[i] not in base for new_obs_name in new_obs_names]):
                 start += 1
-            if np.any([ID[::-1][i] not in base for ID in newIDs]):
+            if np.any(
+                [new_obs_name[::-1][i] not in base for new_obs_name in new_obs_names]
+            ):
                 end -= 1
 
-        newIDs = [ID[start:end] for ID in newIDs]
-        prefixes = [names[i].replace(newIDs[i], "") for i in range(len(names))]
+        new_obs_names = [new_obs_name[start:end] for new_obs_name in new_obs_names]
+        prefixes = [names[i].replace(new_obs_names[i], "") for i in range(len(names))]
     else:
-        prefixes, newIDs = [], []
+        prefixes, new_obs_names = [], []
         for name in names:
             match = re.search(base_list, name)
-            newID = (
+            new_obs_name = (
                 re.search(get_base_list(name, base), name).group()
                 if match is None
                 else match.group()
             )
-            newIDs.append(newID)
-            prefixes.append(name.replace(newID, ""))
+            new_obs_names.append(new_obs_name)
+            prefixes.append(name.replace(new_obs_name, ""))
 
-    adata.obs_names = newIDs
+    adata.obs_names = new_obs_names
     if len(prefixes[0]) > 0 and len(np.unique(prefixes)) > 1:
         adata.obs["sample_batch"] = (
             pd.Categorical(prefixes)
