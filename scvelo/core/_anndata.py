@@ -54,18 +54,8 @@ def clean_obs_names(
             names of the identified sample batches
     """
 
-    def get_base_list(name, alphabet):
-        base_list = alphabet
-        while re.search(base_list + alphabet, name) is not None:
-            base_list += alphabet
-        if len(base_list) == 0:
-            raise ValueError("Encountered an invalid ID in obs_names: ", name)
-        return base_list
-
     if not inplace:
         adata = adata.copy()
-
-    base_list = get_base_list(adata.obs_names[0], alphabet)
 
     if adata.obs_names.map(len).unique().size == 1:
         start = re.search(alphabet, adata.obs_names[0]).start()
@@ -91,16 +81,13 @@ def clean_obs_names(
             for obs_id, obs_name in enumerate(adata.obs_names)
         ]
     else:
-        prefixes, new_obs_names = [], []
-        for name in adata.obs_names:
-            match = re.search(base_list, name)
-            new_obs_name = (
-                re.search(get_base_list(name, alphabet), name).group()
-                if match is None
-                else match.group()
-            )
-            new_obs_names.append(new_obs_name)
-            prefixes.append(name.replace(new_obs_name, ""))
+
+        def rename_obs(obs_name):
+            start = re.search(alphabet, obs_name).start()
+            new_obs_name = re.search(f"{alphabet}*", obs_name[start:]).group()
+            return new_obs_name, obs_name.replace(new_obs_name, "")
+
+        new_obs_names, prefixes = zip(*adata.obs_names.map(rename_obs))
 
     adata.obs_names = new_obs_names
     if len(prefixes[0]) > 0 and len(np.unique(prefixes)) > 1:
