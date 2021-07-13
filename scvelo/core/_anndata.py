@@ -17,9 +17,11 @@ from scvelo import logging as logg
 from ._arithmetic import sum
 
 
-@deprecated_arg_names({"copy": "inplace", "ID_length": "id_length", "base": "alphabet"})
+@deprecated_arg_names(
+    {"data": "adata", "copy": "inplace", "ID_length": "id_length", "base": "alphabet"}
+)
 def clean_obs_names(
-    data: AnnData,
+    adata: AnnData,
     alphabet: str = "[AGTCBDHKMNRSVWY]",
     id_length: int = 12,
     inplace: bool = True,
@@ -33,7 +35,7 @@ def clean_obs_names(
 
     Arguments
     ---------
-    data
+    adata
         Annotated data matrix.
     alphabet
         Genetic code letters to be identified.
@@ -60,7 +62,8 @@ def clean_obs_names(
             raise ValueError("Encountered an invalid ID in obs_names: ", name)
         return base_list
 
-    adata = data.copy() if not inplace else data
+    if not inplace:
+        adata = adata.copy()
 
     base_list = get_base_list(adata.obs_names[0], alphabet)
 
