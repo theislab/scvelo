@@ -39,7 +39,7 @@ def clean_obs_names(
         Annotated data matrix.
     alphabet
         Genetic code letters to be identified.
-    ID_length
+    id_length
         Length of the Genetic Codes in the samples.
     inplace
         Whether to update `adata` inplace or not.
