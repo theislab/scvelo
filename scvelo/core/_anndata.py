@@ -68,7 +68,8 @@ def clean_obs_names(
     base_list = get_base_list(adata.obs_names[0], alphabet)
 
     if adata.obs_names.map(len).unique().size == 1:
-        start, end = re.search(base_list, adata.obs_names[0]).span()
+        start = re.search(alphabet, adata.obs_names[0]).start()
+        end = start + re.search(f"{alphabet}*", adata.obs_names[0][start:]).end()
         new_obs_names = [obs_name[start:end] for obs_name in adata.obs_names]
         start, end = 0, len(new_obs_names[0])
         for i in range(end - id_length):
