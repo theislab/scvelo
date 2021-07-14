@@ -77,8 +77,8 @@ def clean_obs_names(
 
         new_obs_names = [new_obs_name[start:end] for new_obs_name in new_obs_names]
         prefixes = [
-            obs_name.replace(new_obs_names[obs_id], "")
-            for obs_id, obs_name in enumerate(adata.obs_names)
+            obs_name.replace(new_obs_name, "")
+            for obs_name, new_obs_name in zip(adata.obs_names, new_obs_names)
         ]
     else:
 
