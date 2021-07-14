@@ -90,14 +90,14 @@ def clean_obs_names(
         new_obs_names, prefixes = zip(*adata.obs_names.map(rename_obs))
 
     adata.obs_names = new_obs_names
+    adata.obs_names_make_unique()
+
     if len(prefixes[0]) > 0 and len(np.unique(prefixes)) > 1:
         adata.obs["sample_batch"] = (
             pd.Categorical(prefixes)
             if len(np.unique(prefixes)) < adata.n_obs
             else prefixes
         )
-
-    adata.obs_names_make_unique()
 
     if not inplace:
         return adata
