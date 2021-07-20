@@ -12,7 +12,7 @@ from ._anndata import (
     set_modality,
     show_proportions,
 )
-from ._arithmetic import clipped_log, invert, prod_sum, sum
+from ._arithmetic import clipped_log, invert, multiply, prod_sum, sum
 from ._linear_models import LinearRegression
 from ._metrics import l2_norm
 from ._models import SplicingDynamics
@@ -33,6 +33,7 @@ __all__ = [
     "make_dense",
     "make_sparse",
     "merge",
+    "multiply",
     "parallelize",
     "prod_sum",
     "set_initial_size",

@@ -11,6 +11,7 @@ from scvelo import logging as logg
 from scvelo.core import cleanup as _cleanup
 from scvelo.core import get_initial_size as _get_initial_size
 from scvelo.core import get_size as _get_size
+from scvelo.core import multiply
 from scvelo.core import set_initial_size as _set_initial_size
 from scvelo.core import show_proportions as _show_proportions
 from scvelo.core import sum
@@ -233,14 +234,9 @@ def filter_genes(
             X = adata.layers[layer]
         else:  # shared counts/cells
             Xs, Xu = adata.layers["spliced"], adata.layers["unspliced"]
-            nonzeros = (
-                (Xs > 0).multiply(Xu > 0) if issparse(Xs) else (Xs > 0) * (Xu > 0)
-            )
-            X = (
-                nonzeros.multiply(Xs) + nonzeros.multiply(Xu)
-                if issparse(nonzeros)
-                else nonzeros * (Xs + Xu)
-            )
+
+            nonzeros = multiply(Xs > 0, Xu > 0)
+            X = multiply(nonzeros, Xs) + multiply(nonzeros, Xu)
 
         gene_subset = np.ones(adata.n_vars, dtype=bool)
 

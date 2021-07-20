@@ -7,8 +7,9 @@ from hypothesis.extra.numpy import arrays
 import numpy as np
 from numpy import ndarray
 from numpy.testing import assert_almost_equal, assert_array_equal
+from scipy.sparse import csr_matrix, issparse
 
-from scvelo.core import clipped_log, invert, prod_sum, sum
+from scvelo.core import clipped_log, invert, multiply, prod_sum, sum
 
 
 class TestClippedLog:
@@ -131,6 +132,61 @@ class TestInvert:
             assert np.isnan(a_inv[a == 0]).all()
         else:
             assert set(a_inv[a == 0]) == set()
+
+
+class TestMultiply:
+    @given(
+        a=arrays(
+            float,
+            shape=st.integers(min_value=1, max_value=100),
+            elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
+        )
+    )
+    def test_flat_arrays(self, a: ndarray):
+        b = csr_matrix(a)
+
+        res = multiply(a, a)
+        assert res.shape == a.shape
+        assert not issparse(res)
+        np.testing.assert_almost_equal(res, a * a)
+
+        res = multiply(a, b)
+        assert res.shape == b.shape
+        assert issparse(res)
+        np.testing.assert_almost_equal(res.data, b.multiply(a).data)
+
+        res = multiply(b, a)
+        assert res.shape == b.shape
+        assert issparse(res)
+        np.testing.assert_almost_equal(res.data, b.multiply(a).data)
+
+    @given(
+        a=arrays(
+            float,
+            shape=st.tuples(
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
+            ),
+            elements=st.floats(max_value=1e3, allow_infinity=False, allow_nan=False),
+        ),
+    )
+    def test_2d_arrays(self, a: ndarray):
+        b = csr_matrix(a)
+
+        res = multiply(a, a)
+        assert res.shape == a.shape
+        assert not issparse(res)
+        np.testing.assert_almost_equal(res, a * a)
+
+        res = multiply(a, b)
+        assert res.shape == b.shape
+        assert issparse(res)
+        np.testing.assert_almost_equal(res.data, b.multiply(a).data)
+
+        res = multiply(b, a)
+        assert res.shape == b.shape
+        assert issparse(res)
+        np.testing.assert_almost_equal(res.data, b.multiply(a).data)
 
 
 # TODO: Extend test to generate sparse inputs as well
