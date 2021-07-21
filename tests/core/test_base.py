@@ -35,42 +35,43 @@ def get_adata(
 
     Arguments
     ---------
-        n_obs:
+        n_obs
             Number of observations. If set to `None`, a random integer between `1` and
             `max_obs` will be drawn. Defaults to `None`.
-        n_vars:
+        n_vars
             Number of variables. If set to `None`, a random integer between `1` and
             `max_vars` will be drawn. Defaults to `None`.
-        min_obs:
+        min_obs
             Minimum number of observations. If set to `None`, there is no lower limit.
             Defaults to `1`.
-        max_obs:
+        max_obs
             Maximum number of observations. If set to `None`, there is no upper limit.
             Defaults to `100`.
-        min_vars:
+        min_vars
             Minimum number of variables. If set to `None`, there is no lower limit.
             Defaults to `1`.
-        max_vars:
+        max_vars
             Maximum number of variables. If set to `None`, there is no upper limit.
             Defaults to `100`.
-        layer_keys:
+        layer_keys
             Names of layers. If set to `None`, layers will be named at random. Defaults
             to `None`.
-        min_layers:
+        min_layers
             Minimum number of layers. Is set to the number of provided layer names if
             `layer_keys` is not `None`. Defaults to `2`.
-        max_layers: Maximum number of layers. Is set to the number of provided layer
+        max_layers
+            Maximum number of layers. Is set to the number of provided layer
             names if `layer_keys` is not `None`. Defaults to `2`.
-        obsm_keys:
+        obsm_keys
             Names of multi-dimensional observations annotation. If set to `None`, names
             will be generated at random. Defaults to `None`.
-        min_obsm:
+        min_obsm
             Minimum number of multi-dimensional observations annotation. Is set to the
             number of keys if `obsm_keys` is not `None`. Defaults to `2`.
-        max_obsm:
+        max_obsm
             Maximum number of multi-dimensional observations annotation. Is set to the
             number of keys if `obsm_keys` is not `None`. Defaults to `2`.
-        sparse_entries:
+        sparse_entries
             Whether or not to make AnnData entries sparse.
 
     Returns
