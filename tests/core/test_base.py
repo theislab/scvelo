@@ -27,6 +27,9 @@ def get_adata(
     obsm_keys: Optional[Union[List, str]] = None,
     min_obsm: Optional[int] = 2,
     max_obsm: Optional[int] = 2,
+    obs_col_names=None,
+    min_obs_cols=2,
+    max_obs_cols=2,
     sparse_entries: bool = False,
 ) -> AnnData:
     """Generate an AnnData object.
@@ -71,6 +74,15 @@ def get_adata(
         max_obsm
             Maximum number of multi-dimensional observations annotation. Is set to the
             number of keys if `obsm_keys` is not `None`. Defaults to `2`.
+        obs_col_names
+            Names of columns in `adata.obs`. If set to `None`, colums will be named at
+            random. Defaults to `None`.
+        min_obs_cols
+            Minimum number of columns in `adata.obs`. Is set to the number of provided
+            column names if `obs_col_names` is not `None`. Defaults to `2`.
+        max_obs_cols
+            Maximum number of columns in `adata.obs`. Is set to the number of provided
+            column names if `obs_col_names` is not `None`. Defaults to `2`.
         sparse_entries
             Whether or not to make AnnData entries sparse.
 
@@ -89,6 +101,8 @@ def get_adata(
         layer_keys = [layer_keys]
     if isinstance(obsm_keys, str):
         obsm_keys = [obsm_keys]
+    if isinstance(obs_col_names, str):
+        obs_col_names = [obs_col_names]
 
     if layer_keys is not None:
         min_layers = len(layer_keys)
@@ -96,6 +110,9 @@ def get_adata(
     if obsm_keys is not None:
         min_obsm = len(obsm_keys)
         max_obsm = len(obsm_keys)
+    if obs_col_names is not None:
+        min_obs_cols = len(obs_col_names)
+        max_obs_cols = len(obs_col_names)
 
     X = draw(
         arrays(
@@ -134,6 +151,21 @@ def get_adata(
         )
     )
 
+    obs = draw(
+        st.dictionaries(
+            st.text(min_size=1)
+            if obs_col_names is None
+            else st.sampled_from(obs_col_names),
+            st.lists(
+                elements=st.integers(min_value=0, max_value=1e2),
+                min_size=n_obs,
+                max_size=n_obs,
+            ),
+            min_size=min_obs_cols,
+            max_size=max_obs_cols,
+        )
+    )
+
     # Make keys for layers and obsm unique
     for key in set(layers.keys()).intersection(obsm.keys()):
         layers[f"{key}_"] = layers.pop(key)
@@ -141,9 +173,9 @@ def get_adata(
     if sparse_entries:
         layers = {key: csr_matrix(val) for key, val in layers.items()}
         obsm = {key: csr_matrix(val) for key, val in obsm.items()}
-        return AnnData(X=csr_matrix(X), layers=layers, obsm=obsm)
+        return AnnData(X=csr_matrix(X), layers=layers, obsm=obsm, obs=obs)
     else:
-        return AnnData(X=X, layers=layers, obsm=obsm)
+        return AnnData(X=X, layers=layers, obsm=obsm, obs=obs)
 
 
 class TestAdataGeneration:
@@ -160,7 +192,11 @@ class TestAdataGeneration:
 
     @given(
         adata=get_adata(
-            n_obs=2, n_vars=2, layer_keys=["unspliced", "spliced"], obsm_keys="X_umap"
+            n_obs=2,
+            n_vars=2,
+            layer_keys=["unspliced", "spliced"],
+            obsm_keys="X_umap",
+            obs_col_names=["louvain", "donor", "day"],
         )
     )
     def test_custom_adata_generation(self, adata: AnnData):
@@ -169,6 +205,12 @@ class TestAdataGeneration:
         assert len(adata.obsm) == 1
         assert set(adata.layers.keys()) == {"unspliced", "spliced"}
         assert set(adata.obsm.keys()) == {"X_umap"}
+        assert set(adata.obs.columns) == {"louvain", "donor", "day"}
+
+    @given(adata=get_adata(min_obs_cols=0, max_obs_cols=10))
+    def test_setting_number_obs_columns(self, adata):
+        assert len(adata.obs.columns) >= 0
+        assert len(adata.obs.columns) <= 10
 
 
 class TestBase:
