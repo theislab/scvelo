@@ -12,6 +12,8 @@ from anndata import AnnData
 
 
 # TODO: Add possibility to generate adata object with floats as counts
+# TODO: Add possibility to generate different columns with different data types in
+#       adata.obs and adata.var
 @st.composite
 def get_adata(
     draw,
