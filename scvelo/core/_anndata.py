@@ -103,27 +103,28 @@ def clean_obs_names(
         return adata
 
 
+@deprecated_arg_names({"data": "adata", "copy": "inplace"})
 def cleanup(
-    data: AnnData,
+    adata: AnnData,
     clean: Union[
-        Literal["layers", "obs", "var", "uns"],
+        Literal["layers", "obs", "var", "uns", "all"],
         List[Literal["layers", "obs", "var", "uns"]],
     ] = "layers",
     keep: Optional[Union[str, List[str]]] = None,
-    copy: bool = False,
+    inplace: bool = True,
 ) -> Optional[AnnData]:
     """Delete not needed attributes.
 
     Arguments
     ---------
-    data
+    adata
         Annotated data matrix.
     clean
         Which attributes to consider for freeing memory.
     keep
         Which attributes to keep.
-    copy
-        Return a copy instead of writing to adata.
+    inplace
+        Whether to update `adata` inplace or not.
 
     Returns
     -------
@@ -131,13 +132,14 @@ def cleanup(
         Returns or updates `adata` with selection of attributes kept.
     """
 
-    adata = data.copy() if copy else data
+    if not inplace:
+        adata = adata.copy()
     verify_dtypes(adata)
 
     keep = list([keep] if isinstance(keep, str) else {} if keep is None else keep)
     keep.extend(["spliced", "unspliced", "Ms", "Mu", "clusters", "neighbors"])
 
-    ann_dict = {
+    attributes_to_remove = {
         "obs": adata.obs_keys(),
         "var": adata.var_keys(),
         "uns": adata.uns_keys(),
@@ -145,14 +147,19 @@ def cleanup(
     }
 
     if "all" not in clean:
-        ann_dict = {ann: values for (ann, values) in ann_dict.items() if ann in clean}
+        attributes_to_remove = {
+            attr: attr_keys
+            for (attr, attr_keys) in attributes_to_remove.items()
+            if attr in clean
+        }
 
-    for (ann, values) in ann_dict.items():
-        for value in values:
-            if value not in keep:
-                del getattr(adata, ann)[value]
+    for (attr, attr_keys) in attributes_to_remove.items():
+        for key in attr_keys:
+            if key not in keep:
+                del getattr(adata, attr)[key]
 
-    return adata if copy else None
+    if not inplace:
+        return adata
 
 
 def get_df(
