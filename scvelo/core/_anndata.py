@@ -103,8 +103,9 @@ def clean_obs_names(
         return adata
 
 
+@deprecated_arg_names({"data": "adata"})
 def cleanup(
-    data: AnnData,
+    adata: AnnData,
     clean: Union[
         Literal["layers", "obs", "var", "uns"],
         List[Literal["layers", "obs", "var", "uns"]],
@@ -116,7 +117,7 @@ def cleanup(
 
     Arguments
     ---------
-    data
+    adata
         Annotated data matrix.
     clean
         Which attributes to consider for freeing memory.
@@ -131,7 +132,8 @@ def cleanup(
         Returns or updates `adata` with selection of attributes kept.
     """
 
-    adata = data.copy() if copy else data
+    if copy:
+        adata = adata.copy()
     verify_dtypes(adata)
 
     keep = list([keep] if isinstance(keep, str) else {} if keep is None else keep)

@@ -67,7 +67,7 @@ class TestCleanObsNames:
 class TestCleanup(TestBase):
     @given(adata=get_adata(), copy=st.booleans())
     def test_cleanup_all(self, adata: AnnData, copy: bool):
-        returned_adata = cleanup(adata, clean="all", copy=copy)
+        returned_adata = cleanup(adata=adata, clean="all", copy=copy)
 
         if copy:
             assert isinstance(returned_adata, AnnData)
@@ -86,7 +86,7 @@ class TestCleanup(TestBase):
         n_var_cols = len(adata.var.columns)
         n_uns_slots = len(adata.uns)
 
-        returned_adata = cleanup(adata)
+        returned_adata = cleanup(adata=adata)
         assert returned_adata is None
 
         assert len(adata.layers) == 0
@@ -103,7 +103,7 @@ class TestCleanup(TestBase):
         n_var_cols = len(adata.var.columns)
         n_uns_slots = len(adata.uns)
 
-        returned_adata = cleanup(adata, copy=copy)
+        returned_adata = cleanup(adata=adata, copy=copy)
 
         if copy:
             assert isinstance(returned_adata, AnnData)
@@ -144,7 +144,7 @@ class TestCleanup(TestBase):
         var_cols_to_keep += set(adata.var.columns).intersection(layers_to_keep)
 
         returned_adata = cleanup(
-            adata,
+            adata=adata,
             keep=layers_to_keep + obs_cols_to_keep + var_cols_to_keep,
             clean="all",
             copy=copy,
