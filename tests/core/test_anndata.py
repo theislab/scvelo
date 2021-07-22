@@ -141,7 +141,7 @@ class TestCleanup(TestBase):
         obs_cols_to_keep += set(adata.obs.columns).intersection(layers_to_keep)
 
         var_cols_to_keep += set(adata.var.columns).intersection(obs_cols_to_keep)
-        obs_cols_to_keep += set(adata.var.columns).intersection(layers_to_keep)
+        var_cols_to_keep += set(adata.var.columns).intersection(layers_to_keep)
 
         returned_adata = cleanup(
             adata,
