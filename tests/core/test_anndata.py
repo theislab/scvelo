@@ -65,11 +65,11 @@ class TestCleanObsNames:
 
 
 class TestCleanup(TestBase):
-    @given(adata=get_adata(), copy=st.booleans())
-    def test_cleanup_all(self, adata: AnnData, copy: bool):
-        returned_adata = cleanup(adata=adata, clean="all", copy=copy)
+    @given(adata=get_adata(), inplace=st.booleans())
+    def test_cleanup_all(self, adata: AnnData, inplace: bool):
+        returned_adata = cleanup(adata=adata, clean="all", inplace=inplace)
 
-        if copy:
+        if not inplace:
             assert isinstance(returned_adata, AnnData)
             adata = returned_adata
         else:
@@ -80,14 +80,18 @@ class TestCleanup(TestBase):
         assert len(adata.obs.columns) == 0
         assert len(adata.var.columns) == 0
 
-    @given(adata=get_adata(), copy=st.booleans())
-    def test_cleanup_default_clean_w_random_adata(self, adata: AnnData, copy: bool):
+    @given(adata=get_adata(), inplace=st.booleans())
+    def test_cleanup_default_clean_w_random_adata(self, adata: AnnData, inplace: bool):
         n_obs_cols = len(adata.obs.columns)
         n_var_cols = len(adata.var.columns)
         n_uns_slots = len(adata.uns)
 
-        returned_adata = cleanup(adata=adata)
-        assert returned_adata is None
+        returned_adata = cleanup(adata=adata, inplace=inplace)
+        if not inplace:
+            assert isinstance(returned_adata, AnnData)
+            adata = returned_adata
+        else:
+            assert returned_adata is None
 
         assert len(adata.layers) == 0
         assert len(adata.uns) == n_uns_slots
@@ -96,16 +100,16 @@ class TestCleanup(TestBase):
 
     @given(
         adata=get_adata(layer_keys=["unspliced", "spliced", "Ms", "Mu", "random"]),
-        copy=st.booleans(),
+        inplace=st.booleans(),
     )
-    def test_cleanup_default_clean(self, adata: AnnData, copy: bool):
+    def test_cleanup_default_clean(self, adata: AnnData, inplace: bool):
         n_obs_cols = len(adata.obs.columns)
         n_var_cols = len(adata.var.columns)
         n_uns_slots = len(adata.uns)
 
-        returned_adata = cleanup(adata=adata, copy=copy)
+        returned_adata = cleanup(adata=adata, inplace=inplace)
 
-        if copy:
+        if not inplace:
             assert isinstance(returned_adata, AnnData)
             adata = returned_adata
         else:
@@ -118,12 +122,12 @@ class TestCleanup(TestBase):
 
     @given(
         adata=get_adata(),
-        copy=st.booleans(),
+        inplace=st.booleans(),
         n_modalities=st.integers(min_value=0),
         n_cols=st.integers(min_value=0),
     )
     def test_cleanup_some(
-        self, adata: AnnData, copy: bool, n_modalities: int, n_cols: int
+        self, adata: AnnData, inplace: bool, n_modalities: int, n_cols: int
     ):
         layers_to_keep = self._subset_modalities(
             adata,
@@ -147,10 +151,10 @@ class TestCleanup(TestBase):
             adata=adata,
             keep=layers_to_keep + obs_cols_to_keep + var_cols_to_keep,
             clean="all",
-            copy=copy,
+            inplace=inplace,
         )
 
-        if copy:
+        if not inplace:
             assert isinstance(returned_adata, AnnData)
             adata = returned_adata
         else:

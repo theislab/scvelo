@@ -103,7 +103,7 @@ def clean_obs_names(
         return adata
 
 
-@deprecated_arg_names({"data": "adata"})
+@deprecated_arg_names({"data": "adata", "copy": "inplace"})
 def cleanup(
     adata: AnnData,
     clean: Union[
@@ -111,7 +111,7 @@ def cleanup(
         List[Literal["layers", "obs", "var", "uns"]],
     ] = "layers",
     keep: Optional[Union[str, List[str]]] = None,
-    copy: bool = False,
+    inplace: bool = True,
 ) -> Optional[AnnData]:
     """Delete not needed attributes.
 
@@ -123,8 +123,8 @@ def cleanup(
         Which attributes to consider for freeing memory.
     keep
         Which attributes to keep.
-    copy
-        Return a copy instead of writing to adata.
+    inplace
+        Whether to update `adata` inplace or not.
 
     Returns
     -------
@@ -132,7 +132,7 @@ def cleanup(
         Returns or updates `adata` with selection of attributes kept.
     """
 
-    if copy:
+    if not inplace:
         adata = adata.copy()
     verify_dtypes(adata)
 
@@ -154,7 +154,8 @@ def cleanup(
             if value not in keep:
                 del getattr(adata, ann)[value]
 
-    return adata if copy else None
+    if not inplace:
+        return adata
 
 
 def get_df(
