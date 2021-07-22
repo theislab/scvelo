@@ -139,7 +139,7 @@ def cleanup(
     keep = list([keep] if isinstance(keep, str) else {} if keep is None else keep)
     keep.extend(["spliced", "unspliced", "Ms", "Mu", "clusters", "neighbors"])
 
-    ann_dict = {
+    attributes_to_remove = {
         "obs": adata.obs_keys(),
         "var": adata.var_keys(),
         "uns": adata.uns_keys(),
@@ -147,12 +147,16 @@ def cleanup(
     }
 
     if "all" not in clean:
-        ann_dict = {ann: values for (ann, values) in ann_dict.items() if ann in clean}
+        attributes_to_remove = {
+            attr: attr_keys
+            for (attr, attr_keys) in attributes_to_remove.items()
+            if attr in clean
+        }
 
-    for (ann, values) in ann_dict.items():
-        for value in values:
-            if value not in keep:
-                del getattr(adata, ann)[value]
+    for (attr, attr_keys) in attributes_to_remove.items():
+        for key in attr_keys:
+            if key not in keep:
+                del getattr(adata, attr)[key]
 
     if not inplace:
         return adata
