@@ -271,6 +271,22 @@ class TestBase:
             modalities += list(adata.obsm.keys())
         return random.sample(modalities, min(len(modalities), n_modalities))
 
+    def _subset_columns(
+        self,
+        adata: AnnData,
+        n_cols: int,
+        from_obs: bool = True,
+        from_var: bool = True,
+    ):
+        """Subset columns of an AnnData object in `obs` and `var` slots."""
+
+        columns = []
+        if from_obs:
+            columns += list(adata.obs.columns)
+        if from_var:
+            columns += list(adata.var.columns)
+        return random.sample(columns, min(len(columns), n_cols))
+
     def _convert_to_float(self, adata: AnnData):
         """Convert AnnData entries in `layer` and `obsm` into floats."""
 
