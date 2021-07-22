@@ -107,7 +107,7 @@ def clean_obs_names(
 def cleanup(
     adata: AnnData,
     clean: Union[
-        Literal["layers", "obs", "var", "uns"],
+        Literal["layers", "obs", "var", "uns", "all"],
         List[Literal["layers", "obs", "var", "uns"]],
     ] = "layers",
     keep: Optional[Union[str, List[str]]] = None,
