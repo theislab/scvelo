@@ -19,6 +19,7 @@ from scvelo.core import (
     make_dense,
     make_sparse,
     set_modality,
+    sum,
 )
 from .test_base import get_adata, TestBase
 
@@ -242,6 +243,22 @@ class TestGetModality(TestBase):
             assert_array_equal(adata.layers[modality_to_get], modality_retrieved)
         else:
             assert_array_equal(adata.obsm[modality_to_get], modality_retrieved)
+
+
+class TestGetSize(TestBase):
+    @given(adata=get_adata())
+    def test_get_size(self, adata: AnnData):
+        layer_name = self._subset_modalities(adata, n_modalities=1, from_obsm=False)[0]
+
+        if layer_name == "X":
+            np.testing.assert_allclose(
+                sum(adata.X, axis=1), get_size(adata=adata, layer=None)
+            )
+        else:
+            np.testing.assert_allclose(
+                sum(adata.layers[layer_name], axis=1),
+                get_size(adata=adata, layer=layer_name),
+            )
 
 
 class TestMakeDense(TestBase):
