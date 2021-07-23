@@ -1,3 +1,5 @@
+from typing import Optional
+
 import hypothesis.strategies as st
 import pytest
 from hypothesis import given
@@ -11,7 +13,9 @@ from anndata import AnnData
 from scvelo.core import (
     clean_obs_names,
     cleanup,
+    get_initial_size,
     get_modality,
+    get_size,
     make_dense,
     make_sparse,
     set_modality,
@@ -167,6 +171,63 @@ class TestCleanup(TestBase):
             assert set(adata.layers.keys()) == set(layers_to_keep).difference({"X"})
         assert set(adata.obs.columns) == set(obs_cols_to_keep)
         assert set(adata.var.columns) == set(var_cols_to_keep)
+
+
+class TestGetInitialSize(TestBase):
+    @given(
+        adata=get_adata(
+            layer_keys=["unspliced", "spliced", "ambiguous"],
+            obs_col_names=[
+                "initial_size",
+                "initial_size_unspliced",
+                "initial_size_spliced",
+                "initial_size_ambiguous",
+            ],
+        ),
+        by_total_size=st.booleans(),
+        layer=st.sampled_from([None, "X", "unspliced", "spliced", "ambiguous"]),
+    )
+    def test_get_initial_size(
+        self, adata: AnnData, layer: Optional[None], by_total_size: bool
+    ):
+        initial_size = get_initial_size(
+            adata=adata, layer=layer, by_total_size=by_total_size
+        )
+
+        if by_total_size:
+            assert np.allclose(
+                initial_size,
+                adata.obs["initial_size_unspliced"] + adata.obs["initial_size_spliced"],
+            )
+        elif layer in adata.layers:
+            assert np.allclose(initial_size, adata.obs[f"initial_size_{layer}"])
+        else:
+            assert np.allclose(initial_size, adata.obs["initial_size"])
+
+    @given(
+        adata=get_adata(
+            layer_keys=["unspliced", "spliced", "ambiguous"],
+        ),
+        layer=st.text(min_size=1, max_size=5),
+    )
+    def test_not_existing_modality(self, adata: AnnData, layer: str):
+        initial_size = get_initial_size(adata=adata, layer=layer)
+
+        assert initial_size is None
+
+    @given(
+        adata=get_adata(
+            layer_keys=["unspliced", "spliced", "ambiguous"],
+        ),
+        layer=st.sampled_from([None, "X", "unspliced", "spliced", "ambiguous"]),
+    )
+    def test_initial_size_not_in_adata_obs(self, adata: AnnData, layer: Optional[str]):
+        initial_size = get_initial_size(adata=adata, layer=layer)
+
+        if layer in [None, "X"]:
+            np.testing.assert_allclose(initial_size, get_size(adata=adata))
+        else:
+            np.testing.assert_allclose(initial_size, get_size(adata=adata, layer=layer))
 
 
 class TestGetModality(TestBase):
