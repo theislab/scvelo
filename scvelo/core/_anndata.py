@@ -376,7 +376,7 @@ def get_initial_size(
         return None
 
 
-def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
+def get_modality(adata: AnnData, modality: Optional[str]) -> Union[ndarray, spmatrix]:
     """Extract data of one modality.
 
     Arguments
@@ -392,7 +392,7 @@ def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
         Retrieved modality from :class:`~anndata.AnnData` object.
     """
 
-    if modality == "X":
+    if modality in ["X", None]:
         return adata.X
     elif modality in adata.layers.keys():
         return adata.layers[modality]
