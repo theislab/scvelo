@@ -417,7 +417,7 @@ def get_size(adata: AnnData, modality: Optional[str] = None) -> ndarray:
     Returns
     -------
     np.ndarray
-        Initial counts per observation in the specified modality.
+        Counts per observation in the specified modality.
     """
 
     X = get_modality(adata=adata, modality=modality)
