@@ -254,17 +254,19 @@ class TestGetModality(TestBase):
 class TestGetSize(TestBase):
     @given(adata=get_adata())
     def test_get_size(self, adata: AnnData):
-        layer_name = self._subset_modalities(adata, n_modalities=1, from_obsm=False)[0]
+        modality = self._subset_modalities(adata, n_modalities=1)[0]
 
-        if layer_name == "X":
-            np.testing.assert_allclose(
-                sum(adata.X, axis=1), get_size(adata=adata, layer=None)
-            )
-        else:
-            np.testing.assert_allclose(
-                sum(adata.layers[layer_name], axis=1),
-                get_size(adata=adata, layer=layer_name),
-            )
+        np.testing.assert_allclose(
+            sum(get_modality(adata=adata, modality=modality), axis=1),
+            get_size(adata=adata, modality=modality),
+        )
+
+    @given(adata=get_adata())
+    def test_modality_set_to_none(self, adata: AnnData):
+        np.testing.assert_allclose(
+            sum(adata.X, axis=1),
+            get_size(adata=adata, modality=None),
+        )
 
 
 class TestMakeDense(TestBase):

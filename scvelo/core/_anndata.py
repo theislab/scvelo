@@ -403,24 +403,24 @@ def get_modality(adata: AnnData, modality: Optional[str]) -> Union[ndarray, spma
             return adata.obsm[modality]
 
 
-# TODO: Generalize to arbitray modality
-def get_size(adata: AnnData, layer: Optional[str] = None) -> ndarray:
-    """Get counts per observation in a layer.
+@deprecated_arg_names({"layer": "modality"})
+def get_size(adata: AnnData, modality: Optional[str] = None) -> ndarray:
+    """Get counts per observation in a modality.
 
     Arguments
     ---------
     adata
         Annotated data matrix.
-    layer
-        Name of later for which to retrieve initial size.
+    modality
+        Name of modality for which to retrieve size.
 
     Returns
     -------
     np.ndarray
-        Initial counts per observation in the specified layer.
+        Counts per observation in the specified modality.
     """
 
-    X = adata.X if layer is None else adata.layers[layer]
+    X = get_modality(adata=adata, modality=modality)
     return sum(X, axis=1)
 
 
