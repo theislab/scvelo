@@ -244,6 +244,12 @@ class TestGetModality(TestBase):
         else:
             assert_array_equal(adata.obsm[modality_to_get], modality_retrieved)
 
+    @given(adata=get_adata())
+    def test_modality_equals_none(self, adata: AnnData):
+        modality_retrieved = get_modality(adata=adata, modality=None)
+
+        assert_array_equal(adata.X, modality_retrieved)
+
 
 class TestGetSize(TestBase):
     @given(adata=get_adata())
