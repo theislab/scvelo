@@ -254,10 +254,10 @@ class TestGetModality(TestBase):
 class TestGetSize(TestBase):
     @given(adata=get_adata())
     def test_get_size(self, adata: AnnData):
-        modality = self._subset_modalities(adata, n_modalities=1, from_obsm=False)[0]
+        modality = self._subset_modalities(adata, n_modalities=1)[0]
 
         np.testing.assert_allclose(
-            sum(adata.layers[modality], axis=1),
+            sum(get_modality(adata=adata, modality=modality), axis=1),
             get_size(adata=adata, modality=modality),
         )
 
