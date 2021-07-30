@@ -5,6 +5,7 @@ import pytest
 from hypothesis import given
 
 import numpy as np
+import pandas as pd
 from numpy.testing import assert_array_equal
 from scipy.sparse import issparse
 
@@ -21,6 +22,7 @@ from scvelo.core import (
     set_modality,
     sum,
 )
+from scvelo.core._anndata import obs_df
 from .test_base import get_adata, TestBase
 
 
@@ -344,6 +346,52 @@ class TestMakeSparse(TestBase):
                     if modality != "X"
                 ]
             )
+
+
+class TestObsDf(TestBase):
+    @given(data=st.data(), adata=get_adata())
+    def test_obs_df(self, data, adata: AnnData):
+        adata.var_names = "var_" + adata.var_names
+
+        modality = self._subset_modalities(adata, n_modalities=1, from_obsm=False)[0]
+
+        var_names = data.draw(
+            st.lists(
+                st.sampled_from(adata.var_names.to_list()),
+                max_size=len(adata.var_names),
+                unique=True,
+            )
+        )
+
+        if modality == "X":
+            df = obs_df(adata=adata, keys=var_names)
+        else:
+            df = obs_df(adata=adata, keys=var_names, layer=modality)
+
+        assert isinstance(df, pd.DataFrame)
+        assert (df.columns == var_names).all()
+        if len(var_names) == 0:
+            assert df.shape == (adata.n_obs, 0)
+        else:
+            np.testing.assert_equal(
+                df.values, get_modality(adata[:, var_names], modality=modality)
+            )
+
+    @pytest.mark.parametrize(
+        "var_names", (["var_1", "var_2"], ["var_0", "Var_1", "var_2"])
+    )
+    def test_warning_for_nonexisting_var_names(self, capfd, var_names):
+        adata = AnnData(np.eye(len(var_names)), var=pd.DataFrame(index=var_names))
+
+        df = obs_df(adata=adata, keys=var_names + ["VAR_1", "VAR_2"])
+
+        actual_warning, _ = capfd.readouterr()
+        expected_warning = (
+            "WARNING: Keys ['VAR_1', 'VAR_2'] were not found in `adata.var_names`.\n"
+        )
+
+        assert actual_warning == expected_warning
+        assert isinstance(df, pd.DataFrame)
 
 
 class TestSetModality(TestBase):
