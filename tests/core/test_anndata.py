@@ -22,7 +22,7 @@ from scvelo.core import (
     set_modality,
     sum,
 )
-from scvelo.core._anndata import obs_df
+from scvelo.core._anndata import obs_df, var_df
 from .test_base import get_adata, TestBase
 
 
@@ -426,3 +426,51 @@ class TestSetModality(TestBase):
                 assert_array_equal(returned_adata.layers[modality_to_set], new_value)
             else:
                 assert_array_equal(returned_adata.obsm[modality_to_set], new_value)
+
+
+class TestVarDf(TestBase):
+    @given(data=st.data(), adata=get_adata())
+    def test_var_df(self, data, adata: AnnData):
+        adata.obs_names = "obs_" + adata.obs_names
+
+        modality = self._subset_modalities(adata, n_modalities=1, from_obsm=False)[0]
+
+        obs_names = data.draw(
+            st.lists(
+                st.sampled_from(adata.obs_names.to_list()),
+                max_size=len(adata.obs_names),
+                unique=True,
+            )
+        )
+
+        if modality == "X":
+            df = var_df(adata=adata, keys=obs_names)
+        else:
+            df = var_df(adata=adata, keys=obs_names, layer=modality)
+
+        assert isinstance(df, pd.DataFrame)
+        assert (df.columns == obs_names).all()
+        if len(obs_names) == 0:
+            assert df.shape == (adata.n_vars, 0)
+        else:
+            np.testing.assert_equal(
+                df.values, get_modality(adata[obs_names, :], modality=modality).T
+            )
+        assert (df.index == adata.var_names).all()
+
+    @pytest.mark.parametrize(
+        "obs_names", (["obs_1", "obs_2"], ["obs_0", "Obs_1", "obs_2"])
+    )
+    def test_warning_for_nonexisting_obs_names(self, capfd, obs_names):
+        adata = AnnData(np.eye(len(obs_names)), obs=pd.DataFrame(index=obs_names))
+
+        df = var_df(adata=adata, keys=obs_names + ["OBS_1", "OBS_2"])
+
+        actual_warning, _ = capfd.readouterr()
+        expected_warning = (
+            "WARNING: Keys ['OBS_1', 'OBS_2'] were not found in `adata.obs_names`.\n"
+        )
+
+        assert actual_warning == expected_warning
+        assert isinstance(df, pd.DataFrame)
+        assert (df.index == adata.var_names).all()
