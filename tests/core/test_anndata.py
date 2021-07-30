@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict, Optional
 
 import hypothesis.strategies as st
 import pytest
@@ -20,6 +20,7 @@ from scvelo.core import (
     make_dense,
     make_sparse,
     set_modality,
+    show_proportions,
     sum,
 )
 from scvelo.core._anndata import obs_df, var_df
@@ -428,6 +429,131 @@ class TestSetModality(TestBase):
                 assert_array_equal(returned_adata.layers[modality_to_set], new_value)
             else:
                 assert_array_equal(returned_adata.obsm[modality_to_set], new_value)
+
+
+class TestShowProportions(TestBase):
+    @pytest.mark.parametrize(
+        "layers",
+        (
+            {"unspliced": np.eye(2), "spliced": 2 * np.eye(2)},
+            {
+                "unspliced": np.eye(2),
+                "spliced": 2 * np.eye(2),
+                "ambiguous": 3 * np.eye(2),
+            },
+            {"unspliced": np.eye(2), "spliced": 2 * np.eye(2)},
+            {"unspliced": np.eye(2), "spliced": 2 * np.eye(2)},
+        ),
+    )
+    @pytest.mark.parametrize("use_raw", (True, False))
+    def test_layers_not_specified(self, capfd, layers: Dict, use_raw: bool):
+        adata = AnnData(X=np.eye(2), layers=layers)
+
+        show_proportions(adata=adata, layers=layers.keys(), use_raw=use_raw)
+        actual_output, _ = capfd.readouterr()
+
+        if len(layers) == 2:
+            expected_output = f"Abundance of {[*layers]}: [0.33 0.67]\n"
+        else:
+            expected_output = f"Abundance of {[*layers]}: [0.17 0.33 0.5 ]\n"
+
+        assert actual_output == expected_output
+
+    @pytest.mark.parametrize(
+        "layers",
+        (
+            {"unspliced": np.eye(2), "spliced": 2 * np.eye(2)},
+            {
+                "unspliced": np.eye(2),
+                "spliced": 2 * np.eye(2),
+                "ambiguous": 3 * np.eye(2),
+            },
+            {"layer_1": np.eye(2), "layer_2": 2 * np.eye(2)},
+        ),
+    )
+    @pytest.mark.parametrize("use_raw", (True, False))
+    def test_layers_specified(self, capfd, layers: Dict, use_raw: bool):
+        adata = AnnData(X=np.eye(2), layers=layers)
+
+        show_proportions(adata=adata, layers=layers.keys(), use_raw=use_raw)
+        actual_output, _ = capfd.readouterr()
+
+        if len(layers) == 2:
+            expected_output = f"Abundance of {[*layers]}: [0.33 0.67]\n"
+        else:
+            expected_output = f"Abundance of {[*layers]}: [0.17 0.33 0.5 ]\n"
+
+        assert actual_output == expected_output
+
+    @pytest.mark.parametrize(
+        "layers",
+        (
+            {"unspliced": np.eye(2), "spliced": 2 * np.eye(2)},
+            {
+                "unspliced": np.eye(2),
+                "spliced": 2 * np.eye(2),
+                "ambiguous": 3 * np.eye(2),
+            },
+            {"layer_1": np.eye(2), "layer_2": 2 * np.eye(2)},
+        ),
+    )
+    @pytest.mark.parametrize("use_raw", (True, False))
+    def test_passing_nonexisting_layers(self, capfd, layers: Dict, use_raw: bool):
+        adata = AnnData(X=np.eye(2), layers=layers)
+
+        show_proportions(
+            adata=adata, layers=[*layers] + ["random_1", "random_2"], use_raw=use_raw
+        )
+        actual_output, _ = capfd.readouterr()
+
+        if len(layers) == 2:
+            expected_output = f"Abundance of {[*layers]}: [0.33 0.67]\n"
+        else:
+            expected_output = f"Abundance of {[*layers]}: [0.17 0.33 0.5 ]\n"
+
+        assert actual_output == expected_output
+
+    @pytest.mark.parametrize(
+        "layers, obs",
+        (
+            (
+                {"unspliced": np.eye(2), "spliced": 2 * np.eye(2)},
+                {
+                    "initial_size_unspliced": np.ones(2),
+                    "initial_size_spliced": np.ones(2),
+                },
+            ),
+            (
+                {"unspliced": np.eye(2), "spliced": 2 * np.eye(2)},
+                {
+                    "initial_size_unspliced": np.ones(2),
+                    "initial_size_spliced": np.ones(2),
+                },
+            ),
+            (
+                {"unspliced": np.eye(2), "spliced": 2 * np.eye(2)},
+                {"initial_size_unspliced": np.ones(2)},
+            ),
+        ),
+    )
+    @pytest.mark.parametrize("use_raw", (True, False))
+    def test_initial_size_specified(
+        self, capfd, layers: Dict, obs: Dict, use_raw: bool
+    ):
+        adata = AnnData(X=np.eye(2), layers=layers, obs=obs)
+
+        show_proportions(adata=adata, layers=[*layers], use_raw=use_raw)
+        actual_output, _ = capfd.readouterr()
+
+        if len(adata.obs.columns) == 2:
+            if use_raw:
+                expected_output = f"Abundance of {[*layers]}: [0.5 0.5]\n"
+            else:
+                expected_output = f"Abundance of {[*layers]}: [0.33 0.67]\n"
+        else:
+            expected_output = f"Abundance of {[*layers]}: [0.33 0.67]\n"
+
+        assert actual_output == expected_output
 
 
 class TestVarDf(TestBase):
