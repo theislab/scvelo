@@ -376,6 +376,7 @@ class TestObsDf(TestBase):
             np.testing.assert_equal(
                 df.values, get_modality(adata[:, var_names], modality=modality)
             )
+        assert (df.index == adata.obs_names).all()
 
     @pytest.mark.parametrize(
         "var_names", (["var_1", "var_2"], ["var_0", "Var_1", "var_2"])
@@ -392,6 +393,7 @@ class TestObsDf(TestBase):
 
         assert actual_warning == expected_warning
         assert isinstance(df, pd.DataFrame)
+        assert (df.index == adata.obs_names).all()
 
 
 class TestSetModality(TestBase):
