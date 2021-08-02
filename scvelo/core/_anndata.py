@@ -137,7 +137,7 @@ def cleanup(
     verify_dtypes(adata)
 
     keep = list([keep] if isinstance(keep, str) else {} if keep is None else keep)
-    keep.extend(["spliced", "unspliced", "Ms", "Mu", "clusters", "neighbors"])
+    keep.extend(["unspliced", "spliced", "Mu", "Ms", "clusters", "neighbors"])
 
     attributes_to_remove = {
         "obs": adata.obs_keys(),
@@ -640,7 +640,7 @@ def set_initial_size(adata: AnnData, layers: Optional[str] = None) -> None:
     """
 
     if layers is None:
-        layers = ["spliced", "unspliced"]
+        layers = ["unspliced", "spliced"]
     verify_dtypes(adata)
     layers = [
         layer
@@ -716,7 +716,7 @@ def show_proportions(
     """
 
     if layers is None:
-        layers = ["spliced", "unspliced", "ambiguous"]
+        layers = ["unspliced", "spliced", "ambiguous"]
     layers_keys = [key for key in layers if key in adata.layers.keys()]
     counts_layers = [sum(adata.layers[key], axis=1) for key in layers_keys]
     if use_raw:
