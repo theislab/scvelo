@@ -89,7 +89,7 @@ class TestCleanup(TestBase):
         assert len(adata.obs.columns) == 0
         assert len(adata.var.columns) == 0
 
-    @given(adata=get_adata(), inplace=st.booleans())
+    @given(adata=get_adata(max_obs=5, max_vars=5), inplace=st.booleans())
     def test_cleanup_default_clean_w_random_adata(self, adata: AnnData, inplace: bool):
         n_obs_cols = len(adata.obs.columns)
         n_var_cols = len(adata.var.columns)
@@ -108,7 +108,11 @@ class TestCleanup(TestBase):
         assert len(adata.var.columns) == n_var_cols
 
     @given(
-        adata=get_adata(layer_keys=["unspliced", "spliced", "Ms", "Mu", "random"]),
+        adata=get_adata(
+            max_obs=5,
+            max_vars=5,
+            layer_keys=["unspliced", "spliced", "Ms", "Mu", "random"],
+        ),
         inplace=st.booleans(),
     )
     def test_cleanup_default_clean(self, adata: AnnData, inplace: bool):
@@ -181,6 +185,8 @@ class TestCleanup(TestBase):
 class TestGetInitialSize(TestBase):
     @given(
         adata=get_adata(
+            max_obs=5,
+            max_vars=5,
             layer_keys=["unspliced", "spliced", "ambiguous"],
             obs_col_names=[
                 "initial_size",
@@ -236,7 +242,7 @@ class TestGetInitialSize(TestBase):
 
 
 class TestGetModality(TestBase):
-    @given(adata=get_adata())
+    @given(adata=get_adata(max_obs=5, max_vars=5))
     def test_get_modality(self, adata: AnnData):
         modality_to_get = self._subset_modalities(adata, 1)[0]
         modality_retrieved = get_modality(adata=adata, modality=modality_to_get)
@@ -275,7 +281,7 @@ class TestGetSize(TestBase):
 
 class TestMakeDense(TestBase):
     @given(
-        adata=get_adata(sparse_entries=True),
+        adata=get_adata(max_obs=5, max_vars=5, sparse_entries=True),
         inplace=st.booleans(),
         n_modalities=st.integers(min_value=0),
     )
@@ -312,7 +318,7 @@ class TestMakeDense(TestBase):
 
 class TestMakeSparse(TestBase):
     @given(
-        adata=get_adata(),
+        adata=get_adata(max_obs=5, max_vars=5),
         inplace=st.booleans(),
         n_modalities=st.integers(min_value=0),
     )
