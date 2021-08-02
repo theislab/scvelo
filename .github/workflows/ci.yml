@@ -42,10 +42,12 @@ jobs:
   # Run unit tests
   test:
     needs: linting
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: [3.7]
+        os: [ubuntu-latest]
+        python-version: [3.7, 3.8]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -57,4 +59,5 @@ jobs:
           pip install -e .
           pip install hypothesis pytest pytest-cov
       - name: Unit tests
-        run: python -m pytest --cov=scvelo
+        timeout-minutes: 60
+        run: python -m pytest --cov=scvelo -vv
