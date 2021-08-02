@@ -333,6 +333,27 @@ class TestMakeDense(TestBase):
                 ]
             )
 
+    @given(
+        adata=get_adata(max_obs=5, max_vars=5, sparse_entries=True),
+        inplace=st.booleans(),
+    )
+    def test_modalities_passed_as_string(self, adata: AnnData, inplace: bool):
+        modality_to_densify = self._subset_modalities(adata, n_modalities=1)[0]
+
+        returned_adata = make_dense(
+            adata=adata, modalities=modality_to_densify, inplace=inplace
+        )
+
+        if inplace:
+            assert returned_adata is None
+            assert not issparse(get_modality(adata=adata, modality=modality_to_densify))
+        else:
+            assert isinstance(returned_adata, AnnData)
+            assert not issparse(
+                get_modality(adata=returned_adata, modality=modality_to_densify)
+            )
+            assert issparse(get_modality(adata=adata, modality=modality_to_densify))
+
 
 class TestMakeSparse(TestBase):
     @given(
@@ -372,6 +393,33 @@ class TestMakeSparse(TestBase):
                     if modality != "X"
                 ]
             )
+
+    @given(
+        adata=get_adata(max_obs=5, max_vars=5),
+        inplace=st.booleans(),
+    )
+    def test_modalities_passed_as_string(self, adata: AnnData, inplace: bool):
+        modality_to_make_sparse = self._subset_modalities(adata, n_modalities=1)[0]
+
+        returned_adata = make_sparse(
+            adata=adata, modalities=modality_to_make_sparse, inplace=inplace
+        )
+
+        if inplace:
+            assert returned_adata is None
+            if modality_to_make_sparse != "X":
+                assert issparse(
+                    get_modality(adata=adata, modality=modality_to_make_sparse)
+                )
+        else:
+            assert isinstance(returned_adata, AnnData)
+            if modality_to_make_sparse != "X":
+                assert issparse(
+                    get_modality(adata=returned_adata, modality=modality_to_make_sparse)
+                )
+                assert not issparse(
+                    get_modality(adata=adata, modality=modality_to_make_sparse)
+                )
 
 
 class TestObsDf(TestBase):
