@@ -527,7 +527,7 @@ class TestShowProportions(TestBase):
     def test_layers_not_specified(self, capfd, layers: Dict, use_raw: bool):
         adata = AnnData(X=np.eye(2), layers=layers)
 
-        show_proportions(adata=adata, layers=layers.keys(), use_raw=use_raw)
+        show_proportions(adata=adata, layers=None, use_raw=use_raw)
         actual_output, _ = capfd.readouterr()
 
         if len(layers) == 2:
