@@ -19,6 +19,7 @@ from scvelo.core import (
     get_size,
     make_dense,
     make_sparse,
+    set_initial_size,
     set_modality,
     show_proportions,
     sum,
@@ -395,6 +396,77 @@ class TestObsDf(TestBase):
         assert actual_warning == expected_warning
         assert isinstance(df, pd.DataFrame)
         assert (df.index == adata.obs_names).all()
+
+
+class TestSetInitialSize(TestBase):
+    @given(adata=get_adata(), n_modalities=st.integers(min_value=0))
+    def test_added_columns(self, adata: AnnData, n_modalities: int):
+        layers = self._subset_modalities(
+            adata=adata, n_modalities=n_modalities, from_obsm=False
+        )
+
+        set_initial_size(adata=adata, layers=layers)
+
+        if "X" in layers and "X" not in adata.layers:
+            assert (
+                sum(
+                    adata.obs.columns.isin(
+                        [f"initial_size_{layer}" for layer in layers]
+                    )
+                )
+                == len(layers) - 1
+            )
+        else:
+            assert sum(
+                adata.obs.columns.isin([f"initial_size_{layer}" for layer in layers])
+            ) == len(layers)
+
+        assert "initial_size" in adata.obs.columns
+
+    @given(adata=get_adata(max_obs=5, max_vars=5))
+    def test_non_existing_columns_specified(self, adata: AnnData):
+        layers = "_" + adata.obs.columns
+        set_initial_size(adata=adata, layers=layers)
+
+        assert "initial_size" in adata.obs.columns
+        assert len(adata.obs.columns) == 3
+
+    @given(adata=get_adata(layer_keys=["unspliced", "spliced"]))
+    def test_layers_not_specified(self, adata: AnnData):
+        set_initial_size(adata=adata)
+
+        assert "initial_size" in adata.obs.columns
+        assert "initial_size_unspliced" in adata.obs.columns
+        assert "initial_size_spliced" in adata.obs.columns
+        assert adata.obs.columns.str.startswith("initial_size").sum() == 3
+
+    @pytest.mark.parametrize(
+        "X, layers, initial_size",
+        [
+            (
+                np.eye(2),
+                {"unspliced": np.ones((2, 2)), "spliced": np.array([[1, 2], [3, 3]])},
+                {
+                    "X": np.ones(2),
+                    "unspliced": 2 * np.ones(2),
+                    "spliced": np.array([3, 6]),
+                },
+            )
+        ],
+    )
+    def test_calculated_initial_size(
+        self, X: np.ndarray, layers: np.ndarray, initial_size: np.ndarray
+    ):
+        adata = AnnData(X=X, layers=layers)
+        set_initial_size(adata=adata, layers=["unspliced", "spliced"])
+
+        np.testing.assert_equal(adata.obs["initial_size"], initial_size["X"])
+        np.testing.assert_equal(
+            adata.obs["initial_size_unspliced"], initial_size["unspliced"]
+        )
+        np.testing.assert_equal(
+            adata.obs["initial_size_spliced"], initial_size["spliced"]
+        )
 
 
 class TestSetModality(TestBase):
