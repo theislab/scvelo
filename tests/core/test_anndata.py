@@ -237,7 +237,7 @@ class TestGetInitialSize(TestBase):
         adata=get_adata(
             layer_keys=["unspliced", "spliced", "ambiguous"],
         ),
-        layer=st.text(min_size=1, max_size=5),
+        layer=st.text(min_size=2, max_size=5),
     )
     def test_not_existing_modality(self, adata: AnnData, layer: str):
         initial_size = get_initial_size(adata=adata, layer=layer)
