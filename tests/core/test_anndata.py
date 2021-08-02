@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import hypothesis.strategies as st
 import pytest
@@ -43,11 +43,20 @@ class TestCleanObsNames:
             ),
         ],
     )
-    def test_equal_obs_id_length(self, obs_names, obs_names_cleaned):
+    @pytest.mark.parametrize("inplace", (True, False))
+    def test_equal_obs_id_length(
+        self, obs_names: List[str], obs_names_cleaned: List[str], inplace: bool
+    ):
         adata = AnnData(np.eye(3))
         adata.obs_names = obs_names
 
-        clean_obs_names(adata)
+        _adata = clean_obs_names(adata, inplace=inplace)
+
+        if inplace:
+            assert _adata is None
+        else:
+            assert isinstance(_adata, AnnData)
+            adata = _adata
 
         assert (adata.obs_names == obs_names_cleaned).all()
         assert "sample_batch" in adata.obs
@@ -62,11 +71,20 @@ class TestCleanObsNames:
             )
         ],
     )
-    def test_different_obs_id_length(self, obs_names, obs_names_cleaned):
+    @pytest.mark.parametrize("inplace", (True, False))
+    def test_different_obs_id_length(
+        self, obs_names: List[str], obs_names_cleaned: List[str], inplace: bool
+    ):
         adata = AnnData(np.eye(3))
         adata.obs_names = obs_names
 
-        clean_obs_names(adata)
+        _adata = clean_obs_names(adata, inplace=inplace)
+
+        if inplace:
+            assert _adata is None
+        else:
+            assert isinstance(_adata, AnnData)
+            adata = _adata
 
         assert (adata.obs_names == obs_names_cleaned).all()
         assert "sample_batch" in adata.obs
