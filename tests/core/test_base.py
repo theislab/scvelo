@@ -29,6 +29,9 @@ def get_adata(
     obsm_keys: Optional[Union[List, str]] = None,
     min_obsm: Optional[int] = 2,
     max_obsm: Optional[int] = 2,
+    varm_keys: Optional[Union[List, str]] = None,
+    min_varm: Optional[int] = 2,
+    max_varm: Optional[int] = 2,
     obs_col_names=None,
     min_obs_cols=2,
     max_obs_cols=2,
@@ -79,6 +82,15 @@ def get_adata(
         max_obsm
             Maximum number of multi-dimensional observations annotation. Is set to the
             number of keys if `obsm_keys` is not `None`. Defaults to `2`.
+        varm_keys
+            Names of multi-dimensional variables annotation. If set to `None`, names
+            will be generated at random. Defaults to `None`.
+        min_varm
+            Minimum number of multi-dimensional variables annotation. Is set to the
+            number of keys if `varm_keys` is not `None`. Defaults to `2`.
+        max_varm
+            Maximum number of multi-dimensional variables annotation. Is set to the
+            number of keys if `varm_keys` is not `None`. Defaults to `2`.
         obs_col_names
             Names of columns in `adata.obs`. If set to `None`, colums will be named at
             random. Defaults to `None`.
@@ -170,6 +182,22 @@ def get_adata(
         )
     )
 
+    varm = draw(
+        st.dictionaries(
+            st.text(min_size=1) if varm_keys is None else st.sampled_from(varm_keys),
+            arrays(
+                dtype=int,
+                elements=st.integers(min_value=0, max_value=1e2),
+                shape=st.tuples(
+                    st.integers(min_value=n_vars, max_value=n_vars),
+                    st.integers(min_value=min_obs, max_value=max_obs),
+                ),
+            ),
+            min_size=min_varm,
+            max_size=max_varm,
+        )
+    )
+
     obs = draw(
         st.dictionaries(
             st.text(min_size=1)
@@ -207,22 +235,26 @@ def get_adata(
     if sparse_entries:
         layers = {key: csr_matrix(val) for key, val in layers.items()}
         obsm = {key: csr_matrix(val) for key, val in obsm.items()}
-        return AnnData(X=csr_matrix(X), layers=layers, obsm=obsm, obs=obs, var=var)
+        varm = {key: csr_matrix(val) for key, val in varm.items()}
+        return AnnData(
+            X=csr_matrix(X), layers=layers, obsm=obsm, varm=varm, obs=obs, var=var
+        )
     else:
-        return AnnData(X=X, layers=layers, obsm=obsm, obs=obs, var=var)
+        return AnnData(X=X, layers=layers, obsm=obsm, varm=varm, obs=obs, var=var)
 
 
 class TestAdataGeneration:
-    @given(adata=get_adata())
+    @given(adata=get_adata(max_obs=5, max_vars=5))
     def test_default_adata_generation(self, adata: AnnData):
         assert type(adata) is AnnData
 
-    @given(adata=get_adata(sparse_entries=True))
+    @given(adata=get_adata(max_obs=5, max_vars=5, sparse_entries=True))
     def test_sparse_adata_generation(self, adata: AnnData):
         assert type(adata) is AnnData
         assert issparse(adata.X)
         assert np.all([issparse(adata.layers[layer]) for layer in adata.layers])
         assert np.all([issparse(adata.obsm[name]) for name in adata.obsm])
+        assert np.all([issparse(adata.varm[name]) for name in adata.varm])
 
     @given(
         adata=get_adata(
@@ -230,6 +262,7 @@ class TestAdataGeneration:
             n_vars=2,
             layer_keys=["unspliced", "spliced"],
             obsm_keys="X_umap",
+            varm_keys=["varm_entry_1", "varm_entry_2"],
             obs_col_names=["louvain", "donor", "day"],
             var_col_names=["alpha", "beta", "gamma"],
         )
@@ -238,17 +271,19 @@ class TestAdataGeneration:
         assert adata.X.shape == (2, 2)
         assert len(adata.layers) == 2
         assert len(adata.obsm) == 1
+        assert len(adata.varm) == 2
         assert set(adata.layers.keys()) == {"unspliced", "spliced"}
         assert set(adata.obsm.keys()) == {"X_umap"}
+        assert set(adata.varm.keys()) == {"varm_entry_1", "varm_entry_2"}
         assert set(adata.obs.columns) == {"louvain", "donor", "day"}
         assert set(adata.var.columns) == {"alpha", "beta", "gamma"}
 
-    @given(adata=get_adata(min_obs_cols=0, max_obs_cols=10))
+    @given(adata=get_adata(max_obs=5, max_vars=5, min_obs_cols=0, max_obs_cols=10))
     def test_setting_number_obs_columns(self, adata):
         assert len(adata.obs.columns) >= 0
         assert len(adata.obs.columns) <= 10
 
-    @given(adata=get_adata(min_var_cols=0, max_var_cols=10))
+    @given(adata=get_adata(max_obs=5, max_vars=5, min_var_cols=0, max_var_cols=10))
     def test_setting_number_var_columns(self, adata):
         assert len(adata.var.columns) >= 0
         assert len(adata.var.columns) <= 10
