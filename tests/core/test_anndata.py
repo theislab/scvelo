@@ -19,6 +19,7 @@ from scvelo.core import (
     get_size,
     make_dense,
     make_sparse,
+    merge,
     set_initial_size,
     set_modality,
     show_proportions,
@@ -357,6 +358,92 @@ class TestMakeDense(TestBase):
                 get_modality(adata=returned_adata, modality=modality_to_densify)
             )
             assert issparse(get_modality(adata=adata, modality=modality_to_densify))
+
+
+class TestMerge:
+    def _assert_all_entries_present(
+        self, returned_adata: AnnData, adata: AnnData, ldata: AnnData
+    ):
+        assert set(returned_adata.layers) == set(adata.layers).union(ldata.layers)
+        assert set(returned_adata.obsm) == set(adata.obsm).union(ldata.obsm)
+        assert set(returned_adata.varm) == set(adata.varm).union(ldata.varm)
+        assert set(returned_adata.uns) == set(adata.uns).union(ldata.uns)
+        assert set(returned_adata.obs.columns) == set(adata.obs.columns).union(
+            ldata.obs.columns
+        )
+        assert set(returned_adata.var.columns) == set(adata.var.columns).union(
+            ldata.var.columns
+        )
+
+    def _assert_copy_worked(self, returned_adata: AnnData, adata: AnnData, copy: bool):
+        if copy:
+            assert isinstance(returned_adata, AnnData)
+        else:
+            assert returned_adata is None
+            returned_adata = adata
+
+        return returned_adata
+
+    @given(
+        adata=get_adata(max_obs=5, max_vars=5),
+        ldata=get_adata(max_obs=5, max_vars=5),
+        copy=st.booleans(),
+    )
+    def test_common_var_names(self, adata: AnnData, ldata: AnnData, copy: bool):
+        adata.uns["a"] = ["a", 0, 3]
+        ldata.uns["cluster_colors"] = {"cluster_1": "blue", "cluster_2": "red"}
+        returned_adata = merge(adata=adata, ldata=ldata, copy=copy)
+
+        returned_adata = self._assert_copy_worked(returned_adata, adata, copy)
+        self._assert_all_entries_present(returned_adata, adata, ldata)
+
+    @given(
+        adata=get_adata(max_obs=5, max_vars=5, layer_keys=["spliced"]),
+        ldata=get_adata(max_obs=5, max_vars=5),
+        copy=st.booleans(),
+    )
+    def test_spliced_in_adata(self, adata: AnnData, ldata: AnnData, copy: bool):
+        adata.uns["a"] = ["a", 0, 3]
+        ldata.uns["cluster_colors"] = {"cluster_1": "blue", "cluster_2": "red"}
+        returned_adata = merge(adata=adata, ldata=ldata, copy=copy)
+
+        returned_adata = self._assert_copy_worked(returned_adata, adata, copy)
+        self._assert_all_entries_present(returned_adata, adata, ldata)
+        assert "initial_size" in returned_adata.obs.columns
+        assert "initial_size_spliced" in returned_adata.obs.columns
+
+    @given(
+        adata=get_adata(max_obs=5, max_vars=5),
+        ldata=get_adata(max_obs=5, max_vars=5, layer_keys=["spliced"]),
+        copy=st.booleans(),
+    )
+    def test_spliced_in_ldata(self, adata: AnnData, ldata: AnnData, copy: bool):
+        adata.uns["a"] = ["a", 0, 3]
+        ldata.uns["cluster_colors"] = {"cluster_1": "blue", "cluster_2": "red"}
+        returned_adata = merge(adata=adata, ldata=ldata, copy=copy)
+
+        returned_adata = self._assert_copy_worked(returned_adata, adata, copy)
+        self._assert_all_entries_present(returned_adata, adata, ldata)
+        assert "initial_size" in returned_adata.obs.columns
+        assert "initial_size_spliced" in returned_adata.obs.columns
+
+    @given(
+        adata=get_adata(min_obs=3, max_obs=3, max_vars=5),
+        ldata=get_adata(min_obs=3, max_obs=3, max_vars=5),
+        copy=st.booleans(),
+    )
+    def test_no_common_obs_names(self, adata: AnnData, ldata: AnnData, copy: bool):
+        adata.uns["a"] = ["a", 0, 3]
+        ldata.uns["cluster_colors"] = {"cluster_1": "blue", "cluster_2": "red"}
+
+        adata.obs_names = ["sample1_ABCD", "sample2_ABCD", "sample3_DCBA"]
+        ldata.obs_names = ["_sample1_ABCD", "_sample2_ABCD", "_sample3_DCBA"]
+
+        returned_adata = merge(adata=adata, ldata=ldata, copy=copy)
+
+        returned_adata = self._assert_copy_worked(returned_adata, adata, copy)
+        self._assert_all_entries_present(returned_adata, adata, ldata)
+        assert returned_adata.obs_names.isin(["ABCD", "ABCD-1", "DCBA"]).all()
 
 
 class TestMakeSparse(TestBase):
