@@ -92,7 +92,7 @@ class TestCleanObsNames:
 
 
 class TestCleanup(TestBase):
-    @given(adata=get_adata(), inplace=st.booleans())
+    @given(adata=get_adata(max_obs=5, max_vars=5), inplace=st.booleans())
     def test_cleanup_all(self, adata: AnnData, inplace: bool):
         returned_adata = cleanup(adata=adata, clean="all", inplace=inplace)
 
@@ -152,7 +152,7 @@ class TestCleanup(TestBase):
         assert len(adata.var.columns) == n_var_cols
 
     @given(
-        adata=get_adata(),
+        adata=get_adata(max_obs=5, max_vars=5),
         inplace=st.booleans(),
         n_modalities=st.integers(min_value=0),
         n_cols=st.integers(min_value=0),
@@ -235,6 +235,8 @@ class TestGetInitialSize(TestBase):
 
     @given(
         adata=get_adata(
+            max_obs=5,
+            max_vars=5,
             layer_keys=["unspliced", "spliced", "ambiguous"],
         ),
         layer=st.text(min_size=2, max_size=5),
@@ -246,6 +248,8 @@ class TestGetInitialSize(TestBase):
 
     @given(
         adata=get_adata(
+            max_obs=5,
+            max_vars=5,
             layer_keys=["unspliced", "spliced", "ambiguous"],
         ),
         layer=st.sampled_from([None, "X", "unspliced", "spliced", "ambiguous"]),
@@ -272,7 +276,7 @@ class TestGetModality(TestBase):
         else:
             assert_array_equal(adata.obsm[modality_to_get], modality_retrieved)
 
-    @given(adata=get_adata())
+    @given(adata=get_adata(max_obs=5, max_vars=5))
     def test_modality_equals_none(self, adata: AnnData):
         modality_retrieved = get_modality(adata=adata, modality=None)
 
@@ -280,7 +284,7 @@ class TestGetModality(TestBase):
 
 
 class TestGetSize(TestBase):
-    @given(adata=get_adata())
+    @given(adata=get_adata(max_obs=5, max_vars=5))
     def test_get_size(self, adata: AnnData):
         modality = self._subset_modalities(adata, n_modalities=1)[0]
 
@@ -289,7 +293,7 @@ class TestGetSize(TestBase):
             get_size(adata=adata, modality=modality),
         )
 
-    @given(adata=get_adata())
+    @given(adata=get_adata(max_obs=5, max_vars=5))
     def test_modality_set_to_none(self, adata: AnnData):
         np.testing.assert_allclose(
             sum(adata.X, axis=1),
@@ -423,7 +427,7 @@ class TestMakeSparse(TestBase):
 
 
 class TestObsDf(TestBase):
-    @given(data=st.data(), adata=get_adata())
+    @given(data=st.data(), adata=get_adata(max_obs=5, max_vars=5))
     def test_obs_df(self, data, adata: AnnData):
         adata.var_names = "var_" + adata.var_names
 
@@ -471,7 +475,9 @@ class TestObsDf(TestBase):
 
 
 class TestSetInitialSize(TestBase):
-    @given(adata=get_adata(), n_modalities=st.integers(min_value=0))
+    @given(
+        adata=get_adata(max_obs=5, max_vars=5), n_modalities=st.integers(min_value=0)
+    )
     def test_added_columns(self, adata: AnnData, n_modalities: int):
         layers = self._subset_modalities(
             adata=adata, n_modalities=n_modalities, from_obsm=False
@@ -503,7 +509,7 @@ class TestSetInitialSize(TestBase):
         assert "initial_size" in adata.obs.columns
         assert len(adata.obs.columns) == 3
 
-    @given(adata=get_adata(layer_keys=["unspliced", "spliced"]))
+    @given(adata=get_adata(max_obs=5, max_vars=5, layer_keys=["unspliced", "spliced"]))
     def test_layers_not_specified(self, adata: AnnData):
         set_initial_size(adata=adata)
 
@@ -542,7 +548,7 @@ class TestSetInitialSize(TestBase):
 
 
 class TestSetModality(TestBase):
-    @given(adata=get_adata(), inplace=st.booleans())
+    @given(adata=get_adata(max_obs=5, max_vars=5), inplace=st.booleans())
     def test_set_modality(self, adata: AnnData, inplace: bool):
         modality_to_set = self._subset_modalities(adata, 1)[0]
 

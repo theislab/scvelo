@@ -244,11 +244,11 @@ def get_adata(
 
 
 class TestAdataGeneration:
-    @given(adata=get_adata())
+    @given(adata=get_adata(max_obs=5, max_vars=5))
     def test_default_adata_generation(self, adata: AnnData):
         assert type(adata) is AnnData
 
-    @given(adata=get_adata(sparse_entries=True))
+    @given(adata=get_adata(max_obs=5, max_vars=5, sparse_entries=True))
     def test_sparse_adata_generation(self, adata: AnnData):
         assert type(adata) is AnnData
         assert issparse(adata.X)
@@ -278,12 +278,12 @@ class TestAdataGeneration:
         assert set(adata.obs.columns) == {"louvain", "donor", "day"}
         assert set(adata.var.columns) == {"alpha", "beta", "gamma"}
 
-    @given(adata=get_adata(min_obs_cols=0, max_obs_cols=10))
+    @given(adata=get_adata(max_obs=5, max_vars=5, min_obs_cols=0, max_obs_cols=10))
     def test_setting_number_obs_columns(self, adata):
         assert len(adata.obs.columns) >= 0
         assert len(adata.obs.columns) <= 10
 
-    @given(adata=get_adata(min_var_cols=0, max_var_cols=10))
+    @given(adata=get_adata(max_obs=5, max_vars=5, min_var_cols=0, max_var_cols=10))
     def test_setting_number_var_columns(self, adata):
         assert len(adata.var.columns) >= 0
         assert len(adata.var.columns) <= 10
