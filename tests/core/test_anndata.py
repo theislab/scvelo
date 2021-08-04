@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Union
 
 import hypothesis.strategies as st
 import pytest
@@ -7,13 +7,14 @@ from hypothesis import given
 import numpy as np
 import pandas as pd
 from numpy.testing import assert_array_equal
-from scipy.sparse import issparse
+from scipy.sparse import csr_matrix, issparse
 
 from anndata import AnnData
 
 from scvelo.core import (
     clean_obs_names,
     cleanup,
+    get_df,
     get_initial_size,
     get_modality,
     get_size,
@@ -201,6 +202,346 @@ class TestCleanup(TestBase):
             assert set(adata.layers.keys()) == set(layers_to_keep).difference({"X"})
         assert set(adata.obs.columns) == set(obs_cols_to_keep)
         assert set(adata.var.columns) == set(var_cols_to_keep)
+
+
+class TestGetDf:
+    @given(
+        data=st.data(),
+        adata=get_adata(
+            max_obs=5,
+            max_vars=5,
+            layer_keys=["layer_1", "layer_2"],
+        ),
+        modality=st.sampled_from([None, "X", "layer_1", "layer_2"]),
+    )
+    def test_indexed_by_obs_names(self, data, adata: AnnData, modality: Optional[None]):
+        adata.var_names = [f"var_{var_id}" for var_id in adata.var_names]
+
+        index = data.draw(
+            st.lists(
+                st.sampled_from(adata.obs_names.to_list()),
+                min_size=1,
+                max_size=len(adata.obs_names),
+                unique=True,
+            )
+        )
+        keys = data.draw(
+            st.lists(
+                st.sampled_from(adata.var_names.to_list()),
+                min_size=1,
+                max_size=len(adata.var_names),
+                unique=True,
+            )
+        )
+
+        df = get_df(adata, keys=keys, index=index, layer=modality)
+
+        assert isinstance(df, pd.DataFrame)
+        assert (df.index == index).all()
+        assert (df.columns == keys).all()
+        np.testing.assert_equal(
+            get_modality(adata=adata[index, keys], modality=modality), df.values
+        )
+
+    @given(
+        data=st.data(),
+        adata=get_adata(
+            max_obs=5,
+            max_vars=5,
+            layer_keys=["layer_1", "layer_2"],
+        ),
+        modality=st.sampled_from([None, "X", "layer_1", "layer_2"]),
+    )
+    def test_indexed_by_var_names(self, data, adata: AnnData, modality: Optional[None]):
+        adata.obs_names = [f"obs_{obs_id}" for obs_id in adata.obs_names]
+        adata.var_names = [f"var_{var_id}" for var_id in adata.var_names]
+
+        index = data.draw(
+            st.lists(
+                st.sampled_from(adata.var_names.to_list()),
+                min_size=1,
+                max_size=len(adata.var_names),
+                unique=True,
+            )
+        )
+        keys = data.draw(
+            st.lists(
+                st.sampled_from(adata.obs_names.to_list()),
+                min_size=1,
+                max_size=len(adata.obs_names),
+                unique=True,
+            )
+        )
+
+        df = get_df(adata, keys=keys, index=index, layer=modality)
+
+        assert isinstance(df, pd.DataFrame)
+        assert (df.index == index).all()
+        assert (df.columns == keys).all()
+        np.testing.assert_equal(
+            get_modality(adata=adata[keys, index], modality=modality).T, df.values
+        )
+
+    @given(
+        data=st.data(),
+        adata=get_adata(
+            max_obs=5,
+            max_vars=5,
+        ),
+    )
+    def test_sorted_values(self, data, adata: AnnData):
+        adata.obs_names = [f"obs_{obs_id}" for obs_id in adata.obs_names]
+        adata.var_names = [f"var_{var_id}" for var_id in adata.var_names]
+
+        sort_values = data.draw(st.sampled_from([True, False] + [*adata.var_names]))
+
+        df = get_df(
+            adata, index=adata.obs_names, keys=adata.var_names, sort_values=sort_values
+        )
+
+        assert isinstance(df, pd.DataFrame)
+        if isinstance(sort_values, str):
+            assert (np.diff(df[sort_values]) <= 0).all()
+        elif sort_values:
+            assert (np.diff(df.values[:, 0]) <= 0).all()
+
+    @given(
+        adata=get_adata(
+            max_obs=5,
+            max_vars=5,
+            layer_keys=["layer_1"],
+            obsm_keys=["obsm_1"],
+            obs_col_names=["obs_col_1"],
+            var_col_names=["var_col_1"],
+        ),
+    )
+    def test_keys_not_present(self, adata: AnnData):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "'not_existing_column_name' not found in any of obs, var, obsm, varm, "
+                "uns, layers, obsp, varp."
+            ),
+        ):
+            _ = get_df(adata, keys="not_existing_column_name")
+
+    @given(
+        data=st.data(),
+        adata=get_adata(
+            max_obs=5,
+            max_vars=5,
+            layer_keys=["layer_1"],
+            obsm_keys=["obsm_1"],
+            varm_keys=["varm_1"],
+            var_col_names=["var_col_1"],
+            obs_col_names=["obs_col_1", "obs_col_2"],
+        ),
+        keys_as_string=st.booleans(),
+    )
+    def test_from_obs(self, data, adata: AnnData, keys_as_string: bool):
+        adata.obs_names = [f"obs_{obs_id}" for obs_id in adata.obs_names]
+        adata.var_names = [f"var_{var_id}" for var_id in adata.var_names]
+
+        if keys_as_string:
+            keys = data.draw(st.sampled_from([*adata.obs.columns]))
+        else:
+            keys = data.draw(
+                st.lists(
+                    st.sampled_from(adata.obs.columns.to_list()),
+                    min_size=1,
+                    max_size=len(adata.obs.columns),
+                    unique=True,
+                )
+            )
+
+        df = get_df(adata, keys=keys)
+
+        assert isinstance(df, pd.DataFrame)
+        assert (df.columns == keys).all()
+        if isinstance(keys, str):
+            assert (df == adata.obs[[keys]]).values.all()
+        else:
+            assert (df == adata.obs[keys]).values.all()
+
+    @pytest.mark.parametrize("uns_name", ("neighbors", "random_name"))
+    def test_from_uns(self, uns_name: str):
+        adata = AnnData(
+            np.eye(2),
+            uns={uns_name: 5 * np.eye(2)},
+            obs=pd.DataFrame({"obs_col_1": ["a", "b"], "obs_col_2": [0, 0]}),
+        )
+
+        df = get_df(adata, keys=uns_name)
+
+        assert isinstance(df, pd.DataFrame)
+        np.testing.assert_array_equal(df.values, 5 * np.eye(2))
+
+    @pytest.mark.parametrize("categorical", (True, False))
+    @pytest.mark.parametrize("shape", ((2, 2), (2, 1)))
+    def test_from_uns_with_categorical_column(self, categorical: bool, shape: Tuple):
+        adata = AnnData(
+            np.eye(*shape),
+            uns={"random_name": 5 * np.eye(*shape)},
+            obs=pd.DataFrame({"obs_col_1": ["a", "b"], "obs_col_2": [0, 0]}),
+        )
+
+        if categorical:
+            adata.obs["obs_col_1"] = adata.obs["obs_col_1"].astype("category")
+
+        df = get_df(adata, keys="random_name")
+
+        assert isinstance(df, pd.DataFrame)
+        if categorical:
+            assert (df.index == adata.obs["obs_col_1"].values).all()
+            if shape[0] == shape[1]:
+                assert (df.columns == adata.obs["obs_col_1"].values).all()
+
+    @given(
+        data=st.data(),
+        adata=get_adata(
+            max_obs=5,
+            max_vars=5,
+            layer_keys=["layer_1"],
+            obsm_keys=["obsm_1"],
+            varm_keys=["varm_1"],
+            obs_col_names=["obs_col_1"],
+            var_col_names=["var_col_1", "var_col_2"],
+        ),
+        keys_as_string=st.booleans(),
+    )
+    def test_from_var(self, data, adata: AnnData, keys_as_string: bool):
+        adata.obs_names = [f"obs_{obs_id}" for obs_id in adata.obs_names]
+        adata.var_names = [f"var_{var_id}" for var_id in adata.var_names]
+
+        if keys_as_string:
+            keys = data.draw(st.sampled_from([*adata.var.columns]))
+        else:
+            keys = data.draw(
+                st.lists(
+                    st.sampled_from(adata.var.columns.to_list()),
+                    min_size=1,
+                    max_size=len(adata.var.columns),
+                    unique=True,
+                )
+            )
+
+        df = get_df(adata, keys=keys)
+
+        assert isinstance(df, pd.DataFrame)
+        assert (df.columns == keys).all()
+        if isinstance(keys, str):
+            assert (df == adata.var[[keys]]).values.all()
+        else:
+            assert (df == adata.var[keys]).values.all()
+
+    @given(
+        adata=get_adata(
+            max_obs=5,
+            max_vars=5,
+            layer_keys=["layer_1", "layer_2"],
+            obsm_keys=["obsm_1"],
+            varm_keys=["varm_1"],
+            var_col_names=["var_col_1", "var_col_2"],
+        ),
+        layer_name=st.sampled_from(["layer_1", "layer_2"]),
+    )
+    def test_keys_as_layer(self, adata: AnnData, layer_name: str):
+        adata.var_names = [f"var_{var_id}" for var_id in adata.var_names]
+
+        df = get_df(adata, keys=layer_name)
+
+        assert isinstance(df, pd.DataFrame)
+        assert (df.columns == adata.var_names).all()
+        assert (df.values == adata.layers[layer_name]).all()
+
+    @pytest.mark.parametrize("keys", (None, "col_1", "col_2", ["col_1", "col_2"]))
+    def test_data_as_data_frame(self, keys):
+        df = get_df(data=pd.DataFrame(np.eye(2), columns=["col_1", "col_2"]), keys=keys)
+
+        assert isinstance(df, pd.DataFrame)
+        if isinstance(keys, str):
+            assert df.shape == (2, 1)
+        else:
+            assert df.shape == (2, 2)
+
+    @pytest.mark.parametrize("dropna", (True, False, "any", "all"))
+    def test_dropna(self, dropna: Union[bool, str]):
+        df = get_df(
+            data=pd.DataFrame(
+                np.array([[1, np.nan, 0], [np.nan, 1, 0], [np.nan, np.nan, np.nan]]),
+                columns=["col_1", "col_2", "col_3"],
+            ),
+            dropna=dropna,
+        )
+
+        assert isinstance(df, pd.DataFrame)
+        assert (df.columns == ["col_1", "col_2", "col_3"]).all()
+        if dropna == "all":
+            np.testing.assert_equal(
+                df.values, np.array([[1, np.nan, 0], [np.nan, 1, 0]])
+            )
+        elif dropna or dropna == "any":
+            assert (
+                df == pd.DataFrame(columns=["col_1", "col_2", "col_3"])
+            ).values.all()
+        else:
+            np.testing.assert_equal(
+                df.values,
+                np.array([[1, np.nan, 0], [np.nan, 1, 0], [np.nan, np.nan, np.nan]]),
+            )
+
+    def test_index_from_obs_col(self):
+        adata = AnnData(
+            X=np.eye(2),
+            layers={"layer_1": 2 * np.eye(2), "layer_2": 3 * np.eye(2)},
+            obs=pd.DataFrame({"obs_col_1": ["a", "b"]}),
+        )
+        adata.var_names = ["var_name_1", "var_name_2"]
+
+        df = get_df(adata, keys="layer_1", index="obs_col_1")
+
+        assert isinstance(df, pd.DataFrame)
+        np.testing.assert_array_equal(df.values, 2 * np.eye(2))
+        assert (df.index == adata.obs["obs_col_1"]).all()
+        assert (df.columns == ["var_name_1", "var_name_2"]).all()
+
+    def test_columns_from_obs(self):
+        adata = AnnData(
+            X=np.eye(2),
+            varm={"varm_1": 2 * np.eye(2)},
+            obs=pd.DataFrame({"obs_col_1": ["a", "b"]}),
+        )
+        adata.var_names = ["var_name_1", "var_name_2"]
+
+        df = get_df(adata, keys="varm_1", columns="obs_col_1")
+
+        assert isinstance(df, pd.DataFrame)
+        np.testing.assert_array_equal(df.values, 2 * np.eye(2))
+        assert (df.index == ["var_name_1", "var_name_2"]).all()
+        assert (df.columns == adata.obs["obs_col_1"]).all()
+
+    @pytest.mark.parametrize("sparse", (True, False))
+    @pytest.mark.parametrize("index", (None, ["index_1", "index_2"]))
+    @pytest.mark.parametrize("columns", (None, ["col_1", "col_2"]))
+    def test_data_as_array(
+        self, index: Optional[List[str]], columns: Optional[List[str]], sparse: bool
+    ):
+        if sparse:
+            data = csr_matrix(np.eye(2))
+        else:
+            data = np.eye(2)
+
+        df = get_df(data, index=index, columns=columns)
+
+        assert isinstance(df, pd.DataFrame)
+        if index is None:
+            assert (df.index == [0, 1]).all()
+        else:
+            assert (df.index == ["index_1", "index_2"]).all()
+        if columns is None:
+            assert (df.columns == [0, 1]).all()
+        else:
+            assert (df.columns == ["col_1", "col_2"]).all()
 
 
 class TestGetInitialSize(TestBase):
