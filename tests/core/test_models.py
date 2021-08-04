@@ -88,3 +88,35 @@ class TestSplicingDynamics:
         )
 
         assert np.allclose(numerical_solution, exact_solution)
+
+    @given(
+        alpha=st.floats(),
+        beta=st.floats(max_value=0, allow_infinity=False, allow_nan=False),
+        gamma=st.floats(max_value=0, allow_infinity=False, allow_nan=False),
+        initial_state=arrays(
+            float,
+            shape=st.integers(min_value=2, max_value=2),
+            elements=st.floats(
+                min_value=-1e3, max_value=1e3, allow_infinity=False, allow_nan=False
+            ),
+        ),
+        with_keys=st.booleans(),
+        stacked=st.booleans(),
+    )
+    def test_steady_state_not_defined(
+        self,
+        alpha: float,
+        beta: float,
+        gamma: float,
+        initial_state: ndarray,
+        with_keys: bool,
+        stacked: bool,
+    ):
+        dm = SplicingDynamics(
+            alpha=alpha, beta=beta, gamma=gamma, initial_state=initial_state
+        )
+
+        with pytest.raises(
+            ValueError, match=("Both `beta` and `gamma` need to be strictly positive.")
+        ):
+            _ = dm.get_steady_states(stacked=stacked, with_keys=with_keys)
