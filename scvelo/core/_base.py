@@ -29,8 +29,6 @@ class DynamicsBase(ABC):
             a `numpy.ndarray` of form `(n_steps, n_vars)`.
         """
 
-        return
-
     @abstractmethod
     def get_steady_states(
         self, stacked: True, with_keys: False
@@ -50,5 +48,3 @@ class DynamicsBase(ABC):
         Union[Dict[str, ndarray], Tuple[ndarray], ndarray]
             Steady state of system.
         """
-
-        return
