@@ -121,7 +121,9 @@ class TestCleanup(TestBase):
         else:
             assert returned_adata is None
 
-        assert len(adata.layers) == 0
+        assert len(adata.layers) == len(
+            set(adata.layers).intersection(["unspliced", "spliced", "Mu", "Ms"])
+        )
         assert len(adata.uns) == n_uns_slots
         assert len(adata.obs.columns) == n_obs_cols
         assert len(adata.var.columns) == n_var_cols
