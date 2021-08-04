@@ -138,6 +138,9 @@ def get_adata(
     if obsm_keys is not None:
         min_obsm = len(obsm_keys)
         max_obsm = len(obsm_keys)
+    if varm_keys is not None:
+        min_varm = len(varm_keys)
+        max_varm = len(varm_keys)
     if obs_col_names is not None:
         min_obs_cols = len(obs_col_names)
         max_obs_cols = len(obs_col_names)
