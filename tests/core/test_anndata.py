@@ -794,7 +794,7 @@ class TestShowProportions(TestBase):
 
 
 class TestVarDf(TestBase):
-    @given(data=st.data(), adata=get_adata())
+    @given(data=st.data(), adata=get_adata(max_obs=5, max_vars=5))
     def test_var_df(self, data, adata: AnnData):
         adata.obs_names = "obs_" + adata.obs_names
 
