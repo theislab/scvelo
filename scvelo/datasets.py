@@ -1,5 +1,6 @@
 """Builtin Datasets.
 """
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -7,7 +8,7 @@ import pandas as pd
 from anndata import AnnData
 from scanpy import read
 
-from scvelo.core import cleanup, SplicingDynamics
+from scvelo.core import cleanup, invert, SplicingDynamics
 from .read_load import load
 
 url_datadir = "https://github.com/theislab/scvelo_notebooks/raw/master/"
@@ -164,8 +165,6 @@ def simulation(
     Returns `adata` object
     """  # noqa E501
 
-    from .tools.dynamical_model_utils import vectorize
-
     np.random.seed(random_seed)
 
     def draw_poisson(n):
@@ -286,3 +285,35 @@ def simulation(
     layers = {"unspliced": U, "spliced": S}
 
     return AnnData(S, obs, var, layers=layers)
+
+
+# TODO Use `SplicingDynamics`
+def unspliced(tau, u0, alpha, beta):
+    expu = np.exp(-beta * tau)
+    return u0 * expu + alpha / beta * (1 - expu)
+
+
+def spliced(tau, s0, u0, alpha, beta, gamma):
+    c = (alpha - u0 * beta) * invert(gamma - beta)
+    expu, exps = np.exp(-beta * tau), np.exp(-gamma * tau)
+    return s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
+
+
+def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0, sorted=False):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        o = np.array(t < t_, dtype=int)
+    tau = t * o + (t - t_) * (1 - o)
+
+    u0_ = unspliced(t_, u0, alpha, beta)
+    s0_ = spliced(t_, s0, u0, alpha, beta, gamma if gamma is not None else beta / 2)
+
+    # vectorize u0, s0 and alpha
+    u0 = u0 * o + u0_ * (1 - o)
+    s0 = s0 * o + s0_ * (1 - o)
+    alpha = alpha * o + alpha_ * (1 - o)
+
+    if sorted:
+        idx = np.argsort(t)
+        tau, alpha, u0, s0 = tau[idx], alpha[idx], u0[idx], s0[idx]
+    return tau, alpha, u0, s0
