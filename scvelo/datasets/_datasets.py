@@ -11,31 +11,6 @@ from scvelo.read_load import load
 url_datadir = "https://github.com/theislab/scvelo_notebooks/raw/master/"
 
 
-def toy_data(n_obs=None):
-    """
-    Randomly sampled from the Dentate Gyrus dataset.
-
-    Arguments
-    ---------
-    n_obs: `int` (default: `None`)
-        Size of the sampled dataset
-
-    Returns
-    -------
-    Returns `adata` object
-    """
-
-    adata_dg = dentategyrus()
-
-    if n_obs is not None:
-        indices = np.random.choice(adata_dg.n_obs, n_obs)
-        adata = adata_dg[indices]
-    else:
-        adata = adata_dg
-    adata.obs_names_make_unique()
-    return adata.copy()
-
-
 def dentategyrus(adjusted=True):
     """Dentate Gyrus neurogenesis.
 
@@ -140,3 +115,28 @@ def pancreatic_endocrinogenesis():
     )
 
     return pancreas()
+
+
+def toy_data(n_obs=None):
+    """
+    Randomly sampled from the Dentate Gyrus dataset.
+
+    Arguments
+    ---------
+    n_obs: `int` (default: `None`)
+        Size of the sampled dataset
+
+    Returns
+    -------
+    Returns `adata` object
+    """
+
+    adata_dg = dentategyrus()
+
+    if n_obs is not None:
+        indices = np.random.choice(adata_dg.n_obs, n_obs)
+        adata = adata_dg[indices]
+    else:
+        adata = adata_dg
+    adata.obs_names_make_unique()
+    return adata.copy()
