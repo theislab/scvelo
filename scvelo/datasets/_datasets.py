@@ -1,5 +1,3 @@
-"""Builtin Datasets.
-"""
 import warnings
 
 import numpy as np
@@ -9,7 +7,7 @@ from anndata import AnnData
 from scanpy import read
 
 from scvelo.core import cleanup, invert, SplicingDynamics
-from .read_load import load
+from scvelo.read_load import load
 
 url_datadir = "https://github.com/theislab/scvelo_notebooks/raw/master/"
 
