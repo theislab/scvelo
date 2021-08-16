@@ -3,9 +3,9 @@ from ._datasets import (
     forebrain,
     pancreas,
     pancreatic_endocrinogenesis,
-    simulation,
     toy_data,
 )
+from ._simulate import simulation
 
 __all__ = [
     "dentategyrus",
