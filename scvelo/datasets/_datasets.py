@@ -117,6 +117,7 @@ def pancreatic_endocrinogenesis():
     return pancreas()
 
 
+# TODO: Remove function and add subsetting functionality for each dataset
 def toy_data(n_obs=None):
     """
     Randomly sampled from the Dentate Gyrus dataset.
