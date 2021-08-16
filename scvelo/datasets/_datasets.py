@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -128,4 +130,13 @@ def pancreas():
     return adata
 
 
-pancreatic_endocrinogenesis = pancreas  # restore old conventions
+def pancreatic_endocrinogenesis():
+    warnings.warn(
+        "`scvelo.datasets.pancreatic_endocrinogenesis` is deprecated since scVelo "
+        "v0.2.4 and will be removed in a future version. Please use "
+        "`scvelo.datasets.pancreas` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return pancreas()
