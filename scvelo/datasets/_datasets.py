@@ -1,4 +1,6 @@
 import warnings
+from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -11,7 +13,7 @@ from scvelo.read_load import load
 url_datadir = "https://github.com/theislab/scvelo_notebooks/raw/master/"
 
 
-def dentategyrus(adjusted=True):
+def dentategyrus(file_path: Optional[Union[str, Path]] = None, adjusted=True):
     """Dentate Gyrus neurogenesis.
 
     Data from `Hochgerner et al. (2018) <https://doi.org/10.1038/s41593-017-0056-2>`_.
@@ -29,20 +31,27 @@ def dentategyrus(adjusted=True):
     .. image:: https://user-images.githubusercontent.com/31883718/79433223-255b8700-7fcd-11ea-8ecf-3dc9eb1a6159.png
        :width: 600px
 
+    Arguments
+    ---------
+    file_path
+        Path where to save dataset and read it from.
+
     Returns
     -------
     Returns `adata` object
     """  # noqa E501
 
-    if adjusted:
-        filename = "data/DentateGyrus/10X43_1.h5ad"
-        url = f"{url_datadir}data/DentateGyrus/10X43_1.h5ad"
-        adata = read(filename, backup_url=url, sparse=True, cache=True)
+    if file_path is None and adjusted:
+        file_path = "data/DentateGyrus/10X43_1.h5ad"
+    elif file_path is None:
+        file_path = "data/DentateGyrus/10X43_1.loom"
 
+    if adjusted:
+        url = f"{url_datadir}data/DentateGyrus/10X43_1.h5ad"
+        adata = read(file_path, backup_url=url, sparse=True, cache=True)
     else:
-        filename = "data/DentateGyrus/10X43_1.loom"
         url = "http://pklab.med.harvard.edu/velocyto/DG1/10X43_1.loom"
-        adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
+        adata = read(file_path, backup_url=url, cleanup=True, sparse=True, cache=True)
         cleanup(adata, clean="all", keep={"spliced", "unspliced", "ambiguous"})
 
         url_louvain = f"{url_datadir}data/DentateGyrus/DG_clusters.npy"
@@ -60,24 +69,28 @@ def dentategyrus(adjusted=True):
     return adata
 
 
-def forebrain():
+def forebrain(file_path: Union[str, Path] = "data/ForebrainGlut/hgForebrainGlut.loom"):
     """Developing human forebrain.
 
     Forebrain tissue of a week 10 embryo, focusing on glutamatergic neuronal lineage.
+
+    Arguments
+    ---------
+    file_path
+        Path where to save dataset and read it from.
 
     Returns
     -------
     Returns `adata` object
     """
 
-    filename = "data/ForebrainGlut/hgForebrainGlut.loom"
     url = "http://pklab.med.harvard.edu/velocyto/hgForebrainGlut/hgForebrainGlut.loom"
-    adata = read(filename, backup_url=url, cleanup=True, sparse=True, cache=True)
+    adata = read(file_path, backup_url=url, cleanup=True, sparse=True, cache=True)
     adata.var_names_make_unique()
     return adata
 
 
-def pancreas():
+def pancreas(file_path: Union[str, Path] = "data/Pancreas/endocrinogenesis_day15.h5ad"):
     """Pancreatic endocrinogenesis
 
     Data from `Bastidas-Ponce et al. (2019) <https://doi.org/10.1242/dev.173849>`_.
@@ -93,14 +106,18 @@ def pancreas():
     .. image:: https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png
        :width: 600px
 
+    Arguments
+    ---------
+    file_path
+        Path where to save dataset and read it from.
+
     Returns
     -------
     Returns `adata` object
     """  # noqa E501
 
-    filename = "data/Pancreas/endocrinogenesis_day15.h5ad"
     url = f"{url_datadir}data/Pancreas/endocrinogenesis_day15.h5ad"
-    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
     return adata
 
@@ -118,12 +135,16 @@ def pancreatic_endocrinogenesis():
 
 
 # TODO: Remove function and add subsetting functionality for each dataset
-def toy_data(n_obs=None):
+def toy_data(
+    file_path: Union[str, Path] = "data/DentateGyrus/10X43_1.h5ad", n_obs=None
+):
     """
     Randomly sampled from the Dentate Gyrus dataset.
 
     Arguments
     ---------
+    file_path
+        Path where to save dataset and read it from.
     n_obs: `int` (default: `None`)
         Size of the sampled dataset
 
@@ -132,7 +153,7 @@ def toy_data(n_obs=None):
     Returns `adata` object
     """
 
-    adata_dg = dentategyrus()
+    adata_dg = dentategyrus(file_path=file_path)
 
     if n_obs is not None:
         indices = np.random.choice(adata_dg.n_obs, n_obs)
