@@ -108,7 +108,7 @@ def pancreas():
 def pancreatic_endocrinogenesis():
     warnings.warn(
         "`scvelo.datasets.pancreatic_endocrinogenesis` is deprecated since scVelo "
-        "v0.2.4 and will be removed in a future version. Please use "
+        "v0.2.5 and will be removed in a future version. Please use "
         "`scvelo.datasets.pancreas` instead.",
         DeprecationWarning,
         stacklevel=2,
