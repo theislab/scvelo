@@ -109,7 +109,12 @@ def simulation(
         u, s = np.zeros(len(alpha)), np.zeros(len(alpha))
         for i, alpha_i in enumerate(alpha):
             u_, s_ = (u[i - 1], s[i - 1]) if i > 0 else (0, 0)
-            du, ds = update(props=np.array([alpha_i, beta * u_, gamma * s_]))
+
+            if (alpha_i == 0) and (u_ == 0) and (s_ == 0):
+                du, ds = 0, 0
+            else:
+                du, ds = update(props=np.array([alpha_i, beta * u_, gamma * s_]))
+
             u[i], s[i] = (u_ + du, s_ + ds)
         return u, s
 
