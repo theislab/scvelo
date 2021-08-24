@@ -75,6 +75,17 @@ for nb in notebooks:
         pass
 
 
+# -- Retrieve perspectives notebooks /perspectives directory --------
+
+notebooks = ["Perspectives.ipynb", "Perspectives_parameters.ipynb"]
+notebooks = [f"perspectives/{v}" for v in notebooks]
+for nb in notebooks:
+    try:
+        urlretrieve(notebooks_url + nb, nb)
+    except Exception:
+        pass
+
+
 # -- General configuration ------------------------------------------------
 
 needs_sphinx = "1.7"
