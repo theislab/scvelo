@@ -41,7 +41,7 @@ def toy_data(n_obs=None):
 def dentategyrus(adjusted=True):
     """Dentate Gyrus neurogenesis.
 
-    Data from `Hochgerner et al. (2018) <https://doi.org/10.1038/s41593-017-0056-2>`_.
+    Data from `Hochgerner et al. (2018) <https://doi.org/10.1038/s41593-017-0056-2 >`_.
 
     Dentate gyrus (DG) is part of the hippocampus involved in learning, episodic memory
     formation and spatial coding. The experiment from the developing DG comprises two
@@ -90,7 +90,10 @@ def dentategyrus(adjusted=True):
 def forebrain():
     """Developing human forebrain.
 
-    Forebrain tissue of a week 10 embryo, focusing on glutamatergic neuronal lineage.
+    From `La Manno et al. (2018) <https://doi.org/10.1038/s41586-018-0414-6 >`_.
+
+    Forebrain tissue of a human week 10 embryo, focusing on glutamatergic neuronal
+    lineage, obtained from elective routine abortions (10 weeks post-conception).
 
     Returns
     -------
@@ -105,9 +108,9 @@ def forebrain():
 
 
 def pancreas():
-    """Pancreatic endocrinogenesis
+    """Pancreatic endocrinogenesis.
 
-    Data from `Bastidas-Ponce et al. (2019) <https://doi.org/10.1242/dev.173849>`_.
+    Data from `Bastidas-Ponce et al. (2019) <https://doi.org/10.1242/dev.173849 >`_.
 
     Pancreatic epithelial and Ngn3-Venus fusion (NVF) cells during secondary transition
     with transcriptome profiles sampled from embryonic day 15.5.
@@ -133,6 +136,173 @@ def pancreas():
 
 
 pancreatic_endocrinogenesis = pancreas  # restore old conventions
+
+
+def dentategyrus_lamanno():
+    """Dentate Gyrus neurogenesis.
+
+    From `La Manno et al. (2018) <https://doi.org/10.1038/s41586-018-0414-6 >`_.
+
+    The experiment from the developing mouse hippocampus comprises two time points
+    (P0 and P5) and reveals the complex manifold with multiple branching lineages
+    towards astrocytes, oligodendrocyte precursors (OPCs), granule neurons and pyramidal neurons.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/118401264-49bce380-b665-11eb-8678-e7570ede13d6.png
+       :width: 600px
+
+    Returns
+    -------
+    Returns `adata` object
+    """
+    filename = "data/DentateGyrus/DentateGyrus.loom"
+    url = "http://pklab.med.harvard.edu/velocyto/DentateGyrus/DentateGyrus.loom"
+    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata.var_names_make_unique()
+    adata.obsm["X_tsne"] = np.column_stack([adata.obs["TSNE1"], adata.obs["TSNE2"]])
+    adata.obs["clusters"] = adata.obs["ClusterName"]
+    cleanup(adata, clean="obs", keep=["Age", "clusters"])
+
+    adata.uns["clusters_colors"] = {
+        "RadialGlia": [0.95, 0.6, 0.1],
+        "RadialGlia2": [0.85, 0.3, 0.1],
+        "ImmAstro": [0.8, 0.02, 0.1],
+        "GlialProg": [0.81, 0.43, 0.72352941],
+        "OPC": [0.61, 0.13, 0.72352941],
+        "nIPC": [0.9, 0.8, 0.3],
+        "Nbl1": [0.7, 0.82, 0.6],
+        "Nbl2": [0.448, 0.85490196, 0.95098039],
+        "ImmGranule1": [0.35, 0.4, 0.82],
+        "ImmGranule2": [0.23, 0.3, 0.7],
+        "Granule": [0.05, 0.11, 0.51],
+        "CA": [0.2, 0.53, 0.71],
+        "CA1-Sub": [0.1, 0.45, 0.3],
+        "CA2-3-4": [0.3, 0.35, 0.5],
+    }
+    return adata
+
+
+def gastrulation():
+    """Mouse gastrulation.
+
+    Data from `Pijuan-Sala et al. (2019) <https://doi.org/10.1038/s41586-019-0933-9 >`_.
+
+    Gastrulation represents a key developmental event during which embryonic pluripotent
+    cells diversify into lineage-specific precursors that will generate the adult organism.
+
+    This data contains the erythrocyte lineage from Pijuan-Sala et al. (2019).
+    The experiment reveals the molecular map of mouse gastrulation and early organogenesis.
+    It comprises transcriptional profiles of 116,312 single cells from mouse embryos
+    collected at nine sequential time points ranging from 6.5 to 8.5 days post-fertilization.
+    It served to explore the complex events involved in the convergence of visceral and primitive streak-derived endoderm.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/130636066-3bae153e-1626-4d11-8f38-6efab5b81c1c.png
+       :width: 600px
+
+    Returns
+    -------
+    Returns `adata` object
+    """
+    filename = "data/Gastrulation/gastrulation.h5ad"
+    url = "https://ndownloader.figshare.com/files/28095525"
+    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata.var_names_make_unique()
+    return adata
+
+
+def gastrulation_e75():
+    """Mouse gastrulation subset to E7.5.
+
+    Data from `Pijuan-Sala et al. (2019) <https://doi.org/10.1038/s41586-019-0933-9 >`_.
+
+    Gastrulation represents a key developmental event during which embryonic pluripotent
+    cells diversify into lineage-specific precursors that will generate the adult organism.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/130636292-7f2a599b-ded4-4616-99d7-604d2f324531.png
+       :width: 600px
+
+    Returns
+    -------
+    Returns `adata` object
+    """
+    filename = "data/Gastrulation/gastrulation_e75.h5ad"
+    url = "https://ndownloader.figshare.com/files/30439878"
+    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata.var_names_make_unique()
+    return adata
+
+
+def gastrulation_erythroid():
+    """Mouse gastrulation subset to erythroid lineage.
+
+    Data from `Pijuan-Sala et al. (2019) <https://doi.org/10.1038/s41586-019-0933-9 >`_.
+
+    Gastrulation represents a key developmental event during which embryonic pluripotent
+    cells diversify into lineage-specific precursors that will generate the adult organism.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/118402002-40814600-b668-11eb-8bfc-dbece2b2b34e.png
+       :width: 600px
+
+    Returns
+    -------
+    Returns `adata` object
+    """
+    filename = "data/Gastrulation/erythroid_lineage.h5ad"
+    url = "https://ndownloader.figshare.com/files/27686871"
+    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata.var_names_make_unique()
+    return adata
+
+
+def bonemarrow():
+    """Human bone marrow.
+
+    Data from `Setty et al. (2019) <https://doi.org/10.1242/dev.173849 >`_.
+
+    The bone marrow is the primary site of new blood cell production or haematopoiesis.
+    It is composed of hematopoietic cells, marrow adipose tissue, and supportive stromal cells.
+
+    This dataset served to detect important landmarks of hematopoietic differentiation, to
+    identify key transcription factors that drive lineage fate choice and to closely track when cells lose plasticity.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/118402252-68bd7480-b669-11eb-9ef3-5f992b74a2d3.png
+       :width: 600px
+
+    Returns
+    -------
+    Returns `adata` object
+    """
+    filename = "data/BoneMarrow/human_cd34_bone_marrow.h5ad"
+    url = "https://ndownloader.figshare.com/files/27686835"
+    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata.var_names_make_unique()
+    return adata
+
+
+def pbmc68k():
+    """Peripheral blood mononuclear cells.
+
+    Data from `Zheng et al. (2017) <https://doi.org/10.1038/ncomms14049 >`_.
+
+    This experiment contains 68k peripheral blood mononuclear cells (PBMC) measured using 10X.
+
+    PBMCs are a diverse mixture of highly specialized immune cells.
+    They originate from hematopoietic stem cells (HSCs) that reside in the bone marrow
+    and give rise to all blood cells of the immune system (hematopoiesis).
+    HSCs give rise to myeloid (monocytes, macrophages, granulocytes, megakaryocytes, dendritic cells, erythrocytes)
+    and lymphoid (T cells, B cells, NK cells) lineages.
+
+    .. image:: https://user-images.githubusercontent.com/31883718/118402351-e1243580-b669-11eb-8256-4a49c299da3d.png
+       :width: 600px
+
+    Returns
+    -------
+    Returns `adata` object
+    """
+    filename = "data/PBMC/pbmc68k.h5ad"
+    url = "https://ndownloader.figshare.com/files/27686886"
+    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata.var_names_make_unique()
+    return adata
 
 
 def simulation(
