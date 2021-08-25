@@ -98,7 +98,7 @@ def forebrain():
     Returns
     -------
     Returns `adata` object
-    """
+    """  # noqa E501
 
     filename = "data/ForebrainGlut/hgForebrainGlut.loom"
     url = "http://pklab.med.harvard.edu/velocyto/hgForebrainGlut/hgForebrainGlut.loom"
@@ -153,7 +153,7 @@ def dentategyrus_lamanno():
     Returns
     -------
     Returns `adata` object
-    """
+    """  # noqa E501
     filename = "data/DentateGyrus/DentateGyrus.loom"
     url = "http://pklab.med.harvard.edu/velocyto/DentateGyrus/DentateGyrus.loom"
     adata = read(filename, backup_url=url, sparse=True, cache=True)
@@ -201,7 +201,7 @@ def gastrulation():
     Returns
     -------
     Returns `adata` object
-    """
+    """  # noqa E501
     filename = "data/Gastrulation/gastrulation.h5ad"
     url = "https://ndownloader.figshare.com/files/28095525"
     adata = read(filename, backup_url=url, sparse=True, cache=True)
@@ -223,7 +223,7 @@ def gastrulation_e75():
     Returns
     -------
     Returns `adata` object
-    """
+    """  # noqa E501
     filename = "data/Gastrulation/gastrulation_e75.h5ad"
     url = "https://ndownloader.figshare.com/files/30439878"
     adata = read(filename, backup_url=url, sparse=True, cache=True)
@@ -245,7 +245,7 @@ def gastrulation_erythroid():
     Returns
     -------
     Returns `adata` object
-    """
+    """  # noqa E501
     filename = "data/Gastrulation/erythroid_lineage.h5ad"
     url = "https://ndownloader.figshare.com/files/27686871"
     adata = read(filename, backup_url=url, sparse=True, cache=True)
@@ -270,7 +270,7 @@ def bonemarrow():
     Returns
     -------
     Returns `adata` object
-    """
+    """  # noqa E501
     filename = "data/BoneMarrow/human_cd34_bone_marrow.h5ad"
     url = "https://ndownloader.figshare.com/files/27686835"
     adata = read(filename, backup_url=url, sparse=True, cache=True)
@@ -297,7 +297,7 @@ def pbmc68k():
     Returns
     -------
     Returns `adata` object
-    """
+    """  # noqa E501
     filename = "data/PBMC/pbmc68k.h5ad"
     url = "https://ndownloader.figshare.com/files/27686886"
     adata = read(filename, backup_url=url, sparse=True, cache=True)

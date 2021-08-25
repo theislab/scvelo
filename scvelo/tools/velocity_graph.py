@@ -321,9 +321,8 @@ def velocity_graph(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     velocity_graph: `.uns`
-        sparse matrix with transition probabilities
+        sparse matrix with correlations of cell state transitions with velocities
     """
 
     adata = data.copy() if copy else data

@@ -30,7 +30,6 @@ def velocity_confidence(data, vkey="velocity", copy=False):
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     velocity_length: `.obs`
         Length of the velocity vectors for each individual cell
     velocity_confidence: `.obs`
@@ -92,7 +91,6 @@ def velocity_confidence_transition(data, vkey="velocity", scale=10, copy=False):
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     velocity_confidence_transition: `.obs`
         Confidence of transition for each cell
     """

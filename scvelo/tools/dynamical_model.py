@@ -418,7 +418,20 @@ def recover_dynamics(
 
     Returns
     -------
-    Returns or updates `adata`
+    fit_alpha: `.var`
+        inferred transcription rates
+    fit_beta: `.var`
+        inferred splicing rates
+    fit_gamma: `.var`
+        inferred degradation rates
+    fit_t_: `.var`
+        inferred switching time points
+    fit_scaling: `.var`
+        internal variance scaling factor for un/spliced counts
+    fit_likelihood: `.var`
+        likelihood of model fit
+    fit_alignment_scaling: `.var`
+        scaling factor to align gene-wise latent times to a universal latent time
     """  # noqa E501
 
     adata = data.copy() if copy else data
@@ -623,7 +636,6 @@ def align_dynamics(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     alpha, beta, gamma, t_, alignment_scaling: `.var`
         aligned parameters
     fit_t, fit_tau, fit_tau_: `.layer`
@@ -755,7 +767,6 @@ def latent_time(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     latent_time: `.obs`
         latent time from learned dynamics for each cell
     """  # noqa E501
@@ -925,7 +936,10 @@ def differential_kinetic_test(
 
     Returns
     -------
-    Returns or updates `adata`
+    fit_pvals_kinetics: `.varm`
+        P-values of competing kinetic for each group and gene
+    fit_diff_kinetics: `.var`
+        Groups that have differential kinetics for each gene.
     """  # noqa E501
 
     adata = data.copy() if copy else data
@@ -1021,7 +1035,7 @@ def differential_kinetic_test(
         "added \n"
         f"    '{add_key}_diff_kinetics', "
         f"clusters displaying differential kinetics (adata.var)\n"
-        f"    '{add_key}_pval_kinetics', "
+        f"    '{add_key}_pvals_kinetics', "
         f"p-values of differential kinetics (adata.var)"
     )
 
@@ -1050,7 +1064,6 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
 
     Returns
     -------
-    Returns or updates `data` with the attributes
     rank_dynamical_genes : `.uns`
         Structured array to be indexed by group id storing the gene
         names. Ordered according to scores.

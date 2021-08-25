@@ -90,9 +90,8 @@ def velocity_embedding(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
-    velocity_basis: `.obsm`
-        coordinates of velocity projection on embedding
+    velocity_umap: `.obsm`
+        coordinates of velocity projection on embedding (e.g., basis='umap')
     """
 
     adata = data.copy() if copy else data

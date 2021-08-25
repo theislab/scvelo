@@ -299,12 +299,9 @@ def velocity(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     velocity: `.layers`
         velocity vectors for each individual cell
-    variance_velocity: `.layers`
-        velocity vectors for the cell variances
-    velocity_offset, velocity_beta, velocity_gamma, velocity_r2: `.var`
+    velocity_genes, velocity_beta, velocity_gamma, velocity_r2: `.var`
         parameters
     """  # noqa E501
 

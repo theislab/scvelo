@@ -48,7 +48,6 @@ def moments(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     Ms: `.layers`
         dense matrix with first order moments of spliced counts.
     Mu: `.layers`

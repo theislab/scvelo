@@ -102,7 +102,6 @@ def velocity_clusters(
 
     Returns
     -------
-    Returns or updates `data` with the attributes
     velocity_clusters : `.obs`
         Clusters obtained from applying louvain modularity on velocity expression.
     """  # noqa E501
@@ -258,7 +257,6 @@ def rank_velocity_genes(
 
     Returns
     -------
-    Returns or updates `data` with the attributes
     rank_velocity_genes : `.uns`
         Structured array to be indexed by group id storing the gene
         names. Ordered according to scores.
