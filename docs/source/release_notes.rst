@@ -4,6 +4,29 @@
 Release Notes
 =============
 
+Version 0.2.4 :small:`Aug 26, 2021`
+-----------------------------------
+
+Perspectives:
+
+- Landing page and two notebooks accompanying the perspectives manuscript at MSB. 
+- datasets: Gastrulation, bone marrow, and PBMCs. 
+
+New capabilities:
+
+- Added vignettes accompanying the NBT manuscript.
+- Kinetic simulations with time-dependent rates.
+- Introduced automated code formatting `flake8` and `isort`. 
+- `tl.velocity_graph` parallelized. 
+- `legend_align_text` parameter in `pl.scatter` for smart placing of labels without overlapping.
+- Save option for `pl.proportions`.
+
+Bugfixes:
+
+- Pinned `sphinx<4.0` and `nbsphinx<0.8.7`.
+- Fix IPython import at CLI. 
+
+
 Version 0.2.3 :small:`Feb 13, 2021`
 -----------------------------------
 
