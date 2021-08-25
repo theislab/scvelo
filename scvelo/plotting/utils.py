@@ -1048,7 +1048,7 @@ def plot_linfit(
         if isinstance(add_linfit, str)
         else color
         if isinstance(color, str)
-        else "grey"
+        else "k"
     )
     xnew = np.linspace(np.min(x), np.max(x) * 1.02)
     ax.plot(xnew, offset + xnew * slope, linewidth=linewidth, color=color)
@@ -1093,7 +1093,7 @@ def plot_polyfit(
         if isinstance(add_polyfit, str)
         else color
         if isinstance(color, str)
-        else "grey"
+        else "k"
     )
 
     xnew = np.linspace(np.min(x), np.max(x), num=100)

@@ -316,8 +316,6 @@ def scatter(
                 basis = default_basis(adata)
             if linewidth is None:
                 linewidth = 1
-            if linecolor is None:
-                linecolor = "k"
             if frameon is None:
                 frameon = True if not is_embedding else settings._frameon
             if isinstance(groups, str):
