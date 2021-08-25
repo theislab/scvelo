@@ -38,26 +38,18 @@ matplotlib.use("agg")
 logger = logging.getLogger(__name__)
 
 
-# -- Retrieve basic notebooks ---------------------------------------------
+# -- Basic notebooks and those stored under /vignettes and /perspectives --
 
 notebooks_url = "https://github.com/theislab/scvelo_notebooks/raw/master/"
-notebooks = [
+notebooks = []
+notebook = [
     "VelocityBasics.ipynb",
     "DynamicalModeling.ipynb",
     "DifferentialKinetics.ipynb",
 ]
-for nb in notebooks:
-    try:
-        urlretrieve(notebooks_url + nb, nb)
-    except Exception:
-        pass
+notebooks.extend(notebook)
 
-# -- Retrieve other notebooks and store under /vignettes directory --------
-
-notebooks = [
-    "VelocityBasics.ipynb",
-    "DynamicalModeling.ipynb",
-    "DifferentialKinetics.ipynb",
+notebook = [
     "Pancreas.ipynb",
     "DentateGyrus.ipynb",
     "NatureBiotechCover.ipynb",
@@ -67,22 +59,19 @@ notebooks = [
     "FigS9_runtime.ipynb",
     "FigSuppl.ipynb",
 ]
-notebooks = [f"vignettes/{v}" for v in notebooks]
+notebooks.extend([f"vignettes/{nb}" for nb in notebook])
+
+notebook = ["Perspectives.ipynb", "Perspectives_parameters.ipynb"]
+notebooks.extend([f"perspectives/{nb}" for nb in notebook])
+
+# -- Retrieve all notebooks --
+
 for nb in notebooks:
+    url = notebooks_url + nb
     try:
-        urlretrieve(notebooks_url + nb, nb)
-    except Exception:
-        pass
-
-
-# -- Retrieve perspectives notebooks /perspectives directory --------
-
-notebooks = ["Perspectives.ipynb", "Perspectives_parameters.ipynb"]
-notebooks = [f"perspectives/{v}" for v in notebooks]
-for nb in notebooks:
-    try:
-        urlretrieve(notebooks_url + nb, nb)
-    except Exception:
+        urlretrieve(url, nb)
+    except Exception as e:
+        logger.error(f"Unable to retrieve notebook: `{url}`. Reason: `{e}`")
         pass
 
 
