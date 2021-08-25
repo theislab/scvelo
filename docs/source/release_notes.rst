@@ -10,14 +10,15 @@ Version 0.2.4 :small:`Aug 26, 2021`
 Perspectives:
 
 - Landing page and two notebooks accompanying the perspectives manuscript at MSB. 
-- datasets: Gastrulation, bone marrow, and PBMCs. 
+- New datasets: Gastrulation, bone marrow, and PBMCs. 
 
 New capabilities:
 
 - Added vignettes accompanying the NBT manuscript.
 - Kinetic simulations with time-dependent rates.
-- Introduced automated code formatting `flake8` and `isort`. 
-- `tl.velocity_graph` parallelized. 
+- New arguments for `tl.velocity_embedding_stream` (`PR 492 <https://github.com/theislab/scvelo/pull/492>`_).
+- Introduced automated code formatting `flake8` and `isort` (`PR 360 <https://github.com/theislab/scvelo/pull/360>`_, `PR 374 <https://github.com/theislab/scvelo/pull/374>`_).
+- `tl.velocity_graph` parallelized (`PR 392 <https://github.com/theislab/scvelo/pull/392>`_).
 - `legend_align_text` parameter in `pl.scatter` for smart placing of labels without overlapping.
 - Save option for `pl.proportions`.
 
