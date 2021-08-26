@@ -32,6 +32,7 @@ patients and dynamic processes in human lung regeneration. Find out more in this
 
 Latest news
 ^^^^^^^^^^^
+- Aug/2021: `Perspectives paper out in MSB <https://doi.org/10.15252/msb.202110282>`_
 - Feb/2021: scVelo goes multi-core
 - Dec/2020: Cover of `Nature Biotechnology <https://www.nature.com/nbt/volumes/38>`_
 - Nov/2020: Talk at `Single Cell Biology <https://coursesandconferences.wellcomegenomecampus.org/our-events/single-cell-biology-2020/>`_

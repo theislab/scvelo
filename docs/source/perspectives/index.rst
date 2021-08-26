@@ -2,7 +2,7 @@ Challenges and Perspectives
 ---------------------------
 
 This page complements our manuscript
-**Bergen et al. (MSB, 2021)**, ***RNA velocity: Current challenges and future perspectives***
+`Bergen et al. (MSB, 2021) RNA velocity - Current challenges and future perspectives <https://doi.org/10.15252/msb.202110282>`_
 
 We provide several examples to discuss potential pitfalls of current RNA velocity
 modeling approaches, and provide guidance on how the ensuing challenges may be addressed.
