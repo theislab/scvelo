@@ -43,11 +43,15 @@ Latest news
 - Sep/2020: Talk at `Single Cell Omics <https://twitter.com/fabian_theis/status/1305621028056465412>`_
 - Aug/2020: `scVelo out in Nature Biotech <https://www.helmholtz-muenchen.de/en/aktuelles/latest-news/press-information-news/article/48658/index.html>`_
 
-Reference
-^^^^^^^^^
+References
+^^^^^^^^^^
+Manno *et al.* (2018), RNA velocity of single cells, `Nature <https://doi.org/10.1038/s41586-018-0414-6>`_.
+
 Bergen *et al.* (2020), Generalizing RNA velocity to transient cell states through dynamical modeling,
 `Nature Biotech <https://doi.org/10.1038/s41587-020-0591-3>`_.
-|dim|
+
+Bergen *et al.* (2021), RNA velocity - current challenges and future perspectives,
+`Molecular Systems Biology <https://doi.org/10.15252/msb.202110282>`_.
 
 Support
 ^^^^^^^
