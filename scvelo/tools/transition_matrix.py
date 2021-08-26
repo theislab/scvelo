@@ -1,12 +1,12 @@
-from ..preprocessing.neighbors import get_connectivities, get_neighs
-from .utils import normalize
+import warnings
 
 import numpy as np
 import pandas as pd
-from scipy.spatial.distance import pdist, squareform
 from scipy.sparse import csr_matrix, SparseEfficiencyWarning
+from scipy.spatial.distance import pdist, squareform
 
-import warnings
+from scvelo.preprocessing.neighbors import get_connectivities, get_neighs
+from .utils import normalize
 
 warnings.simplefilter("ignore", SparseEfficiencyWarning)
 
@@ -36,7 +36,8 @@ def transition_matrix(
     from the velocity graph :math:`\\pi_{ij}`, with row-normalization :math:`z_i` and
     kernel width :math:`\\sigma` (scale parameter :math:`\\lambda = \\sigma^{-1}`).
 
-    Alternatively, use :func:`cellrank.tl.transition_matrix` to account for uncertainty in the velocity estimates.
+    Alternatively, use :func:`cellrank.tl.transition_matrix` to account for uncertainty
+    in the velocity estimates.
 
     Arguments
     ---------
@@ -72,6 +73,7 @@ def transition_matrix(
     -------
     Returns sparse matrix with transition probabilities.
     """
+
     if f"{vkey}_graph" not in adata.uns:
         raise ValueError(
             "You need to run `tl.velocity_graph` first to compute cosine correlations."
@@ -185,11 +187,13 @@ def get_cell_transitions(
         Set to `int` for reproducibility, otherwise `None` for a random seed.
     **kwargs:
         To be passed to tl.transition_matrix.
+
     Returns
     -------
     Returns embedding coordinates (if basis is specified),
     otherwise return indices of simulated cell transitions.
     """
+
     np.random.seed(random_state)
     if isinstance(starting_cell, str) and starting_cell in adata.obs_names:
         starting_cell = adata.obs_names.get_loc(starting_cell)
@@ -207,6 +211,8 @@ def get_cell_transitions(
         if n_neighbors is not None and n_neighbors < len(p):
             idx = np.argsort(t.data)[::-1][:n_neighbors]
             indices, p = indices[idx], p[idx]
+        if len(p) == 0:
+            indices, p = [X[-1]], [1]
         p /= np.sum(p)
         ix = np.random.choice(indices, p=p)
         X.append(ix)

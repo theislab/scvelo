@@ -1,22 +1,18 @@
-from .. import settings
-from .. import logging as logg
-from ..preprocessing.moments import get_connectivities
-from .utils import make_unique_list, test_bimodality
-from .dynamical_model_utils import BaseDynamics, linreg, convolve, tau_inv, unspliced
-
-from typing import Any, Union, Callable, Optional, Sequence
-from threading import Thread
-from multiprocessing import Manager
-
-from joblib import Parallel, delayed
-from scipy.sparse import issparse, spmatrix
-
 import os
+
 import numpy as np
 import pandas as pd
+from scipy.optimize import minimize
+
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
-from scipy.optimize import minimize
+
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.core import get_n_jobs, parallelize
+from scvelo.preprocessing.moments import get_connectivities
+from .dynamical_model_utils import BaseDynamics, convolve, linreg, tau_inv, unspliced
+from .utils import make_unique_list, test_bimodality
 
 
 class DynamicsRecovery(BaseDynamics):
@@ -67,11 +63,11 @@ class DynamicsRecovery(BaseDynamics):
 
         # initialize switching from u quantiles and alpha from s quantiles
         try:
-            tstat_u, pval_u, means_u = test_bimodality(u_w, kde=True)
-            tstat_s, pval_s, means_s = test_bimodality(s_w, kde=True)
-        except:
+            _, pval_u, means_u = test_bimodality(u_w, kde=True)
+            _, pval_s, means_s = test_bimodality(s_w, kde=True)
+        except Exception:
             logg.warn("skipping bimodality check for", self.gene)
-            tstat_u, tstat_s, pval_u, pval_s = 0, 0, 1, 1
+            _, _, pval_u, pval_s = 0, 0, 1, 1
             means_u, means_s = [0, 0], [0, 0]
 
         self.pval_steady = max(pval_u, pval_s)
@@ -376,8 +372,10 @@ def recover_dynamics(
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
-    var_names: `str`,  list of `str` (default: `'velocity_genes`)
-        Names of variables/genes to use for the fitting.
+    var_names: `str`,  list of `str` (default: `'velocity_genes'`)
+        Names of variables/genes to use for the fitting. If `var_names='velocity_genes'`
+        but there is no column `'velocity_genes'` in `adata.var`, velocity genes are
+        estimated using the steady state model.
     n_top_genes: `int` or `None` (default: `None`)
         Number of top velocity genes to use for the dynamical model.
     max_iter:`int` (default: `10`)
@@ -415,12 +413,27 @@ def recover_dynamics(
     n_jobs: `int` or `None` (default: `None`)
         Number of parallel jobs.
     backend: `str` (default: "loky")
-        Backend used for multiprocessing. See :class:`joblib.Parallel` for valid options.
+        Backend used for multiprocessing. See :class:`joblib.Parallel` for valid
+        options.
 
     Returns
     -------
-    Returns or updates `adata`
-    """
+    fit_alpha: `.var`
+        inferred transcription rates
+    fit_beta: `.var`
+        inferred splicing rates
+    fit_gamma: `.var`
+        inferred degradation rates
+    fit_t_: `.var`
+        inferred switching time points
+    fit_scaling: `.var`
+        internal variance scaling factor for un/spliced counts
+    fit_likelihood: `.var`
+        likelihood of model fit
+    fit_alignment_scaling: `.var`
+        scaling factor to align gene-wise latent times to a universal latent time
+    """  # noqa E501
+
     adata = data.copy() if copy else data
 
     n_jobs = get_n_jobs(n_jobs=n_jobs)
@@ -485,7 +498,7 @@ def recover_dynamics(
 
     conn = get_connectivities(adata) if fit_connected_states else None
 
-    res = _parallelize(
+    res = parallelize(
         _fit_recovery,
         var_names,
         n_jobs,
@@ -549,14 +562,17 @@ def recover_dynamics(
 
     if L:  # is False if only one invalid / irrecoverable gene was given in var_names
         cur_len = adata.varm["loss"].shape[1] if "loss" in adata.varm.keys() else 2
-        max_len = max(np.max([len(l) for l in L]), cur_len) if L else cur_len
+        max_len = max(np.max([len(loss) for loss in L]), cur_len) if L else cur_len
         loss = np.ones((adata.n_vars, max_len)) * np.nan
 
         if "loss" in adata.varm.keys():
             loss[:, :cur_len] = adata.varm["loss"]
 
         loss[idx] = np.vstack(
-            [np.concatenate([l, np.ones(max_len - len(l)) * np.nan]) for l in L]
+            [
+                np.concatenate([loss, np.ones(max_len - len(loss)) * np.nan])
+                for loss in L
+            ]
         )
         adata.varm["loss"] = loss
 
@@ -617,9 +633,9 @@ def align_dynamics(
         Whether to remove outliers.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
-     Returns
+
+    Returns
     -------
-    Returns or updates `adata` with the attributes
     alpha, beta, gamma, t_, alignment_scaling: `.var`
         aligned parameters
     fit_t, fit_tau, fit_tau_: `.layer`
@@ -748,17 +764,18 @@ def latent_time(
         If not set, a overall transcriptional timescale of 20 hours is used as prior.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to `adata`.
-     Returns
+
+    Returns
     -------
-    Returns or updates `adata` with the attributes
     latent_time: `.obs`
         latent time from learned dynamics for each cell
-    """
+    """  # noqa E501
+
     adata = data.copy() if copy else data
 
-    from .utils import vcorrcoef, scale
-    from .dynamical_model_utils import root_time, compute_shared_time
+    from .dynamical_model_utils import compute_shared_time, root_time
     from .terminal_states import terminal_states
+    from .utils import scale, vcorrcoef
     from .velocity_graph import velocity_graph
     from .velocity_pseudotime import velocity_pseudotime
 
@@ -793,7 +810,7 @@ def latent_time(
         idx_roots[pd.isnull(idx_roots)] = 0
         if np.any([isinstance(ix, str) for ix in idx_roots]):
             idx_roots = np.array([isinstance(ix, str) for ix in idx_roots], dtype=int)
-        idx_roots = idx_roots.astype(np.float) > 1 - 1e-3
+        idx_roots = idx_roots.astype(float) > 1 - 1e-3
         if np.sum(idx_roots) > 0:
             roots = roots[idx_roots]
         else:
@@ -811,7 +828,7 @@ def latent_time(
         idx_fates[pd.isnull(idx_fates)] = 0
         if np.any([isinstance(ix, str) for ix in idx_fates]):
             idx_fates = np.array([isinstance(ix, str) for ix in idx_fates], dtype=int)
-        idx_fates = idx_fates.astype(np.float) > 1 - 1e-3
+        idx_fates = idx_fates.astype(float) > 1 - 1e-3
         if np.sum(idx_fates) > 0:
             fates = fates[idx_fates]
     else:
@@ -919,8 +936,12 @@ def differential_kinetic_test(
 
     Returns
     -------
-    Returns or updates `adata`
-    """
+    fit_pvals_kinetics: `.varm`
+        P-values of competing kinetic for each group and gene
+    fit_diff_kinetics: `.var`
+        Groups that have differential kinetics for each gene.
+    """  # noqa E501
+
     adata = data.copy() if copy else data
 
     if "Ms" not in adata.layers.keys() or "Mu" not in adata.layers.keys():
@@ -981,7 +1002,7 @@ def differential_kinetic_test(
     if "fit_diff_kinetics" in adata.var.keys():
         diff_kinetics = np.array(adata.var["fit_diff_kinetics"])
     else:
-        diff_kinetics = np.empty(adata.n_vars, dtype="|U16")
+        diff_kinetics = np.empty(adata.n_vars, dtype="object")
     idx = []
 
     progress = logg.ProgressReporter(len(var_names))
@@ -1014,7 +1035,7 @@ def differential_kinetic_test(
         "added \n"
         f"    '{add_key}_diff_kinetics', "
         f"clusters displaying differential kinetics (adata.var)\n"
-        f"    '{add_key}_pval_kinetics', "
+        f"    '{add_key}_pvals_kinetics', "
         f"p-values of differential kinetics (adata.var)"
     )
 
@@ -1043,11 +1064,11 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
 
     Returns
     -------
-    Returns or updates `data` with the attributes
     rank_dynamical_genes : `.uns`
         Structured array to be indexed by group id storing the gene
         names. Ordered according to scores.
     """
+
     from .dynamical_model_utils import get_divergence
 
     adata = data.copy() if copy else data
@@ -1150,167 +1171,6 @@ def _fit_recovery(
         queue.put(None)
 
     return idx, dms
-
-
-# -*- coding: utf-8 -*-
-"""Module used to parallelize model fitting."""
-
-_msg_shown = False
-
-
-def get_n_jobs(n_jobs):
-    if n_jobs is None or (n_jobs < 0 and os.cpu_count() + 1 + n_jobs <= 0):
-        return 1
-    elif n_jobs > os.cpu_count():
-        return os.cpu_count()
-    elif n_jobs < 0:
-        return os.cpu_count() + 1 + n_jobs
-    else:
-        return n_jobs
-
-
-def _parallelize(
-    callback: Callable[[Any], Any],
-    collection: Union[spmatrix, Sequence[Any]],
-    n_jobs: Optional[int] = None,
-    n_split: Optional[int] = None,
-    unit: str = "",
-    as_array: bool = True,
-    use_ixs: bool = False,
-    backend: str = "loky",
-    extractor: Optional[Callable[[Any], Any]] = None,
-    show_progress_bar: bool = True,
-) -> Union[np.ndarray, Any]:
-    """
-    Parallelize function call over a collection of elements.
-
-    Parameters
-    ----------
-    callback
-        Function to parallelize.
-    collection
-        Sequence of items which to chunkify.
-    n_jobs
-        Number of parallel jobs.
-    n_split
-        Split :paramref:`collection` into :paramref:`n_split` chunks.
-        If `None`, split into :paramref:`n_jobs` chunks.
-    unit
-        Unit of the progress bar.
-    as_array
-        Whether to convert the results not :class:`numpy.ndarray`.
-    use_ixs
-        Whether to pass indices to the callback.
-    backend
-        Which backend to use for multiprocessing. See :class:`joblib.Parallel` for valid options.
-    extractor
-        Function to apply to the result after all jobs have finished.
-    show_progress_bar
-        Whether to show a progress bar.
-
-    Returns
-    -------
-    :class:`numpy.ndarray`
-        Result depending on :paramref:`extractor` and :paramref:`as_array`.
-    """
-
-    if show_progress_bar:
-        try:
-            try:
-                from tqdm.notebook import tqdm
-            except ImportError:
-                from tqdm import tqdm_notebook as tqdm
-            import ipywidgets  # noqa
-        except ImportError:
-            global _msg_shown
-            tqdm = None
-
-            if not _msg_shown:
-                logg.warn(
-                    "Unable to create progress bar. "
-                    "Consider installing `tqdm` as `pip install tqdm` "
-                    "and `ipywidgets` as `pip install ipywidgets`,\n"
-                    "or disable the progress bar using `show_progress_bar=False`."
-                )
-                _msg_shown = True
-    else:
-        tqdm = None
-
-    def update(pbar, queue, n_total):
-        n_finished = 0
-        while n_finished < n_total:
-            try:
-                res = queue.get()
-            except EOFError as e:
-                if not n_finished != n_total:
-                    raise RuntimeError(
-                        f"Finished only `{n_finished} out of `{n_total}` tasks.`"
-                    ) from e
-                break
-            assert res in (None, (1, None), 1)  # (None, 1) means only 1 job
-            if res == (1, None):
-                n_finished += 1
-                if pbar is not None:
-                    pbar.update()
-            elif res is None:
-                n_finished += 1
-            elif pbar is not None:
-                pbar.update()
-
-        if pbar is not None:
-            pbar.close()
-
-    def wrapper(*args, **kwargs):
-        if pass_queue and show_progress_bar:
-            pbar = None if tqdm is None else tqdm(total=col_len, unit=unit)
-            queue = Manager().Queue()
-            thread = Thread(target=update, args=(pbar, queue, len(collections)))
-            thread.start()
-        else:
-            pbar, queue, thread = None, None, None
-
-        res = Parallel(n_jobs=n_jobs, backend=backend)(
-            delayed(callback)(
-                *((i, cs) if use_ixs else (cs,)),
-                *args,
-                **kwargs,
-                queue=queue,
-            )
-            for i, cs in enumerate(collections)
-        )
-
-        res = np.array(res) if as_array else res
-        if thread is not None:
-            thread.join()
-
-        return res if extractor is None else extractor(res)
-
-    col_len = collection.shape[0] if issparse(collection) else len(collection)
-
-    if n_split is None:
-        n_split = get_n_jobs(n_jobs=n_jobs)
-
-    if issparse(collection):
-        if n_split == collection.shape[0]:
-            collections = [collection[[ix], :] for ix in range(collection.shape[0])]
-        else:
-            step = collection.shape[0] // n_split
-
-            ixs = [
-                np.arange(i * step, min((i + 1) * step, collection.shape[0]))
-                for i in range(n_split)
-            ]
-            ixs[-1] = np.append(
-                ixs[-1], np.arange(ixs[-1][-1] + 1, collection.shape[0])
-            )
-
-            collections = [collection[ix, :] for ix in filter(len, ixs)]
-    else:
-        collections = list(filter(len, np.array_split(collection, n_split)))
-
-    pass_queue = not hasattr(callback, "py_func")  # we'd be inside a numba function
-
-    return wrapper
 
 
 def _flatten(iterable):

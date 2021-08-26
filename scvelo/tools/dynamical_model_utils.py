@@ -1,17 +1,19 @@
-from .. import logging as logg
-from ..preprocessing.moments import get_connectivities
-from .utils import make_dense, round
+import warnings
+
+import numpy as np
+import pandas as pd
+from scipy.sparse import issparse
+from scipy.stats.distributions import chi2, norm
 
 import matplotlib as mpl
+import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
-import matplotlib.gridspec as gridspec
 
-from scipy.stats.distributions import chi2, norm
-from scipy.sparse import issparse
-import warnings
-import pandas as pd
-import numpy as np
+from scvelo import logging as logg
+from scvelo.core import clipped_log, invert, SplicingDynamics
+from scvelo.preprocessing.moments import get_connectivities
+from .utils import make_dense, round
 
 exp = np.exp
 
@@ -20,14 +22,28 @@ exp = np.exp
 
 
 def log(x, eps=1e-6):  # to avoid invalid values for log.
-    return np.log(np.clip(x, eps, 1 - eps))
+
+    warnings.warn(
+        "`clipped_log` is deprecated since scVelo v0.2.4 and will be removed in a "
+        "future version. Please use `clipped_log(x, eps=1e-6)` from `scvelo/core/`"
+        "instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return clipped_log(x, lb=0, ub=1, eps=1e-6)
 
 
 def inv(x):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        x_inv = 1 / x * (x != 0)
-    return x_inv
+
+    warnings.warn(
+        "`inv` is deprecated since scVelo v0.2.4 and will be removed in a future "
+        "version. Please use `invert(x)` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return invert(x)
 
 
 def normalize(X, axis=0, min_confidence=None):
@@ -112,17 +128,23 @@ def unspliced(tau, u0, alpha, beta):
 
 
 def spliced(tau, s0, u0, alpha, beta, gamma):
-    c = (alpha - u0 * beta) * inv(gamma - beta)
+    c = (alpha - u0 * beta) * invert(gamma - beta)
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
     return s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
 
 
 def mRNA(tau, u0, s0, alpha, beta, gamma):
-    expu, exps = exp(-beta * tau), exp(-gamma * tau)
-    expus = (alpha - u0 * beta) * inv(gamma - beta) * (exps - expu)
-    u = u0 * expu + alpha / beta * (1 - expu)
-    s = s0 * exps + alpha / gamma * (1 - exps) + expus
-    return u, s
+
+    warnings.warn(
+        "`mRNA` is deprecated since scVelo v0.2.4 and will be removed in a future "
+        "version. Please use `SplicingDynamics` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+    return SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
+        tau, stacked=False
+    )
 
 
 def adjust_increments(tau, tau_=None):
@@ -166,13 +188,15 @@ def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
     any_invus = np.any(inv_us) and s is not None
 
     if any_invus:  # tau_inv(u, s)
-        beta_ = beta * inv(gamma - beta)
+        beta_ = beta * invert(gamma - beta)
         xinf = alpha / gamma - beta_ * (alpha / beta)
-        tau = -1 / gamma * log((s - beta_ * u - xinf) / (s0 - beta_ * u0 - xinf))
+        tau = (
+            -1 / gamma * clipped_log((s - beta_ * u - xinf) / (s0 - beta_ * u0 - xinf))
+        )
 
     if any_invu:  # tau_inv(u)
         uinf = alpha / beta
-        tau_u = -1 / beta * log((u - uinf) / (u0 - uinf))
+        tau_u = -1 / beta * clipped_log((u - uinf) / (u0 - uinf))
         tau = tau_u * inv_u + tau * inv_us if any_invus else tau_u
     return tau
 
@@ -189,9 +213,10 @@ def assign_tau(
         num = np.clip(int(len(u) / 5), 200, 500)
         tpoints = np.linspace(0, t_, num=num)
         tpoints_ = np.linspace(0, t0, num=num)[1:]
-
-        xt = np.vstack(mRNA(tpoints, 0, 0, alpha, beta, gamma)).T
-        xt_ = np.vstack(mRNA(tpoints_, u0_, s0_, 0, beta, gamma)).T
+        xt = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(tpoints)
+        xt_ = SplicingDynamics(
+            alpha=0, beta=beta, gamma=gamma, initial_state=[u0_, s0_]
+        ).get_solution(tpoints_)
 
         # assign time points (oth. projection onto 'on' and 'off' curve)
         tau = tpoints[
@@ -253,7 +278,9 @@ def compute_divergence(
     """
     # set tau, tau_
     if u0_ is None or s0_ is None:
-        u0_, s0_ = mRNA(t_, 0, 0, alpha, beta, gamma)
+        u0_, s0_ = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
+            t_, stacked=False
+        )
     if tau is None or tau_ is None or t_ is None:
         tau, tau_, t_ = assign_tau(
             u, s, alpha, beta, gamma, t_, u0_, s0_, assignment_mode
@@ -263,8 +290,12 @@ def compute_divergence(
 
     # adjust increments of tau, tau_ to avoid meaningless jumps
     if constraint_time_increments:
-        ut, st = mRNA(tau, 0, 0, alpha, beta, gamma)
-        ut_, st_ = mRNA(tau_, u0_, s0_, 0, beta, gamma)
+        ut, st = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
+            tau, stacked=False
+        )
+        ut_, st_ = SplicingDynamics(
+            alpha=0, beta=beta, gamma=gamma, initial_state=[u0_, s0_]
+        ).get_solution(tau_, stacked=False)
 
         distu, distu_ = (u - ut) / std_u, (u - ut_) / std_u
         dists, dists_ = (s - st) / std_s, (s - st_) / std_s
@@ -288,8 +319,12 @@ def compute_divergence(
             tau_[off] = adjust_increments(tau_[off])
 
     # compute induction/repression state distances
-    ut, st = mRNA(tau, 0, 0, alpha, beta, gamma)
-    ut_, st_ = mRNA(tau_, u0_, s0_, 0, beta, gamma)
+    ut, st = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
+        tau, stacked=False
+    )
+    ut_, st_ = SplicingDynamics(
+        alpha=0, beta=beta, gamma=gamma, initial_state=[u0_, s0_]
+    ).get_solution(tau_, stacked=False)
 
     if ut.ndim > 1 and ut.shape[1] == 1:
         ut = np.ravel(ut)
@@ -542,7 +577,9 @@ def compute_divergence(
             o = (res < 2) * (t < t_)
             o_ = (res < 2) * (t >= t_)
             tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
-            ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
+            ut, st = SplicingDynamics(
+                alpha=alpha, beta=beta, gamma=gamma, initial_state=[u0, s0]
+            ).get_solution(tau, stacked=False)
             ut_, st_ = ut, st
 
         ut = ut * o + ut_ * o_
@@ -578,7 +615,9 @@ def compute_divergence(
             o = (res < 2) * (t < t_)
             o_ = (res < 2) * (t >= t_)
             tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
-            ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
+            ut, st = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
+                tau, stacked=False
+            )
             ut_, st_ = ut, st
 
         alpha = alpha * o
@@ -644,7 +683,9 @@ def curve_dists(
     num=None,
 ):
     if u0_ is None or s0_ is None:
-        u0_, s0_ = mRNA(t_, 0, 0, alpha, beta, gamma)
+        u0_, s0_ = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
+            t_, stacked=False
+        )
 
     x_obs = np.vstack([u, s]).T
     std_x = np.vstack([std_u / scaling, std_s]).T
@@ -654,8 +695,12 @@ def curve_dists(
     tpoints = np.linspace(0, t_, num=num)
     tpoints_ = np.linspace(0, t0, num=num)[1:]
 
-    curve_t = np.vstack(mRNA(tpoints, 0, 0, alpha, beta, gamma)).T
-    curve_t_ = np.vstack(mRNA(tpoints_, u0_, s0_, 0, beta, gamma)).T
+    curve_t = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
+        tpoints
+    )
+    curve_t_ = SplicingDynamics(
+        alpha=0, beta=beta, gamma=gamma, initial_state=[u0_, s0_]
+    ).get_solution(tpoints_)
 
     # match each curve point to nearest observation
     dist, dist_ = np.zeros(len(curve_t)), np.zeros(len(curve_t_))
@@ -728,7 +773,7 @@ class BaseDynamics:
         self.recoverable = True
         try:
             self.initialize_weights()
-        except:
+        except Exception:
             self.recoverable = False
             logg.warn(f"Model for {self.gene} could not be instantiated.")
 
@@ -796,7 +841,11 @@ class BaseDynamics:
             self.pval_steady = adata.var["fit_pval_steady"][idx]
 
         self.alpha_ = 0
-        self.u0_, self.s0_ = mRNA(self.t_, 0, 0, self.alpha, self.beta, self.gamma)
+        self.u0_, self.s0_ = SplicingDynamics(
+            alpha=self.alpha,
+            beta=self.beta,
+            gamma=self.gamma,
+        ).get_solution(self.t_, stacked=False)
         self.pars = [self.alpha, self.beta, self.gamma, self.t_, self.scaling]
         self.pars = np.array(self.pars)[:, None]
 
@@ -988,7 +1037,9 @@ class BaseDynamics:
         )
 
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
-        ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
+        ut, st = SplicingDynamics(
+            alpha=alpha, beta=beta, gamma=gamma, initial_state=[u0, s0]
+        ).get_solution(tau, stacked=False)
 
         udiff = np.array(ut - u) / self.std_u * scaling
         sdiff = np.array(st - s) / self.std_s
@@ -1072,9 +1123,13 @@ class BaseDynamics:
 
         kwargs = dict(std_u=self.std_u, std_s=self.std_s, scaling=scaling)
         dist, dist_ = curve_dists(u, s, alpha, beta, gamma, t_, **kwargs)
-        l = -0.5 / len(dist) * np.sum(dist) / varx - 0.5 * np.log(2 * np.pi * varx)
-        l_ = -0.5 / len(dist_) * np.sum(dist_) / varx - 0.5 * np.log(2 * np.pi * varx)
-        likelihood = np.exp(np.max([l, l_]))
+        log_likelihood = -0.5 / len(dist) * np.sum(dist) / varx - 0.5 * np.log(
+            2 * np.pi * varx
+        )
+        log_likelihood_ = -0.5 / len(dist_) * np.sum(dist_) / varx - 0.5 * np.log(
+            2 * np.pi * varx
+        )
+        likelihood = np.exp(np.max([log_likelihood, log_likelihood_]))
         return likelihood
 
     def get_variance(self, **kwargs):
@@ -1113,7 +1168,7 @@ class BaseDynamics:
         show_assignments=None,
         **kwargs,
     ):
-        from ..plotting.scatter import scatter
+        from scvelo.plotting.scatter import scatter
 
         if np.all([x is None for x in [alpha, beta, gamma, scaling, t_]]):
             refit_time = False
@@ -1164,7 +1219,7 @@ class BaseDynamics:
         return_color_scale=False,
         **kwargs,
     ):
-        from ..plotting.utils import update_axes
+        from scvelo.plotting.utils import update_axes
 
         x_var = getattr(self, xkey)
         y_var = getattr(self, ykey)
@@ -1175,14 +1230,13 @@ class BaseDynamics:
         assignment_mode = self.assignment_mode
         self.assignment_mode = None
 
-        fp = lambda x, y: self.get_likelihood(
-            **{xkey: x, ykey: y}, refit_time=refit_time
-        )
-
+        # TODO: Check if list comprehension can be used
         zp = np.zeros((len(x), len(x)))
         for i, xi in enumerate(x):
             for j, yi in enumerate(y):
-                zp[i, j] = fp(xi, yi)
+                zp[i, j] = self.get_likelihood(
+                    **{xkey: xi, ykey: yi}, refit_time=refit_time
+                )
         log_zp = np.log1p(zp.T)
 
         if vmin is None:
@@ -1238,7 +1292,7 @@ class BaseDynamics:
         vmax=None,
         show=True,
     ):
-        from ..plotting.utils import update_axes
+        from scvelo.plotting.utils import update_axes
 
         x_var = getattr(self, xkey)
         x = np.linspace(-sight, sight, num=num) * x_var + x_var
@@ -1246,10 +1300,10 @@ class BaseDynamics:
         assignment_mode = self.assignment_mode
         self.assignment_mode = None
 
-        fp = lambda x: self.get_likelihood(**{xkey: x}, refit_time=True)
+        # TODO: Check if list comprehension can be used
         zp = np.zeros((len(x)))
         for i, xi in enumerate(x):
-            zp[i] = fp(xi)
+            zp[i] = self.get_likelihood(**{xkey: xi}, refit_time=True)
 
         log_zp = np.log1p(zp.T)
         if vmin is None:
@@ -1373,8 +1427,7 @@ class BaseDynamics:
         ax=None,
         **kwargs,
     ):
-        from ..plotting.utils import update_axes
-        from ..plotting.utils import rgb_custom_colormap
+        from scvelo.plotting.utils import rgb_custom_colormap, update_axes
 
         if color_map is None:
             color_map = rgb_custom_colormap(
@@ -1589,6 +1642,7 @@ class BaseDynamics:
         -------
         p-value
         """
+
         if (
             "weights_cluster" in kwargs
             and np.sum(kwargs["weights_cluster"]) < min_cells

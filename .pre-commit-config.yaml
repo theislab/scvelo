@@ -3,3 +3,18 @@ repos:
     rev: 20.8b1
     hooks:
     - id: black
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: 3.8.4
+    hooks:
+    -   id: flake8
+-   repo: https://github.com/pycqa/isort
+    rev: 5.7.0
+    hooks:
+    -   id: isort
+        name: isort (python)
+    -   id: isort
+        name: isort (cython)
+        types: [cython]
+    -   id: isort
+        name: isort (pyi)
+        types: [pyi]

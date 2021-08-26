@@ -1,10 +1,10 @@
-from .. import settings
-from .. import logging as logg
+import numpy as np
+from scipy.sparse import issparse
+
+from scvelo import logging as logg
+from scvelo import settings
 from .utils import strings_to_categoricals, vcorrcoef
 from .velocity_pseudotime import velocity_pseudotime
-
-from scipy.sparse import issparse
-import numpy as np
 
 
 def get_mean_var(X, ignore_zeros=False, perc=None):
@@ -102,10 +102,10 @@ def velocity_clusters(
 
     Returns
     -------
-    Returns or updates `data` with the attributes
     velocity_clusters : `.obs`
         Clusters obtained from applying louvain modularity on velocity expression.
-    """
+    """  # noqa E501
+
     adata = data.copy() if copy else data
 
     logg.info("computing velocity clusters", r=True)
@@ -133,7 +133,7 @@ def velocity_clusters(
     if "fit_likelihood" in adata.var.keys() and min_likelihood is not None:
         tmp_filter &= adata.var["fit_likelihood"] > min_likelihood
 
-    from .. import AnnData
+    from anndata import AnnData
 
     vdata = AnnData(adata.layers[vkey][:, tmp_filter])
     vdata.obs = adata.obs.copy()
@@ -217,7 +217,9 @@ def rank_velocity_genes(
     .. code:: python
 
         scv.tl.rank_velocity_genes(adata, groupby='clusters')
-        scv.pl.scatter(adata, basis=adata.uns['rank_velocity_genes']['names']['Beta'][:3])
+        scv.pl.scatter(
+            adata, basis=adata.uns['rank_velocity_genes']['names']['Beta'][:3]
+        )
         pd.DataFrame(adata.uns['rank_velocity_genes']['names']).head()
 
     .. image:: https://user-images.githubusercontent.com/31883718/69626017-11c47980-1048-11ea-89f4-df3769df5ad5.png
@@ -255,13 +257,13 @@ def rank_velocity_genes(
 
     Returns
     -------
-    Returns or updates `data` with the attributes
     rank_velocity_genes : `.uns`
         Structured array to be indexed by group id storing the gene
         names. Ordered according to scores.
     velocity_score : `.var`
         Storing the score for each gene for each group. Ordered according to scores.
-    """
+    """  # noqa E501
+
     adata = data.copy() if copy else data
 
     if groupby is None or groupby == "velocity_clusters":
@@ -314,9 +316,9 @@ def rank_velocity_genes(
         tmp_filter &= dispersions > min_dispersion
 
     if "fit_likelihood" in adata.var.keys():
-        l = adata.var["fit_likelihood"]
+        fit_likelihood = adata.var["fit_likelihood"]
         min_likelihood = 0.1 if min_likelihood is None else min_likelihood
-        tmp_filter &= l > min_likelihood
+        tmp_filter &= fit_likelihood > min_likelihood
 
     X = adata[:, tmp_filter].layers[vkey]
     groups, groups_masks = select_groups(adata, key=groupby)
@@ -354,7 +356,7 @@ def rank_velocity_genes(
 
     all_names = rankings_gene_names.T.flatten()
     all_scores = rankings_gene_scores.T.flatten()
-    vscore = np.zeros(adata.n_vars, dtype=np.int)
+    vscore = np.zeros(adata.n_vars, dtype=int)
     for i, name in enumerate(adata.var_names):
         if name in all_names:
             vscore[i] = all_scores[np.where(name == all_names)[0][0]]

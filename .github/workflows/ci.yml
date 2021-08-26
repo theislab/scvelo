@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master, develop]
+    branches: [master, develop, 'release/**']
   pull_request:
-    branches: [master, develop]
+    branches: [master, develop, 'release/**']
 
 jobs:
   # Skip CI if commit message contains `[ci skip]` in the subject
@@ -19,7 +19,7 @@ jobs:
       - id: ci-skip-step
         uses: mstachniuk/ci-skip@master
 
-  # Check if code agrees with `black` and if README.rst can be converted to HTML
+  # Check if pre-commit hooks pass and if README.rst can be converted to HTML
   linting:
     needs: init
     if: ${{ needs.init.outputs.skip == 'false' }}
@@ -33,9 +33,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install black>=20.8b1 docutils
-      - name: Check code style
-        run: black --check --diff --color .
+          pip install pre-commit docutils
+      - name: Check pre-commit compatibility
+        run: pre-commit run --all-files --show-diff-on-failure
       - name: Run rst2html.py
         run: rst2html.py --halt=2 README.rst >/dev/null
 
@@ -55,6 +55,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .
-          pip install pytest pytest-cov
+          pip install hypothesis pytest pytest-cov
       - name: Unit tests
         run: python -m pytest --cov=scvelo

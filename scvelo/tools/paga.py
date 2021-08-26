@@ -1,15 +1,16 @@
-# This is adapted from https://github.com/theislab/paga
-from .. import settings
-from .. import logging as logg
-from .utils import strings_to_categoricals
-from .velocity_graph import vals_to_csr
-from .velocity_pseudotime import velocity_pseudotime
-from .rank_velocity_genes import velocity_clusters
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
-from pandas.api.types import is_categorical
+
 from scanpy.tools._paga import PAGA
+
+# This is adapted from https://github.com/theislab/paga
+from scvelo import logging as logg
+from scvelo import settings
+from .rank_velocity_genes import velocity_clusters
+from .utils import strings_to_categoricals
+from .velocity_graph import vals_to_csr
+from .velocity_pseudotime import velocity_pseudotime
 
 
 def get_igraph_from_adjacency(adjacency, directed=None):
@@ -25,7 +26,7 @@ def get_igraph_from_adjacency(adjacency, directed=None):
     g.add_edges(list(zip(sources, targets)))
     try:
         g.es["weight"] = weights
-    except:
+    except Exception:
         pass
     if g.vcount() != adjacency.shape[0]:
         logg.warn(
@@ -55,7 +56,9 @@ def get_sparse_from_igraph(graph, weight_attr=None):
 def set_row_csr(csr, rows, value=0):
     """Set all nonzero elements to the given value. Useful to set to 0 mostly."""
     for row in rows:
-        csr.data[csr.indptr[row] : csr.indptr[row + 1]] = value
+        start = csr.indptr[row]
+        end = csr.indptr[row + 1]
+        csr.data[start:end] = value
     if value == 0:
         csr.eliminate_zeros()
 
@@ -218,26 +221,22 @@ def paga(
     copy : `bool`, optional (default: `False`)
         Copy `adata` before computation and return a copy.
         Otherwise, perform computation inplace and return `None`.
+
     Returns
     -------
-    **connectivities** : (adata.uns['connectivities'])
+    connectivities: `.uns`
         The full adjacency matrix of the abstracted graph, weights correspond to
         confidence in the connectivities of partitions.
-    **connectivities_tree** : (adata.uns['connectivities_tree'])
+    connectivities_tree: `.uns`
         The adjacency matrix of the tree-like subgraph that best explains the topology.
-    **transitions_confidence** : (adata.uns['transitions_confidence'])
+    transitions_confidence: `.uns`
         The adjacency matrix of the abstracted directed graph, weights correspond to
         confidence in the transitions between partitions.
     """
+
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."
-        )
-    try:
-        import igraph
-    except ImportError:
-        raise ImportError(
-            "To run paga, you need to install `pip install python-igraph`"
         )
 
     adata = adata.copy() if copy else adata
@@ -260,7 +259,7 @@ def paga(
 
     priors = [p for p in [use_time_prior, root_key, end_key] if p in adata.obs.keys()]
     logg.info(
-        f"running PAGA",
+        "running PAGA",
         f"using priors: {priors}" if len(priors) > 0 else "",
         r=True,
     )

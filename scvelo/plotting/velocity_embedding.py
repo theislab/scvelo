@@ -1,13 +1,30 @@
-from ..tools.velocity_embedding import velocity_embedding as compute_velocity_embedding
-from ..tools.utils import groups_to_bool
-from .utils import *
-from .scatter import scatter
-from .docs import doc_scatter, doc_params
+import numpy as np
 
+import matplotlib.pyplot as pl
 from matplotlib import rcParams
 from matplotlib.colors import is_color_like
-import matplotlib.pyplot as pl
-import numpy as np
+
+from scvelo.tools.utils import groups_to_bool
+from scvelo.tools.velocity_embedding import (
+    velocity_embedding as compute_velocity_embedding,
+)
+from .docs import doc_params, doc_scatter
+from .scatter import scatter
+from .utils import (
+    default_arrow,
+    default_basis,
+    default_color,
+    default_color_map,
+    default_size,
+    get_ax,
+    get_components,
+    get_figure_params,
+    interpret_colorkey,
+    make_unique_list,
+    make_unique_valid_list,
+    savefig_or_show,
+    velocity_embedding_changed,
+)
 
 
 @doc_params(scatter=doc_scatter)
@@ -70,8 +87,9 @@ def velocity_embedding(
 
     Returns
     -------
-        `matplotlib.Axis` if `show==False`
+    `matplotlib.Axis` if `show==False`
     """
+
     if vkey == "all":
         lkeys = list(adata.layers.keys())
         vkey = [key for key in lkeys if "velocity" in key and "_u" not in key]
@@ -159,8 +177,6 @@ def velocity_embedding(
             return ax
 
     else:
-        if projection == "3d":
-            from mpl_toolkits.mplot3d import Axes3D
         ax, show = get_ax(ax, show, figsize, dpi, projection)
 
         color, layer, vkey, basis = colors[0], layers[0], vkeys[0], bases[0]

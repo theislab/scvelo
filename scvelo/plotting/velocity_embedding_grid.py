@@ -1,14 +1,27 @@
-from ..tools.velocity_embedding import quiver_autoscale, velocity_embedding
-from ..tools.utils import groups_to_bool
-from .utils import *
-from .scatter import scatter
-from .docs import doc_scatter, doc_params
-
-from sklearn.neighbors import NearestNeighbors
-from scipy.stats import norm as normal
-from matplotlib import rcParams
-import matplotlib.pyplot as pl
 import numpy as np
+from scipy.stats import norm as normal
+from sklearn.neighbors import NearestNeighbors
+
+import matplotlib.pyplot as pl
+from matplotlib import rcParams
+
+from scvelo.tools.utils import groups_to_bool
+from scvelo.tools.velocity_embedding import quiver_autoscale, velocity_embedding
+from .docs import doc_params, doc_scatter
+from .scatter import scatter
+from .utils import (
+    default_arrow,
+    default_basis,
+    default_color,
+    default_size,
+    get_ax,
+    get_basis,
+    get_components,
+    get_figure_params,
+    make_unique_list,
+    savefig_or_show,
+    velocity_embedding_changed,
+)
 
 
 def compute_velocity_on_grid(
@@ -165,8 +178,9 @@ def velocity_embedding_grid(
 
     Returns
     -------
-        `matplotlib.Axis` if `show==False`
+    `matplotlib.Axis` if `show==False`
     """
+
     basis = default_basis(adata, **kwargs) if basis is None else get_basis(adata, basis)
     if vkey == "all":
         lkeys = list(adata.layers.keys())

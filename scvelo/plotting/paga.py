@@ -1,20 +1,27 @@
-from .. import settings
-from .. import logging as logg
-
-from ..tools.utils import groups_to_bool
-from ..tools.paga import get_igraph_from_adjacency
-from .utils import default_basis, default_size, default_color, get_components
-from .utils import make_unique_list, make_unique_valid_list, savefig_or_show
-from .scatter import scatter
-from .docs import doc_scatter, doc_params
-
-from matplotlib import rcParams
-from matplotlib.path import get_path_collection_extents
-import matplotlib.pyplot as pl
-import numpy as np
-from inspect import signature
 import collections.abc as cabc
 import random
+from inspect import signature
+
+import numpy as np
+
+import matplotlib.pyplot as pl
+from matplotlib import rcParams
+from matplotlib.path import get_path_collection_extents
+
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.tools.paga import get_igraph_from_adjacency
+from .docs import doc_params, doc_scatter
+from .scatter import scatter
+from .utils import (
+    default_basis,
+    default_color,
+    default_size,
+    get_components,
+    make_unique_list,
+    make_unique_valid_list,
+    savefig_or_show,
+)
 
 
 @doc_params(scatter=doc_scatter)
@@ -280,11 +287,6 @@ def paga(
         size = default_size(adata) / 2 if size is None else size
 
         paga_groups = adata.uns["paga"]["groups"]
-        _adata = (
-            adata[groups_to_bool(adata, groups, groupby=paga_groups)]
-            if groups is not None and paga_groups in adata.obs.keys()
-            else adata
-        )
 
         if isinstance(node_colors, dict):
             paga_kwargs["colorbar"] = False
@@ -376,7 +378,7 @@ def _compute_pos(
     if layout == "fa":
         try:
             import fa2
-        except:
+        except Exception:
             logg.warn(
                 "Package 'fa2' is not installed, falling back to layout 'fr'."
                 "To use the faster and better ForceAtlas2 layout, "
@@ -718,15 +720,18 @@ def _paga_graph(
     """scanpy/_paga_graph with some adjustments for directional graphs.
     To be moved back to scanpy once finalized.
     """
+    import warnings
+    from pathlib import Path
+
     import networkx as nx
     import pandas as pd
     import scipy
-    import warnings
+    from pandas.api.types import is_categorical_dtype
+
     from matplotlib import patheffects
     from matplotlib.colors import is_color_like
-    from pathlib import Path
+
     from scanpy.plotting._utils import add_colors_for_categorical_sample_annotation
-    from pandas.api.types import is_categorical_dtype
 
     node_labels = labels  # rename for clarity
     if (
@@ -825,8 +830,10 @@ def _paga_graph(
         and colors in adata.obs
         and is_categorical_dtype(adata.obs[colors])
     ):
-        from scanpy._utils import compute_association_matrix_of_groups
-        from scanpy._utils import get_associated_colors_of_groups
+        from scanpy._utils import (
+            compute_association_matrix_of_groups,
+            get_associated_colors_of_groups,
+        )
 
         norm = "reference" if normalize_to_color else "prediction"
         _, asso_matrix = compute_association_matrix_of_groups(
@@ -1042,7 +1049,9 @@ def _paga_graph(
                 color_single.append("grey")
                 fracs.append(1 - sum(fracs))
             wedgeprops = dict(linewidth=0, edgecolor="k", antialiased=True)
-            pie_axs[count].pie(fracs, colors=color_single, wedgeprops=wedgeprops)
+            pie_axs[count].pie(
+                fracs, colors=color_single, wedgeprops=wedgeprops, normalize=True
+            )
         if node_labels is not None:
             text_kwds.update(dict(verticalalignment="center", fontweight=fontweight))
             text_kwds.update(dict(horizontalalignment="center", size=fontsize))
@@ -1087,6 +1096,6 @@ def getbb(sc, ax):
             result = get_path_collection_extents(
                 transform.frozen(), [p], [t], [o], transOffset.frozen()
             )
-            bboxes.append(result.inverse_transformed(ax.transData))
+            bboxes.append(result.transformed(ax.transData.inverted()))
 
     return bboxes

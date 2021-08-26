@@ -1,3 +1,5 @@
+typing_extensions
+
 # main requirements for single-cell analysis
 anndata>=0.7.5        # compatible with h5py v3.0 (v0.7.5)
 scanpy>=1.5           # adapt to new anndata attributes (v1.5)
@@ -6,11 +8,12 @@ scanpy>=1.5           # adapt to new anndata attributes (v1.5)
 loompy>=2.0.12        # introduced sparsity support (v2.0.12)
 
 # for computing neighbor graph connectivities
-umap-learn>=0.3.10, <0.5    # removed numba warnings (v0.3.10)
+umap-learn>=0.3.10    # removed numba warnings (v0.3.10)
 
 # standard requirements for data analysis
+numba>=0.41.0
 numpy>=1.17           # extension/speedup in .nan_to_num, .exp (v1.17)
 scipy>=1.4.1          # introduced PCA sparsity support (v1.4)
 pandas>=0.23          # merging/sorting extensions (v0.23)
 scikit-learn>=0.21.2  # bugfix in .utils.sparsefuncs (v0.21.2)
-matplotlib>=3.1.2     # several bugfixes (v3.1.2)
+matplotlib>=3.3.0     # normalize in pie (v3.3.0)

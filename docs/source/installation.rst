@@ -19,12 +19,13 @@ Development Version
 
 To work with the latest development version, install from GitHub_ using::
 
-    pip install git+https://github.com/theislab/scvelo
+    pip install git+https://github.com/theislab/scvelo@develop
 
 or::
 
-    git clone https://github.com/theislab/scvelo
-    pip install -e scvelo
+    git clone https://github.com/theislab/scvelo && cd scvelo
+    git checkout --track origin/develop
+    pip install -e .
 
 ``-e`` is short for ``--editable`` and links the package to the original cloned
 location such that pulled changes are also reflected in the environment.

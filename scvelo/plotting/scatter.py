@@ -1,10 +1,19 @@
-from .docs import doc_scatter, doc_params
-from .utils import *
-
 from inspect import signature
-import matplotlib.pyplot as pl
+
 import numpy as np
 import pandas as pd
+from pandas import unique
+
+import matplotlib.pyplot as pl
+from matplotlib.colors import is_color_like
+
+from anndata import AnnData
+
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.preprocessing.neighbors import get_connectivities
+from .docs import doc_params, doc_scatter
+from .utils import *
 
 
 @doc_params(scatter=doc_scatter)
@@ -34,6 +43,7 @@ def scatter(
     legend_fontsize=None,
     legend_fontweight=None,
     legend_fontoutline=None,
+    legend_align_text=None,
     xlabel=None,
     ylabel=None,
     title=None,
@@ -48,11 +58,13 @@ def scatter(
     add_rug=None,
     add_text=None,
     add_text_pos=None,
+    add_margin=None,
     add_outline=None,
     outline_width=None,
     outline_color=None,
     n_convolve=None,
     smooth=None,
+    normalize_data=None,
     rescale_color=None,
     color_gradients=None,
     dpi=None,
@@ -82,8 +94,9 @@ def scatter(
 
     Returns
     -------
-        If `show==False` a `matplotlib.Axis`
+    If `show==False` a `matplotlib.Axis`
     """
+
     if adata is None and (x is not None and y is not None):
         adata = AnnData(np.stack([x, y]).T)
 
@@ -97,7 +110,7 @@ def scatter(
 
     # keys for figures (fkeys) and multiple plots (mkeys)
     fkeys = ["adata", "show", "save", "groups", "ncols", "nrows", "wspace", "hspace"]
-    fkeys += ["ax", "kwargs"]
+    fkeys += ["add_margin", "ax", "kwargs"]
     mkeys = ["color", "layer", "basis", "components", "x", "y", "xlabel", "ylabel"]
     mkeys += ["title", "color_map", "add_text"]
     scatter_kwargs = {"show": False, "save": False}
@@ -158,7 +171,7 @@ def scatter(
             nrows = int(np.ceil(len(multikey) / ncols))
         else:
             ncols = int(np.ceil(len(multikey) / nrows))
-        if not frameon:
+        if not frameon or frameon == "artist":
             lloc, llines = "legend_loc", "legend_loc_lines"
             if lloc in scatter_kwargs and scatter_kwargs[lloc] is None:
                 scatter_kwargs[lloc] = "none"
@@ -303,16 +316,12 @@ def scatter(
                 basis = default_basis(adata)
             if linewidth is None:
                 linewidth = 1
-            if linecolor is None:
-                linecolor = "k"
             if frameon is None:
                 frameon = True if not is_embedding else settings._frameon
             if isinstance(groups, str):
                 groups = [groups]
             if use_raw is None and basis not in adata.var_names:
                 use_raw = layer is None and adata.raw is not None
-            if projection == "3d":
-                from mpl_toolkits.mplot3d import Axes3D
 
             ax, show = get_ax(ax, show, figsize, dpi, projection)
 
@@ -494,7 +503,7 @@ def scatter(
                     try:
                         c += rescale_color[0] - np.nanmin(c)
                         c *= rescale_color[1] / np.nanmax(c)
-                    except:
+                    except Exception:
                         logg.warn("Could not rescale colors. Pass a tuple, e.g. [0,1].")
 
             # set vmid to 0 if color values obtained from velocity expression
@@ -521,12 +530,12 @@ def scatter(
             if len(x) != len(y):
                 raise ValueError("x or y do not share the same dimension.")
 
+            if normalize_data:
+                x = (x - np.nanmin(x)) / (np.nanmax(x) - np.nanmin(x))
+                y = (y - np.nanmin(x)) / (np.nanmax(y) - np.nanmin(y))
+
             if not isinstance(c, str):
                 c = np.ravel(c) if len(np.ravel(c)) == len(x) else c
-                if len(c) != len(x):
-                    c = "grey"
-                    if not isinstance(color, str) or color != default_color(adata):
-                        logg.warn("Invalid color key. Using grey instead.")
 
             # store original order of color values
             color_array, scatter_array = c, np.stack([x, y]).T
@@ -576,6 +585,13 @@ def scatter(
                             title = groups[0]
                     else:  # if nothing to be highlighted
                         add_linfit, add_polyfit, add_density = None, None, None
+            else:
+                idx = None
+
+            if not isinstance(c, str) and len(c) != len(x):
+                c = "grey"
+                if not isinstance(color, str) or color != default_color(adata):
+                    logg.warn("Invalid color key. Using grey instead.")
 
             # check if higher value points should be plotted on top
             if not isinstance(c, str) and len(c) == len(x):
@@ -583,7 +599,9 @@ def scatter(
                 if sort_order and not is_categorical(adata, color):
                     order = np.argsort(c)
                 elif not sort_order and is_categorical(adata, color):
-                    counts = get_value_counts(adata, color)
+                    counts = get_value_counts(
+                        adata[idx] if idx is not None else adata, color
+                    )
                     np.random.seed(0)
                     nums, p = np.arange(0, len(x)), counts / np.sum(counts)
                     order = np.random.choice(nums, len(x), replace=False, p=p)
@@ -592,8 +610,9 @@ def scatter(
                     if isinstance(kwargs["s"], np.ndarray):  # sort sizes if array-type
                         kwargs["s"] = np.array(kwargs["s"])[order]
 
+            marker = kwargs.pop("marker", ".")
             smp = ax.scatter(
-                x, y, c=c, alpha=alpha, marker=".", zorder=zorder, **kwargs
+                x, y, c=c, alpha=alpha, marker=marker, zorder=zorder, **kwargs
             )
 
             outline_dtypes = (list, tuple, np.ndarray, int, np.int_, str)
@@ -655,6 +674,7 @@ def scatter(
                     legend_fontweight,
                     legend_fontsize,
                     legend_fontoutline,
+                    legend_align_text,
                     groups,
                 )
             if add_density:
@@ -710,7 +730,8 @@ def scatter(
             set_label(xlabel, ylabel, fontsize, basis, ax=ax)
             set_title(title, layer, color, fontsize, ax=ax)
             update_axes(ax, xlim, ylim, fontsize, is_embedding, frameon, figsize)
-
+            if add_margin:
+                set_margin(ax, x, y, add_margin)
             if colorbar is not False:
                 if not isinstance(c, str) and not is_categorical(adata, color):
                     labelsize = fontsize * 0.75 if fontsize is not None else None
@@ -744,6 +765,7 @@ def trimap(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     return scatter(adata, basis="trimap", **kwargs)
 
 
@@ -760,6 +782,7 @@ def umap(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     return scatter(adata, basis="umap", **kwargs)
 
 
@@ -776,6 +799,7 @@ def tsne(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     return scatter(adata, basis="tsne", **kwargs)
 
 
@@ -792,6 +816,7 @@ def diffmap(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     return scatter(adata, basis="diffmap", **kwargs)
 
 
@@ -808,6 +833,7 @@ def phate(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     return scatter(adata, basis="phate", **kwargs)
 
 
@@ -824,6 +850,7 @@ def draw_graph(adata, layout=None, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     if layout is None:
         layout = f"{adata.uns['draw_graph']['params']['layout']}"
     basis = f"draw_graph_{layout}"
@@ -845,4 +872,5 @@ def pca(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
+
     return scatter(adata, basis="pca", **kwargs)

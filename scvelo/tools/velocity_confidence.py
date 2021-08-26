@@ -1,9 +1,10 @@
-from .. import logging as logg
-from ..preprocessing.neighbors import get_neighs
-from .utils import prod_sum_var, norm, get_indices, random_subsample
-from .transition_matrix import transition_matrix
-
 import numpy as np
+
+from scvelo import logging as logg
+from scvelo.core import l2_norm, prod_sum
+from scvelo.preprocessing.neighbors import get_neighs
+from .transition_matrix import transition_matrix
+from .utils import get_indices, random_subsample
 
 
 def velocity_confidence(data, vkey="velocity", copy=False):
@@ -29,12 +30,12 @@ def velocity_confidence(data, vkey="velocity", copy=False):
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     velocity_length: `.obs`
         Length of the velocity vectors for each individual cell
     velocity_confidence: `.obs`
         Confidence for each cell
-    """
+    """  # noqa E501
+
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
         raise ValueError("You need to run `tl.velocity` first.")
@@ -50,7 +51,7 @@ def velocity_confidence(data, vkey="velocity", copy=False):
     V = V[:, tmp_filter]
 
     V -= V.mean(1)[:, None]
-    V_norm = norm(V)
+    V_norm = l2_norm(V, axis=1)
     R = np.zeros(adata.n_obs)
 
     indices = get_indices(dist=get_neighs(adata, "distances"))[0]
@@ -58,7 +59,8 @@ def velocity_confidence(data, vkey="velocity", copy=False):
         Vi_neighs = V[indices[i]]
         Vi_neighs -= Vi_neighs.mean(1)[:, None]
         R[i] = np.mean(
-            np.einsum("ij, j", Vi_neighs, V[i]) / (norm(Vi_neighs) * V_norm[i])[None, :]
+            np.einsum("ij, j", Vi_neighs, V[i])
+            / (l2_norm(Vi_neighs, axis=1) * V_norm[i])[None, :]
         )
 
     adata.obs[f"{vkey}_length"] = V_norm.round(2)
@@ -89,10 +91,10 @@ def velocity_confidence_transition(data, vkey="velocity", scale=10, copy=False):
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     velocity_confidence_transition: `.obs`
         Confidence of transition for each cell
     """
+
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
         raise ValueError("You need to run `tl.velocity` first.")
@@ -114,10 +116,10 @@ def velocity_confidence_transition(data, vkey="velocity", scale=10, copy=False):
     dX -= dX.mean(1)[:, None]
     V -= V.mean(1)[:, None]
 
-    norms = norm(dX) * norm(V)
+    norms = l2_norm(dX, axis=1) * l2_norm(V, axis=1)
     norms += norms == 0
 
-    adata.obs[f"{vkey}_confidence_transition"] = prod_sum_var(dX, V) / norms
+    adata.obs[f"{vkey}_confidence_transition"] = prod_sum(dX, V, axis=1) / norms
 
     logg.hint(f"added '{vkey}_confidence_transition' (adata.obs)")
 
@@ -130,8 +132,8 @@ def score_robustness(
     adata = data.copy() if copy else data
 
     if adata_subset is None:
-        from ..preprocessing.moments import moments
-        from ..preprocessing.neighbors import neighbors
+        from scvelo.preprocessing.moments import moments
+        from scvelo.preprocessing.neighbors import neighbors
         from .velocity import velocity
 
         logg.switch_verbosity("off")
@@ -147,8 +149,10 @@ def score_robustness(
     V = adata[subset].layers[vkey]
     V_subset = adata_subset.layers[vkey]
 
-    score = np.nan * (subset == False)
-    score[subset] = prod_sum_var(V, V_subset) / (norm(V) * norm(V_subset))
+    score = np.nan * (subset is False)
+    score[subset] = prod_sum(V, V_subset, axis=1) / (
+        l2_norm(V, axis=1) * l2_norm(V_subset, axis=1)
+    )
     adata.obs[f"{vkey}_score_robustness"] = score
 
     return adata_subset if copy else None

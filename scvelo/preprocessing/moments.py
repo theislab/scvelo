@@ -1,10 +1,10 @@
-from .. import settings
-from .. import logging as logg
-from .utils import not_yet_normalized, normalize_per_cell
-from .neighbors import neighbors, get_connectivities, get_n_neighs, verify_neighbors
-
-from scipy.sparse import csr_matrix, issparse
 import numpy as np
+from scipy.sparse import csr_matrix, issparse
+
+from scvelo import logging as logg
+from scvelo import settings
+from .neighbors import get_connectivities, get_n_neighs, neighbors, verify_neighbors
+from .utils import normalize_per_cell, not_yet_normalized
 
 
 def moments(
@@ -48,12 +48,12 @@ def moments(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     Ms: `.layers`
         dense matrix with first order moments of spliced counts.
     Mu: `.layers`
         dense matrix with first order moments of unspliced counts.
     """
+
     adata = data.copy() if copy else data
 
     layers = [layer for layer in {"spliced", "unspliced"} if layer in adata.layers]
@@ -114,6 +114,7 @@ def second_order_moments(adata, adjusted=False):
     Mss: Second order moments for spliced abundances
     Mus: Second order moments for spliced with unspliced abundances
     """
+
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."
@@ -143,6 +144,7 @@ def second_order_moments_u(adata):
     -------
     Muu: Second order moments for unspliced abundances
     """
+
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."
@@ -186,10 +188,12 @@ def get_moments(
         Whether to compute centered (=variance) or uncentered second order moments.
     mode: `'connectivities'` or `'distances'`  (default: `'connectivities'`)
         Distance metric to use for moment computation.
+
     Returns
     -------
     Mx: first or second order moments
     """
+
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."

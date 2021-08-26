@@ -1,11 +1,12 @@
-from .. import settings
-from .. import logging as logg
-from .utils import norm
-from .transition_matrix import transition_matrix
-
-from scipy.sparse import issparse
-import numpy as np
 import warnings
+
+import numpy as np
+from scipy.sparse import issparse
+
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.core import l2_norm
+from .transition_matrix import transition_matrix
 
 
 def quiver_autoscale(X_emb, V_emb):
@@ -45,13 +46,15 @@ def velocity_embedding(
     """Projects the single cell velocities into any embedding.
 
     Given normalized difference of the embedding positions
-    :math:`\\tilde \\delta_{ij} = \\frac{x_j-x_i}{\\left\\lVert x_j-x_i \\right\\rVert}`.
+    :math:
+    `\\tilde \\delta_{ij} = \\frac{x_j-x_i}{\\left\\lVert x_j-x_i \\right\\rVert}`.
     the projections are obtained as expected displacements with respect to the
     transition matrix :math:`\\tilde \\pi_{ij}` as
 
     .. math::
         \\tilde \\nu_i = E_{\\tilde \\pi_{i\\cdot}} [\\tilde \\delta_{i \\cdot}]
-        = \\sum_{j \\neq i} \left( \\tilde \\pi_{ij} - \\frac1n \\right) \\tilde \\delta_{ij}.
+        = \\sum_{j \\neq i} \\left( \\tilde \\pi_{ij} - \\frac1n \\right) \\tilde \\
+        delta_{ij}.
 
 
     Arguments
@@ -87,10 +90,10 @@ def velocity_embedding(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
-    velocity_basis: `.obsm`
-        coordinates of velocity projection on embedding
+    velocity_umap: `.obsm`
+        coordinates of velocity projection on embedding (e.g., basis='umap')
     """
+
     adata = data.copy() if copy else data
 
     if basis is None:
@@ -107,9 +110,12 @@ def velocity_embedding(
 
     if direct_pca_projection and "pca" in basis:
         logg.warn(
-            "Directly projecting velocities into PCA space is for exploratory analysis on principal components.\n"
-            "         It does not reflect the actual velocity field from high dimensional gene expression space.\n"
-            "         To visualize velocities, consider applying `direct_pca_projection=False`.\n"
+            "Directly projecting velocities into PCA space is for exploratory analysis "
+            "on principal components.\n"
+            "         It does not reflect the actual velocity field from high "
+            "dimensional gene expression space.\n"
+            "         To visualize velocities, consider applying "
+            "`direct_pca_projection=False`.\n"
         )
 
     logg.info("computing velocity embedding", r=True)
@@ -157,7 +163,7 @@ def velocity_embedding(
                 indices = T[i].indices
                 dX = X_emb[indices] - X_emb[i, None]  # shape (n_neighbors, 2)
                 if not retain_scale:
-                    dX /= norm(dX)[:, None]
+                    dX /= l2_norm(dX)[:, None]
                 dX[np.isnan(dX)] = 0  # zero diff in a steady-state
                 probs = TA[i, indices] if densify else T[i].data
                 V_emb[i] = probs.dot(dX) - probs.mean() * dX.sum(0)
@@ -171,7 +177,7 @@ def velocity_embedding(
             delta = T.dot(X[:, vgenes]) - X[:, vgenes]
             if issparse(delta):
                 delta = delta.A
-            cos_proj = (V * delta).sum(1) / norm(delta)
+            cos_proj = (V * delta).sum(1) / l2_norm(delta)
             V_emb *= np.clip(cos_proj[:, None] * 10, 0, 1)
 
     if autoscale:

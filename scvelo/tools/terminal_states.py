@@ -1,13 +1,13 @@
-from .. import settings
-from .. import logging as logg
-from ..preprocessing.moments import get_connectivities
-from ..preprocessing.neighbors import verify_neighbors
-from .velocity_graph import VelocityGraph
-from .transition_matrix import transition_matrix
-from .utils import scale, groups_to_bool, strings_to_categoricals, get_plasticity_score
-
-from scipy.sparse import linalg, csr_matrix, issparse
 import numpy as np
+from scipy.sparse import csr_matrix, issparse, linalg
+
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.preprocessing.moments import get_connectivities
+from scvelo.preprocessing.neighbors import verify_neighbors
+from .transition_matrix import transition_matrix
+from .utils import get_plasticity_score, groups_to_bool, scale, strings_to_categoricals
+from .velocity_graph import VelocityGraph
 
 
 def cell_fate(
@@ -37,12 +37,12 @@ def cell_fate(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     cell_fate: `.obs`
         most likely cell fate for each individual cell
     cell_fate_confidence: `.obs`
         confidence of transitioning to the assigned fate
     """
+
     adata = data.copy() if copy else data
     logg.info("computing cell fates", r=True)
 
@@ -56,8 +56,7 @@ def cell_fate(
     _adata.uns["velocity_graph_neg"] = vgraph.graph_neg
 
     T = transition_matrix(_adata, self_transitions=self_transitions)
-    I = np.eye(_adata.n_obs)
-    fate = np.linalg.inv(I - T)
+    fate = np.linalg.inv(np.eye(_adata.n_obs) - T)
     if issparse(T):
         fate = fate.A
     cell_fates = np.array(_adata.obs[groupby][fate.argmax(1)])
@@ -105,12 +104,12 @@ def cell_origin(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     cell_origin: `.obs`
         most likely cell origin for each individual cell
     cell_origin_confidence: `.obs`
         confidence of coming from assigned origin
     """
+
     adata = data.copy() if copy else data
     logg.info("computing cell fates", r=True)
 
@@ -124,8 +123,7 @@ def cell_origin(
     _adata.uns["velocity_graph_neg"] = vgraph.graph_neg
 
     T = transition_matrix(_adata, self_transitions=self_transitions, backward=True)
-    I = np.eye(_adata.n_obs)
-    fate = np.linalg.inv(I - T)
+    fate = np.linalg.inv(np.eye(_adata.n_obs) - T)
     if issparse(T):
         fate = fate.A
     cell_fates = np.array(_adata.obs[groupby][fate.argmax(1)])
@@ -167,7 +165,7 @@ def eigs(T, k=10, eps=1e-3, perc=None, random_state=None, v0=None):
             eigvecs = np.clip(eigvecs, 0, ubs)
             eigvecs /= eigvecs.max(0)
 
-    except:
+    except Exception:
         eigvals, eigvecs = np.empty(0), np.zeros(shape=(T.shape[0], 0))
 
     return eigvals, eigvecs
@@ -222,7 +220,7 @@ def terminal_states(
     which is given by left eigenvectors corresponding to an eigenvalue of 1, i.e.
 
     .. math::
-        μ^{\\textrm{end}}=μ^{\\textrm{end}} \\pi, \quad
+        μ^{\\textrm{end}}=μ^{\\textrm{end}} \\pi, \\quad
         μ^{\\textrm{root}}=μ^{\\textrm{root}} \\pi^{\\small \\textrm{T}}.
 
     .. code:: python
@@ -263,12 +261,12 @@ def terminal_states(
 
     Returns
     -------
-    Returns or updates `data` with the attributes
     root_cells: `.obs`
         sparse matrix with transition probabilities.
     end_points: `.obs`
         sparse matrix with transition probabilities.
-    """
+    """  # noqa E501
+
     adata = data.copy() if copy else data
     verify_neighbors(adata)
 

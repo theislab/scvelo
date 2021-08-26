@@ -1,13 +1,21 @@
-from .. import settings
-from .. import logging as logg
-from ..preprocessing.neighbors import pca, neighbors, verify_neighbors
-from ..preprocessing.neighbors import get_neighs, get_n_neighs
-from ..preprocessing.moments import get_moments
-from .utils import cosine_correlation, get_indices, get_iterative_indices, norm
-from .velocity import velocity
+import os
 
-from scipy.sparse import coo_matrix, issparse
 import numpy as np
+from scipy.sparse import coo_matrix, issparse
+
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.core import get_n_jobs, l2_norm, parallelize
+from scvelo.preprocessing.moments import get_moments
+from scvelo.preprocessing.neighbors import (
+    get_n_neighs,
+    get_neighs,
+    neighbors,
+    pca,
+    verify_neighbors,
+)
+from .utils import cosine_correlation, get_indices, get_iterative_indices
+from .velocity import velocity
 
 
 def vals_to_csr(vals, rows, cols, shape, split_negative=False):
@@ -83,8 +91,10 @@ class VelocityGraph:
         self.V_raw = np.array(self.V)
 
         self.sqrt_transform = sqrt_transform
-        if self.sqrt_transform is None and f"{vkey}_params" in adata.uns.keys():
-            self.sqrt_transform = adata.uns[f"{vkey}_params"]["mode"] == "stochastic"
+        uns_key = f"{vkey}_params"
+        if self.sqrt_transform is None:
+            if uns_key in adata.uns.keys() and "mode" in adata.uns[uns_key]:
+                self.sqrt_transform = adata.uns[uns_key]["mode"] == "stochastic"
         if self.sqrt_transform:
             self.V = np.sqrt(np.abs(self.V)) * np.sign(self.V)
         self.V -= np.nanmean(self.V, axis=1)[:, None]
@@ -125,7 +135,7 @@ class VelocityGraph:
                     mode="connectivity"
                 ).indices.reshape((-1, n_neighbors + 1))
             else:
-                from .. import Neighbors
+                from scvelo import Neighbors
 
                 neighs = Neighbors(adata)
                 neighs.compute_neighbors(
@@ -156,46 +166,20 @@ class VelocityGraph:
         self.report = report
         self.adata = adata
 
-    def compute_cosines(self):
-        vals, rows, cols, uncertainties, n_obs = [], [], [], [], self.X.shape[0]
-        progress = logg.ProgressReporter(n_obs)
+    def compute_cosines(self, n_jobs=None, backend="loky"):
+        n_jobs = get_n_jobs(n_jobs=n_jobs)
 
-        if self.compute_uncertainties:
-            m = get_moments(self.adata, np.sign(self.V_raw), second_order=True)
+        n_obs = self.X.shape[0]
 
-        for i in range(n_obs):
-            if self.V[i].max() != 0 or self.V[i].min() != 0:
-                neighs_idx = get_iterative_indices(
-                    self.indices, i, self.n_recurse_neighbors, self.max_neighs
-                )
-
-                if self.t0 is not None:
-                    t0, t1 = self.t0[i], self.t1[i]
-                    if t0 >= 0 and t1 > 0:
-                        t1_idx = np.where(self.t0 == t1)[0]
-                        if len(t1_idx) > len(neighs_idx):
-                            t1_idx = np.random.choice(
-                                t1_idx, len(neighs_idx), replace=False
-                            )
-                        if len(t1_idx) > 0:
-                            neighs_idx = np.unique(np.concatenate([neighs_idx, t1_idx]))
-
-                dX = self.X[neighs_idx] - self.X[i, None]  # 60% of runtime
-                if self.sqrt_transform:
-                    dX = np.sqrt(np.abs(dX)) * np.sign(dX)
-                val = cosine_correlation(dX, self.V[i])  # 40% of runtime
-
-                if self.compute_uncertainties:
-                    dX /= norm(dX)[:, None]
-                    uncertainties.extend(np.nansum(dX ** 2 * m[i][None, :], 1))
-
-                vals.extend(val)
-                rows.extend(np.ones(len(neighs_idx)) * i)
-                cols.extend(neighs_idx)
-                if self.report:
-                    progress.update()
-        if self.report:
-            progress.finish()
+        # TODO: Use batches and vectorize calculation of dX in self._calculate_cosines
+        res = parallelize(
+            self._compute_cosines,
+            range(self.X.shape[0]),
+            n_jobs=n_jobs,
+            unit="cells",
+            backend=backend,
+        )()
+        uncertainties, vals, rows, cols = map(_flatten, zip(*res))
 
         vals = np.hstack(vals)
         vals[np.isnan(vals)] = 0
@@ -214,6 +198,55 @@ class VelocityGraph:
         confidence = self.graph.max(1).A.flatten()
         self.self_prob = np.clip(np.percentile(confidence, 98) - confidence, 0, 1)
 
+    def _compute_cosines(self, obs_idx, queue):
+        vals, rows, cols, uncertainties = [], [], [], []
+        if self.compute_uncertainties:
+            moments = get_moments(self.adata, np.sign(self.V_raw), second_order=True)
+
+        for obs_id in obs_idx:
+            if self.V[obs_id].max() != 0 or self.V[obs_id].min() != 0:
+                neighs_idx = get_iterative_indices(
+                    self.indices, obs_id, self.n_recurse_neighbors, self.max_neighs
+                )
+
+                if self.t0 is not None:
+                    t0, t1 = self.t0[obs_id], self.t1[obs_id]
+                    if t0 >= 0 and t1 > 0:
+                        t1_idx = np.where(self.t0 == t1)[0]
+                        if len(t1_idx) > len(neighs_idx):
+                            t1_idx = np.random.choice(
+                                t1_idx, len(neighs_idx), replace=False
+                            )
+                        if len(t1_idx) > 0:
+                            neighs_idx = np.unique(np.concatenate([neighs_idx, t1_idx]))
+
+                dX = self.X[neighs_idx] - self.X[obs_id, None]  # 60% of runtime
+                if self.sqrt_transform:
+                    dX = np.sqrt(np.abs(dX)) * np.sign(dX)
+                val = cosine_correlation(dX, self.V[obs_id])  # 40% of runtime
+
+                if self.compute_uncertainties:
+                    dX /= l2_norm(dX)[:, None]
+                    uncertainties.extend(
+                        np.nansum(dX ** 2 * moments[obs_id][None, :], 1)
+                    )
+
+                vals.extend(val)
+                rows.extend(np.ones(len(neighs_idx)) * obs_id)
+                cols.extend(neighs_idx)
+
+            if queue is not None:
+                queue.put(1)
+
+        if queue is not None:
+            queue.put(None)
+
+        return uncertainties, vals, rows, cols
+
+
+def _flatten(iterable):
+    return [i for it in iterable for i in it]
+
 
 def velocity_graph(
     data,
@@ -231,6 +264,8 @@ def velocity_graph(
     approx=None,
     mode_neighbors="distances",
     copy=False,
+    n_jobs=None,
+    backend="loky",
 ):
     """Computes velocity graph based on cosine similarities.
 
@@ -241,7 +276,8 @@ def velocity_graph(
 
     .. math::
         \\pi_{ij} = \\cos\\angle(\\delta_{ij}, \\nu_i)
-        = \\frac{\\delta_{ij}^T \\nu_i}{\\left\\lVert\\delta_{ij}\\right\\rVert \\left\\lVert \\nu_i \\right\\rVert}.
+        = \\frac{\\delta_{ij}^T \\nu_i}{\\left\\lVert\\delta_{ij}\\right\\rVert
+        \\left\\lVert \\nu_i \\right\\rVert}.
 
     Arguments
     ---------
@@ -277,13 +313,18 @@ def velocity_graph(
         'connectivities'. The latter yields a symmetric graph.
     copy: `bool` (default: `False`)
         Return a copy instead of writing to adata.
+    n_jobs: `int` or `None` (default: `None`)
+        Number of parallel jobs.
+    backend: `str` (default: "loky")
+        Backend used for multiprocessing. See :class:`joblib.Parallel` for valid
+        options.
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     velocity_graph: `.uns`
-        sparse matrix with transition probabilities
+        sparse matrix with correlations of cell state transitions with velocities
     """
+
     adata = data.copy() if copy else data
     verify_neighbors(adata)
     if vkey not in adata.layers.keys():
@@ -315,8 +356,11 @@ def velocity_graph(
             f"        on full expression space by not specifying basis.\n"
         )
 
-    logg.info("computing velocity graph", r=True)
-    vgraph.compute_cosines()
+    n_jobs = get_n_jobs(n_jobs=n_jobs)
+    logg.info(
+        f"computing velocity graph (using {n_jobs}/{os.cpu_count()} cores)", r=True
+    )
+    vgraph.compute_cosines(n_jobs=n_jobs, backend=backend)
 
     adata.uns[f"{vkey}_graph"] = vgraph.graph
     adata.uns[f"{vkey}_graph_neg"] = vgraph.graph_neg

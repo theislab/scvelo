@@ -17,3 +17,17 @@ exclude = '''
   | dist
 )/
 '''
+
+[tool.isort]
+profile = "black"
+use_parentheses = true
+known_num = "networkx,numpy,pandas,scipy,sklearn,statmodels"
+known_plot = "matplotlib,mpl_toolkits,seaborn"
+known_bio = "anndata,scanpy"
+sections = "FUTURE,STDLIB,THIRDPARTY,NUM,PLOT,BIO,FIRSTPARTY,LOCALFOLDER"
+no_lines_before = "LOCALFOLDER"
+balanced_wrapping = true
+length_sort = "0"
+indent = "    "
+float_to_top = true
+order_by_type = false

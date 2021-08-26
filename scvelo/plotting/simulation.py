@@ -1,9 +1,11 @@
-from ..tools.dynamical_model_utils import unspliced, mRNA, vectorize, tau_inv, get_vars
-from .utils import make_dense
-
 import numpy as np
+
 import matplotlib.pyplot as pl
 from matplotlib import rcParams
+
+from scvelo.core import SplicingDynamics
+from scvelo.tools.dynamical_model_utils import get_vars, tau_inv, unspliced, vectorize
+from .utils import make_dense
 
 
 def get_dynamics(adata, key="fit", extrapolate=False, sorted=False, t=None):
@@ -18,8 +20,9 @@ def get_dynamics(adata, key="fit", extrapolate=False, sorted=False, t=None):
         t = adata.obs[f"{key}_t"].values if key == "true" else adata.layers[f"{key}_t"]
 
     tau, alpha, u0, s0 = vectorize(np.sort(t) if sorted else t, t_, alpha, beta, gamma)
-    ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
-
+    ut, st = SplicingDynamics(
+        alpha=alpha, beta=beta, gamma=gamma, initial_state=[u0, s0]
+    ).get_solution(tau)
     return alpha, ut, st
 
 
@@ -51,17 +54,26 @@ def compute_dynamics(
 
     tau, alpha, u0, s0 = vectorize(np.sort(t) if sort else t, t_, alpha, beta, gamma)
 
-    ut, st = mRNA(tau, u0, s0, alpha, beta, gamma)
+    ut, st = SplicingDynamics(
+        alpha=alpha, beta=beta, gamma=gamma, initial_state=[u0, s0]
+    ).get_solution(tau, stacked=False)
     ut, st = ut * scaling + u0_offset, st + s0_offset
     return alpha, ut, st
 
 
 def show_full_dynamics(
-    adata, basis, key="true", use_raw=False, linewidth=1, show_assignments=None, ax=None
+    adata,
+    basis,
+    key="true",
+    use_raw=False,
+    linewidth=1,
+    linecolor=None,
+    show_assignments=None,
+    ax=None,
 ):
     if ax is None:
         ax = pl.gca()
-    color = "grey" if key == "true" else "purple"
+    color = linecolor if linecolor else "grey" if key == "true" else "purple"
     linewidth = 0.5 * linewidth if key == "true" else linewidth
     label = "learned dynamics" if key == "fit" else "true dynamics"
     line = None
@@ -115,7 +127,7 @@ def simulation(
     colors=None,
     **kwargs,
 ):
-    from ..tools.utils import make_dense
+    from scvelo.tools.utils import make_dense
     from .scatter import scatter
 
     if ykey is None:

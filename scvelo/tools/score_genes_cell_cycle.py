@@ -1,8 +1,7 @@
-from .. import logging as logg
-
-import pandas as pd
 import numpy as np
+import pandas as pd
 
+from scvelo import logging as logg
 
 # fmt: off
 s_genes_list = \
@@ -32,10 +31,12 @@ def get_phase_marker_genes(adata):
     adata
         The annotated data matrix.
     phase
+
     Returns
     -------
     List of S and/or G2M phase marker genes.
     """
+
     name, gene_names = adata.var_names[0], adata.var_names
     up, low = name.isupper(), name.islower()
     s_genes_list_ = [
@@ -70,16 +71,17 @@ def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kw
     **kwargs
         Are passed to :func:`~scanpy.tl.score_genes`. `ctrl_size` is not
         possible, as it's set as `min(len(s_genes), len(g2m_genes))`.
+
     Returns
     -------
-    Depending on `copy`, returns or updates `adata` with the following fields.
-    **S_score** : `adata.obs`, dtype `object`
+    S_score: `adata.obs`, dtype `object`
         The score for S phase for each cell.
-    **G2M_score** : `adata.obs`, dtype `object`
+    G2M_score: `adata.obs`, dtype `object`
         The score for G2M phase for each cell.
-    **phase** : `adata.obs`, dtype `object`
+    phase: `adata.obs`, dtype `object`
         The cell cycle phase (`S`, `G2M` or `G1`) for each cell.
     """
+
     logg.info("calculating cell cycle phase")
     from scanpy.tools._score_genes import score_genes
 

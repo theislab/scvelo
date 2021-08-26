@@ -1,15 +1,31 @@
-import sys
-import os
 import inspect
 import logging
-from pathlib import Path
+import os
+import sys
 from datetime import datetime
-from typing import Optional, Union, Mapping
+from pathlib import Path, PurePosixPath
+from typing import Dict, List, Mapping, Optional, Tuple, Union
+from urllib.request import urlretrieve
 
+import sphinx_autodoc_typehints
+from docutils import nodes
+from jinja2.defaults import DEFAULT_FILTERS
+from sphinx import addnodes
 from sphinx.application import Sphinx
+from sphinx.domains.python import PyObject, PyTypedField
+from sphinx.environment import BuildEnvironment
 from sphinx.ext import autosummary
 
+import matplotlib  # noqa
+
+HERE = Path(__file__).parent
+sys.path.insert(0, str(HERE.parent.parent))
+sys.path.insert(0, os.path.abspath("_ext"))
+
+import scvelo  # isort:skip
+
 # remove PyCharm’s old six module
+
 if "six" in sys.modules:
     print(*sys.path, sep="\n")
     for pypath in list(sys.path):
@@ -17,34 +33,45 @@ if "six" in sys.modules:
             sys.path.remove(pypath)
     del sys.modules["six"]
 
-import matplotlib  # noqa
-
 matplotlib.use("agg")
-
-HERE = Path(__file__).parent
-sys.path.insert(0, f"{HERE.parent.parent}")
-sys.path.insert(0, os.path.abspath("_ext"))
-import scvelo
 
 logger = logging.getLogger(__name__)
 
 
-# -- Retrieve notebooks ------------------------------------------------
-
-from urllib.request import urlretrieve
+# -- Basic notebooks and those stored under /vignettes and /perspectives --
 
 notebooks_url = "https://github.com/theislab/scvelo_notebooks/raw/master/"
-notebooks = [
+notebooks = []
+notebook = [
     "VelocityBasics.ipynb",
     "DynamicalModeling.ipynb",
     "DifferentialKinetics.ipynb",
+]
+notebooks.extend(notebook)
+
+notebook = [
     "Pancreas.ipynb",
     "DentateGyrus.ipynb",
+    "NatureBiotechCover.ipynb",
+    "Fig1_concept.ipynb",
+    "Fig2_dentategyrus.ipynb",
+    "Fig3_pancreas.ipynb",
+    "FigS9_runtime.ipynb",
+    "FigSuppl.ipynb",
 ]
+notebooks.extend([f"vignettes/{nb}" for nb in notebook])
+
+notebook = ["Perspectives.ipynb", "Perspectives_parameters.ipynb"]
+notebooks.extend([f"perspectives/{nb}" for nb in notebook])
+
+# -- Retrieve all notebooks --
+
 for nb in notebooks:
+    url = notebooks_url + nb
     try:
-        urlretrieve(notebooks_url + nb, nb)
-    except:
+        urlretrieve(url, nb)
+    except Exception as e:
+        logger.error(f"Unable to retrieve notebook: `{url}`. Reason: `{e}`")
         pass
 
 
@@ -218,7 +245,6 @@ github_url_scvelo = "https://github.com/theislab/scvelo/tree/master"
 github_url_read_loom = "https://github.com/theislab/anndata/tree/master/anndata"
 github_url_read = "https://github.com/theislab/scanpy/tree/master"
 github_url_scanpy = "https://github.com/theislab/scanpy/tree/master/scanpy"
-from pathlib import PurePosixPath
 
 
 def modurl(qualname):
@@ -253,13 +279,10 @@ def api_image(qualname: str) -> Optional[str]:
 
 
 # modify the default filters
-from jinja2.defaults import DEFAULT_FILTERS
 
 DEFAULT_FILTERS.update(modurl=modurl, api_image=api_image)
 
 # -- Override some classnames in autodoc --------------------------------------------
-
-import sphinx_autodoc_typehints
 
 qualname_overrides = {
     "anndata.base.AnnData": "anndata.AnnData",
@@ -291,12 +314,6 @@ sphinx_autodoc_typehints.format_annotation = format_annotation
 
 
 # -- Prettier Param docs --------------------------------------------
-
-from typing import Dict, List, Tuple
-from docutils import nodes
-from sphinx import addnodes
-from sphinx.domains.python import PyTypedField, PyObject
-from sphinx.environment import BuildEnvironment
 
 
 class PrettyTypedField(PyTypedField):

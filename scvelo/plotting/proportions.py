@@ -1,7 +1,9 @@
-from ..preprocessing.utils import sum_var
+import numpy as np
 
 import matplotlib.pyplot as pl
-import numpy as np
+
+from scvelo.core import sum
+from .utils import savefig_or_show
 
 
 def proportions(
@@ -16,6 +18,7 @@ def proportions(
     dpi=100,
     use_raw=True,
     show=True,
+    save=None,
 ):
     """Plot pie chart of spliced/unspliced proprtions.
 
@@ -43,22 +46,26 @@ def proportions(
         Use initial cell sizes before normalization and filtering.
     show: `bool` (default: True)
         Show the plot, do not return axis.
+    save: `bool` or `str`, optional (default: `None`)
+        If `True` or a `str`, save the figure. A string is appended to the default
+        filename. Infer the filetype if ending on {'.pdf', '.png', '.svg'}.
 
     Returns
     -------
     Plots the proportions of abundances as pie chart.
     """
+
     # get counts per cell for each layer
     if layers is None:
         layers = ["spliced", "unspliced", "ambigious"]
     layers_keys = [key for key in layers if key in adata.layers.keys()]
-    counts_layers = [sum_var(adata.layers[key]) for key in layers_keys]
+    counts_layers = [sum(adata.layers[key], axis=1) for key in layers_keys]
 
     if use_raw:
         ikey, obs = "initial_size_", adata.obs
         counts_layers = [
-            obs[ikey + l] if ikey + l in obs.keys() else c
-            for l, c in zip(layers_keys, counts_layers)
+            obs[ikey + layer_key] if ikey + layer_key in obs.keys() else c
+            for layer_key, c in zip(layers_keys, counts_layers)
         ]
     counts_total = np.sum(counts_layers, 0)
     counts_total += counts_total == 0
@@ -71,7 +78,10 @@ def proportions(
     ax = pl.subplot(gspec[0])
     if highlight is None:
         highlight = "none"
-    explode = [0.1 if (l == highlight or l in highlight) else 0 for l in layers_keys]
+    explode = [
+        0.1 if (layer_key == highlight or layer_key in highlight) else 0
+        for layer_key in layers_keys
+    ]
 
     autopct = "%1.0f%%" if add_labels_pie else None
     pie = ax.pie(
@@ -151,7 +161,7 @@ def proportions(
         ax2.set_ylabel(groupby, fontweight="bold", fontsize=fontsize * 1.2)
         ax2.tick_params(axis="both", which="major", labelsize=fontsize)
         ax = [ax, ax2]
-    if show:
-        pl.show()
-    else:
+
+    savefig_or_show("proportions", dpi=dpi, save=save, show=show)
+    if show is False:
         return ax

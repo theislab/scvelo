@@ -153,6 +153,12 @@ Datasets
    datasets.pancreas
    datasets.dentategyrus
    datasets.forebrain
+   datasets.dentategyrus_lamanno
+   datasets.gastrulation
+   datasets.gastrulation_e75
+   datasets.gastrulation_erythroid
+   datasets.bonemarrow
+   datasets.pbmc68k
    datasets.simulation
 
 

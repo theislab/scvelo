@@ -1,28 +1,27 @@
-from .. import settings
-from .. import logging as logg
-from .. import AnnData
-from ..preprocessing.moments import get_connectivities
-from ..tools.utils import strings_to_categoricals
-from . import palettes
-
 import os
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as pl
-from matplotlib.ticker import MaxNLocator
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from matplotlib.colors import is_color_like, ListedColormap, to_rgb, cnames
-from matplotlib.collections import LineCollection
-from matplotlib.gridspec import SubplotSpec
-from matplotlib import patheffects
-import matplotlib.transforms as tx
-from matplotlib import rcParams
-from pandas import unique, Index
-from scipy.sparse import issparse
-from scipy.stats import pearsonr
-from cycler import Cycler, cycler
 from collections import abc
 
+from cycler import Cycler, cycler
+
+import numpy as np
+import pandas as pd
+from pandas import Index
+from scipy import stats
+from scipy.sparse import issparse
+
+import matplotlib.pyplot as pl
+import matplotlib.transforms as tx
+from matplotlib import patheffects, rcParams
+from matplotlib.collections import LineCollection
+from matplotlib.colors import cnames, is_color_like, ListedColormap, to_rgb
+from matplotlib.gridspec import SubplotSpec
+from matplotlib.ticker import MaxNLocator
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.tools.utils import strings_to_categoricals
+from . import palettes
 
 """helper functions"""
 
@@ -48,7 +47,7 @@ def is_view(adata):
 
 
 def is_categorical(data, c=None):
-    from pandas.api.types import is_categorical as cat
+    from pandas.api.types import is_categorical_dtype as cat
 
     if c is None:
         return cat(data)  # if data is categorical/array
@@ -81,7 +80,9 @@ def is_list_of_str(key, max_len=None):
 
 
 def is_list_of_list(lst):
-    return lst is not None and any(isinstance(l, list) for l in lst)
+    return lst is not None and any(
+        isinstance(list_element, list) for list_element in lst
+    )
 
 
 def is_list_of_int(lst):
@@ -112,7 +113,9 @@ def get_ax(ax, show=None, figsize=None, dpi=None, projection=None):
     figsize, _ = get_figure_params(figsize)
     if ax is None:
         projection = "3d" if projection == "3d" else None
-        ax = pl.figure(None, figsize, dpi=dpi).gca(projection=projection)
+        _, ax = pl.subplots(
+            figsize=figsize, dpi=dpi, subplot_kw={"projection": projection}
+        )
     elif isinstance(ax, SubplotSpec):
         geo = ax.get_geometry()
         if show is None:
@@ -347,7 +350,7 @@ def default_color_map(adata, c):
         try:
             if np.min(c) in [-1, 0, False] and np.max(c) in [1, True]:
                 cmap = "viridis_r"
-        except:
+        except Exception:
             cmap = None
     return cmap
 
@@ -461,7 +464,7 @@ def set_artist_frame(ax, length=0.2, figsize=None):
     figsize = rcParams["figure.figsize"] if figsize is None else figsize
     aspect_ratio = figsize[0] / figsize[1]
     ax.xaxis.set_label_coords(length * 0.45, -0.035)
-    ax.yaxis.set_label_coords(-0.0175, length * aspect_ratio * 0.45)
+    ax.yaxis.set_label_coords(-0.025, length * aspect_ratio * 0.45)
     ax.xaxis.label.set_size(ax.xaxis.label.get_size() / 1.2)
     ax.yaxis.label.set_size(ax.yaxis.label.get_size() / 1.2)
 
@@ -539,6 +542,7 @@ def set_legend(
     legend_fontweight,
     legend_fontsize,
     legend_fontoutline,
+    legend_align_text,
     groups,
 ):
     """
@@ -577,10 +581,14 @@ def set_legend(
             text = ax.text(x_pos, y_pos, label, path_effects=pe, **kwargs)
             texts.append(text)
 
-        # todo: adjust text positions to minimize overlaps,
-        #  e.g. using https://github.com/Phlya/adjustText
-        # from adjustText import adjust_text
-        # adjust_text(texts, ax=ax)
+        if legend_align_text:
+            autoalign = "y" if legend_align_text is True else legend_align_text
+            try:
+                from adjustText import adjust_text as adj_text
+
+                adj_text(texts, autoalign=autoalign, text_from_points=False, ax=ax)
+            except ImportError:
+                print("Please `pip install adjustText` for auto-aligning texts")
 
     else:
         for idx, label in enumerate(categories):
@@ -597,6 +605,16 @@ def set_legend(
             ax.legend(loc="center left", bbox_to_anchor=(1, 0.5), **kwargs)
         elif legend_loc != "none":
             ax.legend(loc=legend_loc, **kwargs)
+
+
+def set_margin(ax, x, y, add_margin):
+    add_margin = 0.1 if add_margin is True else add_margin
+    xmin, xmax = np.min(x), np.max(x)
+    ymin, ymax = np.min(y), np.max(y)
+    xmargin = (xmax - xmin) * add_margin
+    ymargin = (ymax - ymin) * add_margin
+    ax.set_xlim(xmin - xmargin, xmax + xmargin)
+    ax.set_ylim(ymin - ymargin, ymax + ymargin)
 
 
 """get color values"""
@@ -640,7 +658,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
     if is_categorical(adata, c):
         c = get_colors(adata, c)
     elif isinstance(c, str):
-        if is_color_like(c) and not c in adata.var_names:
+        if is_color_like(c) and c not in adata.var_names:
             pass
         elif c in adata.obs.keys():  # color by observation key
             c = adata.obs[c]
@@ -649,15 +667,22 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
         ):  # by gene
             if layer in adata.layers.keys():
                 if perc is None and any(
-                    l in layer for l in ["spliced", "unspliced", "Ms", "Mu", "velocity"]
+                    layer_name in layer
+                    for layer_name in ["spliced", "unspliced", "Ms", "Mu", "velocity"]
                 ):
                     perc = [1, 99]  # to ignore outliers in non-logarithmized layers
                 c = adata.obs_vector(c, layer=layer)
             elif layer is not None and np.any(
-                [l in layer or "X" in layer for l in adata.layers.keys()]
+                [
+                    layer_name in layer or "X" in layer
+                    for layer_name in adata.layers.keys()
+                ]
             ):
                 l_array = np.hstack(
-                    [adata.obs_vector(c, layer=l)[:, None] for l in adata.layers.keys()]
+                    [
+                        adata.obs_vector(c, layer=layer)[:, None]
+                        for layer in adata.layers.keys()
+                    ]
                 )
                 l_array = pd.DataFrame(l_array, columns=adata.layers.keys())
                 l_array.insert(0, "X", adata.obs_vector(c))
@@ -712,8 +737,9 @@ def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
         a sequence of colors (in a format that can be understood by matplotlib,
         eg. RGB, RGBS, hex, or a cycler object with key='color'
     """
-    from .palettes import additional_colors
     from matplotlib.colors import to_hex
+
+    from .palettes import additional_colors
 
     color_key = f"{value_to_plot}_colors"
     valid = True
@@ -724,19 +750,19 @@ def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
         palette = palettes.default_26 if length <= 28 else palettes.default_64
     if isinstance(palette, str) and palette in adata.uns:
         palette = (
-            adata.uns[palette].values()
+            [adata.uns[palette][c] for c in categories]
             if isinstance(adata.uns[palette], dict)
             else adata.uns[palette]
         )
-
     if palette is None and color_key in adata.uns:
+        color_keys = adata.uns[color_key]
         # Check if colors already exist in adata.uns and if they are a valid palette
-        _palette = []
-        color_keys = (
-            adata.uns[color_key].values()
-            if isinstance(adata.uns[color_key], dict)
-            else adata.uns[color_key]
-        )
+        if isinstance(color_keys, np.ndarray) and isinstance(color_keys[0], dict):
+            adata.uns[color_key] = adata.uns[color_key][0]
+        # Flatten the dict to a list (mainly for anndata compatibilities)
+        if isinstance(adata.uns[color_key], dict):
+            adata.uns[color_key] = [adata.uns[color_key][c] for c in categories]
+        color_keys = adata.uns[color_key]
         for color in color_keys:
             if not is_color_like(color):
                 # check if valid color translate to a hex color value
@@ -760,6 +786,13 @@ def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
             colors_list = [to_hex(x) for x in cmap(np.linspace(0, 1, length))]
 
         else:
+            # check if palette is an array of length n_obs
+            if isinstance(palette, (list, np.ndarray)) or is_categorical(palette):
+                if len(adata.obs[value_to_plot]) == len(palette):
+                    cats = pd.Categorical(adata.obs[value_to_plot])
+                    colors = pd.Categorical(palette)
+                    if len(cats) == len(colors):
+                        palette = dict(zip(cats, colors))
             # check if palette is as dict and convert it to an ordered list
             if isinstance(palette, dict):
                 palette = [palette[c] for c in categories]
@@ -884,8 +917,9 @@ def rgb_custom_colormap(colors=None, alpha=None, N=256):
 
     Returns
     -------
-        A ListedColormap
+    :class:`~matplotlib.colors.ListedColormap`
     """
+
     if colors is None:
         colors = ["royalblue", "white", "forestgreen"]
     c = []
@@ -906,9 +940,11 @@ def rgb_custom_colormap(colors=None, alpha=None, N=256):
     n = int(N / ints)
 
     for j in range(ints):
+        start = n * j
+        end = n * (j + 1)
         for i in range(3):
-            vals[n * j : n * (j + 1), i] = np.linspace(c[j][i], c[j + 1][i], n)
-        vals[n * j : n * (j + 1), -1] = np.linspace(alpha[j], alpha[j + 1], n)
+            vals[start:end, i] = np.linspace(c[j][i], c[j + 1][i], n)
+        vals[start:end, -1] = np.linspace(alpha[j], alpha[j + 1], n)
     return ListedColormap(vals)
 
 
@@ -925,6 +961,8 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
                     save = save.replace(try_ext, "")
                     break
         # append it
+        if "/" in save:
+            writekey = None
         writekey = (
             f"{writekey}_{save}" if writekey is not None and len(writekey) > 0 else save
         )
@@ -955,15 +993,17 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
                 os.makedirs(settings.figdir)
         if ext is None:
             ext = settings.file_format_figs
-        filename = f"{settings.figdir}{settings.plot_prefix}{writekey}"
+        filepath = f"{settings.figdir}{settings.plot_prefix}{writekey}"
+        if "/" in writekey:
+            filepath = f"{writekey}"
         try:
-            filename += f"{settings.plot_suffix}.{ext}"
+            filename = filepath + f"{settings.plot_suffix}.{ext}"
             pl.savefig(filename, dpi=dpi, bbox_inches="tight")
-        except:  # save as .png if .pdf is not feasible (e.g. specific streamplots)
+        except Exception:
+            # save as .png if .pdf is not feasible (e.g. specific streamplots)
+            filename = filepath + f"{settings.plot_suffix}.png"
+            pl.savefig(filename, dpi=dpi, bbox_inches="tight")
             logg.msg(f"figure cannot be saved as {ext}, using png instead.", v=1)
-            filename = f"{settings.figdir}{settings.plot_prefix}{writekey}"
-            filename += f"{settings.plot_suffix}.png"
-            pl.savefig(filename, dpi=dpi, bbox_inches="tight")
         logg.msg("saving figure to file", filename, v=1)
     if show:
         pl.show()
@@ -1008,14 +1048,14 @@ def plot_linfit(
         if isinstance(add_linfit, str)
         else color
         if isinstance(color, str)
-        else "grey"
+        else "k"
     )
     xnew = np.linspace(np.min(x), np.max(x) * 1.02)
     ax.plot(xnew, offset + xnew * slope, linewidth=linewidth, color=color)
     if add_legend:
         kwargs = dict(ha="left", va="top", fontsize=fontsize)
         bbox = dict(boxstyle="round", facecolor="wheat", alpha=0.2)
-        txt = r"$\rho = $" + f"{np.round(pearsonr(x, y)[0], 2)}"
+        txt = r"$\rho = $" + f"{np.round(stats.pearsonr(x, y)[0], 2)}"
         ax.text(0.05, 0.95, txt, transform=ax.transAxes, bbox=bbox, **kwargs)
 
 
@@ -1053,7 +1093,7 @@ def plot_polyfit(
         if isinstance(add_polyfit, str)
         else color
         if isinstance(color, str)
-        else "grey"
+        else "k"
     )
 
     xnew = np.linspace(np.min(x), np.max(x), num=100)
@@ -1128,16 +1168,25 @@ def plot_velocity_fits(
     if "true_alpha" in adata.var.keys() and (
         vkey is not None and "true_dynamics" in vkey
     ):
-        line, fit = show_full_dynamics(adata, basis, "true", use_raw, linewidth, ax=ax)
+        line, fit = show_full_dynamics(
+            adata,
+            basis,
+            key="true",
+            use_raw=use_raw,
+            linewidth=linewidth,
+            linecolor=linecolor,
+            ax=ax,
+        )
         fits.append(fit)
         lines.append(line)
     if "fit_alpha" in adata.var.keys() and (vkey is None or "dynamics" in vkey):
         line, fit = show_full_dynamics(
             adata,
             basis,
-            "fit",
-            use_raw,
-            linewidth,
+            key="fit",
+            use_raw=use_raw,
+            linewidth=linewidth,
+            linecolor=linecolor,
             show_assignments=show_assignments,
             ax=ax,
         )
@@ -1359,7 +1408,7 @@ def hist(
 
     Returns
     -------
-        If `show==False` a `matplotlib.Axis`
+    If `show==False` a `matplotlib.Axis`
     """
 
     if ax is None:
@@ -1418,11 +1467,11 @@ def hist(
             ax.fill_between(bins, 0, kde_bins, alpha=0.4, color=ci, label=li)
             ylim = np.min(kde_bins) if ylim is None else ylim
         if hist:
-            ci, li = colors[i], labels[i] if labels is not None else None
+            ci, li = colors[i], labels[i] if labels is not None and not kde else None
             kwargs.update({"color": ci, "label": li})
             try:
                 ax.hist(x_vals, bins=bins, alpha=alpha, density=normed, **kwargs)
-            except:
+            except Exception:
                 ax.hist(x_vals, bins=bins, alpha=alpha, **kwargs)
     if xlabel is None:
         xlabel = ""
@@ -1465,20 +1514,19 @@ def hist(
     pdf = [pdf] if isinstance(pdf, str) else pdf
     if pdf is not None:
         fits = []
-        for i, pd in enumerate(pdf):
-            from scipy import stats
-
+        for i, pdf_name in enumerate(pdf):
             xt = ax.get_xticks()
             xmin, xmax = min(xt), max(xt)
             lnspc = np.linspace(xmin, xmax, len(bins))
 
-            if "(" in pd:  # used passed parameters
-                args, pd = eval(pd[pd.rfind("(") :]), pd[: pd.rfind("(")]
+            if "(" in pdf_name:  # used passed parameters
+                start = pdf_name.rfind("(")
+                args, pdf_name = eval(pdf_name[start:]), pdf_name[:start]
             else:  # fit parameters
-                args = eval(f"stats.{pd}.fit(x_vals)")
-            pd_vals = eval(f"stats.{pd}.pdf(lnspc, *args)")
-            logg.info("Fitting", pd, np.round(args, 4), ".")
-            fit = ax.plot(lnspc, pd_vals, label=pd, color=colors[i])
+                args = getattr(stats, pdf_name).fit(x_vals)
+            pd_vals = getattr(stats, pdf_name).pdf(lnspc, *args)
+            logg.info("Fitting", pdf_name, np.round(args, 4), ".")
+            fit = ax.plot(lnspc, pd_vals, label=pdf_name, color=colors[i])
             fits.extend(fit)
         ax.legend(handles=fits, labels=pdf, fontsize=legend_fontsize)
 
@@ -1505,7 +1553,7 @@ def plot(
     dpi=None,
     show=True,
 ):
-    ax = pl.figure(None, figsize, dpi=dpi) if ax is None else ax
+    ax, show = get_ax(ax, show, figsize, dpi)
     arrays = np.array(arrays)
     arrays = (
         arrays if isinstance(arrays, (list, tuple)) or arrays.ndim > 1 else [arrays]
@@ -1517,21 +1565,19 @@ def plot(
     for i, array in enumerate(arrays):
         X = array[np.isfinite(array)]
         X = X / np.max(X) if normalize else X
-        pl.plot(X, color=colors[i], label=labels[i] if labels is not None else None)
+        ax.plot(X, color=colors[i], label=labels[i] if labels is not None else None)
 
-    pl.xlabel(xlabel if xlabel is not None else "")
-    pl.ylabel(ylabel if xlabel is not None else "")
+    ax.set_xlabel(xlabel if xlabel is not None else "")
+    ax.set_ylabel(ylabel if xlabel is not None else "")
     if labels is not None:
-        pl.legend()
+        ax.legend()
     if xscale is not None:
-        pl.xscale(xscale)
+        ax.xscale(xscale)
     if yscale is not None:
-        pl.yscale(yscale)
+        ax.yscale(yscale)
 
     if not show:
         return ax
-    else:
-        pl.show()
 
 
 def fraction_timeseries(
@@ -1627,10 +1673,10 @@ def make_unique_valid_list(adata, keys):
 
 
 def get_temporal_connectivities(adata, tkey, n_convolve=30):
-    from ..tools.velocity_graph import vals_to_csr
-    from ..tools.utils import normalize
+    from scvelo.tools.utils import normalize
+    from scvelo.tools.velocity_graph import vals_to_csr
 
-    # from ..tools.utils import get_indices
+    # from scvelo.tools.utils import get_indices
     # c_idx = get_indices(get_connectivities(adata, recurse_neighbors=True))[0]
     # lspace = np.linspace(0, len(c_idx) - 1, len(c_idx), dtype=int)
     # c_idx = np.hstack([c_idx, lspace[:, None]])

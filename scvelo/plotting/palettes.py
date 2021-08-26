@@ -1,6 +1,9 @@
-"""Color palettes in addition to matplotlib's palettes."""
+from typing import Mapping, Sequence
 
 from matplotlib import cm, colors
+
+"""Color palettes in addition to matplotlib's palettes."""
+
 
 # Colorblindness adjusted vega_10
 # See https://github.com/theislab/scanpy/issues/387
@@ -80,13 +83,11 @@ additional_colors = {
 # fmt: on
 
 
-from typing import Mapping, Sequence
-
-
 def _plot_color_cylce(clists: Mapping[str, Sequence[str]]):
     import numpy as np
+
     import matplotlib.pyplot as plt
-    from matplotlib.colors import ListedColormap, BoundaryNorm
+    from matplotlib.colors import BoundaryNorm, ListedColormap
 
     fig, axes = plt.subplots(nrows=len(clists))  # type: plt.Figure, plt.Axes
     fig.subplots_adjust(top=0.95, bottom=0.01, left=0.3, right=0.99)

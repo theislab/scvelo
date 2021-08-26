@@ -1,11 +1,13 @@
-from .. import settings
-from .. import logging as logg
-from ..preprocessing.moments import moments, second_order_moments, get_connectivities
-from .optimization import leastsq_NxN, leastsq_generalized, maximum_likelihood
-from .utils import R_squared, groups_to_bool, make_dense, strings_to_categoricals
+import warnings
 
 import numpy as np
-import warnings
+
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.core import LinearRegression
+from scvelo.preprocessing.moments import moments, second_order_moments
+from .optimization import leastsq_generalized, maximum_likelihood
+from .utils import groups_to_bool, make_dense, R_squared, strings_to_categoricals
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -57,7 +59,11 @@ class Velocity:
         subset = self._groups_for_fit
         Ms = self._Ms if subset is None else self._Ms[subset]
         Mu = self._Mu if subset is None else self._Mu[subset]
-        self._offset, self._gamma = leastsq_NxN(Ms, Mu, fit_offset, perc)
+
+        lr = LinearRegression(fit_intercept=fit_offset, percentile=perc)
+        lr.fit(Ms, Mu)
+        self._offset = lr.intercept_
+        self._gamma = lr.coef_
 
         if self._constrain_ratio is not None:
             if np.size(self._constrain_ratio) < 2:
@@ -72,7 +78,11 @@ class Velocity:
 
         # velocity genes
         if self._r2_adjusted:
-            _offset, _gamma = leastsq_NxN(Ms, Mu, fit_offset)
+            lr = LinearRegression(fit_intercept=fit_offset)
+            lr.fit(Ms, Mu)
+            _offset = lr.intercept_
+            _gamma = lr.coef_
+
             _residual = self._Mu - _gamma * self._Ms
             if fit_offset:
                 _residual -= _offset
@@ -121,7 +131,10 @@ class Velocity:
         var_ss = 2 * _Mss - _Ms
         cov_us = 2 * _Mus + _Mu
 
-        _offset2, _gamma2 = leastsq_NxN(var_ss, cov_us, fit_offset2)
+        lr = LinearRegression(fit_intercept=fit_offset2)
+        lr.fit(var_ss, cov_us)
+        _offset2 = lr.intercept_
+        _gamma2 = lr.coef_
 
         # initialize covariance matrix
         res_std = _residual.std(0)
@@ -286,14 +299,12 @@ def velocity(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     velocity: `.layers`
         velocity vectors for each individual cell
-    variance_velocity: `.layers`
-        velocity vectors for the cell variances
-    velocity_offset, velocity_beta, velocity_gamma, velocity_r2: `.var`
+    velocity_genes, velocity_beta, velocity_gamma, velocity_r2: `.var`
         parameters
-    """
+    """  # noqa E501
+
     adata = data.copy() if copy else data
     if not use_raw and "Ms" not in adata.layers.keys():
         moments(adata)
@@ -310,7 +321,7 @@ def velocity(
         )
 
     if mode in {"dynamical", "dynamical_residuals"}:
-        from .dynamical_model_utils import get_reads, get_vars, get_divergence
+        from .dynamical_model_utils import get_divergence, get_reads, get_vars
 
         gene_subset = ~np.isnan(adata.var["fit_alpha"].values)
         vdata = adata[:, gene_subset]
@@ -492,6 +503,7 @@ def velocity_genes(
     velocity_genes: `.var`
         genes to be used for further velocity analysis (velocity graph and embedding)
     """
+
     adata = data.copy() if copy else data
     if f"{vkey}_genes" not in adata.var.keys():
         velocity(adata, vkey)
@@ -512,8 +524,8 @@ def velocity_genes(
 
     if np.sum(vgenes) < 2:
         logg.warn(
-            f"You seem to have very low signal in splicing dynamics.\n"
-            f"Consider reducing the thresholds and be cautious with interpretations.\n"
+            "You seem to have very low signal in splicing dynamics.\n"
+            "Consider reducing the thresholds and be cautious with interpretations.\n"
         )
 
     adata.var[f"{vkey}_genes"] = vgenes

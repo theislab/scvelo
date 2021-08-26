@@ -1,13 +1,17 @@
 import warnings
+from collections import Counter
+
 import numpy as np
+import pandas as pd
+from scipy.sparse import coo_matrix, issparse
+
 from anndata import AnnData
 from scanpy import Neighbors
 from scanpy.preprocessing import pca
-from scipy.sparse import issparse, coo_matrix
 
-from .utils import get_initial_size
-from .. import logging as logg
-from .. import settings
+from scvelo import logging as logg
+from scvelo import settings
+from scvelo.core import get_initial_size
 
 
 def neighbors(
@@ -71,16 +75,16 @@ def neighbors(
         Number of threads to be used (for runtime).
     copy
         Return a copy instead of writing to adata.
+
     Returns
     -------
-    Depending on `copy`, updates or returns `adata` with the following:
-    connectivities : sparse matrix (`.uns['neighbors']`, dtype `float32`)
-        Weighted adjacency matrix of the neighborhood graph of data
+    connectivities : `.obsp`
+        Sparse weighted adjacency matrix of the neighborhood graph of data
         points. Weights should be interpreted as connectivities.
-    distances : sparse matrix (`.uns['neighbors']`, dtype `float32`)
-        Instead of decaying weights, this stores distances for each pair of
-        neighbors.
+    distances : `.obsp`
+        Sparse matrix of distances for each pair of neighbors.
     """
+
     adata = adata.copy() if copy else adata
 
     if use_rep is None:
@@ -179,7 +183,7 @@ def neighbors(
         adata.obsp["connectivities"] = neighbors.connectivities
         adata.uns["neighbors"]["connectivities_key"] = "connectivities"
         adata.uns["neighbors"]["distances_key"] = "distances"
-    except:
+    except Exception:
         adata.uns["neighbors"]["distances"] = neighbors.distances
         adata.uns["neighbors"]["connectivities"] = neighbors.connectivities
 
@@ -427,15 +431,15 @@ def compute_connectivities_umap(
 def get_duplicate_cells(data):
     if isinstance(data, AnnData):
         X = data.X
-        l = list(np.sum(np.abs(data.obsm["X_pca"]), 1) + get_initial_size(data))
+        lst = list(np.sum(np.abs(data.obsm["X_pca"]), 1) + get_initial_size(data))
     else:
         X = data
-        l = list(np.sum(X, 1).A1 if issparse(X) else np.sum(X, 1))
+        lst = list(np.sum(X, 1).A1 if issparse(X) else np.sum(X, 1))
 
-    l_set = set(l)
     idx_dup = []
-    if len(l_set) < len(l):
-        idx_dup = np.array([i for i, x in enumerate(l) if l.count(x) > 1])
+    if len(set(lst)) < len(lst):
+        vals = [val for val, count in Counter(lst).items() if count > 1]
+        idx_dup = np.where(pd.Series(lst).isin(vals))[0]
 
         X_new = np.array(X[idx_dup].A if issparse(X) else X[idx_dup])
         sorted_idx = np.lexsort(X_new.T)
@@ -443,7 +447,7 @@ def get_duplicate_cells(data):
 
         row_mask = np.invert(np.append([True], np.any(np.diff(sorted_data, axis=0), 1)))
         idx = sorted_idx[row_mask]
-        idx_dup = idx_dup[idx]
+        idx_dup = np.array(idx_dup)[idx]
     return idx_dup
 
 
@@ -456,4 +460,5 @@ def remove_duplicate_cells(adata):
         mask[idx_duplicates] = 0
         logg.info("Removed", len(idx_duplicates), "duplicate cells.")
         adata._inplace_subset_obs(mask)
-        neighbors(adata)
+        if "neighbors" in adata.uns.keys():
+            neighbors(adata)

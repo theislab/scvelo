@@ -1,8 +1,11 @@
-from .utils import sum_obs, prod_sum_obs, make_dense
+import warnings
+
+import numpy as np
 from scipy.optimize import minimize
 from scipy.sparse import csr_matrix, issparse
-import numpy as np
-import warnings
+
+from scvelo.core import prod_sum, sum
+from .utils import make_dense
 
 
 def get_weight(x, y=None, perc=95):
@@ -22,6 +25,14 @@ def get_weight(x, y=None, perc=95):
 
 def leastsq_NxN(x, y, fit_offset=False, perc=None, constraint_positive_offset=True):
     """Solves least squares X*b=Y for b."""
+
+    warnings.warn(
+        "`leastsq_NxN` is deprecated since scVelo v0.2.4 and will be removed in a "
+        "future version. Please use `LinearRegression` from `scvelo/core/` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if perc is not None:
         if not fit_offset and isinstance(perc, (list, tuple)):
             perc = perc[1]
@@ -32,13 +43,13 @@ def leastsq_NxN(x, y, fit_offset=False, perc=None, constraint_positive_offset=Tr
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        xx_ = prod_sum_obs(x, x)
-        xy_ = prod_sum_obs(x, y)
+        xx_ = prod_sum(x, x, axis=0)
+        xy_ = prod_sum(x, y, axis=0)
 
         if fit_offset:
-            n_obs = x.shape[0] if weights is None else sum_obs(weights)
-            x_ = sum_obs(x) / n_obs
-            y_ = sum_obs(y) / n_obs
+            n_obs = x.shape[0] if weights is None else sum(weights, axis=0)
+            x_ = sum(x, axis=0) / n_obs
+            y_ = sum(y, axis=0) / n_obs
             gamma = (xy_ / n_obs - x_ * y_) / (xx_ / n_obs - x_ ** 2)
             offset = y_ - gamma * x_
 

@@ -1,3 +1,11 @@
+import builtins
+import warnings
+
+from cycler import cycler
+from packaging.version import parse
+
+from matplotlib import cbook, cm, colors, rcParams
+
 """Settings
 """
 
@@ -79,10 +87,6 @@ _rcParams_style = None
 # --------------------------------------------------------------------------------
 # Functions
 # --------------------------------------------------------------------------------
-
-from matplotlib import rcParams, cm, colors, cbook
-from cycler import cycler
-import warnings
 
 warnings.filterwarnings("ignore", category=cbook.mplDeprecation)
 
@@ -292,15 +296,8 @@ def set_figure_params(
         Only concerns the notebook/IPython environment; see
         `IPython.core.display.set_matplotlib_formats` for more details.
     """
-    try:
-        import IPython
-
-        if isinstance(ipython_format, str):
-            ipython_format = [ipython_format]
-        IPython.display.set_matplotlib_formats(*ipython_format)
-    except:
-        pass
-
+    if ipython_format is not None:
+        _set_ipython(ipython_format)
     global _rcParams_style
     _rcParams_style = style
     global _vector_friendly
@@ -332,6 +329,29 @@ def set_rcParams_defaults():
     rcParams.update(rcParamsDefault)
 
 
+def _set_ipython(ipython_format="png2x"):
+    if getattr(builtins, "__IPYTHON__", None):
+        try:
+            import IPython
+
+            if isinstance(ipython_format, str):
+                ipython_format = [ipython_format]
+            if parse(IPython.__version__) < parse("7.23"):
+                IPython.display.set_matplotlib_formats(*ipython_format)
+            else:
+                from matplotlib_inline.backend_inline import set_matplotlib_formats
+
+                set_matplotlib_formats(*ipython_format)
+        except ImportError:
+            pass
+
+
+def _set_start_time():
+    from time import time
+
+    return time()
+
+
 # ------------------------------------------------------------------------------
 # Private global variables & functions
 # ------------------------------------------------------------------------------
@@ -342,13 +362,6 @@ _vector_friendly = False
 
 _low_resolution_warning = True
 """Print warning when saving a figure with low resolution."""
-
-
-def _set_start_time():
-    from time import time
-
-    return time()
-
 
 _start = _set_start_time()
 """Time when the settings module is first imported."""

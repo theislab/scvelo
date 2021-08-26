@@ -1,20 +1,20 @@
-from .. import settings
-from ..preprocessing.moments import second_order_moments
-from ..tools.rank_velocity_genes import rank_velocity_genes
+import numpy as np
+import pandas as pd
+from scipy.sparse import issparse
+
+import matplotlib.pyplot as pl
+from matplotlib import rcParams
+
+from scvelo.preprocessing.moments import second_order_moments
+from scvelo.tools.rank_velocity_genes import rank_velocity_genes
 from .scatter import scatter
 from .utils import (
-    savefig_or_show,
     default_basis,
     default_size,
     get_basis,
     get_figure_params,
+    savefig_or_show,
 )
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as pl
-from matplotlib import rcParams
-from scipy.sparse import issparse
 
 
 def velocity(
@@ -193,8 +193,8 @@ def velocity(
         )
 
         # velocity and expression plots
-        for l, layer in enumerate(layers):
-            ax = pl.subplot(gs[v * nplts + l + 1])
+        for layer_id, layer in enumerate(layers):
+            ax = pl.subplot(gs[v * nplts + layer_id + 1])
             title = "expression" if layer in ["X", skey] else layer
             # _kwargs = {} if title == 'expression' else kwargs
             cmap = color_map

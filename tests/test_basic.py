@@ -1,9 +1,10 @@
-import scvelo as scv
 import numpy as np
+
+import scvelo as scv
 
 
 def test_einsum():
-    from scvelo.tools.utils import prod_sum_obs, prod_sum_var, norm
+    from scvelo.tools.utils import norm, prod_sum_obs, prod_sum_var
 
     Ms, Mu = np.random.rand(5, 4), np.random.rand(5, 4)
     assert np.allclose(prod_sum_obs(Ms, Mu), np.sum(Ms * Mu, 0))
@@ -58,7 +59,7 @@ def test_pipeline():
 
     Ms, Mu = adata.layers["Ms"][0], adata.layers["Mu"][0]
     Vs, Vd = adata.layers["velocity"][0], adata.layers["dynamical_velocity"][0]
-    Vpca, Vgraph = adata.obsm["velocity_pca"][0], adata.uns["velocity_graph"].data[:5]
+    Vgraph = adata.uns["velocity_graph"].data[:5]
     pars = adata[:, 0].var[["fit_alpha", "fit_gamma"]].values
 
     assert np.allclose(Ms, [0.8269, 1.0772, 0.9396, 1.0846, 1.0398], rtol=1e-2)
