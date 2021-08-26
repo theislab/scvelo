@@ -43,7 +43,7 @@ Latest news
 
 References
 ^^^^^^^^^^
-Manno *et al.* (2018), RNA velocity of single cells, `Nature <https://doi.org/10.1038/s41586-018-0414-6>`_.
+La Manno *et al.* (2018), RNA velocity of single cells, `Nature <https://doi.org/10.1038/s41586-018-0414-6>`_.
 
 Bergen *et al.* (2020), Generalizing RNA velocity to transient cell states through dynamical modeling,
 `Nature Biotech <https://doi.org/10.1038/s41587-020-0591-3>`_.
