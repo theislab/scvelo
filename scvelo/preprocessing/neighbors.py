@@ -78,13 +78,11 @@ def neighbors(
 
     Returns
     -------
-    Depending on `copy`, updates or returns `adata` with the following:
-    connectivities : sparse matrix (`.uns['neighbors']`, dtype `float32`)
-        Weighted adjacency matrix of the neighborhood graph of data
+    connectivities : `.obsp`
+        Sparse weighted adjacency matrix of the neighborhood graph of data
         points. Weights should be interpreted as connectivities.
-    distances : sparse matrix (`.uns['neighbors']`, dtype `float32`)
-        Instead of decaying weights, this stores distances for each pair of
-        neighbors.
+    distances : `.obsp`
+        Sparse matrix of distances for each pair of neighbors.
     """
 
     adata = adata.copy() if copy else adata

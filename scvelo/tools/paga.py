@@ -224,12 +224,12 @@ def paga(
 
     Returns
     -------
-    **connectivities** : (adata.uns['connectivities'])
+    connectivities: `.uns`
         The full adjacency matrix of the abstracted graph, weights correspond to
         confidence in the connectivities of partitions.
-    **connectivities_tree** : (adata.uns['connectivities_tree'])
+    connectivities_tree: `.uns`
         The adjacency matrix of the tree-like subgraph that best explains the topology.
-    **transitions_confidence** : (adata.uns['transitions_confidence'])
+    transitions_confidence: `.uns`
         The adjacency matrix of the abstracted directed graph, weights correspond to
         confidence in the transitions between partitions.
     """

@@ -316,8 +316,6 @@ def scatter(
                 basis = default_basis(adata)
             if linewidth is None:
                 linewidth = 1
-            if linecolor is None:
-                linecolor = "k"
             if frameon is None:
                 frameon = True if not is_embedding else settings._frameon
             if isinstance(groups, str):
@@ -612,8 +610,9 @@ def scatter(
                     if isinstance(kwargs["s"], np.ndarray):  # sort sizes if array-type
                         kwargs["s"] = np.array(kwargs["s"])[order]
 
+            marker = kwargs.pop("marker", ".")
             smp = ax.scatter(
-                x, y, c=c, alpha=alpha, marker=".", zorder=zorder, **kwargs
+                x, y, c=c, alpha=alpha, marker=marker, zorder=zorder, **kwargs
             )
 
             outline_dtypes = (list, tuple, np.ndarray, int, np.int_, str)

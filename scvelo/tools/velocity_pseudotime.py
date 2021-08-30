@@ -24,7 +24,6 @@ def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     principal_curve: `.uns`
         dictionary containing `projections`, `ixsort` and `arclength`
     """
@@ -187,7 +186,6 @@ def velocity_pseudotime(
 
     Returns
     -------
-    Updates `adata` with the attributes
     velocity_pseudotime: `.obs`
         Velocity pseudotime obtained from velocity graph.
     """  # noqa E501

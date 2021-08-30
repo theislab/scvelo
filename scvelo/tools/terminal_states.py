@@ -37,7 +37,6 @@ def cell_fate(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     cell_fate: `.obs`
         most likely cell fate for each individual cell
     cell_fate_confidence: `.obs`
@@ -105,7 +104,6 @@ def cell_origin(
 
     Returns
     -------
-    Returns or updates `adata` with the attributes
     cell_origin: `.obs`
         most likely cell origin for each individual cell
     cell_origin_confidence: `.obs`
@@ -263,7 +261,6 @@ def terminal_states(
 
     Returns
     -------
-    Returns or updates `data` with the attributes
     root_cells: `.obs`
         sparse matrix with transition probabilities.
     end_points: `.obs`

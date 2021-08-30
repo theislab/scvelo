@@ -6,8 +6,8 @@ from cycler import Cycler, cycler
 import numpy as np
 import pandas as pd
 from pandas import Index
+from scipy import stats
 from scipy.sparse import issparse
-from scipy.stats import pearsonr
 
 import matplotlib.pyplot as pl
 import matplotlib.transforms as tx
@@ -1048,14 +1048,14 @@ def plot_linfit(
         if isinstance(add_linfit, str)
         else color
         if isinstance(color, str)
-        else "grey"
+        else "k"
     )
     xnew = np.linspace(np.min(x), np.max(x) * 1.02)
     ax.plot(xnew, offset + xnew * slope, linewidth=linewidth, color=color)
     if add_legend:
         kwargs = dict(ha="left", va="top", fontsize=fontsize)
         bbox = dict(boxstyle="round", facecolor="wheat", alpha=0.2)
-        txt = r"$\rho = $" + f"{np.round(pearsonr(x, y)[0], 2)}"
+        txt = r"$\rho = $" + f"{np.round(stats.pearsonr(x, y)[0], 2)}"
         ax.text(0.05, 0.95, txt, transform=ax.transAxes, bbox=bbox, **kwargs)
 
 
@@ -1093,7 +1093,7 @@ def plot_polyfit(
         if isinstance(add_polyfit, str)
         else color
         if isinstance(color, str)
-        else "grey"
+        else "k"
     )
 
     xnew = np.linspace(np.min(x), np.max(x), num=100)
@@ -1521,10 +1521,10 @@ def hist(
 
             if "(" in pdf_name:  # used passed parameters
                 start = pdf_name.rfind("(")
-                args, pdf_name = eval(pd[start:]), pdf_name[: pdf_name.rfind("(")]
+                args, pdf_name = eval(pdf_name[start:]), pdf_name[:start]
             else:  # fit parameters
-                args = eval(f"stats.{pdf_name}.fit(x_vals)")
-            pd_vals = eval(f"stats.{pdf_name}.pdf(lnspc, *args)")
+                args = getattr(stats, pdf_name).fit(x_vals)
+            pd_vals = getattr(stats, pdf_name).pdf(lnspc, *args)
             logg.info("Fitting", pdf_name, np.round(args, 4), ".")
             fit = ax.plot(lnspc, pd_vals, label=pdf_name, color=colors[i])
             fits.extend(fit)
