@@ -16,6 +16,7 @@ from scvelo.preprocessing.utils import (
     csr_vcorrcoef,
     get_mean_var,
     log1p,
+    materialize_as_ndarray,
 )
 from tests.core import get_adata
 
@@ -457,3 +458,31 @@ class TestLog1p:
             assert returned_data is None
 
         np.testing.assert_almost_equal(data, np.log1p(original_array))
+
+
+class TestMaterializeAsNdarray:
+    @pytest.mark.parametrize(
+        "key", (np.array([0, 1, 2]), np.eye(2), np.ones(shape=(2, 3, 4)))
+    )
+    def test_array(self, key):
+        arr = materialize_as_ndarray(key)
+
+        assert isinstance(arr, np.ndarray)
+
+    @pytest.mark.parametrize(
+        "key",
+        (
+            [np.array([0, 1, 2])],
+            [np.eye(2), np.ones(shape=(2, 3, 4))],
+            (np.eye(2), np.ones(shape=(2, 3, 4))),
+            [0, 1, 2],
+            (0, 1, 2),
+            [["a", "b"], [1.3, 2.7], np.zeros(shape=(2, 3))],
+            (["a", "b"], [1.3, 2.7], np.zeros(shape=(2, 3))),
+            (("a", "b"), [1.3, 2.7], np.zeros(shape=(2, 3))),
+        ),
+    )
+    def test_list(self, key):
+        arr = materialize_as_ndarray(key)
+
+        assert all(isinstance(entry, np.ndarray) for entry in arr)
