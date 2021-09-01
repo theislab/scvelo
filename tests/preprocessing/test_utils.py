@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Union
 
 import pytest
 from hypothesis import given
@@ -17,6 +17,7 @@ from scvelo.preprocessing.utils import (
     get_mean_var,
     log1p,
     materialize_as_ndarray,
+    not_yet_normalized,
 )
 from tests.core import get_adata
 
@@ -486,3 +487,23 @@ class TestMaterializeAsNdarray:
         arr = materialize_as_ndarray(key)
 
         assert all(isinstance(entry, np.ndarray) for entry in arr)
+
+
+class TestNotYetNormalized:
+    @pytest.mark.parametrize(
+        "X, normalized",
+        (
+            (
+                (np.eye(3), True),
+                (1.001 * np.eye(3), True),
+                (csr_matrix(np.eye(3)), True),
+                (1.01 * np.eye(3), False),
+                (0.1 * np.eye(3), False),
+                (csr_matrix(0.1 * np.eye(3)), False),
+            )
+        ),
+    )
+    def test_not_yet_normalized(self, X: Union[np.ndarray, spmatrix], normalized: bool):
+        normalize_check = not_yet_normalized(X)
+
+        assert normalized == normalize_check
