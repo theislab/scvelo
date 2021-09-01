@@ -15,6 +15,7 @@ from scvelo.preprocessing.utils import (
     check_if_valid_dtype,
     csr_vcorrcoef,
     get_mean_var,
+    log1p,
 )
 from tests.core import get_adata
 
@@ -401,3 +402,58 @@ class TestFilter:
         )
 
         np.testing.assert_equal(filter_mask, filtered_out_low & filtered_out_upper)
+
+
+class TestLog1p:
+    @given(adata=get_adata(max_obs=5, max_vars=5), copy=st.booleans())
+    def test_dense_adata(self, adata: AnnData, copy: bool):
+        original_X = adata.X.copy()
+        returned_adata = log1p(data=adata, copy=copy)
+
+        if copy:
+            assert isinstance(returned_adata, AnnData)
+            adata = returned_adata
+        else:
+            assert returned_adata is None
+
+        np.testing.assert_almost_equal(adata.X, np.log1p(original_X))
+
+    @given(
+        adata=get_adata(max_obs=5, max_vars=5, sparse_entries=True), copy=st.booleans()
+    )
+    def test_sparse_adata(self, adata: AnnData, copy: bool):
+        original_X = adata.X.copy()
+        returned_adata = log1p(data=adata, copy=copy)
+
+        if copy:
+            assert isinstance(returned_adata, AnnData)
+            adata = returned_adata
+        else:
+            assert returned_adata is None
+
+        np.testing.assert_almost_equal(adata.X.data, np.log1p(original_X.data))
+
+    @given(
+        data=arrays(
+            float,
+            shape=st.tuples(
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
+            ),
+            elements=st.floats(
+                min_value=0, max_value=1e3, allow_infinity=False, allow_nan=False
+            ),
+        ),
+        copy=st.booleans(),
+    )
+    def test_array(self, data: np.ndarray, copy: bool):
+        original_array = data.copy()
+        returned_data = log1p(data=data, copy=copy)
+
+        if copy:
+            assert isinstance(returned_data, np.ndarray)
+            data = returned_data
+        else:
+            assert returned_data is None
+
+        np.testing.assert_almost_equal(data, np.log1p(original_array))
