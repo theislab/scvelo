@@ -492,16 +492,22 @@ def csr_vcorrcoef(X, y):
     mu_x = np.ravel(np.mean(X, axis=-1))
     mu_y = np.ravel(np.mean(y, axis=-1))
     nom = X.dot(y) - X.dot(np.repeat(mu_y, len(y))) - mu_x * np.sum(y - mu_y)
+
+    if X.ndim == 1:
+        n_features = len(X)
+    else:
+        n_features = X.shape[1]
+
     denom_x = (
         np.ravel(np.sum(X.multiply(X), axis=-1))
         if issparse(X)
         else np.sum(X * X, axis=-1)
     )
-    denom_x = denom_x - np.ravel(np.sum(X, axis=-1)) * mu_x + mu_x ** 2
+    denom_x = denom_x - 2 * np.ravel(np.sum(X, axis=-1)) * mu_x + n_features * mu_x ** 2
     denom_y = (
         np.ravel(np.sum(y * y, axis=-1))
-        - (np.ravel(np.sum(y, axis=-1)) * mu_y)
-        + mu_y ** 2
+        - 2 * (np.ravel(np.sum(y, axis=-1)) * mu_y)
+        + n_features * mu_y ** 2
     )
     return nom / np.sqrt(denom_x * denom_y)
 
