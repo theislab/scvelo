@@ -10,7 +10,12 @@ from scipy.sparse import csc_matrix, csr_matrix, spmatrix
 
 from anndata import AnnData
 
-from scvelo.preprocessing.utils import check_if_valid_dtype, csr_vcorrcoef, get_mean_var
+from scvelo.preprocessing.utils import (
+    _filter,
+    check_if_valid_dtype,
+    csr_vcorrcoef,
+    get_mean_var,
+)
 from tests.core import get_adata
 
 
@@ -299,3 +304,100 @@ class TestGetMeanVar:
 
         np.testing.assert_almost_equal(mean, analytic_mean)
         np.testing.assert_almost_equal(var, analytic_var)
+
+
+class TestFilter:
+    @given(
+        X=arrays(
+            float,
+            shape=st.tuples(
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
+            ),
+            elements=st.floats(
+                min_value=-1e3, max_value=1e3, allow_infinity=False, allow_nan=False
+            ),
+        ),
+        min_max_counts=st.lists(
+            st.floats(allow_infinity=True, allow_nan=False),
+            min_size=2,
+            max_size=2,
+            unique=True,
+        ),
+    )
+    def test_filter_based_on_counts(self, X, min_max_counts):
+        min_counts = min(min_max_counts)
+        max_counts = min(min_max_counts)
+
+        filter_mask, counts_per_var = _filter(
+            X=X, min_counts=min_counts, max_counts=max_counts
+        )
+
+        assert filter_mask.dtype == np.dtype("bool")
+        assert filter_mask.shape == (X.shape[1],)
+        assert isinstance(counts_per_var, np.ndarray)
+        assert counts_per_var.shape == (X.shape[1],)
+        assert counts_per_var.dtype == X.dtype
+
+    @given(
+        X=arrays(
+            float,
+            shape=st.tuples(
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
+            ),
+            elements=st.floats(
+                min_value=-1e3, max_value=1e3, allow_infinity=False, allow_nan=False
+            ),
+        ),
+        min_max_cells=st.lists(
+            st.floats(allow_infinity=True, allow_nan=False),
+            min_size=2,
+            max_size=2,
+            unique=True,
+        ),
+    )
+    def test_filter_based_on_cells(self, X, min_max_cells):
+        min_cells = min(min_max_cells)
+        max_cells = min(min_max_cells)
+
+        filter_mask, counts_per_var = _filter(
+            X=X, min_cells=min_cells, max_cells=max_cells
+        )
+
+        assert filter_mask.dtype == np.dtype("bool")
+        assert filter_mask.shape == (X.shape[1],)
+        assert isinstance(counts_per_var, np.ndarray)
+        assert counts_per_var.shape == (X.shape[1],)
+        assert np.issubdtype(counts_per_var.dtype, np.integer)
+
+    @pytest.mark.parametrize(
+        "min_counts, filtered_out_low",
+        (
+            (None, np.ones(6, dtype=bool)),
+            (0, np.ones(6, dtype=bool)),
+            (1, np.ones(6, dtype=bool)),
+            (2, np.array([True, True, True, False, True, True])),
+            (3, np.array([True, True, True, False, False, True])),
+            (4, np.array([True, True, True, False, False, False])),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "max_counts, filtered_out_upper",
+        (
+            (None, np.ones(6, dtype=bool)),
+            (9, np.array([False, False, False, True, True, True])),
+            (10, np.ones(6, dtype=bool)),
+            (11, np.ones(6, dtype=bool)),
+        ),
+    )
+    def test_filter_mask(
+        self, min_counts, filtered_out_low, max_counts, filtered_out_upper
+    ):
+        filter_mask, _ = _filter(
+            X=np.diag([10, 10, 10, 1, 2, 3]),
+            min_counts=min_counts,
+            max_counts=max_counts,
+        )
+
+        np.testing.assert_equal(filter_mask, filtered_out_low & filtered_out_upper)
