@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 import pytest
 from hypothesis import given
@@ -6,6 +6,7 @@ from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
 import numpy as np
+import pandas as pd
 from scipy.sparse import csc_matrix, csr_matrix, spmatrix
 
 from anndata import AnnData
@@ -14,6 +15,7 @@ from scvelo.preprocessing.utils import (
     _filter,
     check_if_valid_dtype,
     csr_vcorrcoef,
+    filter_genes,
     get_mean_var,
     log1p,
     materialize_as_ndarray,
@@ -404,6 +406,536 @@ class TestFilter:
         )
 
         np.testing.assert_equal(filter_mask, filtered_out_low & filtered_out_upper)
+
+
+class TestFilterGenes:
+    def get_vars_to_keep(self, data, adata: AnnData, as_string: bool):
+        """Draw subset from variable names."""
+
+        if as_string:
+            return data.draw(st.sampled_from(adata.var_names.to_list()))
+        else:
+            return data.draw(
+                st.lists(
+                    st.sampled_from(adata.var_names.to_list()),
+                    min_size=1,
+                    max_size=len(adata.var_names),
+                    unique=True,
+                )
+            )
+
+    @given(
+        data=st.data(),
+        adata=get_adata(
+            max_obs=5,
+            max_vars=5,
+            layer_keys=["unspliced", "spliced"],
+        ),
+        copy=st.booleans(),
+        min_counts=st.integers(min_value=0, max_value=100),
+        max_counts=st.integers(min_value=0, max_value=100),
+        min_counts_u=st.integers(min_value=0, max_value=100),
+        max_counts_u=st.integers(min_value=0, max_value=100),
+        min_cells=st.integers(min_value=0, max_value=100),
+        max_cells=st.integers(min_value=0, max_value=100),
+        min_cells_u=st.integers(min_value=0, max_value=100),
+        max_cells_u=st.integers(min_value=0, max_value=100),
+        pass_var_to_keep_as_string=st.booleans(),
+    )
+    def test_retain_genes_and_copy(
+        self,
+        data,
+        adata: AnnData,
+        copy: bool,
+        min_counts: int,
+        max_counts: int,
+        min_counts_u: int,
+        max_counts_u: int,
+        min_cells: int,
+        max_cells: int,
+        min_cells_u: int,
+        max_cells_u: int,
+        pass_var_to_keep_as_string: bool,
+    ):
+        vars_to_keep = self.get_vars_to_keep(
+            data=data,
+            adata=adata,
+            as_string=pass_var_to_keep_as_string,
+        )
+
+        returned_adata = filter_genes(
+            adata,
+            retain_genes=vars_to_keep,
+            copy=copy,
+            min_counts=min_counts,
+            max_counts=max_counts,
+            min_counts_u=min_counts_u,
+            max_counts_u=max_counts_u,
+            min_cells=min_cells,
+            max_cells=max_cells,
+            min_cells_u=min_cells_u,
+            max_cells_u=max_cells_u,
+        )
+
+        if copy:
+            assert isinstance(returned_adata, AnnData)
+            adata = returned_adata
+        else:
+            assert returned_adata is None
+
+        if isinstance(vars_to_keep, str):
+            assert pd.Index([vars_to_keep]).isin(adata.var_names).all()
+        else:
+            assert pd.Index(vars_to_keep).isin(adata.var_names).all()
+
+    @given(
+        data=st.data(),
+        adata=get_adata(
+            max_obs=5,
+            max_vars=5,
+            layer_keys=["unspliced", "spliced"],
+        ),
+        copy=st.booleans(),
+        min_shared_counts=st.integers(min_value=0, max_value=100),
+        min_shared_cells=st.integers(min_value=0, max_value=100),
+        pass_var_to_keep_as_string=st.booleans(),
+    )
+    def test_retain_genes_and_copy_w_shared_counts(
+        self,
+        data,
+        adata: AnnData,
+        copy: bool,
+        min_shared_counts: int,
+        min_shared_cells: int,
+        pass_var_to_keep_as_string: bool,
+    ):
+        vars_to_keep = self.get_vars_to_keep(
+            data=data,
+            adata=adata,
+            as_string=pass_var_to_keep_as_string,
+        )
+
+        returned_adata = filter_genes(
+            adata,
+            retain_genes=vars_to_keep,
+            copy=copy,
+            min_shared_counts=min_shared_counts,
+            min_shared_cells=min_shared_cells,
+        )
+
+        if copy:
+            assert isinstance(returned_adata, AnnData)
+            adata = returned_adata
+        else:
+            assert returned_adata is None
+
+        if isinstance(vars_to_keep, str):
+            assert pd.Index([vars_to_keep]).isin(adata.var_names).all()
+        else:
+            assert pd.Index(vars_to_keep).isin(adata.var_names).all()
+
+    @pytest.mark.parametrize(
+        "X, unspliced, spliced",
+        (
+            (
+                np.diag([10, 10, 10, 1, 2, 3]),
+                np.diag([10, 10, 10, 1, 2, 3]),
+                np.diag([10, 10, 10, 1, 2, 3]),
+            ),
+            (
+                csr_matrix(np.diag([10, 10, 10, 1, 2, 3])),
+                csr_matrix(np.diag([10, 10, 10, 1, 2, 3])),
+                csr_matrix(np.diag([10, 10, 10, 1, 2, 3])),
+            ),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "min_counts, filtered_out_low_spliced",
+        (
+            (None, np.ones(6, dtype=bool)),
+            (1, np.ones(6, dtype=bool)),
+            (2, np.array([True, True, True, False, True, True])),
+            (3, np.array([True, True, True, False, False, True])),
+            (4, np.array([True, True, True, False, False, False])),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "max_counts, filtered_out_upper_spliced",
+        (
+            (None, np.ones(6, dtype=bool)),
+            (9, np.array([False, False, False, True, True, True])),
+            (10, np.ones(6, dtype=bool)),
+            (11, np.ones(6, dtype=bool)),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "min_counts_u, filtered_out_low_unspliced",
+        (
+            (None, np.ones(6, dtype=bool)),
+            (1, np.ones(6, dtype=bool)),
+            (2, np.array([True, True, True, False, True, True])),
+            (3, np.array([True, True, True, False, False, True])),
+            (4, np.array([True, True, True, False, False, False])),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "max_counts_u, filtered_out_upper_unspliced",
+        (
+            (None, np.ones(6, dtype=bool)),
+            (9, np.array([False, False, False, True, True, True])),
+            (10, np.ones(6, dtype=bool)),
+            (11, np.ones(6, dtype=bool)),
+        ),
+    )
+    def test_min_max_counts_filter(
+        self,
+        X: Union[np.ndarray, spmatrix],
+        unspliced: Union[np.ndarray, spmatrix],
+        spliced: Union[np.ndarray, spmatrix],
+        min_counts: Optional[int],
+        max_counts: Optional[int],
+        min_counts_u: Optional[int],
+        max_counts_u: Optional[int],
+        filtered_out_low_spliced: bool,
+        filtered_out_upper_spliced: bool,
+        filtered_out_low_unspliced: bool,
+        filtered_out_upper_unspliced: bool,
+    ):
+        var_names = pd.Index([f"var_{var_id}" for var_id in range(X.shape[1])])
+        adata = AnnData(
+            X=X,
+            layers={"unspliced": unspliced, "spliced": spliced},
+            var=pd.DataFrame(index=var_names),
+        )
+
+        filter_genes(
+            adata,
+            min_counts=min_counts,
+            max_counts=max_counts,
+            min_counts_u=min_counts_u,
+            max_counts_u=max_counts_u,
+        )
+        assert pd.Index.equals(
+            adata.var_names,
+            var_names[
+                filtered_out_low_spliced
+                & filtered_out_upper_spliced
+                & filtered_out_low_unspliced
+                & filtered_out_upper_unspliced
+            ],
+        )
+
+    @pytest.mark.parametrize(
+        "X, unspliced, spliced",
+        (
+            (
+                np.triu(np.ones(6), k=0),
+                np.triu(np.ones(6), k=0),
+                np.triu(np.ones(6), k=0),
+            ),
+            (
+                csr_matrix(np.triu(np.ones(6), k=0)),
+                csr_matrix(np.triu(np.ones(6), k=0)),
+                csr_matrix(np.triu(np.ones(6), k=0)),
+            ),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "min_cells, filtered_out_low_spliced",
+        (
+            (None, np.ones(6, dtype=bool)),
+            (1, np.ones(6, dtype=bool)),
+            (2, np.array([False, True, True, True, True, True])),
+            (3, np.array([False, False, True, True, True, True])),
+            (4, np.array([False, False, False, True, True, True])),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "max_cells, filtered_out_upper_spliced",
+        (
+            (None, np.ones(6, dtype=bool)),
+            (5, np.array([True, True, True, True, True, False])),
+            (6, np.ones(6, dtype=bool)),
+            (7, np.ones(6, dtype=bool)),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "min_cells_u, filtered_out_low_unspliced",
+        (
+            (None, np.ones(6, dtype=bool)),
+            (1, np.ones(6, dtype=bool)),
+            (2, np.array([False, True, True, True, True, True])),
+            (3, np.array([False, False, True, True, True, True])),
+            (4, np.array([False, False, False, True, True, True])),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "max_cells_u, filtered_out_upper_unspliced",
+        (
+            (None, np.ones(6, dtype=bool)),
+            (5, np.array([True, True, True, True, True, False])),
+            (6, np.ones(6, dtype=bool)),
+            (7, np.ones(6, dtype=bool)),
+        ),
+    )
+    def test_min_max_cells_filter(
+        self,
+        X: Union[np.ndarray, spmatrix],
+        unspliced: Union[np.ndarray, spmatrix],
+        spliced: Union[np.ndarray, spmatrix],
+        min_cells,
+        max_cells,
+        min_cells_u,
+        max_cells_u,
+        filtered_out_low_spliced,
+        filtered_out_upper_spliced,
+        filtered_out_low_unspliced,
+        filtered_out_upper_unspliced,
+    ):
+        var_names = pd.Index([f"var_{var_id}" for var_id in range(X.shape[1])])
+        adata = AnnData(
+            X=X,
+            layers={"unspliced": unspliced, "spliced": spliced},
+            var=pd.DataFrame(index=var_names),
+        )
+
+        filter_genes(
+            adata,
+            min_cells=min_cells,
+            max_counts=max_cells,
+            min_cells_u=min_cells_u,
+            max_cells_u=max_cells_u,
+        )
+
+        assert pd.Index.equals(
+            adata.var_names,
+            var_names[
+                filtered_out_low_spliced
+                & filtered_out_upper_spliced
+                & filtered_out_low_unspliced
+                & filtered_out_upper_unspliced
+            ],
+        )
+
+    @pytest.mark.parametrize(
+        "X, unspliced, spliced",
+        (
+            (
+                np.triu(np.ones(6), k=0),
+                np.triu(np.ones(6), k=0)
+                + np.diag([1, 2, -1, 1, 4, 2])
+                + np.diag([0, 1, 0, 2, 1], k=-1),
+                np.triu(np.ones(6), k=0),
+            ),
+            (
+                csr_matrix(np.triu(np.ones(6), k=0)),
+                csr_matrix(
+                    np.triu(np.ones(6), k=0)
+                    + np.diag([1, 2, -1, 1, 4, 2])
+                    + np.diag([0, 1, 0, 2, 1], k=-1)
+                ),
+                csr_matrix(np.triu(np.ones(6), k=0)),
+            ),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "min_shared_counts, filter_mask_shared_counts",
+        (
+            (None, np.ones(6, dtype=bool)),
+            (0, np.ones(6, dtype=bool)),
+            (3, np.array([True, True, True, True, True, True])),
+            (4, np.array([False, True, True, True, True, True])),
+            (6, np.array([False, True, False, True, True, True])),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "min_shared_cells, filter_mask_shared_cells",
+        (
+            (None, np.ones(6, dtype=bool)),
+            (1, np.ones(6, dtype=bool)),
+            (2, np.array([False, True, True, True, True, True])),
+            (4, np.array([False, False, False, True, True, True])),
+        ),
+    )
+    def test_shared_counts_cells_filter(
+        self,
+        X: Union[np.ndarray, spmatrix],
+        unspliced: Union[np.ndarray, spmatrix],
+        spliced: Union[np.ndarray, spmatrix],
+        min_shared_counts,
+        filter_mask_shared_counts,
+        min_shared_cells,
+        filter_mask_shared_cells,
+    ):
+        var_names = pd.Index([f"var_{var_id}" for var_id in range(X.shape[1])])
+        adata = AnnData(
+            X=X,
+            layers={"unspliced": unspliced, "spliced": spliced},
+            var=pd.DataFrame(index=var_names),
+        )
+
+        filter_genes(
+            adata,
+            min_shared_counts=min_shared_counts,
+            min_shared_cells=min_shared_cells,
+        )
+
+        assert pd.Index.equals(
+            adata.var_names,
+            var_names[filter_mask_shared_counts & filter_mask_shared_cells],
+        )
+
+    @pytest.mark.parametrize(
+        "min_counts, min_counts_u, n_vars_filtered_out_spliced, "
+        "n_vars_filtered_out_unspliced",
+        ((0, 1, 0, 0), (2, 0, 1, 0), (0, 3, 0, 2), (4, 3, 3, 0)),
+    )
+    def test_min_counts_logging(
+        self,
+        capfd,
+        min_counts: int,
+        min_counts_u: int,
+        n_vars_filtered_out_spliced: int,
+        n_vars_filtered_out_unspliced: int,
+    ):
+        expected_log = ""
+        if n_vars_filtered_out_spliced > 0:
+            expected_log += (
+                f"Filtered out {n_vars_filtered_out_spliced} genes that are detected "
+                f"{min_counts} counts (spliced).\n"
+            )
+        if n_vars_filtered_out_unspliced > 0:
+            expected_log += (
+                f"Filtered out {n_vars_filtered_out_unspliced} genes that are detected "
+                f"{min_counts_u} counts (unspliced).\n"
+            )
+
+        adata = AnnData(
+            X=np.triu(np.ones(6), k=0),
+            layers={
+                "unspliced": np.triu(np.ones(6), k=0),
+                "spliced": np.triu(np.ones(6), k=0),
+            },
+        )
+
+        filter_genes(adata, min_counts=min_counts, min_counts_u=min_counts_u)
+        actual_log, _ = capfd.readouterr()
+
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize(
+        "max_counts, max_counts_u, n_vars_filtered_out_spliced, "
+        "n_vars_filtered_out_unspliced",
+        ((6, 7, 0, 0), (5, 6, 1, 0), (6, 4, 0, 2), (4, 3, 2, 1)),
+    )
+    def test_max_counts_logging(
+        self,
+        capfd,
+        max_counts: int,
+        max_counts_u: int,
+        n_vars_filtered_out_spliced: int,
+        n_vars_filtered_out_unspliced: int,
+    ):
+        expected_log = ""
+        if n_vars_filtered_out_spliced > 0:
+            expected_log += (
+                f"Filtered out {n_vars_filtered_out_spliced} genes that are detected "
+                f"{max_counts} counts (spliced).\n"
+            )
+        if n_vars_filtered_out_unspliced > 0:
+            expected_log += (
+                f"Filtered out {n_vars_filtered_out_unspliced} genes that are detected "
+                f"{max_counts_u} counts (unspliced).\n"
+            )
+
+        adata = AnnData(
+            X=np.triu(np.ones(6), k=0),
+            layers={
+                "unspliced": np.triu(np.ones(6), k=0),
+                "spliced": np.triu(np.ones(6), k=0),
+            },
+        )
+
+        filter_genes(adata, max_counts=max_counts, max_counts_u=max_counts_u)
+        actual_log, _ = capfd.readouterr()
+
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize(
+        "min_cells, min_cells_u, n_vars_filtered_out_spliced, "
+        "n_vars_filtered_out_unspliced",
+        ((0, 1, 0, 0), (2, 0, 1, 0), (0, 3, 0, 2), (4, 3, 3, 0)),
+    )
+    def test_min_cells_logging(
+        self,
+        capfd,
+        min_cells: int,
+        min_cells_u: int,
+        n_vars_filtered_out_spliced: int,
+        n_vars_filtered_out_unspliced: int,
+    ):
+        expected_log = ""
+        if n_vars_filtered_out_spliced > 0:
+            expected_log += (
+                f"Filtered out {n_vars_filtered_out_spliced} genes that are detected "
+                f"in less than {min_cells} cells (spliced).\n"
+            )
+        if n_vars_filtered_out_unspliced > 0:
+            expected_log += (
+                f"Filtered out {n_vars_filtered_out_unspliced} genes that are detected "
+                f"in less than {min_cells_u} cells (unspliced).\n"
+            )
+
+        adata = AnnData(
+            X=np.triu(np.ones(6), k=0),
+            layers={
+                "unspliced": np.triu(np.ones(6), k=0),
+                "spliced": np.triu(np.ones(6), k=0),
+            },
+        )
+
+        filter_genes(adata, min_cells=min_cells, min_cells_u=min_cells_u)
+        actual_log, _ = capfd.readouterr()
+
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize(
+        "max_cells, max_cells_u, n_vars_filtered_out_spliced, "
+        "n_vars_filtered_out_unspliced",
+        ((6, 7, 0, 0), (5, 6, 1, 0), (6, 4, 0, 2), (4, 3, 2, 1)),
+    )
+    def test_max_cells_logging(
+        self,
+        capfd,
+        max_cells: int,
+        max_cells_u: int,
+        n_vars_filtered_out_spliced: int,
+        n_vars_filtered_out_unspliced: int,
+    ):
+        expected_log = ""
+        if n_vars_filtered_out_spliced > 0:
+            expected_log += (
+                f"Filtered out {n_vars_filtered_out_spliced} genes that are detected "
+                f"in more than {max_cells} cells (spliced).\n"
+            )
+        if n_vars_filtered_out_unspliced > 0:
+            expected_log += (
+                f"Filtered out {n_vars_filtered_out_unspliced} genes that are detected "
+                f"in more than {max_cells_u} cells (unspliced).\n"
+            )
+
+        adata = AnnData(
+            X=np.triu(np.ones(6), k=0),
+            layers={
+                "unspliced": np.triu(np.ones(6), k=0),
+                "spliced": np.triu(np.ones(6), k=0),
+            },
+        )
+
+        filter_genes(adata, max_cells=max_cells, max_cells_u=max_cells_u)
+        actual_log, _ = capfd.readouterr()
+
+        assert actual_log == expected_log
 
 
 class TestLog1p:
