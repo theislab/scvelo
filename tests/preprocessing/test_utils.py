@@ -7,13 +7,14 @@ from hypothesis.extra.numpy import arrays
 
 import numpy as np
 import pandas as pd
-from scipy.sparse import csc_matrix, csr_matrix, spmatrix
+from scipy.sparse import csc_matrix, csr_matrix, issparse, spmatrix
 
 from anndata import AnnData
 
 from scvelo.preprocessing.utils import (
     _filter,
     check_if_valid_dtype,
+    counts_per_cell_quantile,
     csr_vcorrcoef,
     filter_genes,
     get_mean_var,
@@ -54,6 +55,161 @@ class TestCheckIfValidDtype:
                 assert adata.layers[layer].dtype == "float32"
             else:
                 assert np.issubdtype(adata.layers[layer].dtype, np.integer)
+
+
+class TestCountsPerCellQuantile:
+    @given(
+        data=st.data(),
+        X=arrays(
+            float,
+            shape=st.tuples(
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
+            ),
+            elements=st.floats(
+                min_value=0, max_value=1e3, allow_infinity=False, allow_nan=False
+            ),
+        ),
+        max_proportion_per_cell=st.floats(
+            min_value=0, max_value=1, allow_infinity=False, allow_nan=False
+        ),
+        provide_counts_per_cell=st.booleans(),
+        sparse=st.sampled_from([False, csr_matrix, csc_matrix]),
+    )
+    def test_with_random_input(
+        self,
+        data,
+        X: np.ndarray,
+        max_proportion_per_cell,
+        provide_counts_per_cell,
+        sparse: Union[bool, Callable],
+    ):
+        n_obs = X.shape[0]
+        if provide_counts_per_cell:
+            counts_per_cell = data.draw(
+                arrays(
+                    int,
+                    shape=st.integers(min_value=X.shape[0], max_value=X.shape[0]),
+                    elements=st.integers(min_value=0, max_value=1e3),
+                )
+            )
+        else:
+            counts_per_cell = None
+        if sparse:
+            X = sparse(X)
+        counts = counts_per_cell_quantile(
+            X=X,
+            max_proportion_per_cell=max_proportion_per_cell,
+            counts_per_cell=counts_per_cell,
+        )
+
+        if sparse:
+            assert issparse(X)
+        else:
+            assert isinstance(X, np.ndarray)
+        assert counts.shape == (n_obs,)
+
+    @pytest.mark.parametrize(
+        "X",
+        (
+            np.ones(shape=(3, 100)),
+            np.hstack((np.ones((5, 100)), np.zeros((5, 5)))),
+            np.array([[1, 4, 95], [4, 7, 89]]),
+        ),
+    )
+    @pytest.mark.parametrize(
+        "max_proportion_per_cell", (0.0, 0.005, 0.1, 0.3, 0.5, 0.9, 1.0)
+    )
+    @pytest.mark.parametrize("sparse", (False, csr_matrix, csc_matrix))
+    def test_max_proportion_per_cell(self, X, max_proportion_per_cell, sparse):
+        ground_truth = X[:, (X <= max_proportion_per_cell * 100).all(axis=0)].sum(
+            axis=1
+        )
+
+        if sparse:
+            X = sparse(X)
+
+        counts = counts_per_cell_quantile(
+            X=X, max_proportion_per_cell=max_proportion_per_cell
+        )
+
+        np.testing.assert_almost_equal(counts, ground_truth)
+
+    @given(
+        X=arrays(
+            float,
+            shape=st.tuples(
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
+            ),
+            elements=st.floats(
+                min_value=0, max_value=1e3, allow_infinity=False, allow_nan=False
+            ),
+        ),
+    )
+    @pytest.mark.parametrize("sparse", (False, csr_matrix, csc_matrix))
+    def test_include_all_variables(self, X: np.ndarray, sparse: Union[bool, Callable]):
+        counts_with_all_vars = X.sum(axis=1)
+
+        if sparse:
+            X = sparse(X)
+        counts = counts_per_cell_quantile(X=X, max_proportion_per_cell=1)
+
+        np.testing.assert_almost_equal(counts_with_all_vars, counts)
+
+    @given(
+        X=arrays(
+            float,
+            shape=st.tuples(
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
+            ),
+            elements=st.floats(
+                min_value=0, max_value=1e3, allow_infinity=False, allow_nan=False
+            ),
+        ),
+    )
+    @pytest.mark.parametrize("sparse", (False, csr_matrix, csc_matrix))
+    def test_exclude_all_variables(self, X: np.ndarray, sparse: Union[bool, Callable]):
+        if sparse:
+            X = sparse(X)
+        counts = counts_per_cell_quantile(X=X, max_proportion_per_cell=0)
+
+        np.testing.assert_almost_equal(np.zeros(X.shape[0]), counts)
+
+    @given(
+        X=arrays(
+            float,
+            shape=st.tuples(
+                st.integers(min_value=1, max_value=100),
+                st.integers(min_value=1, max_value=100),
+            ),
+            elements=st.floats(
+                min_value=0, max_value=1e3, allow_infinity=False, allow_nan=False
+            ),
+        ),
+        max_proportion_per_cell=st.floats(min_value=0, max_value=1),
+        sparse=st.sampled_from([False, csr_matrix, csc_matrix]),
+    )
+    def test_counts_per_cell_specified(
+        self,
+        X: np.ndarray,
+        max_proportion_per_cell: float,
+        sparse: Union[bool, Callable],
+    ):
+        ground_truth = X[:, (X <= max_proportion_per_cell * 100).all(axis=0)].sum(
+            axis=1
+        )
+
+        if sparse:
+            X = sparse(X)
+        counts = counts_per_cell_quantile(
+            X=X,
+            max_proportion_per_cell=max_proportion_per_cell,
+            counts_per_cell=100 * np.ones(X.shape[0]),
+        )
+
+        np.testing.assert_almost_equal(ground_truth, counts)
 
 
 class TestCsrVcorrcoef:
