@@ -20,6 +20,7 @@ from scvelo.preprocessing.utils import (
     get_mean_var,
     log1p,
     materialize_as_ndarray,
+    normalize_per_cell,
     not_yet_normalized,
 )
 from tests.core import get_adata
@@ -1175,6 +1176,236 @@ class TestMaterializeAsNdarray:
         arr = materialize_as_ndarray(key)
 
         assert all(isinstance(entry, np.ndarray) for entry in arr)
+
+
+class TestNormalizePerCell:
+    @given(data=st.data(), adata=get_adata(max_obs=5, max_vars=5))
+    def test_target_sum_dense(self, data, adata):
+        counts_per_cell_after = data.draw(
+            arrays(
+                float,
+                shape=st.integers(min_value=adata.n_obs, max_value=adata.n_obs),
+                elements=st.floats(
+                    min_value=1e-3, max_value=1e3, allow_infinity=False, allow_nan=False
+                ),
+            )
+        )
+        zero_obs = (adata.X == 0).all(axis=1)
+
+        normalize_per_cell(adata, counts_per_cell_after=counts_per_cell_after)
+
+        assert adata.X[zero_obs, :].sum() == 0
+        if np.any(~zero_obs):
+            np.testing.assert_almost_equal(
+                adata.X[~zero_obs, :].sum(axis=1),
+                counts_per_cell_after[~zero_obs],
+                decimal=4,
+            )
+
+    @given(data=st.data(), adata=get_adata(max_obs=5, max_vars=5, sparse_entries=True))
+    def test_target_sum_sparse(self, data, adata):
+        counts_per_cell_after = data.draw(
+            arrays(
+                float,
+                shape=st.integers(min_value=adata.n_obs, max_value=adata.n_obs),
+                elements=st.floats(
+                    min_value=1e-3, max_value=1e3, allow_infinity=False, allow_nan=False
+                ),
+            )
+        )
+        zero_obs = adata.X.getnnz(axis=1) == 0
+
+        normalize_per_cell(adata, counts_per_cell_after=counts_per_cell_after)
+
+        assert adata.X[zero_obs, :].sum() == 0
+        if np.any(~zero_obs):
+            np.testing.assert_almost_equal(
+                adata.X[~zero_obs, :].sum(axis=1).A1,
+                counts_per_cell_after[~zero_obs],
+                decimal=4,
+            )
+
+    @pytest.mark.parametrize(
+        "X, add_column",
+        (
+            (np.eye(3), False),
+            (np.ones((3, 10000)), True),
+            (1e-2 * np.ones((3, 10000)), False),
+        ),
+    )
+    def test_adding_gene_count_corr(self, X, add_column):
+        adata = AnnData(X=X)
+        normalize_per_cell(adata)
+
+        if add_column:
+            assert "gene_count_corr" in adata.var.columns
+        else:
+            assert "gene_count_corr" not in adata.var.columns
+
+    @pytest.mark.parametrize(
+        "X", (np.eye(3), csr_matrix(np.eye(3)), csc_matrix(np.eye(3)))
+    )
+    @pytest.mark.parametrize(
+        "obs, counts_per_cell, normed_counts",
+        (
+            (None, None, np.eye(3)),
+            (None, "cell_size", np.eye(3)),
+            (pd.DataFrame({"cell_size": 2 * np.ones(3)}), "cell_size", np.eye(3)),
+            (
+                pd.DataFrame(
+                    {"cell_size": 2 * np.ones(3), "initial_size": np.array([2, 1, 2])}
+                ),
+                "initial_size",
+                np.diag([1, 2, 1]),
+            ),
+        ),
+    )
+    def test_counts_per_cell_size(self, X, obs, counts_per_cell, normed_counts):
+        adata = AnnData(X=X, obs=obs)
+
+        normalize_per_cell(adata, counts_per_cell=counts_per_cell)
+        if issparse(adata.X):
+            assert issparse(adata.X)
+            np.testing.assert_almost_equal(adata.X.A, normed_counts)
+        else:
+            np.testing.assert_almost_equal(adata.X, normed_counts)
+
+    @pytest.mark.parametrize(
+        "X", (np.eye(3), csr_matrix(np.eye(3)), csc_matrix(np.eye(3)))
+    )
+    @pytest.mark.parametrize(
+        "obs, use_initial_size, normed_counts",
+        (
+            (None, True, np.eye(3)),
+            (None, False, np.eye(3)),
+            (
+                pd.DataFrame({"initial_size": np.array([2, 1, 2])}),
+                True,
+                np.diag([1, 2, 1]),
+            ),
+            (pd.DataFrame({"initial_size": np.array([2, 1, 2])}), False, np.eye(3)),
+        ),
+    )
+    def test_use_initial_size(self, X, obs, use_initial_size, normed_counts):
+        adata = AnnData(X=X, obs=obs)
+
+        normalize_per_cell(adata, use_initial_size=use_initial_size)
+        if issparse(adata.X):
+            assert issparse(adata.X)
+            np.testing.assert_almost_equal(adata.X.A, normed_counts)
+        else:
+            np.testing.assert_almost_equal(adata.X, normed_counts)
+
+    @pytest.mark.parametrize(
+        "X", (np.eye(2), csr_matrix(np.eye(2)), csc_matrix(np.eye(2)))
+    )
+    @pytest.mark.parametrize(
+        "layers",
+        (
+            {"unspliced": np.triu(np.ones((2, 2)), k=0)},
+            {
+                "unspliced": csr_matrix(np.triu(np.ones((2, 2)), k=0)),
+                "spliced": csc_matrix(np.triu(np.ones((2, 2)), k=0)),
+            },
+            {
+                "random_name": csr_matrix(np.triu(np.ones((2, 2)), k=0)),
+                "spliced": csr_matrix(np.triu(np.ones((2, 2)), k=0)),
+            },
+        ),
+    )
+    @pytest.mark.parametrize(
+        "layers_to_normalize",
+        (
+            None,
+            "all",
+            "unspliced",
+            "random_name",
+            ["spliced"],
+            ["unspliced", "random_name"],
+            ["random_name", "spliced"],
+            ["random_name", "non_existing_layer"],
+        ),
+    )
+    def test_layers(self, X, layers, layers_to_normalize):
+        adata = AnnData(X=X, layers=layers)
+
+        normalize_per_cell(
+            data=adata,
+            layers=layers_to_normalize,
+            counts_per_cell_after=np.array([1, 0.5]),
+        )
+
+        if issparse(X):
+            assert issparse(adata.X)
+            np.testing.assert_almost_equal(adata.X.A, np.diag([1, 0.5]))
+        else:
+            np.testing.assert_almost_equal(adata.X, np.diag([1, 0.5]))
+
+        if layers_to_normalize is None:
+            layers_to_normalize = ["unspliced", "spliced"]
+        elif layers_to_normalize == "all":
+            layers_to_normalize = [*adata.layers]
+        elif isinstance(layers_to_normalize, str):
+            layers_to_normalize = [layers_to_normalize]
+
+        normalized_layer = np.array([[0.5, 0.5], [0, 0.5]])
+        for layer in adata.layers:
+            if layer in layers_to_normalize:
+                if issparse(layers[layer]):
+                    assert issparse(adata.layers[layer])
+                    np.testing.assert_almost_equal(
+                        adata.layers[layer].A, normalized_layer
+                    )
+                else:
+                    np.testing.assert_almost_equal(
+                        adata.layers[layer], normalized_layer
+                    )
+            else:
+                if issparse(layers[layer]):
+                    assert issparse(adata.layers[layer])
+                    np.testing.assert_almost_equal(
+                        adata.layers[layer].A, layers[layer].A
+                    )
+                else:
+                    np.testing.assert_almost_equal(adata.layers[layer], layers[layer])
+
+    @pytest.mark.parametrize(
+        "X, max_proportion_per_cell, normalization_constant",
+        (
+            (
+                np.array([[1, 4, 95], [4, 7, 89]]),
+                0.9,
+                np.array([5 / 8, 11 / 8])[:, None],
+            ),
+            (np.array([[1, 4, 95], [4, 7, 89]]), 1, 1),
+        ),
+    )
+    def test_max_proportion_per_cell(
+        self, X, max_proportion_per_cell, normalization_constant
+    ):
+        adata = AnnData(X)
+        normalize_per_cell(adata, max_proportion_per_cell=max_proportion_per_cell)
+
+        np.testing.assert_almost_equal(adata.X, X / normalization_constant, decimal=6)
+
+    @pytest.mark.parametrize(
+        "X, X_normalized", ((np.eye(3), False), (0.01 * np.eye(3), True))
+    )
+    def test_logging(self, capfd, X, X_normalized):
+        if X_normalized:
+            expected_log = (
+                "WARNING: Did not normalize X as it looks processed already. To "
+                "enforce normalization, set `enforce=True`.\n"
+            )
+        else:
+            expected_log = "Normalized count data: X.\n"
+
+        adata = AnnData(X=X)
+        normalize_per_cell(adata)
+
+        actual_log, _ = capfd.readouterr()
+
+        assert actual_log == expected_log
 
 
 class TestNotYetNormalized:
