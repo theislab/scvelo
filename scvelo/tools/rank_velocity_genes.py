@@ -11,13 +11,13 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
     data = X.data if issparse(X) else X
     mask_nans = np.isnan(data) | np.isinf(data) | np.isneginf(data)
 
-    n_nonzeros = (X != 0).sum(0)
+    n_nonzeros = X.getnnz(axis=0) if issparse(X) else (X != 0).sum(axis=0)
     n_counts = n_nonzeros if ignore_zeros else X.shape[0]
 
     if mask_nans.sum() > 0:
         if issparse(X):
             data[np.isnan(data) | np.isinf(data) | np.isneginf(data)] = 0
-            n_nans = n_nonzeros - (X != 0).sum(0)
+            n_nans = (n_nonzeros - (X != 0).sum(0)).A1
         else:
             X[mask_nans] = 0
             n_nans = mask_nans.sum(0)
