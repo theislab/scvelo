@@ -38,8 +38,8 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
     else:
         mean = X.sum(0) / n_counts
         mean_sq = np.multiply(X, X).sum(0) / n_counts
-    n_cells = np.clip(X.shape[0], 2, None)  # to avoid division by zero
-    var = (mean_sq - mean ** 2) * (n_cells / (n_cells - 1))
+    n_counts = np.clip(n_counts, 2, None)  # to avoid division by zero
+    var = (mean_sq - mean ** 2) * (n_counts / (n_counts - 1))
 
     mean = np.nan_to_num(mean)
     var = np.nan_to_num(var)
