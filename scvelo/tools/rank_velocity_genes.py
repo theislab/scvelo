@@ -27,7 +27,10 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
         if np.size(perc) < 2:
             perc = [perc, 100] if perc < 50 else [0, perc]
         lb, ub = np.percentile(data, perc)
-        data = np.clip(data, lb, ub)
+        if issparse(X):
+            X.data = np.clip(data, lb, ub)
+        else:
+            X = np.clip(data, lb, ub)
 
     if issparse(X):
         mean = (X.sum(0) / n_counts).A1
