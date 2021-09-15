@@ -278,13 +278,20 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
     data = X.data if issparse(X) else X
     mask_nans = np.isnan(data) | np.isinf(data) | np.isneginf(data)
 
-    n_nonzeros = (X != 0).sum(0)
-    n_counts = n_nonzeros if ignore_zeros else X.shape[0]
+    if issparse(X):
+        n_nonzeros = X.getnnz(axis=0)
+    else:
+        n_nonzeros = (X != 0).sum(axis=0)
+
+    if ignore_zeros:
+        n_counts = n_nonzeros
+    else:
+        n_counts = X.shape[0]
 
     if mask_nans.sum() > 0:
         if issparse(X):
-            data[np.isnan(data) | np.isinf(data) | np.isneginf(data)] = 0
-            n_nans = n_nonzeros - (X != 0).sum(0)
+            data[mask_nans] = 0
+            n_nans = (n_nonzeros - (X != 0).sum(0)).A1
         else:
             X[mask_nans] = 0
             n_nans = mask_nans.sum(0)
@@ -294,7 +301,10 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
         if np.size(perc) < 2:
             perc = [perc, 100] if perc < 50 else [0, perc]
         lb, ub = np.percentile(data, perc)
-        data = np.clip(data, lb, ub)
+        if issparse(X):
+            X.data = np.clip(data, lb, ub)
+        else:
+            X = np.clip(data, lb, ub)
 
     if issparse(X):
         mean = (X.sum(0) / n_counts).A1
@@ -302,11 +312,13 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
     else:
         mean = X.sum(0) / n_counts
         mean_sq = np.multiply(X, X).sum(0) / n_counts
-    n_cells = np.clip(X.shape[0], 2, None)  # to avoid division by zero
-    var = (mean_sq - mean ** 2) * (n_cells / (n_cells - 1))
+
+    n_counts = np.clip(n_counts, 2, None)  # to avoid division by zero
+    var = (mean_sq - mean ** 2) * (n_counts / (n_counts - 1))
 
     mean = np.nan_to_num(mean)
     var = np.nan_to_num(var)
+
     return mean, var
 
 
