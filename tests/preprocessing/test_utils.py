@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Union
+from typing import Callable, List, Optional, Union
 
 import pytest
 from hypothesis import given
@@ -17,6 +17,7 @@ from scvelo.preprocessing.utils import (
     counts_per_cell_quantile,
     csr_vcorrcoef,
     filter_genes,
+    filter_genes_dispersion,
     get_mean_var,
     log1p,
     materialize_as_ndarray,
@@ -1092,6 +1093,700 @@ class TestFilterGenes:
         filter_genes(adata, max_cells=max_cells, max_cells_u=max_cells_u)
         actual_log, _ = capfd.readouterr()
 
+        assert actual_log == expected_log
+
+
+class TestFilterGenesDispersion:
+    @given(
+        adata=get_adata(
+            max_obs=5,
+            max_vars=5,
+        ),
+        subset=st.booleans(),
+        copy=st.booleans(),
+    )
+    def test_subsetting_and_copy(self, adata: AnnData, subset: bool, copy: bool):
+        original_n_obs = adata.n_obs
+
+        returned_adata = filter_genes_dispersion(data=adata, subset=subset, copy=copy)
+
+        if copy:
+            assert isinstance(returned_adata, AnnData)
+            adata = returned_adata
+        else:
+            assert returned_adata is None
+
+        if subset:
+            assert original_n_obs <= adata.n_obs
+        else:
+            assert original_n_obs == adata.n_obs
+
+    def test_wrong_flavor(self):
+        with pytest.raises(
+            ValueError, match=r'`flavor` needs to be "seurat" or "cell_ranger"'
+        ):
+            filter_genes_dispersion(data=AnnData(np.eye(2)), flavor="random_flavor")
+
+    @pytest.mark.parametrize(
+        "flavor, n_top_genes, vars_after_filter",
+        (
+            ("svr", 5, pd.Index(["Ppy", "Ppp1r1a", "Gcg", "Nnat", "Ins2"])),
+            (
+                "svr",
+                10,
+                pd.Index(
+                    [
+                        "Ppy",
+                        "Ppp1r1a",
+                        "Lrpprc",
+                        "Ttr",
+                        "Rbp4",
+                        "Gcg",
+                        "Chgb",
+                        "Nnat",
+                        "Iapp",
+                        "Ins2",
+                    ]
+                ),
+            ),
+            ("seurat", 5, pd.Index(["Ppy", "Ppp1r1a", "Nnat", "Cyr61", "Tyms"])),
+            (
+                "seurat",
+                10,
+                pd.Index(
+                    [
+                        "Dtymk",
+                        "Col18a1",
+                        "Ppy",
+                        "Ppp1r1a",
+                        "Lrpprc",
+                        "Gcg",
+                        "Nnat",
+                        "Cyr61",
+                        "Tyms",
+                        "Hmgb2",
+                    ]
+                ),
+            ),
+            ("cell_ranger", 5, pd.Index(["Ppy", "Ppp1r1a", "Rbp4", "Nnat", "Ins2"])),
+            (
+                "cell_ranger",
+                10,
+                pd.Index(
+                    [
+                        "Ppy",
+                        "Cdc14b",
+                        "Ghr",
+                        "Ppp1r1a",
+                        "Ttr",
+                        "Rbp4",
+                        "Gcg",
+                        "Nnat",
+                        "Spp1",
+                        "Ins2",
+                    ]
+                ),
+            ),
+        ),
+    )
+    def test_n_top_genes_pancreas_50obs(
+        self,
+        capfd,
+        pancreas_50obs: AnnData,
+        flavor: str,
+        n_top_genes: int,
+        vars_after_filter: pd.Index,
+    ):
+        adata = filter_genes(pancreas_50obs, min_shared_counts=20, copy=True)
+        filter_genes_dispersion(adata, flavor=flavor, n_top_genes=n_top_genes)
+
+        assert adata.shape == (50, n_top_genes)
+        assert adata.var_names.equals(vars_after_filter)
+        if flavor == "svr":
+            assert adata.var.columns.equals(pd.Index(["highly_variable"]))
+        elif flavor == "seurat":
+            assert adata.var.columns.equals(
+                pd.Index(
+                    ["means", "dispersions", "dispersions_norm", "highly_variable"]
+                )
+            )
+
+        expected_log = (
+            "Filtered out 27530 genes that are detected 20 counts (shared).\n"
+            f"Extracted {n_top_genes} highly variable genes.\n"
+        )
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize(
+        "flavor, n_top_genes, vars_after_filter",
+        (
+            ("svr", 5, pd.Index(["Ppy", "Sst", "Gcg", "Ghrl", "Ins2"])),
+            (
+                "svr",
+                10,
+                pd.Index(
+                    [
+                        "Ppy",
+                        "Ppp1r1a",
+                        "Sst",
+                        "Gcg",
+                        "Chgb",
+                        "Nnat",
+                        "Ghrl",
+                        "Iapp",
+                        "Ins2",
+                        "Cck",
+                    ]
+                ),
+            ),
+            ("seurat", 5, pd.Index(["Cdk1", "Top2a", "Ppy", "Ppp1r1a", "Stmn1"])),
+            (
+                "seurat",
+                10,
+                pd.Index(
+                    [
+                        "Cdk1",
+                        "Top2a",
+                        "Ppy",
+                        "Ppp1r1a",
+                        "Sst",
+                        "Papss2",
+                        "Igfbpl1",
+                        "Stmn1",
+                        "Tyms",
+                        "Sytl4",
+                    ]
+                ),
+            ),
+            ("cell_ranger", 5, pd.Index(["Ppy", "Sst", "Gcg", "Ghrl", "Iapp"])),
+            (
+                "cell_ranger",
+                10,
+                pd.Index(
+                    [
+                        "Cdk1",
+                        "Ppy",
+                        "Pyy",
+                        "Ppp1r1a",
+                        "Sst",
+                        "Gcg",
+                        "Igfbpl1",
+                        "Ghrl",
+                        "Iapp",
+                        "Sytl4",
+                    ]
+                ),
+            ),
+        ),
+    )
+    def test_n_top_genes_pancreas_100obs(
+        self,
+        capfd,
+        pancreas_100obs: AnnData,
+        flavor: str,
+        n_top_genes: int,
+        vars_after_filter: pd.Index,
+    ):
+        adata = filter_genes(pancreas_100obs, min_shared_counts=20, copy=True)
+        filter_genes_dispersion(adata, flavor=flavor, n_top_genes=n_top_genes)
+
+        assert adata.shape == (100, n_top_genes)
+        assert adata.var_names.equals(vars_after_filter)
+        if flavor == "svr":
+            assert adata.var.columns.equals(pd.Index(["highly_variable"]))
+        elif flavor == "seurat":
+            assert adata.var.columns.equals(
+                pd.Index(
+                    ["means", "dispersions", "dispersions_norm", "highly_variable"]
+                )
+            )
+
+        expected_log = (
+            "Filtered out 27029 genes that are detected 20 counts (shared).\n"
+            f"Extracted {n_top_genes} highly variable genes.\n"
+        )
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize(
+        "flavor, n_top_genes, vars_after_filter",
+        (
+            ("svr", 5, pd.Index(["Cxcl14", "Atp9b", "Nlgn1", "Sirt2", "Slc17a7"])),
+            (
+                "svr",
+                10,
+                pd.Index(
+                    [
+                        "Adarb2",
+                        "Cxcl14",
+                        "Atp9b",
+                        "Gad2",
+                        "Nlgn1",
+                        "Dab1",
+                        "Tmsb10",
+                        "Sirt2",
+                        "Slc17a7",
+                        "Spock3",
+                    ]
+                ),
+            ),
+            ("seurat", 5, pd.Index(["Adarb2", "Cxcl14", "Atp9b", "Nlgn1", "Sirt2"])),
+            (
+                "seurat",
+                10,
+                pd.Index(
+                    [
+                        "Syt1",
+                        "Prkca",
+                        "Adarb2",
+                        "Cxcl14",
+                        "Atp9b",
+                        "Apba1",
+                        "Nlgn1",
+                        "Igfbpl1",
+                        "Sirt2",
+                        "Slc17a7",
+                    ]
+                ),
+            ),
+            (
+                "cell_ranger",
+                5,
+                pd.Index(["Gria1", "Adarb2", "Atp9b", "Nlgn1", "Sirt2"]),
+            ),
+            (
+                "cell_ranger",
+                10,
+                pd.Index(
+                    [
+                        "Gria1",
+                        "Adarb2",
+                        "Cxcl14",
+                        "Atp9b",
+                        "Rtn3",
+                        "Nlgn1",
+                        "Tmsb10",
+                        "Sirt2",
+                        "Spock3",
+                        "Rps25",
+                    ]
+                ),
+            ),
+        ),
+    )
+    def test_n_top_genes_dentategyrus_50obs(
+        self,
+        capfd,
+        dentategyrus_50obs: AnnData,
+        flavor: str,
+        n_top_genes: int,
+        vars_after_filter: pd.Index,
+    ):
+        adata = filter_genes(dentategyrus_50obs, min_shared_counts=20, copy=True)
+        filter_genes_dispersion(adata, flavor=flavor, n_top_genes=n_top_genes)
+
+        assert adata.shape == (50, n_top_genes)
+        assert adata.var_names.equals(vars_after_filter)
+        if flavor == "svr":
+            assert adata.var.columns.equals(pd.Index(["highly_variable"]))
+        elif flavor == "seurat":
+            assert adata.var.columns.equals(
+                pd.Index(
+                    ["means", "dispersions", "dispersions_norm", "highly_variable"]
+                )
+            )
+
+        expected_log = (
+            "Filtered out 13719 genes that are detected 20 counts (shared).\n"
+            f"Extracted {n_top_genes} highly variable genes.\n"
+        )
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize(
+        "flavor, n_top_genes, vars_after_filter",
+        (
+            ("svr", 5, pd.Index(["Cxcl14", "Atp9b", "Cst3", "Npy", "Sirt2"])),
+            (
+                "svr",
+                10,
+                pd.Index(
+                    [
+                        "Cxcl14",
+                        "Atp9b",
+                        "Gad2",
+                        "Slc1a2",
+                        "Cst3",
+                        "Npy",
+                        "Sirt2",
+                        "Hs3st4",
+                        "Spock3",
+                        "Sgcz",
+                    ]
+                ),
+            ),
+            ("seurat", 5, pd.Index(["Adarb2", "Cxcl14", "Atp9b", "Npy", "Cpne4"])),
+            (
+                "seurat",
+                10,
+                pd.Index(
+                    [
+                        "Adarb2",
+                        "Cxcl14",
+                        "Atp9b",
+                        "Gad2",
+                        "Slc1a2",
+                        "Nlgn1",
+                        "Npy",
+                        "Sirt2",
+                        "Hs3st4",
+                        "Cpne4",
+                    ]
+                ),
+            ),
+            (
+                "cell_ranger",
+                5,
+                pd.Index(["Adarb2", "Atp9b", "Gad2", "Sirt2", "Spock3"]),
+            ),
+            (
+                "cell_ranger",
+                10,
+                pd.Index(
+                    [
+                        "Adarb2",
+                        "Cxcl14",
+                        "Atp9b",
+                        "Gad2",
+                        "Cst3",
+                        "Nlgn1",
+                        "Tmsb10",
+                        "Sirt2",
+                        "Hs3st4",
+                        "Spock3",
+                    ]
+                ),
+            ),
+        ),
+    )
+    def test_n_top_genes_dentategyrus_100obs(
+        self,
+        capfd,
+        dentategyrus_100obs: AnnData,
+        flavor: str,
+        n_top_genes: int,
+        vars_after_filter: pd.Index,
+    ):
+        adata = filter_genes(dentategyrus_100obs, min_shared_counts=20, copy=True)
+        filter_genes_dispersion(adata, flavor=flavor, n_top_genes=n_top_genes)
+
+        assert adata.shape == (100, n_top_genes)
+        assert adata.var_names.equals(vars_after_filter)
+        if flavor == "svr":
+            assert adata.var.columns.equals(pd.Index(["highly_variable"]))
+        elif flavor == "seurat":
+            assert adata.var.columns.equals(
+                pd.Index(
+                    ["means", "dispersions", "dispersions_norm", "highly_variable"]
+                )
+            )
+
+        expected_log = (
+            "Filtered out 13615 genes that are detected 20 counts (shared).\n"
+            f"Extracted {n_top_genes} highly variable genes.\n"
+        )
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize(
+        "flavor, min_disp, max_disp, min_mean, max_mean, vars_after_filter",
+        (
+            ("seurat", None, None, None, None, pd.Index([])),
+            (
+                "seurat",
+                0.0125,
+                np.inf,
+                0.004,
+                3,
+                pd.Index(["Pyy", "Gcg", "Gnas", "Iapp", "Rps9"]),
+            ),
+            ("cell_ranger", None, None, None, None, pd.Index([])),
+            (
+                "cell_ranger",
+                0.0125,
+                np.inf,
+                0.0055,
+                3,
+                pd.Index(["Pyy", "Malat1", "Iapp", "Rpl13a"]),
+            ),
+        ),
+    )
+    def test_min_max_disp_min_max_mean_pancreas_50obs(
+        self,
+        capfd,
+        pancreas_50obs: AnnData,
+        min_disp: float,
+        max_disp: float,
+        min_mean: float,
+        max_mean: float,
+        flavor: str,
+        vars_after_filter: pd.Index,
+    ):
+        adata = filter_genes(pancreas_50obs, min_shared_counts=20, copy=True)
+        normalize_per_cell(adata, counts_per_cell_after=1)
+        log1p(adata)
+
+        filter_genes_dispersion(
+            adata,
+            flavor=flavor,
+            min_disp=min_disp,
+            max_disp=max_disp,
+            min_mean=min_mean,
+            max_mean=max_mean,
+        )
+
+        assert adata.shape == (50, len(vars_after_filter))
+        assert adata.var_names.equals(vars_after_filter)
+        if flavor == "svr":
+            assert adata.var.columns.equals(pd.Index(["highly_variable"]))
+        elif flavor == "seurat":
+            assert adata.var.columns.equals(
+                pd.Index(
+                    ["means", "dispersions", "dispersions_norm", "highly_variable"]
+                )
+            )
+
+        expected_log = (
+            "Filtered out 27530 genes that are detected 20 counts (shared).\n"
+            "Normalized count data: X, spliced, unspliced.\n"
+            f"Extracted {len(vars_after_filter)} highly variable genes.\n"
+        )
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize(
+        "flavor, min_disp, max_disp, min_mean, max_mean, vars_after_filter",
+        (
+            ("seurat", None, None, None, None, pd.Index([])),
+            (
+                "seurat",
+                0.0125,
+                np.inf,
+                0.005,
+                3,
+                pd.Index(["Pyy", "Malat1", "Iapp", "Rpl13a"]),
+            ),
+            ("cell_ranger", None, None, None, None, pd.Index([])),
+            (
+                "cell_ranger",
+                0.0125,
+                np.inf,
+                0.0055,
+                3,
+                pd.Index(["Pyy", "Malat1", "Rpl13a"]),
+            ),
+        ),
+    )
+    def test_min_max_disp_min_max_mean_pancreas_100obs(
+        self,
+        capfd,
+        pancreas_100obs: AnnData,
+        min_disp: float,
+        max_disp: float,
+        min_mean: float,
+        max_mean: float,
+        flavor: str,
+        vars_after_filter: pd.Index,
+    ):
+        adata = filter_genes(pancreas_100obs, min_shared_counts=20, copy=True)
+        normalize_per_cell(adata, counts_per_cell_after=1)
+        log1p(adata)
+
+        filter_genes_dispersion(
+            adata,
+            flavor=flavor,
+            min_disp=min_disp,
+            max_disp=max_disp,
+            min_mean=min_mean,
+            max_mean=max_mean,
+        )
+
+        assert adata.shape == (100, len(vars_after_filter))
+        assert adata.var_names.equals(vars_after_filter)
+        if flavor == "svr":
+            assert adata.var.columns.equals(pd.Index(["highly_variable"]))
+        elif flavor == "seurat":
+            assert adata.var.columns.equals(
+                pd.Index(
+                    ["means", "dispersions", "dispersions_norm", "highly_variable"]
+                )
+            )
+
+        expected_log = (
+            "Filtered out 27029 genes that are detected 20 counts (shared).\n"
+            "Normalized count data: X, spliced, unspliced.\n"
+            f"Extracted {len(vars_after_filter)} highly variable genes.\n"
+        )
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize(
+        "flavor, min_disp, max_disp, min_mean, max_mean, vars_after_filter",
+        (
+            ("seurat", None, None, None, None, pd.Index([])),
+            ("seurat", 0.0125, np.inf, 0.005, 3, pd.Index(["Ubb", "Fth1"])),
+            ("cell_ranger", None, None, None, None, pd.Index([])),
+            (
+                "cell_ranger",
+                0.0125,
+                np.inf,
+                0.005,
+                3,
+                pd.Index(["Ubb", "Rpl3", "Fth1"]),
+            ),
+        ),
+    )
+    def test_min_max_disp_min_max_mean_dentategyrus_50obs(
+        self,
+        capfd,
+        dentategyrus_50obs: AnnData,
+        flavor: str,
+        min_disp: float,
+        max_disp: float,
+        min_mean: float,
+        max_mean: float,
+        vars_after_filter: pd.Index,
+    ):
+        adata = filter_genes(dentategyrus_50obs, min_shared_counts=20, copy=True)
+        normalize_per_cell(adata, counts_per_cell_after=1)
+        log1p(adata)
+
+        filter_genes_dispersion(
+            adata,
+            flavor=flavor,
+            min_disp=min_disp,
+            max_disp=max_disp,
+            min_mean=min_mean,
+            max_mean=max_mean,
+        )
+
+        assert adata.shape == (50, len(vars_after_filter))
+        assert adata.var_names.equals(vars_after_filter)
+        if flavor == "svr":
+            assert adata.var.columns.equals(pd.Index(["highly_variable"]))
+        elif flavor == "seurat":
+            assert adata.var.columns.equals(
+                pd.Index(
+                    ["means", "dispersions", "dispersions_norm", "highly_variable"]
+                )
+            )
+
+        expected_log = (
+            "Filtered out 13719 genes that are detected 20 counts (shared).\n"
+            "Normalized count data: X, spliced, unspliced.\n"
+            f"Extracted {len(vars_after_filter)} highly variable genes.\n"
+        )
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize(
+        "flavor, min_disp, max_disp, min_mean, max_mean, vars_after_filter",
+        (
+            ("seurat", None, None, None, None, pd.Index([])),
+            ("seurat", 0.0125, np.inf, 0.005, 3, pd.Index(["Ubb", "Rpl3", "Fth1"])),
+            ("cell_ranger", None, None, None, None, pd.Index([])),
+            ("cell_ranger", 0.0125, np.inf, 0.005, 3, pd.Index(["Ubb", "Fth1"])),
+        ),
+    )
+    def test_min_max_disp_min_max_mean_dentategyrus_100obs(
+        self,
+        capfd,
+        dentategyrus_100obs: AnnData,
+        flavor: str,
+        min_disp: float,
+        max_disp: float,
+        min_mean: float,
+        max_mean: float,
+        vars_after_filter: pd.Index,
+    ):
+        adata = filter_genes(dentategyrus_100obs, min_shared_counts=20, copy=True)
+        normalize_per_cell(adata, counts_per_cell_after=1)
+        log1p(adata)
+
+        filter_genes_dispersion(
+            adata,
+            flavor=flavor,
+            min_disp=min_disp,
+            max_disp=max_disp,
+            min_mean=min_mean,
+            max_mean=max_mean,
+        )
+
+        assert adata.shape == (100, len(vars_after_filter))
+        assert adata.var_names.equals(vars_after_filter)
+        if flavor == "svr":
+            assert adata.var.columns.equals(pd.Index(["highly_variable"]))
+        elif flavor == "seurat":
+            assert adata.var.columns.equals(
+                pd.Index(
+                    ["means", "dispersions", "dispersions_norm", "highly_variable"]
+                )
+            )
+
+        expected_log = (
+            "Filtered out 13615 genes that are detected 20 counts (shared).\n"
+            "Normalized count data: X, spliced, unspliced.\n"
+            f"Extracted {len(vars_after_filter)} highly variable genes.\n"
+        )
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize("retain_genes", ("Tram1", ["Tram1", "Ankrd44", "Cryba2"]))
+    def test_retain_genes(
+        self, capfd, pancreas_50obs: AnnData, retain_genes: Union[str, List[str]]
+    ):
+        adata = filter_genes(pancreas_50obs, min_shared_counts=20, copy=True)
+        normalize_per_cell(adata, counts_per_cell_after=1)
+        log1p(adata)
+
+        filter_genes_dispersion(
+            adata, flavor="seurat", retain_genes=retain_genes, n_top_genes=2
+        )
+
+        if isinstance(retain_genes, str):
+            retain_genes = [retain_genes]
+
+        assert adata.shape == (50, len(retain_genes + ["Ppy", "Lrpprc"]))
+        assert adata.var_names.equals(pd.Index(retain_genes + ["Ppy", "Lrpprc"]))
+
+        expected_log = (
+            "Filtered out 27530 genes that are detected 20 counts (shared).\n"
+            "Normalized count data: X, spliced, unspliced.\n"
+            f"Extracted {len(retain_genes + ['Ppy', 'Lrpprc'])} highly variable "
+            "genes.\n"
+        )
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    def test_more_n_top_genes_than_vars(self, capfd, pancreas_50obs: AnnData):
+        filter_genes_dispersion(pancreas_50obs, n_top_genes=100000)
+
+        expected_log = (
+            "Skip filtering by dispersion since number of variables are less than "
+            "`n_top_genes`.\n"
+        )
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    def test_passing_n_top_genes_and_mean_disp(self, capfd, pancreas_50obs: AnnData):
+        filter_genes_dispersion(pancreas_50obs, n_top_genes=100, min_mean=0, max_mean=1)
+
+        expected_log = (
+            "If you pass `n_top_genes`, all cutoffs are ignored.\n"
+            "Extracted 100 highly variable genes.\n"
+        )
+        actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
 
 
