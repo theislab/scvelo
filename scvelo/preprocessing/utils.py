@@ -290,7 +290,7 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
 
     if mask_nans.sum() > 0:
         if issparse(X):
-            data[np.isnan(data) | np.isinf(data) | np.isneginf(data)] = 0
+            data[mask_nans] = 0
             n_nans = (n_nonzeros - (X != 0).sum(0)).A1
         else:
             X[mask_nans] = 0
