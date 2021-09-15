@@ -278,8 +278,15 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
     data = X.data if issparse(X) else X
     mask_nans = np.isnan(data) | np.isinf(data) | np.isneginf(data)
 
-    n_nonzeros = X.getnnz(axis=0) if issparse(X) else (X != 0).sum(axis=0)
-    n_counts = n_nonzeros if ignore_zeros else X.shape[0]
+    if issparse(X):
+        n_nonzeros = X.getnnz(axis=0)
+    else:
+        n_nonzeros = (X != 0).sum(axis=0)
+
+    if ignore_zeros:
+        n_counts = n_nonzeros
+    else:
+        n_counts = X.shape[0]
 
     if mask_nans.sum() > 0:
         if issparse(X):
@@ -305,11 +312,13 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
     else:
         mean = X.sum(0) / n_counts
         mean_sq = np.multiply(X, X).sum(0) / n_counts
+
     n_counts = np.clip(n_counts, 2, None)  # to avoid division by zero
     var = (mean_sq - mean ** 2) * (n_counts / (n_counts - 1))
 
     mean = np.nan_to_num(mean)
     var = np.nan_to_num(var)
+
     return mean, var
 
 
