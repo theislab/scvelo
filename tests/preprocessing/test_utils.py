@@ -8,7 +8,42 @@ from hypothesis.extra.numpy import arrays
 import numpy as np
 from scipy.sparse import csc_matrix, csr_matrix, spmatrix
 
-from scvelo.preprocessing.utils import csr_vcorrcoef, get_mean_var
+from anndata import AnnData
+
+from scvelo.preprocessing.utils import check_if_valid_dtype, csr_vcorrcoef, get_mean_var
+from tests.core import get_adata
+
+
+class TestCheckIfValidDtype:
+    @given(adata=get_adata(max_obs=5, max_vars=5))
+    def test_check_x(self, adata: AnnData):
+        if "X" in adata.layers:
+            adata.layers["_X"] = adata.layers.pop("X")
+        # anndata stores array as float in `AnnData.X`
+        adata.X = adata.X.astype(int)
+
+        check_if_valid_dtype(adata, layer="X")
+
+        assert adata.X.dtype == "float32"
+        for layer in adata.layers:
+            assert np.issubdtype(adata.layers[layer].dtype, np.integer)
+
+    @given(data=st.data(), adata=get_adata(max_obs=5, max_vars=5))
+    def test_check_layers(self, data, adata: AnnData):
+        if "X" in adata.layers:
+            adata.layers["_X"] = adata.layers.pop("X")
+        layer_to_convert = data.draw(st.sampled_from([*adata.layers]))
+        # anndata stores array as float in `AnnData.X`
+        adata.X = adata.X.astype(int)
+
+        check_if_valid_dtype(adata, layer=layer_to_convert)
+
+        assert np.issubdtype(adata.X.dtype, np.integer)
+        for layer in adata.layers:
+            if layer == layer_to_convert:
+                assert adata.layers[layer].dtype == "float32"
+            else:
+                assert np.issubdtype(adata.layers[layer].dtype, np.integer)
 
 
 class TestCsrVcorrcoef:
