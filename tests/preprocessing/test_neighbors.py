@@ -5,7 +5,7 @@ from scipy.sparse import csc_matrix, csr_matrix, issparse
 
 from anndata import AnnData
 
-from scvelo.preprocessing.neighbors import get_neighs
+from scvelo.preprocessing.neighbors import get_n_neighs, get_neighs
 
 
 class TestGetNeighs:
@@ -161,3 +161,21 @@ class TestGetNeighs:
 
         with pytest.raises(ValueError, match=r"The selected mode is not valid."):
             _ = get_neighs(adata=adata, mode="distances")
+
+
+class TestGetNNeighs:
+    @pytest.mark.parametrize(
+        "adata, expected_return_value",
+        (
+            (AnnData(np.eye(2)), 0),
+            (AnnData(np.eye(2), uns={"neighbors": {}}), 0),
+            (AnnData(np.eye(2), uns={"neighbors": {"random_key": 0}}), 0),
+            (AnnData(np.eye(2), uns={"neighbors": {"params": {}}}), 0),
+            (AnnData(np.eye(2), uns={"neighbors": {"params": {"random_key": 2}}}), 0),
+            (AnnData(np.eye(2), uns={"neighbors": {"params": {"n_neighbors": 5}}}), 5),
+        ),
+    )
+    def test_get_n_neighs(self, adata: AnnData, expected_return_value: int):
+        n_neigbors = get_n_neighs(adata=adata)
+
+        assert n_neigbors == expected_return_value
