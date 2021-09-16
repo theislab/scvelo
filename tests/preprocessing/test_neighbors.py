@@ -1,3 +1,5 @@
+from typing import Callable, Optional
+
 import pytest
 
 import numpy as np
@@ -5,7 +7,98 @@ from scipy.sparse import csc_matrix, csr_matrix, issparse
 
 from anndata import AnnData
 
-from scvelo.preprocessing.neighbors import get_n_neighs, get_neighs
+from scvelo.preprocessing.neighbors import get_duplicate_cells, get_n_neighs, get_neighs
+
+
+class TestGetDuplicateCells:
+    @pytest.mark.parametrize(
+        "X, true_duplicate_row_idx",
+        (
+            (np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0]]), np.array([2])),
+            (np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0], [0, 1, 0]]), np.array([2, 3])),
+            (
+                np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                        [1.3, 0.2, -0.7],
+                    ]
+                ),
+                np.array([3]),
+            ),
+        ),
+    )
+    @pytest.mark.parametrize("sparse_format", (None, csr_matrix, csc_matrix))
+    def test_array(
+        self,
+        X: np.ndarray,
+        true_duplicate_row_idx: np.ndarray,
+        sparse_format: Optional[Callable],
+    ):
+        if sparse_format:
+            X = sparse_format(X)
+        returned_duplicate_idx = get_duplicate_cells(data=X)
+
+        np.testing.assert_almost_equal(returned_duplicate_idx, true_duplicate_row_idx)
+
+    @pytest.mark.parametrize(
+        "X, X_pca, true_duplicate_row_idx",
+        (
+            (
+                np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0]]),
+                np.array([[1, 0], [2, 7], [1, 0]]),
+                np.array([2]),
+            ),
+            (
+                np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0]]),
+                np.array([[1, 0], [2, 7], [0, 0]]),
+                np.array([]),
+            ),
+            (
+                np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0], [0, 1, 0]]),
+                np.array([[1, 0], [0, 1], [1, 0], [0, 1]]),
+                np.array([2, 3]),
+            ),
+            (
+                np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0], [0, 1, 0]]),
+                np.array([[1, 0], [0, 1], [1, 0], [1, 1]]),
+                np.array([2]),
+            ),
+            (
+                np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0], [0, 1, 0]]),
+                np.array([[1, 0], [0, 1], [1, 1], [0, 1]]),
+                np.array([3]),
+            ),
+            (
+                np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                        [1.3, 0.2, -0.7],
+                    ]
+                ),
+                np.array([[0], [1], [0.1], [0]]),
+                np.array([3]),
+            ),
+        ),
+    )
+    @pytest.mark.parametrize("sparse_format", (None, csr_matrix, csc_matrix))
+    def test_anndata(
+        self,
+        X: np.ndarray,
+        X_pca: np.ndarray,
+        true_duplicate_row_idx: np.ndarray,
+        sparse_format: Optional[Callable],
+    ):
+        if sparse_format:
+            X = sparse_format(X)
+
+        adata = AnnData(X=X, obsm={"X_pca": X_pca})
+        returned_duplicate_idx = get_duplicate_cells(data=adata)
+
+        np.testing.assert_almost_equal(returned_duplicate_idx, true_duplicate_row_idx)
 
 
 class TestGetNeighs:
