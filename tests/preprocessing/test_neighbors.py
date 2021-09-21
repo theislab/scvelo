@@ -7,7 +7,12 @@ from scipy.sparse import csc_matrix, csr_matrix, issparse
 
 from anndata import AnnData
 
-from scvelo.preprocessing.neighbors import get_duplicate_cells, get_n_neighs, get_neighs
+from scvelo.preprocessing.neighbors import (
+    get_duplicate_cells,
+    get_n_neighs,
+    get_neighs,
+    remove_duplicate_cells,
+)
 
 
 class TestGetDuplicateCells:
@@ -272,3 +277,263 @@ class TestGetNNeighs:
         n_neigbors = get_n_neighs(adata=adata)
 
         assert n_neigbors == expected_return_value
+
+
+class TestRemoveDuplicateCells:
+    @pytest.mark.parametrize(
+        "X, X_pca, X_without_duplicates, X_pca_without_duplicates, n_duplicates",
+        (
+            (
+                np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0]]),
+                np.array([[1, 0], [2, 7], [1, 0]]),
+                np.array([[1, 0, 0], [0, 1, 0]]),
+                np.array([[1, 0], [2, 7]]),
+                1,
+            ),
+            (
+                np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0]]),
+                np.array([[1, 0], [2, 7], [0, 0]]),
+                np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0]]),
+                np.array([[1, 0], [2, 7], [0, 0]]),
+                0,
+            ),
+            (
+                np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0], [0, 1, 0]]),
+                np.array([[1, 0], [0, 1], [1, 0], [0, 1]]),
+                np.array([[1, 0, 0], [0, 1, 0]]),
+                np.array([[1, 0], [0, 1]]),
+                2,
+            ),
+            (
+                np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0], [0, 1, 0]]),
+                np.array([[1, 0], [0, 1], [1, 0], [1, 1]]),
+                np.array([[1, 0, 0], [0, 1, 0], [0, 1, 0]]),
+                np.array([[1, 0], [0, 1], [1, 1]]),
+                1,
+            ),
+            (
+                np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0], [0, 1, 0]]),
+                np.array([[1, 0], [0, 1], [1, 1], [0, 1]]),
+                np.array([[1, 0, 0], [0, 1, 0], [1, 0, 0]]),
+                np.array([[1, 0], [0, 1], [1, 1]]),
+                1,
+            ),
+            (
+                np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                        [1.3, 0.2, -0.7],
+                    ]
+                ),
+                np.array([[0], [1], [0.1], [0]]),
+                np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                    ]
+                ),
+                np.array([[0], [1], [0.1]]),
+                1,
+            ),
+        ),
+    )
+    @pytest.mark.parametrize("sparse_format", (None, csr_matrix, csc_matrix))
+    def test_with_pca_present(
+        self,
+        capfd,
+        X,
+        X_pca,
+        X_without_duplicates,
+        X_pca_without_duplicates,
+        n_duplicates,
+        sparse_format,
+    ):
+        if sparse_format:
+            X = sparse_format(X)
+        adata = AnnData(X=X, obsm={"X_pca": X_pca})
+        remove_duplicate_cells(adata=adata)
+
+        if sparse_format:
+            assert issparse(adata.X)
+            np.testing.assert_almost_equal(adata.X.A, X_without_duplicates)
+        else:
+            np.testing.assert_almost_equal(adata.X, X_without_duplicates)
+        np.testing.assert_almost_equal(adata.obsm["X_pca"], X_pca_without_duplicates)
+
+        if n_duplicates > 0:
+            expected_log = f"Removed {n_duplicates} duplicate cells.\n"
+        else:
+            expected_log = ""
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize(
+        "X, X_without_duplicates, n_duplicates",
+        (
+            (
+                np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                        [1.3, 0.2, -0.7],
+                    ]
+                ),
+                np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                    ]
+                ),
+                1,
+            ),
+            (
+                np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                    ]
+                ),
+                np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                    ]
+                ),
+                0,
+            ),
+        ),
+    )
+    @pytest.mark.parametrize("sparse_format", (None, csr_matrix, csc_matrix))
+    def test_without_pca_present(
+        self, capfd, X, X_without_duplicates, n_duplicates, sparse_format
+    ):
+        if sparse_format:
+            X = sparse_format(X)
+        adata = AnnData(X=X)
+        remove_duplicate_cells(adata=adata)
+
+        assert "X_pca" in adata.obsm
+        assert "pca" in adata.uns
+        assert "PCs" in adata.varm
+
+        if sparse_format:
+            assert issparse(adata.X)
+            np.testing.assert_almost_equal(adata.X.A, X_without_duplicates)
+        else:
+            np.testing.assert_almost_equal(adata.X, X_without_duplicates)
+
+        if n_duplicates > 0:
+            expected_log = f"Removed {n_duplicates} duplicate cells.\n"
+        else:
+            expected_log = ""
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize(
+        "X, X_without_duplicates, n_duplicates",
+        (
+            (
+                np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                        [1.3, 0.2, -0.7],
+                    ]
+                ),
+                np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                    ]
+                ),
+                1,
+            ),
+            (
+                np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                    ]
+                ),
+                np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                    ]
+                ),
+                0,
+            ),
+        ),
+    )
+    @pytest.mark.parametrize("sparse_format", (None, csr_matrix, csc_matrix))
+    def test_neighbors_recalculated(
+        self, capfd, X, X_without_duplicates, n_duplicates, sparse_format
+    ):
+        if sparse_format:
+            X = sparse_format(X)
+        adata = AnnData(
+            X=X,
+            uns={"neighbors": {}},
+            obsp={
+                "distances": np.eye(X.shape[0]),
+                "connectivities": np.eye(X.shape[0]),
+            },
+        )
+        remove_duplicate_cells(adata=adata)
+        actual_log, _ = capfd.readouterr()
+
+        assert "X_pca" in adata.obsm
+        assert "pca" in adata.uns
+        assert "PCs" in adata.varm
+
+        if sparse_format:
+            assert issparse(adata.X)
+            np.testing.assert_almost_equal(adata.X.A, X_without_duplicates)
+        else:
+            np.testing.assert_almost_equal(adata.X, X_without_duplicates)
+
+        if n_duplicates > 0:
+            assert issparse(adata.obsp["distances"])
+            assert issparse(adata.obsp["connectivities"])
+            assert adata.uns["neighbors"]["connectivities_key"] == "connectivities"
+            assert adata.uns["neighbors"]["distances_key"] == "distances"
+            assert isinstance(adata.uns["neighbors"]["indices"], np.ndarray)
+            assert adata.uns["neighbors"]["params"] == {
+                "n_neighbors": 30,
+                "method": "umap",
+                "metric": "euclidean",
+                "n_pcs": None,
+                "use_rep": "X",
+            }
+            expected_log = (
+                f"Removed {n_duplicates} duplicate cells.\n"
+                "computing neighbors\n"
+                "    finished ("
+            )
+            # `[7:]` removes execution time
+            actual_log = actual_log.split(expected_log)[1][7:]
+            expected_log = (
+                ") --> added \n"
+                "    'distances' and 'connectivities', weighted adjacency matrices "
+                "(adata.obsp)\n"
+            )
+            assert actual_log == expected_log
+        else:
+            np.testing.assert_almost_equal(adata.obsp["distances"], np.eye(adata.n_obs))
+            np.testing.assert_almost_equal(
+                adata.obsp["connectivities"], np.eye(adata.n_obs)
+            )
+            assert adata.uns["neighbors"] == {}
+            expected_log = ""
+            assert actual_log == expected_log
