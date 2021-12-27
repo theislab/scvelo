@@ -60,4 +60,21 @@ jobs:
           pip install hypothesis pytest pytest-cov
       - name: Unit tests
         timeout-minutes: 60
-        run: python -m pytest --cov=scvelo -vv
+        run: python -m pytest --ignore=tests/datasets/test_datasets.py --cov=scvelo -vv
+
+  test-dataset-downloads:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install pytest pytest-cov
+      - name: Test dataset downloads
+        timeout-minutes: 60
+        run: python -m pytest tests/datasets/test_datasets.py -vv
