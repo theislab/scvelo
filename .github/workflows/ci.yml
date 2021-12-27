@@ -60,7 +60,7 @@ jobs:
           pip install hypothesis pytest pytest-cov
       - name: Unit tests
         timeout-minutes: 60
-        run: python -m pytest --ignore=tests/datasets/test_datasets.py --cov=scvelo -vv
+        run: python -m pytest --durations=25 --ignore=tests/datasets/test_datasets.py --cov=scvelo -vv
 
   test-dataset-downloads:
     needs: test
