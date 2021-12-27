@@ -195,11 +195,7 @@ class TestCleanup(TestBase):
         else:
             assert returned_adata is None
 
-        # Distinction is needed since `self._subset_modalities` always includes `"X"`
-        if "X" in adata.layers:
-            assert set(adata.layers.keys()) == set(layers_to_keep)
-        else:
-            assert set(adata.layers.keys()) == set(layers_to_keep).difference({"X"})
+        assert set(adata.layers.keys()) == set(layers_to_keep).difference({"X"})
         assert set(adata.obs.columns) == set(obs_cols_to_keep)
         assert set(adata.var.columns) == set(var_cols_to_keep)
 
@@ -915,7 +911,7 @@ class TestSetInitialSize(TestBase):
 
         set_initial_size(adata=adata, layers=layers)
 
-        if "X" in layers and "X" not in adata.layers:
+        if "X" in layers:
             assert (
                 sum(
                     adata.obs.columns.isin(
