@@ -274,6 +274,9 @@ class TestAdataGeneration:
     @given(adata=get_adata(max_obs=5, max_vars=5))
     def test_default_adata_generation(self, adata: AnnData):
         assert type(adata) is AnnData
+        assert "X" not in adata.layers
+        assert "X" not in adata.obsm
+        assert "X" not in adata.varm
 
     @given(adata=get_adata(max_obs=5, max_vars=5, sparse_entries=True))
     def test_sparse_adata_generation(self, adata: AnnData):
