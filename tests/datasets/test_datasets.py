@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Optional
 
 import pytest
@@ -16,6 +17,10 @@ def dentategyrus_adata(tmpdir_factory):
     return path_to_file
 
 
+@pytest.mark.skipif(
+    sys.version_info[:2] != (3, 8) or sys.platform != "linux",
+    reason="Limit number of downloads to speed up testing.",
+)
 class TestDataSets:
     def test_dentategyrus_adjusted(self, dentategyrus_adata):
         adata = scv.datasets.dentategyrus(file_path=dentategyrus_adata, adjusted=True)
