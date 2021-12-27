@@ -158,7 +158,15 @@ def get_adata(
 
     layers = draw(
         st.dictionaries(
-            st.text(min_size=1) if layer_keys is None else st.sampled_from(layer_keys),
+            st.text(
+                st.characters(
+                    blacklist_categories=("Cs",),
+                    blacklist_characters=("X"),
+                ),
+                min_size=1,
+            )
+            if layer_keys is None
+            else st.sampled_from(layer_keys),
             arrays(
                 dtype=int,
                 elements=st.integers(min_value=0, max_value=1e2),
@@ -171,7 +179,15 @@ def get_adata(
 
     obsm = draw(
         st.dictionaries(
-            st.text(min_size=1) if obsm_keys is None else st.sampled_from(obsm_keys),
+            st.text(
+                st.characters(
+                    blacklist_categories=("Cs",),
+                    blacklist_characters=("X"),
+                ),
+                min_size=1,
+            )
+            if obsm_keys is None
+            else st.sampled_from(obsm_keys),
             arrays(
                 dtype=int,
                 elements=st.integers(min_value=0, max_value=1e2),
@@ -187,7 +203,15 @@ def get_adata(
 
     varm = draw(
         st.dictionaries(
-            st.text(min_size=1) if varm_keys is None else st.sampled_from(varm_keys),
+            st.text(
+                st.characters(
+                    blacklist_categories=("Cs",),
+                    blacklist_characters=("X"),
+                ),
+                min_size=1,
+            )
+            if varm_keys is None
+            else st.sampled_from(varm_keys),
             arrays(
                 dtype=int,
                 elements=st.integers(min_value=0, max_value=1e2),
