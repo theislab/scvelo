@@ -12,6 +12,7 @@ from scvelo.preprocessing.neighbors import (
     get_n_neighs,
     get_neighs,
     remove_duplicate_cells,
+    select_connectivities,
 )
 
 
@@ -537,3 +538,148 @@ class TestRemoveDuplicateCells:
             assert adata.uns["neighbors"] == {}
             expected_log = ""
             assert actual_log == expected_log
+
+
+class TestSelectConnectivities:
+    @pytest.mark.parametrize(
+        "connectivities, ground_truth_result",
+        (
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+                csr_matrix(
+                    np.array([[0, 0, 0, 3], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+            ),
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [2, 0, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1]])
+                ),
+                csr_matrix(
+                    np.array([[0, 0, 2, 3], [2, 0, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1]])
+                ),
+            ),
+            (
+                csr_matrix(np.array([[0, 1, 2], [2, 0, 1], [1, 1, 0], [1, 0, 1]])),
+                csr_matrix(np.array([[0, 1, 2], [2, 0, 1], [1, 1, 0], [1, 0, 1]])),
+            ),
+        ),
+    )
+    def test_default(self, connectivities, ground_truth_result):
+        adjusted_connectivities = select_connectivities(connectivities=connectivities)
+
+        assert issparse(adjusted_connectivities)
+        assert (ground_truth_result != adjusted_connectivities).getnnz() == 0
+
+    @pytest.mark.parametrize(
+        "connectivities, n_neighbors, ground_truth_result",
+        (
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+                0,
+                csr_matrix(np.zeros((4, 4))),
+            ),
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+                1,
+                csr_matrix(
+                    np.array([[0, 0, 0, 3], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+            ),
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+                2,
+                csr_matrix(
+                    np.array([[0, 0, 0, 3], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+            ),
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [2, 0, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1]])
+                ),
+                1,
+                csr_matrix(
+                    np.array([[0, 0, 0, 3], [2, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+            ),
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [2, 0, 0, 1], [1, 2, 0, 0], [1, 0, 2, 0]])
+                ),
+                1,
+                csr_matrix(
+                    np.array([[0, 0, 0, 3], [2, 0, 0, 0], [0, 2, 0, 0], [0, 0, 2, 0]])
+                ),
+            ),
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [2, 0, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1]])
+                ),
+                2,
+                csr_matrix(
+                    np.array([[0, 0, 2, 3], [2, 0, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1]])
+                ),
+            ),
+            (
+                csr_matrix(np.array([[0, 1, 2], [2, 0, 1], [1, 1, 0], [1, 1, 1]])),
+                1,
+                csr_matrix(np.array([[0, 0, 2], [2, 0, 0], [0, 1, 0], [0, 0, 1]])),
+            ),
+        ),
+    )
+    def test_n_neighbors(self, connectivities, n_neighbors, ground_truth_result):
+        adjusted_connectivities = select_connectivities(
+            connectivities=connectivities,
+            n_neighbors=n_neighbors,
+        )
+
+        assert issparse(adjusted_connectivities)
+        assert (adjusted_connectivities.getnnz(axis=1) <= n_neighbors).all()
+        assert (adjusted_connectivities != ground_truth_result).getnnz() == 0
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_neighbors", [0, 1, 5, 10, 30, None])
+    def test_real_data(self, adata, dataset, n_obs, n_neighbors):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        adjusted_connectivities = select_connectivities(
+            adata.obsp["connectivities"],
+            n_neighbors=n_neighbors,
+        )
+
+        assert issparse(adjusted_connectivities)
+        if (
+            n_neighbors is not None
+            and n_neighbors <= adata.obsp["connectivities"].getnnz(axis=1).min()
+        ):
+            assert (adjusted_connectivities.getnnz(axis=1) == n_neighbors).all()
+            assert all(
+                [
+                    all(
+                        adjusted_row.data
+                        >= np.sort(original_row.data)[-n_neighbors - 1]
+                    )
+                    for adjusted_row, original_row in zip(
+                        adjusted_connectivities, adata.obsp["connectivities"]
+                    )
+                ]
+            )
+        else:
+            n_neighbors = adata.obsp["connectivities"].getnnz(axis=1).min()
+            assert (adjusted_connectivities.getnnz(axis=1) == n_neighbors).all()
+            assert all(
+                [
+                    all(adjusted_row.data >= np.sort(original_row.data)[-n_neighbors])
+                    for adjusted_row, original_row in zip(
+                        adjusted_connectivities, adata.obsp["connectivities"]
+                    )
+                ]
+            )
