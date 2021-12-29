@@ -13,6 +13,7 @@ from scvelo.preprocessing.neighbors import (
     get_neighs,
     remove_duplicate_cells,
     select_connectivities,
+    select_distances,
 )
 
 
@@ -680,6 +681,147 @@ class TestSelectConnectivities:
                     all(adjusted_row.data >= np.sort(original_row.data)[-n_neighbors])
                     for adjusted_row, original_row in zip(
                         adjusted_connectivities, adata.obsp["connectivities"]
+                    )
+                ]
+            )
+
+
+class TestSelectDistances:
+    @pytest.mark.parametrize(
+        "distances, ground_truth_result",
+        (
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+                csr_matrix(
+                    np.array([[0, 1, 0, 0], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+            ),
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [2, 0, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1]])
+                ),
+                csr_matrix(
+                    np.array([[0, 1, 2, 0], [2, 0, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1]])
+                ),
+            ),
+            (
+                csr_matrix(np.array([[0, 1, 2], [2, 0, 1], [1, 1, 0], [1, 0, 1]])),
+                csr_matrix(np.array([[0, 1, 2], [2, 0, 1], [1, 1, 0], [1, 0, 1]])),
+            ),
+        ),
+    )
+    def test_default(self, distances, ground_truth_result):
+        adjusted_distances = select_distances(dist=distances)
+
+        assert issparse(adjusted_distances)
+        assert (ground_truth_result != adjusted_distances).getnnz() == 0
+
+    @pytest.mark.parametrize(
+        "distances, n_neighbors, ground_truth_result",
+        (
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+                0,
+                csr_matrix(np.zeros((4, 4))),
+            ),
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+                1,
+                csr_matrix(
+                    np.array([[0, 1, 0, 0], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+            ),
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+                2,
+                csr_matrix(
+                    np.array([[0, 1, 0, 0], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 0, 1]])
+                ),
+            ),
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [2, 0, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1]])
+                ),
+                1,
+                csr_matrix(
+                    np.array([[0, 1, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0], [1, 0, 0, 0]])
+                ),
+            ),
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [2, 0, 0, 1], [1, 2, 0, 0], [1, 0, 2, 0]])
+                ),
+                1,
+                csr_matrix(
+                    np.array([[0, 1, 0, 0], [0, 0, 0, 1], [1, 0, 0, 0], [1, 0, 0, 0]])
+                ),
+            ),
+            (
+                csr_matrix(
+                    np.array([[0, 1, 2, 3], [2, 0, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1]])
+                ),
+                2,
+                csr_matrix(
+                    np.array([[0, 1, 2, 0], [2, 0, 0, 1], [1, 1, 0, 0], [1, 0, 0, 1]])
+                ),
+            ),
+            (
+                csr_matrix(np.array([[0, 1, 2], [2, 0, 1], [1, 1, 0], [1, 1, 1]])),
+                1,
+                csr_matrix(np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0], [1, 0, 0]])),
+            ),
+        ),
+    )
+    def test_n_neighbors(self, distances, n_neighbors, ground_truth_result):
+        adjusted_dinstances = select_distances(dist=distances, n_neighbors=n_neighbors)
+
+        assert issparse(adjusted_dinstances)
+        assert (adjusted_dinstances.getnnz(axis=1) <= n_neighbors).all()
+        assert (adjusted_dinstances != ground_truth_result).getnnz() == 0
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_neighbors", [0, 1, 5, 10, 30, None])
+    def test_real_data(self, adata, dataset, n_obs, n_neighbors):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        adjusted_distances = select_distances(
+            adata.obsp["distances"],
+            n_neighbors=n_neighbors,
+        )
+
+        assert issparse(adjusted_distances)
+        if (
+            n_neighbors is not None
+            and n_neighbors <= adata.obsp["distances"].getnnz(axis=1).min()
+        ):
+            assert (adjusted_distances.getnnz(axis=1) == n_neighbors).all()
+            assert all(
+                [
+                    all(adjusted_row.data <= np.sort(original_row.data)[n_neighbors])
+                    for adjusted_row, original_row in zip(
+                        adjusted_distances, adata.obsp["distances"]
+                    )
+                ]
+            )
+        else:
+            n_neighbors = adata.obsp["distances"].getnnz(axis=1).min()
+            assert (adjusted_distances.getnnz(axis=1) == n_neighbors).all()
+            assert all(
+                [
+                    all(
+                        adjusted_row.data <= np.sort(original_row.data)[n_neighbors - 1]
+                    )
+                    for adjusted_row, original_row in zip(
+                        adjusted_distances, adata.obsp["distances"]
                     )
                 ]
             )
