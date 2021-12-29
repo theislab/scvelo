@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Tuple, Union
 
 import pytest
 from hypothesis import settings
@@ -250,3 +251,179 @@ def pancreas_100obs_preprocessed() -> AnnData:
     """
 
     return _pancreas_100obs_preprocessed.copy()
+
+
+def _get_dentategyrus_50obs(
+    raw: bool, preprocessed: bool
+) -> Union[AnnData, Tuple[AnnData, AnnData]]:
+    """Get AnnData of dentategyrus dataset with 50 observations.
+
+    Parameters
+    ----------
+    raw
+        Boolean identifier whether or not to return raw dataset.
+    preprocessed
+        Boolean identifier whether or not to return preprocessed dataset.
+
+    Returns
+    -------
+    Union[AnnData, Tuple[AnnData, AnnData]]
+        Specified version of dataset.
+    """
+
+    if raw and not preprocessed:
+        return _dentategyrus_50obs.copy()
+    elif not raw and preprocessed:
+        return _dentategyrus_50obs_preprocessed.copy()
+    elif raw and preprocessed:
+        return _dentategyrus_50obs.copy(), _dentategyrus_50obs_preprocessed.copy()
+
+
+def _get_dentategyrus_100obs(
+    raw: bool, preprocessed: bool
+) -> Union[AnnData, Tuple[AnnData, AnnData]]:
+    """Get AnnData of dentategyrus dataset with 100 observations.
+
+    Parameters
+    ----------
+    raw
+        Boolean identifier whether or not to return raw dataset.
+    preprocessed
+        Boolean identifier whether or not to return preprocessed dataset.
+
+    Returns
+    -------
+    Union[AnnData, Tuple[AnnData, AnnData]]
+        Specified version of dataset.
+    """
+
+    if raw and not preprocessed:
+        return _dentategyrus_100obs.copy()
+    elif not raw and preprocessed:
+        return _dentategyrus_100obs_preprocessed.copy()
+    elif raw and preprocessed:
+        return _dentategyrus_100obs.copy(), _dentategyrus_100obs_preprocessed.copy()
+
+
+def _get_dentategyrus_adata(
+    n_obs: int, raw: bool, preprocessed: bool
+) -> Union[AnnData, Tuple[AnnData, AnnData]]:
+    """Get AnnData of raw or preprocessed dentategyrus dataset.
+
+    Parameters
+    ----------
+    n_obs
+        Number of observations of dataset to return.
+    raw
+        Boolean identifier whether or not to return raw dataset.
+    preprocessed
+        Boolean identifier whether or not to return preprocessed dataset.
+
+    Returns
+    -------
+    Union[AnnData, Tuple[AnnData, AnnData]]
+        Specified version of dataset.
+    """
+
+    if n_obs == 50:
+        return _get_dentategyrus_50obs(raw=raw, preprocessed=preprocessed)
+    elif n_obs == 100:
+        return _get_dentategyrus_100obs(raw=raw, preprocessed=preprocessed)
+
+
+def _get_pancreas_50obs(
+    raw: bool, preprocessed: bool
+) -> Union[AnnData, Tuple[AnnData, AnnData]]:
+    """Get AnnData of pancreas dataset with 50 observations.
+
+    Parameters
+    ----------
+    raw
+        Boolean identifier whether or not to return raw dataset.
+    preprocessed
+        Boolean identifier whether or not to return preprocessed dataset.
+
+    Returns
+    -------
+    Union[AnnData, Tuple[AnnData, AnnData]]
+        Specified version of dataset.
+    """
+
+    if raw and not preprocessed:
+        return _pancreas_50obs.copy()
+    elif not raw and preprocessed:
+        return _pancreas_50obs_preprocessed.copy()
+    elif raw and preprocessed:
+        return _pancreas_50obs.copy(), _pancreas_50obs_preprocessed.copy()
+
+
+def _get_pancreas_100obs(
+    raw: bool, preprocessed: bool
+) -> Union[AnnData, Tuple[AnnData, AnnData]]:
+    """Get AnnData of raw or preprocessed pancreas dataset with 100 observations.
+
+    Parameters
+    ----------
+    raw
+        Boolean identifier whether or not to return raw dataset.
+    preprocessed
+        Boolean identifier whether or not to return preprocessed dataset.
+
+    Returns
+    -------
+    Union[AnnData, Tuple[AnnData, AnnData]]
+        Specified version of dataset.
+    """
+
+    if raw and not preprocessed:
+        return _pancreas_100obs.copy()
+    elif not raw and preprocessed:
+        return _pancreas_100obs_preprocessed.copy()
+    elif raw and preprocessed:
+        return _pancreas_100obs.copy(), _pancreas_100obs_preprocessed.copy()
+
+
+def _get_pancreas_adata(
+    n_obs: int, raw: bool, preprocessed: bool
+) -> Union[AnnData, Tuple[AnnData, AnnData]]:
+    """Get AnnData of raw or preprocessed pancreas dataset.
+
+    Parameters
+    ----------
+    n_obs
+        Number of observations of dataset to return.
+    raw
+        Boolean identifier whether or not to return raw dataset.
+    preprocessed
+        Boolean identifier whether or not to return preprocessed dataset.
+
+    Returns
+    -------
+    Union[AnnData, Tuple[AnnData, AnnData]]
+        Specified version of dataset.
+    """
+
+    if n_obs == 50:
+        return _get_pancreas_50obs(raw=raw, preprocessed=preprocessed)
+    elif n_obs == 100:
+        return _get_pancreas_100obs(raw=raw, preprocessed=preprocessed)
+
+
+@pytest.fixture
+def adata():
+    """Fixture to easily use available datasets in unit tests.
+
+    The fixture returns a function to load the AnnData objects of a specified dataset
+    (`"pancreas"` or `"dentategyrus"`). The function is then used in the unit test to
+    load the needed version(s) (raw or preprocessed) of the dataset.
+    """
+
+    def _get_adata(dataset: str, n_obs: int, raw: bool, preprocessed: bool):
+        if dataset == "pancreas":
+            return _get_pancreas_adata(n_obs=n_obs, raw=raw, preprocessed=preprocessed)
+        elif dataset == "dentategyrus":
+            return _get_dentategyrus_adata(
+                n_obs=n_obs, raw=raw, preprocessed=preprocessed
+            )
+
+    return _get_adata
