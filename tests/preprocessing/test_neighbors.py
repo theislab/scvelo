@@ -1,6 +1,8 @@
-from typing import Callable, Optional
+from typing import Callable, Dict, Optional
 
+import hypothesis.strategies as st
 import pytest
+from hypothesis import given
 
 import numpy as np
 from scipy.sparse import csc_matrix, csr_matrix, issparse
@@ -11,11 +13,13 @@ from scvelo.preprocessing.neighbors import (
     get_duplicate_cells,
     get_n_neighs,
     get_neighs,
+    neighbors_to_be_recomputed,
     remove_duplicate_cells,
     select_connectivities,
     select_distances,
     set_diagonal,
 )
+from tests.core import get_adata
 
 
 class TestGetDuplicateCells:
@@ -280,6 +284,44 @@ class TestGetNNeighs:
         n_neigbors = get_n_neighs(adata=adata)
 
         assert n_neigbors == expected_return_value
+
+
+class TestNeighborsToBeRecomputed:
+    @given(
+        adata=get_adata(max_obs=5, max_vars=5),
+        n_neighbors=st.integers(),
+        uns=st.sampled_from([{}, {"neighbors": []}, {"neighbors": {"param": []}}]),
+    )
+    def test_incomplete_uns(self, adata: AnnData, n_neighbors: int, uns: Dict):
+        adata.uns = uns
+        assert neighbors_to_be_recomputed(adata=adata, n_neighbors=n_neighbors)
+
+    @given(
+        adata=get_adata(max_obs=5, max_vars=5),
+        n_neighbors_original=st.integers(),
+        n_additional_neighbors=st.integers(min_value=1),
+    )
+    def test_more_neighbors_than_originally_used(
+        self, adata: AnnData, n_neighbors_original: int, n_additional_neighbors: int
+    ):
+        adata.uns = {"neighbors": {"params": {"n_neighbors": n_neighbors_original}}}
+
+        assert neighbors_to_be_recomputed(
+            adata=adata, n_neighbors=n_neighbors_original + n_additional_neighbors
+        )
+
+    def test_unexpected_distance_matrix(self):
+        distance_matrix = np.eye(11)
+        distance_matrix[0, :] = 1
+        adata = AnnData(np.eye(11), obsp={"distances": csr_matrix(distance_matrix)})
+
+        assert neighbors_to_be_recomputed(adata=adata)
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    def test_with_real_data(self, adata, dataset, n_obs):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+        assert not neighbors_to_be_recomputed(adata=adata)
 
 
 class TestRemoveDuplicateCells:
