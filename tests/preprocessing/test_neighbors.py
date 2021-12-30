@@ -14,6 +14,7 @@ from scvelo.preprocessing.neighbors import (
     remove_duplicate_cells,
     select_connectivities,
     select_distances,
+    set_diagonal,
 )
 
 
@@ -825,3 +826,104 @@ class TestSelectDistances:
                     )
                 ]
             )
+
+
+class TestSetDiagonal:
+    @pytest.mark.parametrize(
+        "knn_distances",
+        [
+            np.array([[0, 1, 2, 3], [0, 2, 3, 1], [0, 3, 4, 2]]),
+            np.array(
+                [
+                    [0, 0.21, 2.4, 0.4],
+                    [0, 0.327, 0.3, 0.22],
+                    [0, 0.3, 0.5, 1.7],
+                ]
+            ),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "knn_indices",
+        [
+            np.array([[0, 1, 2, 4], [1, 4, 5, 2], [2, 7, 3, 1]]),
+            np.array([[0, 2, 1, 4], [1, 4, 2, 3], [2, 3, 4, 1]]),
+        ],
+    )
+    @pytest.mark.parametrize("remove_diag", [True, False])
+    def test_remove_diag(self, knn_distances, knn_indices, remove_diag):
+        knn_distances_, knn_indices_ = set_diagonal(
+            knn_distances=knn_distances,
+            knn_indices=knn_indices,
+            remove_diag=remove_diag,
+        )
+
+        if remove_diag:
+            assert knn_distances_.shape == (3, 3)
+            np.testing.assert_equal(knn_distances_, knn_distances[:, 1:])
+            np.testing.assert_equal(knn_indices_, knn_indices[:, 1:])
+            assert knn_indices_.shape == (3, 3)
+        else:
+            np.testing.assert_equal(knn_distances_, knn_distances)
+            np.testing.assert_equal(knn_indices_, knn_indices)
+
+    @pytest.mark.parametrize(
+        "knn_distances",
+        [
+            np.array([[1, 2, 3], [2, 3, 1], [3, 4, 2]]),
+            np.array(
+                [
+                    [0.21, 2.4, 0.4],
+                    [0.327, 0.3, 0.22],
+                    [0.3, 0.5, 1.7],
+                ]
+            ),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "knn_indices",
+        [
+            np.array([[1, 2, 4], [4, 5, 2], [7, 3, 1]]),
+            np.array([[2, 1, 4], [4, 2, 3], [3, 4, 1]]),
+        ],
+    )
+    @pytest.mark.parametrize("remove_diag", [True, False])
+    def test_set_diagonal(self, knn_distances, knn_indices, remove_diag):
+        knn_distances_, knn_indices_ = set_diagonal(
+            knn_distances=knn_distances,
+            knn_indices=knn_indices,
+            remove_diag=remove_diag,
+        )
+
+        assert knn_distances_.shape == (3, 4)
+        np.testing.assert_equal(knn_distances_[:, 0], np.zeros(3))
+        np.testing.assert_equal(knn_distances_[:, 1:], knn_distances)
+
+        assert knn_indices_.shape == (3, 4)
+        np.testing.assert_equal(knn_indices_[:, 0], np.arange(3))
+        np.testing.assert_equal(knn_indices_[:, 1:], knn_indices)
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("remove_diag", [True, False])
+    def test_real_data(self, adata, dataset, n_obs, remove_diag):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+        n_neighbors = adata.uns["neighbors"]["params"]["n_neighbors"]
+
+        knn_distances = adata.obsp["distances"][
+            np.repeat(np.arange(adata.n_obs), n_neighbors).reshape(adata.n_obs, -1),
+            adata.uns["neighbors"]["indices"],
+        ].A
+        knn_indices = adata.uns["neighbors"]["indices"]
+
+        knn_distances_, knn_indices_ = set_diagonal(
+            knn_distances=knn_distances,
+            knn_indices=knn_indices,
+            remove_diag=remove_diag,
+        )
+
+        if remove_diag:
+            np.testing.assert_equal(knn_distances_, knn_distances[:, 1:])
+            np.testing.assert_equal(knn_indices_, knn_indices[:, 1:])
+        else:
+            np.testing.assert_equal(knn_distances_, knn_distances)
+            np.testing.assert_equal(knn_indices_, knn_indices)
