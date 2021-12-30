@@ -18,6 +18,7 @@ from scvelo.preprocessing.neighbors import (
     select_connectivities,
     select_distances,
     set_diagonal,
+    verify_neighbors,
 )
 from tests.core import get_adata
 
@@ -969,3 +970,63 @@ class TestSetDiagonal:
         else:
             np.testing.assert_equal(knn_distances_, knn_distances)
             np.testing.assert_equal(knn_indices_, knn_indices)
+
+
+class TestVerifyNeighbors:
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    def test_invalid_graph(self, capfd, adata, dataset, n_obs):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+        adata.obsp["distances"][0, :] = 0
+        adata.obsp["distances"].eliminate_zeros()
+
+        returned_val = verify_neighbors(adata=adata)
+        assert returned_val is None
+
+        actual_warning, _ = capfd.readouterr()
+        expected_warning = (
+            "WARNING: The neighbor graph has an unexpected format "
+            "(e.g. computed outside scvelo) \n"
+            "or is corrupted (e.g. due to subsetting). "
+            "Consider recomputing with `pp.neighbors`.\n"
+        )
+        assert actual_warning == expected_warning
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("raw", [True, False])
+    @pytest.mark.parametrize(
+        "uns", [{}, {"neighbors": []}, {"neighbors": {"param": []}}, {"random": 0}]
+    )
+    def test_neighbors_or_params_not_present(
+        self, capfd, adata, dataset, n_obs, raw, uns
+    ):
+        if raw:
+            adata = adata(dataset=dataset, n_obs=n_obs, raw=True, preprocessed=False)
+        else:
+            adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+        adata.uns = uns
+
+        returned_val = verify_neighbors(adata=adata)
+        assert returned_val is None
+
+        actual_warning, _ = capfd.readouterr()
+        expected_warning = (
+            "WARNING: The neighbor graph has an unexpected format "
+            "(e.g. computed outside scvelo) \n"
+            "or is corrupted (e.g. due to subsetting). "
+            "Consider recomputing with `pp.neighbors`.\n"
+        )
+        assert actual_warning == expected_warning
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    def test_valid_graph(self, capfd, adata, dataset, n_obs):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        returned_val = verify_neighbors(adata=adata)
+        assert returned_val is None
+
+        actual_warning, _ = capfd.readouterr()
+        expected_warning = ""
+        assert actual_warning == expected_warning
