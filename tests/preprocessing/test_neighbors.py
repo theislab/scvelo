@@ -11,6 +11,7 @@ from anndata import AnnData
 
 from scvelo.preprocessing.neighbors import (
     get_connectivities,
+    get_csr_from_indices,
     get_duplicate_cells,
     get_n_neighs,
     get_neighs,
@@ -157,6 +158,103 @@ class TestGetConnectivities:
 
         assert issparse(connectivities)
         np.testing.assert_almost_equal(connectivities.A, ground_truth.A)
+
+
+class TestGetCsrFromIndices:
+    @pytest.mark.parametrize(
+        "knn_indices, knn_dists, n_obs, n_neighbors, ground_truth",
+        (
+            [
+                (
+                    np.array([[0, 1, 2], [1, 3, 0], [2, 1, 3], [3, 0, 1]]),
+                    np.array(
+                        [[0, 0.1, 0.2], [0, 0.5, 1.7], [0, 0.01, 0.02], [0, 0.5, 1]]
+                    ),
+                    4,
+                    3,
+                    csr_matrix(
+                        [
+                            [0.0, 0.1, 0.2, 0.0],
+                            [1.7, 0.0, 0.0, 0.5],
+                            [0.0, 0.01, 0.0, 0.02],
+                            [0.5, 1.0, 0.0, 0.0],
+                        ]
+                    ),
+                ),
+                (
+                    np.array([[0, 1, 2], [1, 3, 0], [2, 1, 3], [3, 0, 1]]),
+                    np.array(
+                        [[0, 0.1, 0.2], [0, 0.5, 1.7], [0, 0.01, 0.3], [0, 0.5, 1]]
+                    ),
+                    4,
+                    2,
+                    csr_matrix(
+                        [
+                            [0.0, 0.1, 0.0, 0.0],
+                            [0.0, 0.0, 0.0, 0.5],
+                            [0.0, 0.01, 0.0, 0.0],
+                            [0.5, 0.0, 0.0, 0.0],
+                        ]
+                    ),
+                ),
+                (
+                    np.array([[0, 1, -1], [1, -1, 0], [2, 1, 3], [3, 0, 1]]),
+                    np.array(
+                        [[0, 0.1, 0.2], [0, 0.5, 1.7], [0, 0.01, 0.3], [0, 0.5, 1]]
+                    ),
+                    4,
+                    3,
+                    csr_matrix(
+                        [
+                            [0.0, 0.1, 0.0, 0.0],
+                            [1.7, 0.0, 0.0, 0.0],
+                            [0.0, 0.01, 0.0, 0.3],
+                            [0.5, 1.0, 0.0, 0.0],
+                        ]
+                    ),
+                ),
+            ]
+        ),
+    )
+    def test_manual_data(
+        self,
+        knn_indices: np.ndarray,
+        knn_dists: np.ndarray,
+        n_obs: int,
+        n_neighbors: int,
+        ground_truth: spmatrix,
+    ):
+        returned_matrix = get_csr_from_indices(
+            knn_indices=knn_indices,
+            knn_dists=knn_dists,
+            n_obs=n_obs,
+            n_neighbors=n_neighbors,
+        )
+
+        assert isinstance(returned_matrix, csr_matrix)
+        assert (returned_matrix != ground_truth).getnnz() == 0
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    def test_real_data(self, adata, dataset, n_obs):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        knn_indices = adata.uns["neighbors"]["indices"]
+
+        knn_distances = []
+        for row_distance, row_index in zip(adata.obsp["distances"], knn_indices):
+            knn_distances.append(row_distance.A[0, row_index])
+        knn_distances = np.array(knn_distances)
+
+        returned_matrix = get_csr_from_indices(
+            knn_indices=knn_indices,
+            knn_dists=knn_distances,
+            n_obs=n_obs,
+            n_neighbors=adata.uns["neighbors"]["params"]["n_neighbors"],
+        )
+
+        assert isinstance(returned_matrix, csr_matrix)
+        assert (returned_matrix != adata.obsp["distances"]).getnnz() == 0
 
 
 class TestGetDuplicateCells:
