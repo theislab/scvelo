@@ -1,6 +1,8 @@
 import warnings
 from collections import Counter
-from typing import Optional
+from typing import Dict, Optional
+
+from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
@@ -134,18 +136,18 @@ def _set_pca(adata, n_pcs: Optional[int], use_highly_variable: bool):
 
 
 def neighbors(
-    adata,
-    n_neighbors=30,
-    n_pcs=None,
-    use_rep=None,
-    use_highly_variable=True,
-    knn=True,
-    random_state=0,
-    method="umap",
-    metric="euclidean",
-    metric_kwds=None,
-    num_threads=-1,
-    copy=False,
+    adata: AnnData,
+    n_neighbors: int = 30,
+    n_pcs: Optional[int] = None,
+    use_rep: Optional[str] = None,
+    use_highly_variable: bool = True,
+    knn: bool = True,
+    random_state: int = 0,
+    method: Literal["umap", "sklearn", "hnsw", "gauss", "rapids"] = "umap",
+    metric: str = "euclidean",
+    metric_kwds: Optional[Dict] = None,
+    num_threads: int = -1,
+    copy: bool = False,
 ):
     """
     Compute a neighborhood graph of observations.
