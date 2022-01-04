@@ -10,6 +10,7 @@ from scipy.sparse import csc_matrix, csr_matrix, issparse, load_npz, spmatrix
 from anndata import AnnData
 
 from scvelo.preprocessing.neighbors import (
+    _get_rep,
     compute_connectivities_umap,
     get_connectivities,
     get_csr_from_indices,
@@ -551,6 +552,88 @@ class TestGetNNeighs:
         n_neigbors = get_n_neighs(adata=adata)
 
         assert n_neigbors == expected_return_value
+
+
+class TestGetRep:
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize(
+        "use_rep, expected_rep",
+        [(None, "X_pca"), ("X", "X"), ("pca", "X_pca"), ("X_pca", "X_pca")],
+    )
+    @pytest.mark.parametrize("n_pcs", [None, 10, 30, 100])
+    def test_pca_not_yet_calculated(
+        self,
+        adata,
+        dataset: str,
+        n_obs: int,
+        use_rep: Optional[str],
+        expected_rep: Optional[str],
+        n_pcs: Optional[int],
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        returned_rep = _get_rep(adata=adata, use_rep=use_rep, n_pcs=n_pcs)
+        assert returned_rep == expected_rep
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_pcs", [None, 10, 30, 100])
+    @pytest.mark.parametrize("n_vars", [5, 10, 49, 50])
+    def test_small_n_vars(
+        self,
+        adata,
+        dataset: str,
+        n_obs: int,
+        n_pcs: Optional[int],
+        n_vars: int,
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+        adata = adata[:, adata.var_names[:n_vars]]
+
+        returned_rep = _get_rep(adata=adata, use_rep=None, n_pcs=n_pcs)
+        if n_vars < 50:
+            assert returned_rep == "X"
+        else:
+            assert returned_rep == "X_pca"
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    def test_zero_n_pcs(
+        self,
+        adata,
+        dataset: str,
+        n_obs: int,
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        returned_rep = _get_rep(adata=adata, use_rep=None, n_pcs=0)
+        assert returned_rep == "X"
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_pcs", [5, 10, 30])
+    def test_X_and_n_pcs_specified(
+        self,
+        adata,
+        capfd,
+        dataset: str,
+        n_obs: int,
+        n_pcs: int,
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        returned_rep = _get_rep(adata=adata, use_rep="X", n_pcs=n_pcs)
+        assert returned_rep == "X"
+
+        expected_log = (
+            "WARNING: Unexpected pair of parameters: `use_rep='X'` but "
+            f"`n_pcs={n_pcs}`. This will only consider the frist {n_pcs} variables "
+            f"when calculating the neighbor graph. To use all of `X`, pass "
+            "`n_pcs=None`.\n"
+        )
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
 
 
 class TestNeighborsToBeRecomputed:
