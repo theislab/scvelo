@@ -68,8 +68,10 @@ def _get_rep(adata: AnnData, use_rep: str, n_pcs: int):
         rep = "X" if adata.n_vars < 50 or n_pcs == 0 else "X_pca"
     elif use_rep not in adata.obsm.keys() and f"X_{use_rep}" in adata.obsm.keys():
         rep = f"X_{use_rep}"
+    else:
+        rep = use_rep
 
-    if (use_rep == "X") and (n_pcs is not None):
+    if (rep == "X") and (n_pcs is not None):
         logg.warn(
             f"Unexpected pair of parameters: `use_rep='X'` but `n_pcs={n_pcs}`. "
             f"This will only consider the frist {n_pcs} variables when calculating the "
