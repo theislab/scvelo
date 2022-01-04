@@ -5,11 +5,12 @@ import pytest
 from hypothesis import given
 
 import numpy as np
-from scipy.sparse import csc_matrix, csr_matrix, issparse
+from scipy.sparse import csc_matrix, csr_matrix, issparse, load_npz, spmatrix
 
 from anndata import AnnData
 
 from scvelo.preprocessing.neighbors import (
+    get_connectivities,
     get_duplicate_cells,
     get_n_neighs,
     get_neighs,
@@ -21,6 +22,141 @@ from scvelo.preprocessing.neighbors import (
     verify_neighbors,
 )
 from tests.core import get_adata
+
+
+class TestGetConnectivities:
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("raw", [True, False])
+    @pytest.mark.parametrize("uns", [{}, {"random": 0}])
+    @pytest.mark.parametrize("n_neighbors", [None, 15, 30])
+    @pytest.mark.parametrize("recurse_neighbors", [True, False])
+    def test_neighbors_not_present(
+        self,
+        adata,
+        dataset: str,
+        n_obs: int,
+        raw: bool,
+        uns: Dict,
+        n_neighbors: Optional[int],
+        recurse_neighbors: bool,
+    ):
+        if raw:
+            adata = adata(dataset=dataset, n_obs=n_obs, raw=True, preprocessed=False)
+        else:
+            adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+        adata.uns = uns
+
+        returned_val = get_connectivities(
+            adata=adata, n_neighbors=n_neighbors, recurse_neighbors=recurse_neighbors
+        )
+        assert returned_val is None
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_neighbors", [5, 15, 29])
+    @pytest.mark.parametrize("mode", ["connectivities", "distances"])
+    def test_connectivities_with_trimmed_neighbors(
+        self, adata, dataset: str, n_obs: int, n_neighbors: Optional[int], mode: str
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        connectivities = get_connectivities(
+            adata=adata, mode=mode, n_neighbors=n_neighbors
+        )
+
+        assert issparse(connectivities)
+        assert (connectivities.getnnz(axis=1) == (n_neighbors + 1)).all()
+        assert (connectivities.data == 1 / (n_neighbors + 1)).all()
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_neighbors", [None, 30, 45])
+    @pytest.mark.parametrize("mode", ["connectivities", "distances"])
+    def test_connectivities_with_original_neighbors(
+        self, adata, dataset: str, n_obs: int, n_neighbors: Optional[int], mode: str
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        connectivities = get_connectivities(
+            adata=adata, mode=mode, n_neighbors=n_neighbors
+        )
+
+        assert issparse(connectivities)
+        assert (
+            connectivities.getnnz(axis=1) == adata.obsp[mode].getnnz(axis=1) + 1
+        ).all()
+
+        for row in connectivities:
+            np.testing.assert_equal(row.data, 1 / row.getnnz())
+
+    @pytest.mark.parametrize("mode", ["connectivities", "distances"])
+    @pytest.mark.parametrize(
+        "adjacency_matrix, recursed_neighbors_matrix",
+        [
+            (
+                np.array([[1, 0, 1], [0, 1, 1], [0, 1, 1]]),
+                csr_matrix(
+                    np.array([[0.4, 0.2, 0.4], [0, 0.5, 0.5], [0, 0.5, 0.5]]),
+                ).astype(np.float32),
+            ),
+            (
+                np.array([[1, 0, 1, 0], [1, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 1]]),
+                csr_matrix(
+                    np.array(
+                        [
+                            [0.4, 0.2, 0.4, 0],
+                            [0.4, 0.4, 0.2, 0],
+                            [0.2, 0.4, 0.4, 0],
+                            [0.2, 0.4, 0, 0.4],
+                        ]
+                    )
+                ).astype(np.float32),
+            ),
+        ],
+    )
+    def test_recursed_neighbors(
+        self,
+        mode: str,
+        adjacency_matrix: np.ndarray,
+        recursed_neighbors_matrix: spmatrix,
+    ):
+        adata = AnnData(
+            np.eye(*adjacency_matrix.shape),
+            obsp={mode: csr_matrix(adjacency_matrix)},
+            uns={
+                "neighbors": {"params": {"n_neighbors": adjacency_matrix[0, :].sum()}}
+            },
+        )
+
+        connectivities = get_connectivities(
+            adata=adata,
+            mode=mode,
+            recurse_neighbors=True,
+        )
+
+        assert issparse(connectivities)
+        assert (connectivities != recursed_neighbors_matrix).getnnz() == 0
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_neighbors", [None, 15])
+    @pytest.mark.parametrize("mode", ["connectivities", "distances"])
+    def test_recursed_neighbors_real_data(
+        self, adata, dataset: str, n_obs: int, n_neighbors: Optional[int], mode: str
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        connectivities = get_connectivities(
+            adata=adata, mode=mode, n_neighbors=n_neighbors
+        )
+        ground_truth = load_npz(
+            "tests/_data/test_neighbors/get_connectivities/"
+            f"dataset={dataset}-n_obs={n_obs}-n_neighbors={n_neighbors}-mode={mode}.npz"
+        )
+
+        assert issparse(connectivities)
+        np.testing.assert_almost_equal(connectivities.A, ground_truth.A)
 
 
 class TestGetDuplicateCells:
