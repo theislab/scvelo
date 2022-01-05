@@ -13,6 +13,7 @@ from anndata import AnnData
 from scvelo.preprocessing.neighbors import (
     _get_hnsw_neighbors,
     _get_rep,
+    _get_scanpy_neighbors,
     _set_pca,
     compute_connectivities_umap,
     get_connectivities,
@@ -753,6 +754,114 @@ class TestGetRep:
         )
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
+
+
+class TestGetScanpyNeighbors:
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_pcs", [None, 15])
+    @pytest.mark.parametrize("n_neighbors", [15, 30])
+    def test_neighbors_with_X_pca(
+        self,
+        adata,
+        dataset: str,
+        n_obs: int,
+        n_pcs: Optional[int],
+        n_neighbors: int,
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        neighbors = _get_scanpy_neighbors(
+            adata=adata, use_rep="X_pca", n_pcs=n_pcs, n_neighbors=n_neighbors
+        )
+        if n_pcs is None:
+            n_pcs = adata.obsm["X_pca"].shape[1]
+
+        ground_truth_distances = load_npz(
+            file=(
+                f"tests/_data/test_neighbors/_get_scanpy_neighbors/dataset={dataset}"
+                f"-n_obs={n_obs}-rep='X_pca'-n_pcs={n_pcs}-n_neighbors={n_neighbors}"
+                "_distances.npz"
+            ),
+        )
+        ground_truth_connectivities = load_npz(
+            file=(
+                f"tests/_data/test_neighbors/_get_scanpy_neighbors/dataset={dataset}"
+                f"-n_obs={n_obs}-rep='X_pca'-n_pcs={n_pcs}-n_neighbors={n_neighbors}"
+                "_connectivites.npz"
+            ),
+        )
+
+        assert hasattr(neighbors, "distances")
+        assert issparse(neighbors.distances)
+        assert (neighbors.distances.getnnz(axis=1) == n_neighbors - 1).all()
+        np.testing.assert_almost_equal(
+            neighbors.distances.A, ground_truth_distances.A, decimal=4
+        )
+
+        assert hasattr(neighbors, "connectivities")
+        assert issparse(neighbors.connectivities)
+        assert (neighbors.connectivities.getnnz(axis=1) >= n_neighbors - 1).all()
+        assert (neighbors.connectivities != neighbors.connectivities.T).getnnz() == 0
+        np.testing.assert_almost_equal(
+            neighbors.connectivities.A, ground_truth_connectivities.A, decimal=4
+        )
+
+        assert hasattr(neighbors, "knn_indices")
+        assert neighbors.knn_indices.shape == (adata.n_obs, n_neighbors)
+        np.testing.assert_equal(neighbors.knn_indices[:, 0], np.arange(adata.n_obs))
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_pcs", [15, 30])
+    @pytest.mark.parametrize("n_neighbors", [15, 30])
+    def test_neighbors_with_X(
+        self,
+        adata,
+        dataset: str,
+        n_obs: int,
+        n_pcs: Optional[int],
+        n_neighbors: int,
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        neighbors = _get_scanpy_neighbors(
+            adata=adata, use_rep="X", n_pcs=n_pcs, n_neighbors=n_neighbors
+        )
+
+        ground_truth_distances = load_npz(
+            file=(
+                f"tests/_data/test_neighbors/_get_scanpy_neighbors/dataset={dataset}"
+                f"-n_obs={n_obs}-rep='X'-n_pcs={n_pcs}-n_neighbors={n_neighbors}"
+                "_distances.npz"
+            ),
+        )
+        ground_truth_connectivities = load_npz(
+            file=(
+                f"tests/_data/test_neighbors/_get_scanpy_neighbors/dataset={dataset}"
+                f"-n_obs={n_obs}-rep='X'-n_pcs={n_pcs}-n_neighbors={n_neighbors}"
+                "_connectivites.npz"
+            ),
+        )
+
+        assert hasattr(neighbors, "distances")
+        assert issparse(neighbors.distances)
+        assert (neighbors.distances.getnnz(axis=1) == n_neighbors - 1).all()
+        np.testing.assert_almost_equal(
+            neighbors.distances.A, ground_truth_distances.A, decimal=4
+        )
+
+        assert hasattr(neighbors, "connectivities")
+        assert issparse(neighbors.connectivities)
+        assert (neighbors.connectivities.getnnz(axis=1) >= n_neighbors - 1).all()
+        assert (neighbors.connectivities != neighbors.connectivities.T).getnnz() == 0
+        np.testing.assert_almost_equal(
+            neighbors.connectivities.A, ground_truth_connectivities.A, decimal=4
+        )
+
+        assert hasattr(neighbors, "knn_indices")
+        assert neighbors.knn_indices.shape == (adata.n_obs, n_neighbors)
+        np.testing.assert_equal(neighbors.knn_indices[:, 0], np.arange(adata.n_obs))
 
 
 class TestNeighborsToBeRecomputed:
