@@ -1,7 +1,13 @@
+from datetime import timedelta
+
 import pytest
+from hypothesis import settings
 
 import scanpy as sc
 from anndata import AnnData
+
+settings.register_profile("ci", deadline=timedelta(milliseconds=500))
+
 
 # TODO: Make datasets smaller (less variables)
 _dentategyrus_50obs = sc.read("tests/_data/dentategyrus_50obs.h5ad")
