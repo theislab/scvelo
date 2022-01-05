@@ -55,9 +55,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: |
-          pip install -e .
-          pip install hypothesis pytest pytest-cov
+        run: pip install -e '.[dev]'
       - name: Unit tests
         timeout-minutes: 60
         run: python -m pytest --durations=25 --ignore=tests/datasets/test_datasets.py --cov=scvelo -vv
