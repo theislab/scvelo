@@ -10,6 +10,7 @@ from scipy.sparse import csc_matrix, csr_matrix, issparse, load_npz, spmatrix
 from anndata import AnnData
 
 from scvelo.preprocessing.neighbors import (
+    compute_connectivities_umap,
     get_connectivities,
     get_csr_from_indices,
     get_duplicate_cells,
@@ -23,6 +24,37 @@ from scvelo.preprocessing.neighbors import (
     verify_neighbors,
 )
 from tests.core import get_adata
+
+
+class TestComputeConnectivitiesUmap:
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    def test_real_data(self, adata, dataset, n_obs):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        knn_indices = adata.uns["neighbors"]["indices"]
+
+        knn_distances = []
+        for row_distance, row_index in zip(adata.obsp["distances"], knn_indices):
+            knn_distances.append(row_distance.A[0, row_index])
+        knn_distances = np.array(knn_distances)
+
+        distance_matrix, connectivity_matrix = compute_connectivities_umap(
+            knn_indices=knn_indices,
+            knn_dists=knn_distances,
+            n_obs=n_obs,
+            n_neighbors=adata.uns["neighbors"]["params"]["n_neighbors"],
+        )
+
+        assert isinstance(distance_matrix, csr_matrix)
+        np.testing.assert_almost_equal(
+            distance_matrix.A, adata.obsp["distances"].A, decimal=4
+        )
+
+        assert isinstance(connectivity_matrix, csr_matrix)
+        np.testing.assert_almost_equal(
+            connectivity_matrix.A, adata.obsp["connectivities"].A, decimal=4
+        )
 
 
 class TestGetConnectivities:
