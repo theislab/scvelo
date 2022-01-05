@@ -5,7 +5,7 @@ from scipy.sparse import csr_matrix
 
 from anndata import AnnData
 
-from scvelo.preprocessing.moments import get_moments
+from scvelo.preprocessing.moments import get_moments, second_order_moments_u
 
 
 class TestGetMoments:
@@ -151,3 +151,35 @@ class TestGetMoments:
             second_order_moment_centered,
             second_order_moment_uncentered - first_order_moment_ground_truth ** 2,
         )
+
+
+class TestSecondOrderMomentsU:
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    def test_neighbor_graph_not_present(self, adata, dataset: str, n_obs: int):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+        del adata.uns["neighbors"]
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                "You need to run `pp.neighbors` first to compute a neighborhood graph."
+            ),
+        ):
+            _ = second_order_moments_u(adata=adata)
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    def test_output(self, adata, dataset: str, n_obs: int):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        second_order_moment = second_order_moments_u(adata=adata)
+        assert isinstance(second_order_moment, np.ndarray)
+
+        ground_truth = np.load(
+            file=(
+                f"tests/_data/test_moments/get_moments/dataset={dataset}-n_obs={n_obs}"
+                f"-layer=unspliced-mode=connectivities_second_moment.npy"
+            )
+        )
+        np.testing.assert_almost_equal(second_order_moment, ground_truth)
