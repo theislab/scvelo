@@ -5,7 +5,11 @@ from scipy.sparse import csr_matrix
 
 from anndata import AnnData
 
-from scvelo.preprocessing.moments import get_moments, second_order_moments_u
+from scvelo.preprocessing.moments import (
+    get_moments,
+    second_order_moments,
+    second_order_moments_u,
+)
 
 
 class TestGetMoments:
@@ -150,6 +154,94 @@ class TestGetMoments:
         np.testing.assert_almost_equal(
             second_order_moment_centered,
             second_order_moment_uncentered - first_order_moment_ground_truth ** 2,
+        )
+
+
+class TestSecondOrderMoments:
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    def test_neighbor_graph_not_present(self, adata, dataset: str, n_obs: int):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+        del adata.uns["neighbors"]
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                "You need to run `pp.neighbors` first to compute a neighborhood graph."
+            ),
+        ):
+            _ = second_order_moments(adata=adata)
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    def test_output(self, adata, dataset: str, n_obs: int):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        second_order_moment_spliced, second_order_moment_mixed = second_order_moments(
+            adata=adata
+        )
+        assert isinstance(second_order_moment_spliced, np.ndarray)
+        assert isinstance(second_order_moment_mixed, np.ndarray)
+
+        ground_truth_spliced = np.load(
+            file=(
+                f"tests/_data/test_moments/get_moments/dataset={dataset}-n_obs={n_obs}"
+                f"-layer=spliced-mode=connectivities_second_moment.npy"
+            )
+        )
+        np.testing.assert_almost_equal(
+            second_order_moment_spliced, ground_truth_spliced
+        )
+
+        ground_truth_mixed = np.load(
+            file=(
+                f"tests/_data/test_moments/second_order_moments/dataset={dataset}"
+                f"-n_obs={n_obs}-mode=connectivities_second_moment_mixed.npy"
+            )
+        )
+        np.testing.assert_almost_equal(second_order_moment_mixed, ground_truth_mixed)
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    def test_adjusted(self, adata, dataset: str, n_obs: int):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+        adata.layers["Mu"] = np.load(
+            file=(
+                f"tests/_data/test_moments/get_moments/dataset={dataset}-n_obs={n_obs}"
+                f"-layer=unspliced-mode=connectivities_first_moment.npy"
+            )
+        )
+        adata.layers["Ms"] = np.load(
+            file=(
+                f"tests/_data/test_moments/get_moments/dataset={dataset}-n_obs={n_obs}"
+                f"-layer=spliced-mode=connectivities_first_moment.npy"
+            )
+        )
+
+        second_order_moment_spliced, second_order_moment_mixed = second_order_moments(
+            adata=adata, adjusted=True
+        )
+        assert isinstance(second_order_moment_spliced, np.ndarray)
+        assert isinstance(second_order_moment_mixed, np.ndarray)
+
+        second_order_spliced = np.load(
+            file=(
+                f"tests/_data/test_moments/get_moments/dataset={dataset}-n_obs={n_obs}"
+                f"-layer=spliced-mode=connectivities_second_moment.npy"
+            )
+        )
+        np.testing.assert_almost_equal(
+            second_order_moment_spliced, 2 * second_order_spliced - adata.layers["Ms"]
+        )
+
+        second_order_mixed = np.load(
+            file=(
+                f"tests/_data/test_moments/second_order_moments/dataset={dataset}"
+                f"-n_obs={n_obs}-mode=connectivities_second_moment_mixed.npy"
+            )
+        )
+        np.testing.assert_almost_equal(
+            second_order_moment_mixed, 2 * second_order_mixed - adata.layers["Mu"]
         )
 
 
