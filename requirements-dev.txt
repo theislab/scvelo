@@ -11,4 +11,5 @@ louvain
 pre-commit>=2.9.0
 pybind11
 pytest>=6.2.2
+pytest-cov
 python-igraph
