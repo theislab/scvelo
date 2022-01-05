@@ -5,12 +5,14 @@ import pytest
 from hypothesis import given
 
 import numpy as np
+import pandas as pd
 from scipy.sparse import csc_matrix, csr_matrix, issparse, load_npz, spmatrix
 
 from anndata import AnnData
 
 from scvelo.preprocessing.neighbors import (
     _get_rep,
+    _set_pca,
     compute_connectivities_umap,
     get_connectivities,
     get_csr_from_indices,
@@ -1319,6 +1321,200 @@ class TestSetDiagonal:
         else:
             np.testing.assert_equal(knn_distances_, knn_distances)
             np.testing.assert_equal(knn_indices_, knn_indices)
+
+
+class TestSetPCA:
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_pcs", [None, 5, 10, 30])
+    @pytest.mark.parametrize("use_highly_variable", [True, False])
+    def test_pca_not_yet_calculated(
+        self,
+        adata,
+        dataset: str,
+        n_obs: int,
+        n_pcs: Optional[int],
+        use_highly_variable: bool,
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+        original_adata = adata.copy()
+
+        del adata.layers["Mu"]
+        del adata.layers["Ms"]
+        adata.obsm = {}
+        adata.obsp = {}
+        adata.uns = {}
+        adata.varm = {}
+        cleaned_adata = adata.copy()
+
+        returned_val = _set_pca(
+            adata=adata, n_pcs=n_pcs, use_highly_variable=use_highly_variable
+        )
+
+        assert returned_val is None
+
+        assert adata.obs_names.identical(cleaned_adata.obs_names)
+        assert adata.var_names.identical(cleaned_adata.var_names)
+        assert set(adata.layers) == set(cleaned_adata.layers)
+        assert (adata.obs.columns == cleaned_adata.obs.columns).all()
+        pd.testing.assert_frame_equal(adata.obs, cleaned_adata.obs)
+        pd.testing.assert_frame_equal(adata.var, cleaned_adata.var)
+        np.testing.assert_almost_equal(adata.X.A, cleaned_adata.X.A)
+        for layer in adata.layers:
+            np.testing.assert_almost_equal(
+                adata.layers[layer].A,
+                cleaned_adata.layers[layer].A,
+            )
+
+        if n_pcs is None:
+            n_pcs = 30
+
+        assert set(adata.obsm) == set(["X_pca"])
+        assert adata.obsm["X_pca"].shape == (adata.n_obs, n_pcs)
+        np.testing.assert_almost_equal(
+            adata.obsm["X_pca"][:, :n_pcs],
+            original_adata.obsm["X_pca"][:, :n_pcs],
+            decimal=2,
+        )
+
+        assert "pca" in adata.uns
+        assert set(adata.uns["pca"]) == set(["params", "variance", "variance_ratio"])
+        assert isinstance(adata.uns["pca"]["params"], Dict)
+        assert set(adata.uns["pca"]["params"]) == set(
+            ["use_highly_variable", "zero_center"]
+        )
+        if "highly_variable" not in adata.var:
+            assert adata.uns["pca"]["params"]["use_highly_variable"] is False
+        else:
+            assert (
+                adata.uns["pca"]["params"]["use_highly_variable"] is use_highly_variable
+            )
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_pcs", [1, 5, 9])
+    @pytest.mark.parametrize("use_highly_variable", [True, False])
+    @pytest.mark.parametrize("pass_n_pcs", [True, False])
+    def test_small_n_pcs(
+        self,
+        adata,
+        capfd,
+        dataset: str,
+        n_obs: int,
+        n_pcs: Optional[int],
+        use_highly_variable: bool,
+        pass_n_pcs: bool,
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+        adata.obsm["X_pca"] = adata.obsm["X_pca"][:, :n_pcs]
+
+        if pass_n_pcs:
+            returned_val = _set_pca(
+                adata=adata, n_pcs=n_pcs, use_highly_variable=use_highly_variable
+            )
+        else:
+            returned_val = _set_pca(
+                adata=adata, n_pcs=None, use_highly_variable=use_highly_variable
+            )
+
+        assert returned_val is None
+
+        if pass_n_pcs:
+            expected_log = ""
+        else:
+            expected_log = (
+                f"WARNING: Neighbors are computed on {n_pcs} principal components "
+                "only.\n"
+            )
+        actual_log, _ = capfd.readouterr()
+        assert actual_log == expected_log
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_pcs", [None, 50])
+    @pytest.mark.parametrize("use_highly_variable", [True, False])
+    def test_n_pcs_exceed_n_vars(
+        self,
+        adata,
+        dataset: str,
+        n_obs: int,
+        n_pcs: Optional[int],
+        use_highly_variable: bool,
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        del adata.layers["Mu"]
+        del adata.layers["Ms"]
+        adata.obsm = {}
+        adata.obsp = {}
+        adata.uns = {}
+        adata.varm = {}
+        adata = adata[:, adata.var_names[:15]]
+
+        returned_val = _set_pca(
+            adata=adata, n_pcs=n_pcs, use_highly_variable=use_highly_variable
+        )
+        assert returned_val is None
+
+        assert set(adata.obsm) == set(["X_pca"])
+        assert adata.obsm["X_pca"].shape == (adata.n_obs, adata.n_vars - 1)
+
+        assert "pca" in adata.uns
+        assert set(adata.uns["pca"]) == set(["params", "variance", "variance_ratio"])
+        assert isinstance(adata.uns["pca"]["params"], Dict)
+        assert set(adata.uns["pca"]["params"]) == set(
+            ["use_highly_variable", "zero_center"]
+        )
+        if "highly_variable" not in adata.var:
+            assert adata.uns["pca"]["params"]["use_highly_variable"] is False
+        else:
+            assert (
+                adata.uns["pca"]["params"]["use_highly_variable"] is use_highly_variable
+            )
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_pcs", [None, 50])
+    @pytest.mark.parametrize("use_highly_variable", [True, False])
+    def test_n_pcs_exceed_n_obs(
+        self,
+        adata,
+        dataset: str,
+        n_obs: int,
+        n_pcs: Optional[int],
+        use_highly_variable: bool,
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        del adata.layers["Mu"]
+        del adata.layers["Ms"]
+        adata.obsm = {}
+        adata.obsp = {}
+        adata.uns = {}
+        adata.varm = {}
+        adata = adata[adata.obs_names[:15], :]
+
+        returned_val = _set_pca(
+            adata=adata, n_pcs=n_pcs, use_highly_variable=use_highly_variable
+        )
+
+        assert returned_val is None
+
+        assert set(adata.obsm) == set(["X_pca"])
+        assert adata.obsm["X_pca"].shape == (adata.n_obs, adata.n_obs - 1)
+
+        assert "pca" in adata.uns
+        assert set(adata.uns["pca"]) == set(["params", "variance", "variance_ratio"])
+        assert isinstance(adata.uns["pca"]["params"], Dict)
+        assert set(adata.uns["pca"]["params"]) == set(
+            ["use_highly_variable", "zero_center"]
+        )
+        if "highly_variable" not in adata.var:
+            assert adata.uns["pca"]["params"]["use_highly_variable"] is False
+        else:
+            assert (
+                adata.uns["pca"]["params"]["use_highly_variable"] is use_highly_variable
+            )
 
 
 class TestVerifyNeighbors:
