@@ -23,6 +23,7 @@ from scvelo.preprocessing.neighbors import (
     get_duplicate_cells,
     get_n_neighs,
     get_neighs,
+    neighbors,
     neighbors_to_be_recomputed,
     remove_duplicate_cells,
     select_connectivities,
@@ -976,6 +977,185 @@ class TestGetSklearnNeighbors:
         assert hasattr(neighbors, "knn_indices")
         assert neighbors.knn_indices.shape == (adata.n_obs, n_neighbors)
         np.testing.assert_equal(neighbors.knn_indices[:, 0], np.arange(adata.n_obs))
+
+
+class TestNeighbors:
+    @given(
+        adata=get_adata(max_obs=5, max_vars=5),
+        method=st.sampled_from(["random", "Scanpy", "UMAP"]),
+    )
+    def test_provide_not_supported_method(self, adata: AnnData, method: str):
+        expected_value_error = (
+            f"Provided `method={method}`. Admissible values are `'umap'`, `'sklearn'`, "
+            "`'hnsw'`, `'gauss'`, and `'rapids'`."
+        )
+        with pytest.raises(ValueError, match=fr"{expected_value_error}"):
+            neighbors(adata=adata, use_rep="random", method=method)
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("n_pcs", [15, 30])
+    @pytest.mark.parametrize("method", ["hnsw", "sklearn", "umap"])
+    @pytest.mark.parametrize("n_neighbors", [15, 30])
+    @pytest.mark.parametrize("copy", [True, False])
+    def test_output(
+        self,
+        adata,
+        capfd,
+        dataset: str,
+        n_obs: int,
+        n_pcs: Optional[int],
+        method: str,
+        n_neighbors: int,
+        copy: bool,
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        del adata.layers["Mu"]
+        del adata.layers["Ms"]
+        adata.obsm = {}
+        adata.obsp = {}
+        adata.uns = {}
+        adata.varm = {}
+
+        returned_adata = neighbors(
+            adata=adata, method=method, n_pcs=n_pcs, n_neighbors=n_neighbors, copy=copy
+        )
+
+        # Check returned value
+        if copy:
+            assert isinstance(returned_adata, AnnData)
+        else:
+            assert returned_adata is None
+            returned_adata = adata.copy()
+
+        assert returned_adata.obs_names.equals(adata.obs_names)
+        assert returned_adata.var_names.equals(adata.var_names)
+
+        # Check PCA
+        assert set(returned_adata.obsm) == set(["X_pca"])
+        assert returned_adata.obsm["X_pca"].shape == (adata.n_obs, n_pcs)
+
+        assert "pca" in returned_adata.uns
+        assert set(returned_adata.uns["pca"]) == set(
+            ["params", "variance", "variance_ratio"]
+        )
+        assert isinstance(returned_adata.uns["pca"]["params"], Dict)
+        assert set(returned_adata.uns["pca"]["params"]) == set(
+            ["use_highly_variable", "zero_center"]
+        )
+        if "highly_variable" not in adata.var:
+            assert returned_adata.uns["pca"]["params"]["use_highly_variable"] is False
+        else:
+            assert returned_adata.uns["pca"]["params"]["use_highly_variable"] is True
+
+        # Check data related to neighbor graph
+        assert set(returned_adata.obsp) == set(["distances", "connectivities"])
+        assert issparse(returned_adata.obsp["connectivities"])
+        assert issparse(returned_adata.obsp["distances"])
+        np.testing.assert_equal(
+            returned_adata.obsp["distances"].getnnz(axis=1), n_neighbors - 1
+        )
+
+        assert "neighbors" in returned_adata.uns
+        assert returned_adata.uns["neighbors"]["connectivities_key"] == "connectivities"
+        assert returned_adata.uns["neighbors"]["distances_key"] == "distances"
+        assert "indices" in returned_adata.uns["neighbors"]
+        assert returned_adata.uns["neighbors"]["indices"].shape == (
+            returned_adata.n_obs,
+            n_neighbors,
+        )
+        np.testing.assert_equal(
+            returned_adata.uns["neighbors"]["indices"][:, 0],
+            np.arange(returned_adata.n_obs),
+        )
+        assert set(returned_adata.uns["neighbors"]["params"]) == set(
+            ["n_neighbors", "method", "metric", "n_pcs", "use_rep"]
+        )
+        assert returned_adata.uns["neighbors"]["params"]["n_neighbors"] == n_neighbors
+        assert returned_adata.uns["neighbors"]["params"]["method"] == method
+        assert returned_adata.uns["neighbors"]["params"]["metric"] == "euclidean"
+        assert returned_adata.uns["neighbors"]["params"]["n_pcs"] == n_pcs
+        assert returned_adata.uns["neighbors"]["params"]["use_rep"] == "X_pca"
+
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    def test_log(self, adata, capfd, dataset, n_obs):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+
+        del adata.layers["Mu"]
+        del adata.layers["Ms"]
+        adata.obsm = {}
+        adata.obsp = {}
+        adata.uns = {}
+        adata.varm = {}
+
+        neighbors(adata=adata)
+
+        expected_log = "computing neighbors\n    finished ("
+
+        actual_log, _ = capfd.readouterr()
+        assert actual_log.startswith(expected_log)
+
+        # `[7:]` removes execution time
+        actual_log = actual_log.split(expected_log)[1][7:]
+        expected_log = (
+            ") --> added \n"
+            "    'distances' and 'connectivities', weighted adjacency matrices "
+            "(adata.obsp)\n"
+        )
+        assert actual_log == expected_log
+
+    def test_duplicate_cells(self, capfd):
+        adata = AnnData(
+            X=np.array(
+                [
+                    [1.3, 0.2, -0.7],
+                    [0.5, 1, -10],
+                    [1.31, 0.21, -0.71],
+                    [1.3, 0.2, -0.7],
+                ]
+            ),
+            layers={
+                "unspliced": np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                        [1.3, 0.2, -0.7],
+                    ]
+                ),
+                "spliced": np.array(
+                    [
+                        [1.3, 0.2, -0.7],
+                        [0.5, 1, -10],
+                        [1.31, 0.21, -0.71],
+                        [1.3, 0.2, -0.7],
+                    ]
+                ),
+            },
+        )
+
+        neighbors(adata=adata, use_rep="X_pca")
+
+        expected_log = (
+            "WARNING: You seem to have 1 duplicate cells in your "
+            "data. Consider removing these via pp.remove_duplicate_cells.\n"
+            "computing neighbors\n"
+            "    finished ("
+        )
+
+        actual_log, _ = capfd.readouterr()
+        assert actual_log.startswith(expected_log)
+
+        # `[7:]` removes execution time
+        actual_log = actual_log.split(expected_log)[1][7:]
+        expected_log = (
+            ") --> added \n"
+            "    'distances' and 'connectivities', weighted adjacency matrices "
+            "(adata.obsp)\n"
+        )
+        assert actual_log == expected_log
 
 
 class TestNeighborsToBeRecomputed:
