@@ -8,6 +8,7 @@ hypothesis
 flake8==3.8.4
 isort==5.7.0
 louvain
+magic-impute
 pre-commit>=2.9.0
 pybind11
 pytest>=6.2.2
