@@ -1,3 +1,4 @@
+import numbers
 import warnings
 
 import numpy as np
@@ -15,7 +16,7 @@ def get_weight(x, y=None, perc=95):
             y = y.A
         xy_norm = xy_norm / np.clip(np.max(xy_norm, axis=0), 1e-3, None)
         xy_norm += y / np.clip(np.max(y, axis=0), 1e-3, None)
-    if isinstance(perc, int):
+    if isinstance(perc, numbers.Number):
         weights = xy_norm >= np.percentile(xy_norm, perc, axis=0)
     else:
         lb, ub = np.percentile(xy_norm, perc, axis=0)
