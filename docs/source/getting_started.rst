@@ -6,7 +6,7 @@ Once you are set, the following tutorials go straight into analysis of RNA veloc
 latent time, driver identification and many more.
 
 First of all, the input data for scVelo are two count matrices of pre-mature (unspliced) and mature (spliced) abundances,
-which can be obtained from standard sequencing protocols, using the `velocyto`_ or `loompy/kallisto`_
+which can be obtained from standard sequencing protocols, using the `velocyto`_ or `kallisto`_
 counting pipeline.
 
 scVelo workflow at a glance
@@ -89,4 +89,4 @@ For every tool module there is a plotting counterpart, which allows you to exami
 
 
 .. _`velocyto`: http://velocyto.org/velocyto.py/tutorial/cli.html
-.. _`loompy/kallisto`: https://linnarssonlab.org/loompy/kallisto/index.html
+.. _`kallisto`: https://www.kallistobus.tools/tutorials/kb_velocity/python/kb_velocity/#generate-rna-velocity-count-matrices
