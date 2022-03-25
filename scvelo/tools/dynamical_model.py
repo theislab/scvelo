@@ -34,7 +34,13 @@ class DynamicsRecovery(BaseDynamics):
         if self.std_u == 0 or self.std_s == 0:
             self.std_u = self.std_s = 1
         _scaling = self.fit_scaling
-        scaling = self.std_u / self.std_s if isinstance(_scaling, bool) else _scaling
+        if isinstance(_scaling, bool) and _scaling:
+            scaling = self.std_u / self.std_s
+        elif isinstance(_scaling, bool):
+            scaling = 1
+        else:
+            scaling = _scaling
+
         u, u_w = u / scaling, u_w / scaling
 
         # initialize beta and gamma from extreme quantiles of s
@@ -93,8 +99,9 @@ class DynamicsRecovery(BaseDynamics):
         self.t, self.tau, self.o = self.get_time_assignment()
         self.loss = [self.get_loss()]
 
-        self.initialize_scaling(sight=0.5)
-        self.initialize_scaling(sight=0.1)
+        if self.fit_scaling:
+            self.initialize_scaling(sight=0.5)
+            self.initialize_scaling(sight=0.1)
 
         self.steady_state_ratio = self.gamma / self.beta
 
@@ -113,7 +120,8 @@ class DynamicsRecovery(BaseDynamics):
 
             # pre-train with explicit time assignment
             self.fit_t_and_alpha()
-            self.fit_scaling_()
+            if self.fit_scaling:
+                self.fit_scaling_()
             self.fit_rates()
             self.fit_t_()
 
