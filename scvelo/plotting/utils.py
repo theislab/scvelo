@@ -1033,7 +1033,7 @@ def plot_linfit(
         mu_x, mu_y = (0, 0)
     else:
         mu_x, mu_y = np.mean(x), np.mean(y)
-    slope = (np.mean(x * y) - mu_x * mu_y) / (np.mean(x ** 2) - mu_x ** 2)
+    slope = (np.mean(x * y) - mu_x * mu_y) / (np.mean(x**2) - mu_x**2)
     offset = mu_y - slope * mu_x
 
     if isinstance(add_linfit, str) and "intercept" in add_linfit:
@@ -1506,7 +1506,7 @@ def hist(
     if xscale == "log":
         if xticks is None:
             lspace = np.linspace(-10, 10, 21)
-            ticks = [a for a in [10 ** a for a in lspace] if bmin < a < bmax]
+            ticks = [a for a in [10**a for a in lspace] if bmin < a < bmax]
             ax.set_xticks(ticks)
         ax.xaxis.set_major_formatter(log_fmt)
         ax.minorticks_off()

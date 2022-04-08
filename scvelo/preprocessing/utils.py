@@ -314,7 +314,7 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
         mean_sq = np.multiply(X, X).sum(0) / n_counts
 
     n_counts = np.clip(n_counts, 2, None)  # to avoid division by zero
-    var = (mean_sq - mean ** 2) * (n_counts / (n_counts - 1))
+    var = (mean_sq - mean**2) * (n_counts / (n_counts - 1))
 
     mean = np.nan_to_num(mean)
     var = np.nan_to_num(var)
@@ -515,11 +515,11 @@ def csr_vcorrcoef(X, y):
         if issparse(X)
         else np.sum(X * X, axis=-1)
     )
-    denom_x = denom_x - 2 * np.ravel(np.sum(X, axis=-1)) * mu_x + n_features * mu_x ** 2
+    denom_x = denom_x - 2 * np.ravel(np.sum(X, axis=-1)) * mu_x + n_features * mu_x**2
     denom_y = (
         np.ravel(np.sum(y * y, axis=-1))
         - 2 * (np.ravel(np.sum(y, axis=-1)) * mu_y)
-        + n_features * mu_y ** 2
+        + n_features * mu_y**2
     )
     return nom / np.sqrt(denom_x * denom_y)
 

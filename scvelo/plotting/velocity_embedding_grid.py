@@ -77,7 +77,7 @@ def compute_velocity_on_grid(
         ns = int(np.sqrt(len(V_grid[:, 0])))
         V_grid = V_grid.T.reshape(2, ns, ns)
 
-        mass = np.sqrt((V_grid ** 2).sum(0))
+        mass = np.sqrt((V_grid**2).sum(0))
         min_mass = 10 ** (min_mass - 6)  # default min_mass = 1e-5
         min_mass = np.clip(min_mass, None, np.max(mass) * 0.9)
         cutoff = mass.reshape(V_grid[0].shape) < min_mass

@@ -989,7 +989,7 @@ class TestNeighbors:
             f"Provided `method={method}`. Admissible values are `'umap'`, `'sklearn'`, "
             "`'hnsw'`, `'gauss'`, and `'rapids'`."
         )
-        with pytest.raises(ValueError, match=fr"{expected_value_error}"):
+        with pytest.raises(ValueError, match=rf"{expected_value_error}"):
             neighbors(adata=adata, use_rep="random", method=method)
 
     @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
