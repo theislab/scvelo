@@ -13,7 +13,11 @@ from scvelo.read_load import load
 url_datadir = "https://github.com/theislab/scvelo_notebooks/raw/master/"
 
 
-def bonemarrow():
+def bonemarrow(
+    file_path: Optional[
+        Union[str, Path]
+    ] = "data/BoneMarrow/human_cd34_bone_marrow.h5ad"
+):
     """Human bone marrow.
 
     Data from `Setty et al. (2019) <https://doi.org/10.1242/dev.173849>`__.
@@ -33,9 +37,9 @@ def bonemarrow():
     -------
     Returns `adata` object
     """  # noqa E501
-    filename = "data/BoneMarrow/human_cd34_bone_marrow.h5ad"
+
     url = "https://ndownloader.figshare.com/files/27686835"
-    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
     return adata
 
@@ -96,7 +100,9 @@ def dentategyrus(file_path: Optional[Union[str, Path]] = None, adjusted=True):
     return adata
 
 
-def dentategyrus_lamanno():
+def dentategyrus_lamanno(
+    file_path: Optional[Union[str, Path]] = "data/DentateGyrus/DentateGyrus.loom"
+):
     """Dentate Gyrus neurogenesis.
 
     From `La Manno et al. (2018) <https://doi.org/10.1038/s41586-018-0414-6>`__.
@@ -113,9 +119,9 @@ def dentategyrus_lamanno():
     -------
     Returns `adata` object
     """  # noqa E501
-    filename = "data/DentateGyrus/DentateGyrus.loom"
+
     url = "http://pklab.med.harvard.edu/velocyto/DentateGyrus/DentateGyrus.loom"
-    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
     adata.obsm["X_tsne"] = np.column_stack([adata.obs["TSNE1"], adata.obs["TSNE2"]])
     adata.obs["clusters"] = adata.obs["ClusterName"]
@@ -164,7 +170,9 @@ def forebrain(file_path: Union[str, Path] = "data/ForebrainGlut/hgForebrainGlut.
     return adata
 
 
-def gastrulation():
+def gastrulation(
+    file_path: Optional[Union[str, Path]] = "data/Gastrulation/gastrulation.h5ad"
+):
     """Mouse gastrulation.
 
     Data from `Pijuan-Sala et al. (2019) <https://doi.org/10.1038/s41586-019-0933-9>`__.
@@ -187,14 +195,16 @@ def gastrulation():
     -------
     Returns `adata` object
     """  # noqa E501
-    filename = "data/Gastrulation/gastrulation.h5ad"
+
     url = "https://ndownloader.figshare.com/files/28095525"
-    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
     return adata
 
 
-def gastrulation_e75():
+def gastrulation_e75(
+    file_path: Optional[Union[str, Path]] = "data/Gastrulation/gastrulation_e75.h5ad"
+):
     """Mouse gastrulation subset to E7.5.
 
     Data from `Pijuan-Sala et al. (2019) <https://doi.org/10.1038/s41586-019-0933-9>`__.
@@ -210,14 +220,16 @@ def gastrulation_e75():
     -------
     Returns `adata` object
     """  # noqa E501
-    filename = "data/Gastrulation/gastrulation_e75.h5ad"
+
     url = "https://ndownloader.figshare.com/files/30439878"
-    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
     return adata
 
 
-def gastrulation_erythroid():
+def gastrulation_erythroid(
+    file_path: Optional[Union[str, Path]] = "data/Gastrulation/erythroid_lineage.h5ad"
+):
     """Mouse gastrulation subset to erythroid lineage.
 
     Data from `Pijuan-Sala et al. (2019) <https://doi.org/10.1038/s41586-019-0933-9>`__.
@@ -233,9 +245,9 @@ def gastrulation_erythroid():
     -------
     Returns `adata` object
     """  # noqa E501
-    filename = "data/Gastrulation/erythroid_lineage.h5ad"
+
     url = "https://ndownloader.figshare.com/files/27686871"
-    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
     return adata
 
@@ -284,7 +296,7 @@ def pancreatic_endocrinogenesis():
     return pancreas()
 
 
-def pbmc68k():
+def pbmc68k(file_path: Optional[Union[str, Path]] = "data/PBMC/pbmc68k.h5ad"):
     """Peripheral blood mononuclear cells.
 
     Data from `Zheng et al. (2017) <https://doi.org/10.1038/ncomms14049>`__.
@@ -305,9 +317,9 @@ def pbmc68k():
     -------
     Returns `adata` object
     """  # noqa E501
-    filename = "data/PBMC/pbmc68k.h5ad"
+
     url = "https://ndownloader.figshare.com/files/27686886"
-    adata = read(filename, backup_url=url, sparse=True, cache=True)
+    adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
     return adata
 
