@@ -98,7 +98,7 @@ class TestSimulation:
     )
     def test_switch(self, noise_model, switches: List[float]):
         def ceil(x, precision=0):
-            return np.true_divide(np.ceil(x * 10 ** precision), 10 ** precision)
+            return np.true_divide(np.ceil(x * 10**precision), 10**precision)
 
         adata = simulation(t_max=1, switches=switches, noise_model=noise_model)
 

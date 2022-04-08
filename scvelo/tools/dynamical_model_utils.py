@@ -62,7 +62,7 @@ def convolve(x, weights=None):
 
 
 def linreg(u, s):  # linear regression fit
-    ss_ = s.multiply(s).sum(0) if issparse(s) else (s ** 2).sum(0)
+    ss_ = s.multiply(s).sum(0) if issparse(s) else (s**2).sum(0)
     us_ = s.multiply(u).sum(0) if issparse(s) else (s * u).sum(0)
     return us_ / ss_
 
@@ -300,7 +300,7 @@ def compute_divergence(
         distu, distu_ = (u - ut) / std_u, (u - ut_) / std_u
         dists, dists_ = (s - st) / std_s, (s - st_) / std_s
 
-        res = np.array([distu_ ** 2 + dists_ ** 2, distu ** 2 + dists ** 2])
+        res = np.array([distu_**2 + dists_**2, distu**2 + dists**2])
         if connectivities is not None and connectivities is not False:
             res = (
                 np.array([connectivities.dot(r) for r in res])
@@ -342,8 +342,8 @@ def compute_divergence(
     elif mode == "outside_of_trajectory":
         return np.sign(distu) * np.sign(distu_) == 1
 
-    distx = distu ** 2 + dists ** 2
-    distx_ = distu_ ** 2 + dists_ ** 2
+    distx = distu**2 + dists**2
+    distx_ = distu_**2 + dists_**2
 
     res, varx = np.array([distx_, distx]), 1  # default vals;
 
@@ -353,8 +353,8 @@ def compute_divergence(
             varu = np.nanvar(distu * o + distu_ + (1 - o), axis=0)
             vars = np.nanvar(dists * o + dists_ + (1 - o), axis=0)
 
-            distx = distu ** 2 / varu + dists ** 2 / vars
-            distx_ = distu_ ** 2 / varu + dists_ ** 2 / vars
+            distx = distu**2 / varu + dists**2 / vars
+            distx_ = distu_**2 / varu + dists_**2 / vars
 
             varx = varu * vars
 
@@ -383,10 +383,10 @@ def compute_divergence(
             sign = np.sign(dists * o + dists_ * (1 - o))
             varx = np.mean(dist, axis=0) - np.mean(sign * np.sqrt(dist), axis=0) ** 2
             if kernel_width is not None:
-                varx *= kernel_width ** 2
+                varx *= kernel_width**2
             res /= varx
         elif kernel_width is not None:
-            res /= kernel_width ** 2
+            res /= kernel_width**2
 
     if reg_time is not None and len(reg_time) == len(distu_):
         o = np.argmin(res, axis=0)
@@ -509,7 +509,7 @@ def compute_divergence(
 
         distu = distu * (o == 1) + distu_ * (o == 0)
         dists = dists * (o == 1) + dists_ * (o == 0)
-        res = distu ** 2 + dists ** 2
+        res = distu**2 + dists**2
 
     elif mode == "gene_likelihood":
         o = np.argmin(res, axis=0)
@@ -530,7 +530,7 @@ def compute_divergence(
         distu *= idx
         dists *= idx
 
-        distx = distu ** 2 + dists ** 2
+        distx = distu**2 + dists**2
 
         # compute variance / equivalent to np.var(np.sign(sdiff) * np.sqrt(distx))
         varx = (
@@ -705,9 +705,9 @@ def curve_dists(
     # match each curve point to nearest observation
     dist, dist_ = np.zeros(len(curve_t)), np.zeros(len(curve_t_))
     for i, ci in enumerate(curve_t):
-        dist[i] = np.min(np.sum((x_obs - ci) ** 2 / std_x ** 2, 1))
+        dist[i] = np.min(np.sum((x_obs - ci) ** 2 / std_x**2, 1))
     for i, ci in enumerate(curve_t_):
-        dist_[i] = np.min(np.sum((x_obs - ci) ** 2 / std_x ** 2, 1))
+        dist_[i] = np.min(np.sum((x_obs - ci) ** 2 / std_x**2, 1))
 
     return dist, dist_
 
@@ -1055,13 +1055,13 @@ class BaseDynamics:
 
     def get_residuals(self, **kwargs):
         udiff, sdiff, reg = self.get_dists(**kwargs)
-        return np.sign(sdiff) * np.sqrt(udiff ** 2 + sdiff ** 2)
+        return np.sign(sdiff) * np.sqrt(udiff**2 + sdiff**2)
 
     def get_distx(self, noise_model="normal", regularize=True, **kwargs):
         udiff, sdiff, reg = self.get_dists(**kwargs)
-        distx = udiff ** 2 + sdiff ** 2
+        distx = udiff**2 + sdiff**2
         if regularize:
-            distx += reg ** 2
+            distx += reg**2
         return np.sqrt(distx) if noise_model == "laplace" else distx
 
     def get_se(self, **kwargs):
@@ -1091,7 +1091,7 @@ class BaseDynamics:
             kwargs.update({"weighted": "upper"})
         udiff, sdiff, reg = self.get_dists(**kwargs)
 
-        distx = udiff ** 2 + sdiff ** 2 + reg ** 2
+        distx = udiff**2 + sdiff**2 + reg**2
         eucl_distx = np.sqrt(distx)
         n = np.clip(len(distx) - len(self.u) * 0.01, 2, None)
 
@@ -1136,7 +1136,7 @@ class BaseDynamics:
         if "weighted" not in kwargs:
             kwargs.update({"weighted": "upper"})
         udiff, sdiff, reg = self.get_dists(**kwargs)
-        distx = udiff ** 2 + sdiff ** 2
+        distx = udiff**2 + sdiff**2
         return np.mean(distx) - np.mean(np.sign(sdiff) * np.sqrt(distx)) ** 2
 
     def get_ut(self, **kwargs):
@@ -1590,8 +1590,8 @@ class BaseDynamics:
     def get_orth_fit(self, **kwargs):
         kwargs["weighted"] = True  # include inner vals for orthogonal regression
         u, s = self.get_reads(**kwargs)
-        a, b = np.sum(s * u), np.sum(u ** 2 - s ** 2)
-        orth_beta = (b + ((b ** 2 + 4 * a ** 2) ** 0.5)) / (2 * a)
+        a, b = np.sum(s * u), np.sum(u**2 - s**2)
+        orth_beta = (b + ((b**2 + 4 * a**2) ** 0.5)) / (2 * a)
         return orth_beta
 
     def get_orth_distx(self, orth_beta=None, **kwargs):
@@ -1600,10 +1600,10 @@ class BaseDynamics:
         u, s = self.get_reads(**kwargs)
         if orth_beta is None:
             orth_beta = self.get_orth_fit(**kwargs)
-        s_real = np.array((s + (orth_beta * u)) / (1 + orth_beta ** 2))
+        s_real = np.array((s + (orth_beta * u)) / (1 + orth_beta**2))
         sdiff = np.array(s_real - s) / self.std_s
         udiff = np.array(orth_beta * s_real - u) / self.std_u * self.scaling
-        return udiff ** 2 + sdiff ** 2
+        return udiff**2 + sdiff**2
 
     def get_pval(self, model="dynamical", **kwargs):
         # assuming var-scaled udiff, sdiff follow N(0,1),

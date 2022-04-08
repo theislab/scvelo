@@ -122,7 +122,7 @@ class LinearRegression:
         if self.fit_intercept:
             _x = sum(x, axis=0) / n_obs
             _y = sum(y, axis=0) / n_obs
-            self.coef_ = (_xy / n_obs - _x * _y) / (_xx / n_obs - _x ** 2)
+            self.coef_ = (_xy / n_obs - _x * _y) / (_xx / n_obs - _x**2)
             self.intercept_ = _y - self.coef_ * _x
 
             if self.positive_intercept:

@@ -51,7 +51,7 @@ def leastsq_NxN(x, y, fit_offset=False, perc=None, constraint_positive_offset=Tr
             n_obs = x.shape[0] if weights is None else sum(weights, axis=0)
             x_ = sum(x, axis=0) / n_obs
             y_ = sum(y, axis=0) / n_obs
-            gamma = (xy_ / n_obs - x_ * y_) / (xx_ / n_obs - x_ ** 2)
+            gamma = (xy_ / n_obs - x_ * y_) / (xx_ / n_obs - x_**2)
             offset = y_ - gamma * x_
 
             # fix negative offsets:

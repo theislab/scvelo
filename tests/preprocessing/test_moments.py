@@ -157,7 +157,7 @@ class TestGetMoments:
         second_order_moment_centered = get_moments(adata=adata, second_order=True)
         np.testing.assert_almost_equal(
             second_order_moment_centered,
-            second_order_moment_uncentered - first_order_moment_ground_truth ** 2,
+            second_order_moment_uncentered - first_order_moment_ground_truth**2,
         )
 
 

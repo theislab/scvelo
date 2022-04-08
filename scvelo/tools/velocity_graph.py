@@ -228,7 +228,7 @@ class VelocityGraph:
                 if self.compute_uncertainties:
                     dX /= l2_norm(dX)[:, None]
                     uncertainties.extend(
-                        np.nansum(dX ** 2 * moments[obs_id][None, :], 1)
+                        np.nansum(dX**2 * moments[obs_id][None, :], 1)
                     )
 
                 vals.extend(val)
