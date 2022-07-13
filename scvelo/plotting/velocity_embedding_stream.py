@@ -260,6 +260,6 @@ def velocity_embedding_stream(
             **scatter_kwargs,
         )
 
-        savefig_or_show(dpi=dpi, save=save, show=show)
+        savefig_or_show("embedding_stream", dpi=dpi, save=save, show=show)
         if show is False:
             return ax
