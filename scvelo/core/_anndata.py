@@ -187,7 +187,7 @@ def get_df(
     """
 
     if precision is not None:
-        pd.set_option("precision", precision)
+        pd.set_option("display.precision", precision)
 
     if isinstance(data, AnnData):
         keys, keys_split = (
