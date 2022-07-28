@@ -22,6 +22,15 @@ You can now clone your fork of scVelo and install the development mode
     git clone https://github.com/YOUR-USER-NAME/scvelo.git
     cd scvelo
     git checkout --track origin/develop
+    
+
+Unix Systems
+^^^^^^^^^^^^
+
+The installation can be completed with
+
+.. code:: bash
+
     pip install -e '.[dev]'
 
 The last line can, alternatively, be replaced by
@@ -31,15 +40,25 @@ The last line can, alternatively, be replaced by
     pip install -r requirements-dev.txt
 
 
+Windows
+^^^^^^^
+
+If running Windows, `hsnwlib` needs to be installed via `conda` and the installation with pip slightly adjusted:
+
+.. code:: bash
+
+    conda install -c conda-forge hnswlib
+    pip install -e .[dev]
+
+
+Coding style
+^^^^^^^^^^^^
+
 Finally, to make sure your code follows our code style guideline, install pre-commit:
 
 .. code:: bash
 
     pre-commit install
-
-
-Coding style
-^^^^^^^^^^^^
 
 Our code follows `black` and `flake8` coding style. Code formatting (`black`, `isort`) is automated through pre-commit hooks. In addition, we require that
 
