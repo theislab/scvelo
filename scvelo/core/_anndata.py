@@ -58,36 +58,19 @@ def clean_obs_names(
         adata = adata.copy()
 
     if adata.obs_names.map(len).unique().size == 1:
-        start = re.search(alphabet, adata.obs_names[0]).start()
-        end = start + re.search(f"{alphabet}*", adata.obs_names[0][start:]).end()
+        start, end = re.search(alphabet * id_length, adata.obs_names[0]).span()
         new_obs_names = [obs_name[start:end] for obs_name in adata.obs_names]
-        start, end = 0, len(new_obs_names[0])
-        for i in range(end - id_length):
-            if np.any(
-                [new_obs_name[i] not in alphabet for new_obs_name in new_obs_names]
-            ):
-                start += 1
-            if np.any(
-                [
-                    new_obs_name[::-1][i] not in alphabet
-                    for new_obs_name in new_obs_names
-                ]
-            ):
-                end -= 1
 
-        new_obs_names = [new_obs_name[start:end] for new_obs_name in new_obs_names]
         prefixes = [
             obs_name.replace(new_obs_name, "")
             for obs_name, new_obs_name in zip(adata.obs_names, new_obs_names)
         ]
     else:
-
-        def rename_obs(obs_name):
-            start = re.search(alphabet, obs_name).start()
-            new_obs_name = re.search(f"{alphabet}*", obs_name[start:]).group()
-            return new_obs_name, obs_name.replace(new_obs_name, "")
-
-        new_obs_names, prefixes = zip(*adata.obs_names.map(rename_obs))
+        prefixes, new_obs_names = [], []
+        for obs_name in adata.obs_names:
+            start, end = re.search(alphabet * id_length, adata.obs_names[0]).span()
+            new_obs_names.append(obs_name[start:end])
+            prefixes.append(obs_name.replace(obs_name[start:end], ""))
 
     adata.obs_names = new_obs_names
     adata.obs_names_make_unique()
@@ -499,7 +482,9 @@ def make_sparse(
     return adata if not inplace else None
 
 
-def merge(adata: AnnData, ldata: AnnData, copy: bool = True) -> Optional[AnnData]:
+def merge(
+    adata: AnnData, ldata: AnnData, copy: bool = True, **kwargs
+) -> Optional[AnnData]:
     """Merge two annotated data matrices.
 
     Arguments
@@ -535,8 +520,10 @@ def merge(adata: AnnData, ldata: AnnData, copy: bool = True) -> Optional[AnnData
     common_vars = pd.unique(adata.var_names.intersection(ldata.var_names))
 
     if len(common_obs) == 0:
-        clean_obs_names(adata)
-        clean_obs_names(ldata)
+        if "id_length" in kwargs:
+            id_length = kwargs.get("id_length")
+        clean_obs_names(adata, id_length=id_length)
+        clean_obs_names(ldata, id_length=id_length)
         common_obs = adata.obs_names.intersection(ldata.obs_names)
 
     if copy:

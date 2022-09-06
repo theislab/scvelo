@@ -47,12 +47,15 @@ class TestCleanObsNames:
     )
     @pytest.mark.parametrize("inplace", (True, False))
     def test_equal_obs_id_length(
-        self, obs_names: List[str], obs_names_cleaned: List[str], inplace: bool
+        self,
+        obs_names: List[str],
+        obs_names_cleaned: List[str],
+        inplace: bool,
     ):
         adata = AnnData(np.eye(3))
         adata.obs_names = obs_names
 
-        _adata = clean_obs_names(adata, inplace=inplace)
+        _adata = clean_obs_names(adata, inplace=inplace, id_length=4)
 
         if inplace:
             assert _adata is None
@@ -75,12 +78,15 @@ class TestCleanObsNames:
     )
     @pytest.mark.parametrize("inplace", (True, False))
     def test_different_obs_id_length(
-        self, obs_names: List[str], obs_names_cleaned: List[str], inplace: bool
+        self,
+        obs_names: List[str],
+        obs_names_cleaned: List[str],
+        inplace: bool,
     ):
         adata = AnnData(np.eye(3))
         adata.obs_names = obs_names
 
-        _adata = clean_obs_names(adata, inplace=inplace)
+        _adata = clean_obs_names(adata, inplace=inplace, id_length=4)
 
         if inplace:
             assert _adata is None
@@ -778,7 +784,7 @@ class TestMerge:
         adata.obs_names = ["sample1_ABCD", "sample2_ABCD", "sample3_DCBA"]
         ldata.obs_names = ["_sample1_ABCD", "_sample2_ABCD", "_sample3_DCBA"]
 
-        returned_adata = merge(adata=adata, ldata=ldata, copy=copy)
+        returned_adata = merge(adata=adata, ldata=ldata, copy=copy, id_length=4)
 
         returned_adata = self._assert_copy_worked(returned_adata, adata, copy)
         self._assert_all_entries_present(returned_adata, adata, ldata)
