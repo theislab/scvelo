@@ -16,7 +16,7 @@ scVelo generalizes the concept of RNA velocity
 by relaxing previously made assumptions with a stochastic and a dynamical model that solves the full
 transcriptional dynamics. It thereby adapts RNA velocity to widely varying specifications such as non-stationary populations.
 
-scVelo is compatible with scanpy_ and hosts efficient implementations of all RNA velocity models.
+scVelo is compatible with Scanpy_ and hosts efficient implementations of all RNA velocity models.
 
 scVelo's key applications
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -104,7 +104,7 @@ For further information visit `scvelo.org <https://scvelo.org>`_.
 .. |travis| image:: https://travis-ci.org/theislab/scvelo.svg?branch=master
    :target: https://travis-ci.org/theislab/scvelo
 
-.. _scanpy: https://scanpy.readthedocs.io
+.. _Scanpy: https://scanpy.readthedocs.io
 
 .. _calendly: https://calendly.com/scvelo
 

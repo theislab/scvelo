@@ -46,15 +46,17 @@ def velocity_embedding(
     """Projects the single cell velocities into any embedding.
 
     Given normalized difference of the embedding positions
-    :math:
-    `\\tilde \\delta_{ij} = \\frac{x_j-x_i}{\\left\\lVert x_j-x_i \\right\\rVert}`.
+
+    .. math::
+        \\tilde \\delta_{ij} = \\frac{x_j-x_i}{\\left\\lVert x_j-x_i \\right\\rVert},
+
     the projections are obtained as expected displacements with respect to the
     transition matrix :math:`\\tilde \\pi_{ij}` as
 
     .. math::
         \\tilde \\nu_i = E_{\\tilde \\pi_{i\\cdot}} [\\tilde \\delta_{i \\cdot}]
-        = \\sum_{j \\neq i} \\left( \\tilde \\pi_{ij} - \\frac1n \\right) \\tilde \\
-        delta_{ij}.
+        = \\sum_{j \\neq i} \\left( \\tilde \\pi_{ij} - \\frac1n \\right) \\tilde
+        \\delta_{ij}.
 
 
     Arguments
