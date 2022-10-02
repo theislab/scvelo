@@ -20,7 +20,7 @@ def bonemarrow(
 ):
     """Human bone marrow.
 
-    Data from `Setty et al. (2019) <https://doi.org/10.1242/dev.173849>`__.
+    Data from `Setty et al. (2019) <https://doi.org/10.1038/s41587-019-0068-4>`__.
 
     The bone marrow is the primary site of new blood cell production or haematopoiesis.
     It is composed of hematopoietic cells, marrow adipose tissue, and supportive stromal
