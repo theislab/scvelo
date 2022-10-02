@@ -145,6 +145,7 @@ def cleanup(
         return adata
 
 
+# TODO: Add unit test for `precision` argument
 def get_df(
     data: AnnData,
     keys: Optional[Union[str, List[str]]] = None,
@@ -187,7 +188,7 @@ def get_df(
     """
 
     if precision is not None:
-        pd.set_option("precision", precision)
+        pd.set_option("display.precision", precision)
 
     if isinstance(data, AnnData):
         keys, keys_split = (
