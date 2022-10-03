@@ -17,11 +17,13 @@ from ._linear_models import LinearRegression
 from ._metrics import l2_norm
 from ._models import SplicingDynamics
 from ._parallelize import get_n_jobs, parallelize
+from ._utils import deprecated_arg_names
 
 __all__ = [
     "clean_obs_names",
     "cleanup",
     "clipped_log",
+    "deprecated_arg_names",
     "get_df",
     "get_initial_size",
     "get_modality",
