@@ -11,10 +11,10 @@ from pandas.api.types import is_categorical_dtype
 from scipy.sparse import csr_matrix, issparse, spmatrix
 
 from anndata import AnnData
-from scanpy._utils import deprecated_arg_names
 
 from scvelo import logging as logg
 from ._arithmetic import sum
+from ._utils import deprecated_arg_names
 
 
 @deprecated_arg_names(
