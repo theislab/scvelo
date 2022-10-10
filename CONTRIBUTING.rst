@@ -21,7 +21,6 @@ You can now clone your fork of scVelo and install the development mode
 
     git clone https://github.com/YOUR-USER-NAME/scvelo.git
     cd scvelo
-    git checkout --track origin/develop
 
 
 Unix Systems
@@ -88,7 +87,7 @@ The docstrings of scVelo largely follow the `numpy`-style. New docstrings should
 Submitting pull requests
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-New features and bug fixes are added to the code base through a pull request (PR). To implement a feature or bug fix, create a branch from `develop`. For hotfixes use `master` as base. The existence of bugs suggests insufficient test coverage. As such, bug fixes should, ideally, include a unit test or extend an existing one. Please ensure that
+New features and bug fixes are added to the code base through a pull request (PR). To implement a feature or bug fix, create a branch from `master`. The existence of bugs suggests insufficient test coverage. As such, bug fixes should, ideally, include a unit test or extend an existing one. Please ensure that
 
 - branch names have the prefix `feat/` or `fix/`.
 - your code follows the project conventions.
