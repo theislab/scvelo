@@ -11,13 +11,11 @@ from scvelo.core import LinearRegression
 
 
 class TestLinearRegression:
+    # TODO: Check if arrays strategy can be used instead. See e.g.
+    # https://github.com/theislab/scvelo/issues/939
     @given(
-        x=arrays(
-            float,
-            shape=st.integers(min_value=1, max_value=100),
-            elements=st.floats(
-                min_value=-1e3, max_value=1e3, allow_infinity=False, allow_nan=False
-            ),
+        x=st.sampled_from(
+            [np.array([0]), np.array([1]), np.array([-4.5, 3.7, 1683.37])]
         ),
         coef=st.floats(
             min_value=-1000, max_value=1000, allow_infinity=False, allow_nan=False
