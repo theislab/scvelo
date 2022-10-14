@@ -4,6 +4,26 @@
 Release Notes
 =============
 
+Version 0.2.5 :small:`Oct 14, 2022`
+-----------------------------------
+
+Changes:
+
+- Catch non-positive parameter values and raise a `ValueError` if necessary (`PR 614 <https://github.com/theislab/scvelo/pull/614>`_).
+- `get_mean_var` uses the same size parameter for mean and variance (`PR 698 <https://github.com/theislab/scvelo/pull/698>`_).
+
+Bugfixes:
+
+- `filter_genes` now works with `adata.layers['unspliced']` being sparse and `adata.layers['spliced']` dense (`PR 537 <https://github.com/theislab/scvelo/pull/537>`_).
+- `show_proportions` actually considers the layer `"ambiguous"` if present (`PR 587 <https://github.com/theislab/scvelo/pull/587>`_).
+- Fix calculation of Pearson's correlation in `csr_vcorrcoef` (`PR 679 <https://github.com/theislab/scvelo/pull/679>`_).
+- Fix `get_mean_var` to work with sparse input and `ignore_zeros=True` (`PR 698 <https://github.com/theislab/scvelo/pull/698>`_).
+- Fix bug in neighbor calculation (`PR 797 <https://github.com/theislab/scvelo/pull/797>`_).
+- Fix `optimization.py::get_weight` to work with numeric, non-integer values (`PR 839 <https://github.com/theislab/scvelo/pull/839>`_).
+- Fix inference with `fit_scaling=False` (`PR 848 <https://github.com/theislab/scvelo/pull/848>`_).
+- Fix saving of velocity embedding stream (`PR 900 <https://github.com/theislab/scvelo/pull/900>`_).
+- Fix Pandas' display precison when passed to `get_df` (`PR 907 <https://github.com/theislab/scvelo/pull/907>`_).
+
 Version 0.2.4 :small:`Aug 26, 2021`
 -----------------------------------
 
