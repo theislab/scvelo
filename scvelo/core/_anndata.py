@@ -14,13 +14,17 @@ from anndata import AnnData
 
 from scvelo import logging as logg
 from ._arithmetic import sum
+from ._utils import deprecated_arg_names
 
 
+@deprecated_arg_names(
+    {"data": "adata", "copy": "inplace", "ID_length": "id_length", "base": "alphabet"}
+)
 def clean_obs_names(
-    data: AnnData,
-    base: str = "[AGTCBDHKMNRSVWY]",
-    ID_length: int = 12,
-    copy: bool = False,
+    adata: AnnData,
+    alphabet: str = "[AGTCBDHKMNRSVWY]",
+    id_length: int = 12,
+    inplace: bool = True,
 ) -> Optional[AnnData]:
     """Clean up the obs_names.
 
@@ -31,14 +35,14 @@ def clean_obs_names(
 
     Arguments
     ---------
-    data
+    adata
         Annotated data matrix.
-    base
+    alphabet
         Genetic code letters to be identified.
-    ID_length
+    id_length
         Length of the Genetic Codes in the samples.
-    copy
-        Return a copy instead of writing to adata.
+    inplace
+        Whether to update `adata` inplace or not.
 
     Returns
     -------
@@ -50,44 +54,27 @@ def clean_obs_names(
             names of the identified sample batches
     """
 
-    def get_base_list(name, base):
-        base_list = base
-        while re.search(base_list + base, name) is not None:
-            base_list += base
-        if len(base_list) == 0:
-            raise ValueError("Encountered an invalid ID in obs_names: ", name)
-        return base_list
+    if not inplace:
+        adata = adata.copy()
 
-    adata = data.copy() if copy else data
+    if adata.obs_names.map(len).unique().size == 1:
+        start, end = re.search(alphabet * id_length, adata.obs_names[0]).span()
+        new_obs_names = [obs_name[start:end] for obs_name in adata.obs_names]
 
-    names = adata.obs_names
-    base_list = get_base_list(names[0], base)
-
-    if len(np.unique([len(name) for name in adata.obs_names])) == 1:
-        start, end = re.search(base_list, names[0]).span()
-        newIDs = [name[start:end] for name in names]
-        start, end = 0, len(newIDs[0])
-        for i in range(end - ID_length):
-            if np.any([ID[i] not in base for ID in newIDs]):
-                start += 1
-            if np.any([ID[::-1][i] not in base for ID in newIDs]):
-                end -= 1
-
-        newIDs = [ID[start:end] for ID in newIDs]
-        prefixes = [names[i].replace(newIDs[i], "") for i in range(len(names))]
+        prefixes = [
+            obs_name.replace(new_obs_name, "")
+            for obs_name, new_obs_name in zip(adata.obs_names, new_obs_names)
+        ]
     else:
-        prefixes, newIDs = [], []
-        for name in names:
-            match = re.search(base_list, name)
-            newID = (
-                re.search(get_base_list(name, base), name).group()
-                if match is None
-                else match.group()
-            )
-            newIDs.append(newID)
-            prefixes.append(name.replace(newID, ""))
+        prefixes, new_obs_names = [], []
+        for obs_name in adata.obs_names:
+            start, end = re.search(alphabet * id_length, adata.obs_names[0]).span()
+            new_obs_names.append(obs_name[start:end])
+            prefixes.append(obs_name.replace(obs_name[start:end], ""))
 
-    adata.obs_names = newIDs
+    adata.obs_names = new_obs_names
+    adata.obs_names_make_unique()
+
     if len(prefixes[0]) > 0 and len(np.unique(prefixes)) > 1:
         adata.obs["sample_batch"] = (
             pd.Categorical(prefixes)
@@ -95,31 +82,32 @@ def clean_obs_names(
             else prefixes
         )
 
-    adata.obs_names_make_unique()
-    return adata if copy else None
+    if not inplace:
+        return adata
 
 
+@deprecated_arg_names({"data": "adata", "copy": "inplace"})
 def cleanup(
-    data: AnnData,
+    adata: AnnData,
     clean: Union[
-        Literal["layers", "obs", "var", "uns"],
+        Literal["layers", "obs", "var", "uns", "all"],
         List[Literal["layers", "obs", "var", "uns"]],
     ] = "layers",
     keep: Optional[Union[str, List[str]]] = None,
-    copy: bool = False,
+    inplace: bool = True,
 ) -> Optional[AnnData]:
     """Delete not needed attributes.
 
     Arguments
     ---------
-    data
+    adata
         Annotated data matrix.
     clean
         Which attributes to consider for freeing memory.
     keep
         Which attributes to keep.
-    copy
-        Return a copy instead of writing to adata.
+    inplace
+        Whether to update `adata` inplace or not.
 
     Returns
     -------
@@ -127,13 +115,14 @@ def cleanup(
         Returns or updates `adata` with selection of attributes kept.
     """
 
-    adata = data.copy() if copy else data
+    if not inplace:
+        adata = adata.copy()
     verify_dtypes(adata)
 
     keep = list([keep] if isinstance(keep, str) else {} if keep is None else keep)
-    keep.extend(["spliced", "unspliced", "Ms", "Mu", "clusters", "neighbors"])
+    keep.extend(["unspliced", "spliced", "Mu", "Ms", "clusters", "neighbors"])
 
-    ann_dict = {
+    attributes_to_remove = {
         "obs": adata.obs_keys(),
         "var": adata.var_keys(),
         "uns": adata.uns_keys(),
@@ -141,16 +130,22 @@ def cleanup(
     }
 
     if "all" not in clean:
-        ann_dict = {ann: values for (ann, values) in ann_dict.items() if ann in clean}
+        attributes_to_remove = {
+            attr: attr_keys
+            for (attr, attr_keys) in attributes_to_remove.items()
+            if attr in clean
+        }
 
-    for (ann, values) in ann_dict.items():
-        for value in values:
-            if value not in keep:
-                del getattr(adata, ann)[value]
+    for (attr, attr_keys) in attributes_to_remove.items():
+        for key in attr_keys:
+            if key not in keep:
+                del getattr(adata, attr)[key]
 
-    return adata if copy else None
+    if not inplace:
+        return adata
 
 
+# TODO: Add unit test for `precision` argument
 def get_df(
     data: AnnData,
     keys: Optional[Union[str, List[str]]] = None,
@@ -193,7 +188,7 @@ def get_df(
     """
 
     if precision is not None:
-        pd.set_option("precision", precision)
+        pd.set_option("display.precision", precision)
 
     if isinstance(data, AnnData):
         keys, keys_split = (
@@ -365,7 +360,7 @@ def get_initial_size(
         return None
 
 
-def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
+def get_modality(adata: AnnData, modality: Optional[str]) -> Union[ndarray, spmatrix]:
     """Extract data of one modality.
 
     Arguments
@@ -381,7 +376,7 @@ def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
         Retrieved modality from :class:`~anndata.AnnData` object.
     """
 
-    if modality == "X":
+    if modality in ["X", None]:
         return adata.X
     elif modality in adata.layers.keys():
         return adata.layers[modality]
@@ -392,24 +387,24 @@ def get_modality(adata: AnnData, modality: str) -> Union[ndarray, spmatrix]:
             return adata.obsm[modality]
 
 
-# TODO: Generalize to arbitray modality
-def get_size(adata: AnnData, layer: Optional[str] = None) -> ndarray:
-    """Get counts per observation in a layer.
+@deprecated_arg_names({"layer": "modality"})
+def get_size(adata: AnnData, modality: Optional[str] = None) -> ndarray:
+    """Get counts per observation in a modality.
 
     Arguments
     ---------
     adata
         Annotated data matrix.
-    layer
-        Name of later for which to retrieve initial size.
+    modality
+        Name of modality for which to retrieve size.
 
     Returns
     -------
     np.ndarray
-        Initial counts per observation in the specified layer.
+        Counts per observation in the specified modality.
     """
 
-    X = adata.X if layer is None else adata.layers[layer]
+    X = get_modality(adata=adata, modality=modality)
     return sum(X, axis=1)
 
 
@@ -488,7 +483,9 @@ def make_sparse(
     return adata if not inplace else None
 
 
-def merge(adata: AnnData, ldata: AnnData, copy: bool = True) -> Optional[AnnData]:
+def merge(
+    adata: AnnData, ldata: AnnData, copy: bool = True, **kwargs
+) -> Optional[AnnData]:
     """Merge two annotated data matrices.
 
     Arguments
@@ -524,8 +521,10 @@ def merge(adata: AnnData, ldata: AnnData, copy: bool = True) -> Optional[AnnData
     common_vars = pd.unique(adata.var_names.intersection(ldata.var_names))
 
     if len(common_obs) == 0:
-        clean_obs_names(adata)
-        clean_obs_names(ldata)
+        if "id_length" in kwargs:
+            id_length = kwargs.get("id_length")
+        clean_obs_names(adata, id_length=id_length)
+        clean_obs_names(ldata, id_length=id_length)
         common_obs = adata.obs_names.intersection(ldata.obs_names)
 
     if copy:
@@ -629,7 +628,7 @@ def set_initial_size(adata: AnnData, layers: Optional[str] = None) -> None:
     """
 
     if layers is None:
-        layers = ["spliced", "unspliced"]
+        layers = ["unspliced", "spliced"]
     verify_dtypes(adata)
     layers = [
         layer
@@ -705,7 +704,7 @@ def show_proportions(
     """
 
     if layers is None:
-        layers = ["spliced", "unspliced", "ambigious"]
+        layers = ["unspliced", "spliced", "ambiguous"]
     layers_keys = [key for key in layers if key in adata.layers.keys()]
     counts_layers = [sum(adata.layers[key], axis=1) for key in layers_keys]
     if use_raw:

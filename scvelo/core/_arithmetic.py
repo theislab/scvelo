@@ -49,6 +49,32 @@ def invert(x: ndarray) -> ndarray:
     return x_inv
 
 
+def multiply(
+    a: Union[ndarray, spmatrix], b: Union[ndarray, spmatrix]
+) -> Union[ndarray, spmatrix]:
+    """Point-wise multiplication of arrays or sparse matrices.
+
+    Arguments
+    ---------
+    a
+        First array/sparse matrix.
+    b
+        Second array/sparse matrix.
+
+    Returns
+    -------
+    Union[ndarray, spmatrix]
+        Point-wise product of `a` and `b`.
+    """
+
+    if issparse(a):
+        return a.multiply(b)
+    elif issparse(b):
+        return b.multiply(a)
+    else:
+        return a * b
+
+
 def prod_sum(
     a1: Union[ndarray, spmatrix], a2: Union[ndarray, spmatrix], axis: Optional[int]
 ) -> ndarray:

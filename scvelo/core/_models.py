@@ -131,7 +131,9 @@ class SplicingDynamics(DynamicsBase):
             Steady state of system.
         """
 
-        if (self.beta > 0) and (self.gamma > 0):
+        if (self.beta <= 0) or (self.gamma <= 0):
+            raise ValueError("Both `beta` and `gamma` need to be strictly positive.")
+        else:
             unspliced = self.alpha / self.beta
             spliced = self.alpha / self.gamma
 

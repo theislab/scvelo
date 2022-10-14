@@ -2,13 +2,15 @@
 
 -e .
 
-black==20.8b1
+black==22.3.0
 hnswlib
 hypothesis
 flake8==3.8.4
-isort==5.7.0
+isort==5.10.1
 louvain
+magic-impute
 pre-commit>=2.9.0
 pybind11
 pytest>=6.2.2
+pytest-cov
 python-igraph

@@ -26,10 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Setup Python 3.7
+      - name: Setup Python 3.8
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.8
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -42,10 +42,12 @@ jobs:
   # Run unit tests
   test:
     needs: linting
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: [3.7]
+        os: [ubuntu-latest]
+        python-version: [3.7, 3.8, 3.9]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -53,8 +55,24 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
+        run: pip install -e '.[dev]'
+      - name: Unit tests
+        timeout-minutes: 60
+        run: python -m pytest --durations=25 --ignore=tests/datasets/test_datasets.py --hypothesis-profile=ci --cov=scvelo -vv
+
+  test-dataset-downloads:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
         run: |
           pip install -e .
           pip install hypothesis pytest pytest-cov
-      - name: Unit tests
-        run: python -m pytest --cov=scvelo
+      - name: Test dataset downloads
+        timeout-minutes: 60
+        run: python -m pytest tests/datasets/test_datasets.py -vv

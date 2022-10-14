@@ -1,3 +1,4 @@
+import numbers
 import warnings
 
 import numpy as np
@@ -15,7 +16,7 @@ def get_weight(x, y=None, perc=95):
             y = y.A
         xy_norm = xy_norm / np.clip(np.max(xy_norm, axis=0), 1e-3, None)
         xy_norm += y / np.clip(np.max(y, axis=0), 1e-3, None)
-    if isinstance(perc, int):
+    if isinstance(perc, numbers.Number):
         weights = xy_norm >= np.percentile(xy_norm, perc, axis=0)
     else:
         lb, ub = np.percentile(xy_norm, perc, axis=0)
@@ -50,7 +51,7 @@ def leastsq_NxN(x, y, fit_offset=False, perc=None, constraint_positive_offset=Tr
             n_obs = x.shape[0] if weights is None else sum(weights, axis=0)
             x_ = sum(x, axis=0) / n_obs
             y_ = sum(y, axis=0) / n_obs
-            gamma = (xy_ / n_obs - x_ * y_) / (xx_ / n_obs - x_ ** 2)
+            gamma = (xy_ / n_obs - x_ * y_) / (xx_ / n_obs - x_**2)
             offset = y_ - gamma * x_
 
             # fix negative offsets:

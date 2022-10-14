@@ -152,7 +152,7 @@ def velocity_embedding_stream(
             adjust_for_stream=True,
             cutoff_perc=cutoff_perc,
         )
-        lengths = np.sqrt((V_grid ** 2).sum(0))
+        lengths = np.sqrt((V_grid**2).sum(0))
         linewidth = 1 if linewidth is None else linewidth
         linewidth *= 2 * lengths / lengths[~np.isnan(lengths)].max()
 
@@ -259,7 +259,8 @@ def velocity_embedding_stream(
             zorder=0,
             **scatter_kwargs,
         )
-
+        if save is True:
+            save = "embedding_stream"
         savefig_or_show(dpi=dpi, save=save, show=show)
         if show is False:
             return ax

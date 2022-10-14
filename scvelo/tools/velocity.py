@@ -162,7 +162,7 @@ class Velocity:
             self._residual -= self._offset
 
         _residual2 = (cov_us - 2 * _Ms * _Mu) - self._gamma[idx] * (
-            var_ss - 2 * _Ms ** 2
+            var_ss - 2 * _Ms**2
         )
         if fit_offset:
             _residual2 += 2 * self._offset[idx] * _Ms

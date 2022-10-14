@@ -227,7 +227,7 @@ def velocity(
                 beta = _adata.var[f"{fit}_beta"]
             if f"{fit}_offset" in adata.var.keys():
                 offset = _adata.var[f"{fit}_offset"]
-            x = np.array(2 * (ss - s ** 2) - s)
+            x = np.array(2 * (ss - s**2) - s)
             y = np.array(2 * (us - u * s) + u + 2 * s * offset / beta)
             kwargs["xlabel"] = r"2 $\Sigma_s - \langle s \rangle$"
             kwargs["ylabel"] = r"2 $\Sigma_{us} + \langle u \rangle$"

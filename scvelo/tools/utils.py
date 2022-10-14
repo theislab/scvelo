@@ -505,7 +505,7 @@ def vcorrcoef(X, y, mode="pearsons", axis=-1):
     Xm = np.array(X - (np.nanmean(X, -1)[:, None] if X.ndim > 1 else np.nanmean(X, -1)))
     ym = np.array(y - (np.nanmean(y, -1)[:, None] if y.ndim > 1 else np.nanmean(y, -1)))
     corr = np.nansum(Xm * ym, -1) / np.sqrt(
-        np.nansum(Xm ** 2, -1) * np.nansum(ym ** 2, -1)
+        np.nansum(Xm**2, -1) * np.nansum(ym**2, -1)
     )
     return corr
 

@@ -11,6 +11,7 @@ from scvelo import logging as logg
 from scvelo.core import cleanup as _cleanup
 from scvelo.core import get_initial_size as _get_initial_size
 from scvelo.core import get_size as _get_size
+from scvelo.core import multiply
 from scvelo.core import set_initial_size as _set_initial_size
 from scvelo.core import show_proportions as _show_proportions
 from scvelo.core import sum
@@ -233,14 +234,9 @@ def filter_genes(
             X = adata.layers[layer]
         else:  # shared counts/cells
             Xs, Xu = adata.layers["spliced"], adata.layers["unspliced"]
-            nonzeros = (
-                (Xs > 0).multiply(Xu > 0) if issparse(Xs) else (Xs > 0) * (Xu > 0)
-            )
-            X = (
-                nonzeros.multiply(Xs) + nonzeros.multiply(Xu)
-                if issparse(nonzeros)
-                else nonzeros * (Xs + Xu)
-            )
+
+            nonzeros = multiply(Xs > 0, Xu > 0)
+            X = multiply(nonzeros, Xs) + multiply(nonzeros, Xu)
 
         gene_subset = np.ones(adata.n_vars, dtype=bool)
 
@@ -282,13 +278,20 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
     data = X.data if issparse(X) else X
     mask_nans = np.isnan(data) | np.isinf(data) | np.isneginf(data)
 
-    n_nonzeros = (X != 0).sum(0)
-    n_counts = n_nonzeros if ignore_zeros else X.shape[0]
+    if issparse(X):
+        n_nonzeros = X.getnnz(axis=0)
+    else:
+        n_nonzeros = (X != 0).sum(axis=0)
+
+    if ignore_zeros:
+        n_counts = n_nonzeros
+    else:
+        n_counts = X.shape[0]
 
     if mask_nans.sum() > 0:
         if issparse(X):
-            data[np.isnan(data) | np.isinf(data) | np.isneginf(data)] = 0
-            n_nans = n_nonzeros - (X != 0).sum(0)
+            data[mask_nans] = 0
+            n_nans = (n_nonzeros - (X != 0).sum(0)).A1
         else:
             X[mask_nans] = 0
             n_nans = mask_nans.sum(0)
@@ -298,7 +301,10 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
         if np.size(perc) < 2:
             perc = [perc, 100] if perc < 50 else [0, perc]
         lb, ub = np.percentile(data, perc)
-        data = np.clip(data, lb, ub)
+        if issparse(X):
+            X.data = np.clip(data, lb, ub)
+        else:
+            X = np.clip(data, lb, ub)
 
     if issparse(X):
         mean = (X.sum(0) / n_counts).A1
@@ -306,11 +312,13 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
     else:
         mean = X.sum(0) / n_counts
         mean_sq = np.multiply(X, X).sum(0) / n_counts
-    n_cells = np.clip(X.shape[0], 2, None)  # to avoid division by zero
-    var = (mean_sq - mean ** 2) * (n_cells / (n_cells - 1))
+
+    n_counts = np.clip(n_counts, 2, None)  # to avoid division by zero
+    var = (mean_sq - mean**2) * (n_counts / (n_counts - 1))
 
     mean = np.nan_to_num(mean)
     var = np.nan_to_num(var)
+
     return mean, var
 
 
@@ -496,16 +504,22 @@ def csr_vcorrcoef(X, y):
     mu_x = np.ravel(np.mean(X, axis=-1))
     mu_y = np.ravel(np.mean(y, axis=-1))
     nom = X.dot(y) - X.dot(np.repeat(mu_y, len(y))) - mu_x * np.sum(y - mu_y)
+
+    if X.ndim == 1:
+        n_features = len(X)
+    else:
+        n_features = X.shape[1]
+
     denom_x = (
         np.ravel(np.sum(X.multiply(X), axis=-1))
         if issparse(X)
         else np.sum(X * X, axis=-1)
     )
-    denom_x = denom_x - np.ravel(np.sum(X, axis=-1)) * mu_x + mu_x ** 2
+    denom_x = denom_x - 2 * np.ravel(np.sum(X, axis=-1)) * mu_x + n_features * mu_x**2
     denom_y = (
         np.ravel(np.sum(y * y, axis=-1))
-        - (np.ravel(np.sum(y, axis=-1)) * mu_y)
-        + mu_y ** 2
+        - 2 * (np.ravel(np.sum(y, axis=-1)) * mu_y)
+        + n_features * mu_y**2
     )
     return nom / np.sqrt(denom_x * denom_y)
 
