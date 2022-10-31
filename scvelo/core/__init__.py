@@ -13,6 +13,7 @@ from ._anndata import (
     show_proportions,
 )
 from ._arithmetic import clipped_log, invert, multiply, prod_sum, sum
+from ._inference import BaseInference
 from ._linear_models import LinearRegression
 from ._metrics import l2_norm
 from ._models import SplicingDynamics
