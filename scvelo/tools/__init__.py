@@ -1,5 +1,6 @@
 from scanpy.tools import diffmap, dpt, louvain, tsne, umap
 
+from ._steady_state_model import SteadyStateModel
 from .dynamical_model import (
     align_dynamics,
     differential_kinetic_test,
@@ -48,4 +49,5 @@ __all__ = [
     "velocity_graph",
     "velocity_map",
     "velocity_pseudotime",
+    "SteadyStateModel",
 ]
