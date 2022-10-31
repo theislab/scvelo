@@ -15,13 +15,10 @@ class BaseInference(ABCMeta):
     def fit(self, *args, **kwargs):
         """Fit the model."""
 
+    @abstractmethod
     def state_dict(self):
         """Return the state of the model."""
         return self._state_dict
-
-    @abstractmethod
-    def load_state_dict(self, state_dict):
-        """Load the state of the model."""
 
     @abstractmethod
     def export_results_adata(self):
