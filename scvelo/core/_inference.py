@@ -1,9 +1,9 @@
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
 from anndata import AnnData
 
 
-class BaseInference(ABCMeta):
+class BaseInference:
     """Base Inference class for all velocity methods."""
 
     def __init__(self, adata: AnnData):

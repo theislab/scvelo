@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
@@ -97,7 +97,7 @@ class SteadyStateModel(BaseInference):
 
     def state_dict(self) -> Dict[str, np.ndarray]:
         """Return the state of the model."""
-        return self._state_dict.asdict()
+        return asdict(self._state_dict)
 
     def load_state_dict(self, state_dict: Dict[str, np.ndarray]):
         """Load the state of the model."""
@@ -124,10 +124,10 @@ class SteadyStateModel(BaseInference):
             cr = self._constrain_ratio
             sd.gamma = np.clip(sd.gamma, cr[0], cr[1])
 
-        self._residual = self._Mu - sd.gamma * self._Ms
+        self.residual = self._Mu - sd.gamma * self._Ms
         if self._fit_offset:
-            self._residual -= sd.offset
-        _residual = self._residual
+            self.residual -= sd.offset
+        residual = self.residual
 
         # velocity genes
         if self._r2_adjusted:
@@ -136,15 +136,15 @@ class SteadyStateModel(BaseInference):
             offset = lr.intercept_
             gamma = lr.coef_
 
-            _residual = self._Mu - gamma * self._Ms
+            residual = self._Mu - gamma * self._Ms
             if self._fit_offset:
-                _residual -= offset
+                residual -= offset
 
-        self._qreg_ratio = np.array(sd.gamma)  # quantile regression ratio
+        self.qreg_ratio = np.array(sd.gamma)  # quantile regression ratio
 
-        sd.r2 = R_squared(_residual, total=self._Mu - self._Mu.mean(0))
+        sd.r2 = R_squared(residual, total=self._Mu - self._Mu.mean(0))
         sd.velocity_genes = (
-            (sd._r2 > self._min_r2)
+            (sd.r2 > self._min_r2)
             & (sd.gamma > self._min_ratio)
             & (np.max(self._Ms > 0, 0) > 0)
             & (np.max(self._Mu > 0, 0) > 0)
