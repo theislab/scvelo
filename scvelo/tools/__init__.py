@@ -1,7 +1,7 @@
 from scanpy.tools import diffmap, dpt, louvain, tsne, umap
 
-from ._steady_state_model import SecondOrderSteadyStateModel, SteadyStateModel
-from .dynamical_model import (
+from ._em_model import ExpectationMaximizationModel
+from ._em_model_core import (
     align_dynamics,
     differential_kinetic_test,
     DynamicsRecovery,
@@ -10,6 +10,7 @@ from .dynamical_model import (
     recover_dynamics,
     recover_latent_time,
 )
+from ._steady_state_model import SecondOrderSteadyStateModel, SteadyStateModel
 from .paga import paga
 from .rank_velocity_genes import rank_velocity_genes, velocity_clusters
 from .score_genes_cell_cycle import score_genes_cell_cycle
@@ -51,4 +52,5 @@ __all__ = [
     "velocity_pseudotime",
     "SteadyStateModel",
     "SecondOrderSteadyStateModel",
+    "ExpectationMaximizationModel",
 ]
