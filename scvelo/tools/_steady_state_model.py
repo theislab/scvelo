@@ -234,7 +234,7 @@ class SecondOrderSteadyStateModel(SteadyStateModel):
         fit_offset: bool = False,
         perc: Tuple[int, int] = (5, 95),
         fit_offset2: bool = False,
-        mode: Literal["bayes", "ols"] = "bayes",
+        mode: Literal["bayes", "ols"] = "ols",
     ):
         super().__init__(
             adata,
@@ -252,11 +252,12 @@ class SecondOrderSteadyStateModel(SteadyStateModel):
         self._mode = mode
 
     def _initialize_state_dict(self):
+        super()._initialize_state_dict()
         self._state_dict = SecondOrderSteadyStateParams(
-            **self.state_dict,
             offset2=np.zeros(self.n_vars),
             gamma2=np.zeros(self.n_vars),
             residual2=None,
+            **self.state_dict(),
         )
 
     def fit(self):
@@ -271,7 +272,7 @@ class SecondOrderSteadyStateModel(SteadyStateModel):
         _adata = self._adata[:, idx] if is_subset else self._adata
         _Ms = self._Ms[:, idx] if is_subset else self._Ms
         _Mu = self._Mu[:, idx] if is_subset else self._Mu
-        _residual = self._residual[:, idx] if is_subset else sd.residual
+        _residual = self.residual[:, idx] if is_subset else sd.residual
 
         _Mss, _Mus = second_order_moments(_adata)
 
@@ -320,3 +321,7 @@ class SecondOrderSteadyStateModel(SteadyStateModel):
             sd.residual2[:, idx] = _residual2
         else:
             sd.residual2 = _residual2
+
+    def get_variance_velocity(self):
+        """Get variance of velocity from steady-state model."""
+        return self._state_dict.residual2
