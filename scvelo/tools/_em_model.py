@@ -5,7 +5,7 @@ import numpy as np
 
 from anndata import AnnData
 
-from scvelo.core import BaseInference, get_n_jobs, parallelize
+from scvelo.core import BaseInference, get_n_jobs
 from ._steady_state_model import SteadyStateModel
 from .utils import make_unique_list
 
