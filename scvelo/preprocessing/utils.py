@@ -819,6 +819,7 @@ def filter_and_normalize(
 
     if log:
         log1p(adata)
+        logg.info("Logarithmized X.")
 
     return adata if copy else None
 
