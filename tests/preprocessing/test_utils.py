@@ -627,11 +627,6 @@ class TestFilterAndNormalize:
         expected_log = "Normalized count data: X, spliced, unspliced.\n"
         if log:
             expected_log += "Logarithmized X.\n"
-        else:
-            expected_log += (
-                "WARNING: Consider logarithmizing X with `scv.pp.log1p` for better "
-                "results.\n"
-            )
 
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
@@ -703,11 +698,7 @@ class TestFilterAndNormalize:
         )
         if log:
             expected_log += "Logarithmized X.\n"
-        else:
-            expected_log += (
-                "WARNING: Consider logarithmizing X with `scv.pp.log1p` for better "
-                "results.\n"
-            )
+
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
 
