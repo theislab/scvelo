@@ -27,10 +27,10 @@ class LinearRegression:
 
     Attributes
     ----------
-    coef_
+    `coef_`
         Estimated coefficients of the linear regression line.
 
-    intercept_
+    `intercept_`
         Fitted intercept of linear model. Set to `0.0` if `fit_intercept=False`.
 
     """
@@ -69,7 +69,6 @@ class LinearRegression:
         List
             Number of non-trivial entries per column and trimmed data.
         """
-
         if not isinstance(data, List):
             data = [data]
 
@@ -110,7 +109,6 @@ class LinearRegression:
         self
             Returns an instance of self.
         """
-
         n_obs = x.shape[0]
 
         if self.percentile is not None:
