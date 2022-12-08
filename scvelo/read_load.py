@@ -13,6 +13,7 @@ from scvelo.core._anndata import obs_df as _obs_df
 from scvelo.core._anndata import var_df as _var_df
 
 
+# TODO: Finish docstrings
 def load(filename, backup_url=None, header="infer", index_col="infer", **kwargs):
     """Load a csv, txt, tsv or npy file."""
     numpy_ext = {"npy", "npz"}
@@ -59,7 +60,9 @@ def load(filename, backup_url=None, header="infer", index_col="infer", **kwargs)
 read_csv = load
 
 
+# TODO: Add docstrings
 def clean_obs_names(data, base="[AGTCBDHKMNRSVWY]", ID_length=12, copy=False):
+    """TODO."""
     warnings.warn(
         "`scvelo.read_load.clean_obs_names` is deprecated since scVelo v0.2.4 and will "
         "be removed in a future version. Please use `scvelo.core.clean_obs_names` "
@@ -71,7 +74,9 @@ def clean_obs_names(data, base="[AGTCBDHKMNRSVWY]", ID_length=12, copy=False):
     return _clean_obs_names(data=data, base=base, ID_length=ID_length, copy=copy)
 
 
+# TODO: Add docstrings
 def merge(adata, ldata, copy=True):
+    """TODO."""
     warnings.warn(
         "`scvelo.read_load.merge` is deprecated since scVelo v0.2.4 and will be "
         "removed in a future version. Please use `scvelo.core.merge` instead.",
@@ -82,7 +87,9 @@ def merge(adata, ldata, copy=True):
     return _merge(adata=adata, ldata=ldata, copy=True)
 
 
+# TODO: Add docstrings
 def obs_df(adata, keys, layer=None):
+    """TODO."""
     warnings.warn(
         "`scvelo.read_load.obs_df` is deprecated since scVelo v0.2.4 and will be "
         "removed in a future version. Please use `scvelo.core._anndata.obs_df` "
@@ -94,7 +101,9 @@ def obs_df(adata, keys, layer=None):
     return _obs_df(adata=adata, keys=keys, layer=layer)
 
 
+# TODO: Add docstrings
 def var_df(adata, keys, layer=None):
+    """TODO."""
     warnings.warn(
         "`scvelo.read_load.var_df` is deprecated since scVelo v0.2.4 and will be "
         "removed in a future version. Please use `scvelo.core._anndata.var_df` "
@@ -106,6 +115,7 @@ def var_df(adata, keys, layer=None):
     return _var_df(adata=adata, keys=keys, layer=layer)
 
 
+# TODO: Add docstrings
 def get_df(
     data,
     keys=None,
@@ -116,6 +126,7 @@ def get_df(
     dropna="all",
     precision=None,
 ):
+    """TODO."""
     warnings.warn(
         "`scvelo.read_load.get_df` is deprecated since scVelo v0.2.4 and will be "
         "removed in a future version. Please use `scvelo.core.get_df` instead.",
@@ -138,7 +149,9 @@ def get_df(
 DataFrame = get_df
 
 
+# TODO: Add docstrings
 def load_biomart():
+    """TODO."""
     # human genes from https://biomart.genenames.org/martform
     # mouse genes from http://www.ensembl.org/biomart/martview
     # antibodies from https://www.biolegend.com/en-us/totalseq
@@ -159,6 +172,7 @@ def load_biomart():
     return df
 
 
+# TODO: Finish docstrings
 def convert_to_gene_names(ensembl_names=None):
     """Retrieve gene names from ensembl IDs."""
     df = load_biomart()
@@ -179,6 +193,7 @@ def convert_to_gene_names(ensembl_names=None):
     return df
 
 
+# TODO: Finish docstrings
 def convert_to_ensembl(gene_names=None):
     """Retrieve ensembl IDs from a list of gene names."""
     df = load_biomart()
@@ -195,6 +210,7 @@ def convert_to_ensembl(gene_names=None):
     return df
 
 
+# TODO: Finish docstrings
 def gene_info(name, fields="name,symbol,refseq,generif,ensembl"):
     """Retrieve gene information from biothings client."""
     try:
@@ -206,7 +222,7 @@ def gene_info(name, fields="name,symbol,refseq,generif,ensembl"):
 
     class MyGeneInfo(get_client("gene", instance=False)):
         def __init__(self):
-            super(MyGeneInfo, self).__init__()
+            super().__init__()
 
     if not name.startswith("ENS"):
         df = convert_to_gene_names()
