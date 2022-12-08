@@ -6,9 +6,8 @@ from scipy.sparse import issparse
 from scipy.stats.distributions import chi2, norm
 
 import matplotlib as mpl
-import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as pl
-from matplotlib import rcParams
+from matplotlib import gridspec, rcParams
 
 from scvelo import logging as logg
 from scvelo.core import clipped_log, invert, SplicingDynamics
@@ -21,8 +20,9 @@ exp = np.exp
 """Helper functions"""
 
 
+# TODO: Add docstrings
 def log(x, eps=1e-6):  # to avoid invalid values for log.
-
+    """TODO."""
     warnings.warn(
         "`clipped_log` is deprecated since scVelo v0.2.4 and will be removed in a "
         "future version. Please use `clipped_log(x, eps=1e-6)` from `scvelo/core/`"
@@ -34,8 +34,9 @@ def log(x, eps=1e-6):  # to avoid invalid values for log.
     return clipped_log(x, lb=0, ub=1, eps=1e-6)
 
 
+# TODO: Add docstrings
 def inv(x):
-
+    """TODO."""
     warnings.warn(
         "`inv` is deprecated since scVelo v0.2.4 and will be removed in a future "
         "version. Please use `invert(x)` from `scvelo/core/` instead.",
@@ -46,7 +47,9 @@ def inv(x):
     return invert(x)
 
 
+# TODO: Add docstrings
 def normalize(X, axis=0, min_confidence=None):
+    """TODO."""
     X_sum = np.sum(X, axis=axis)
     if min_confidence:
         X_sum += min_confidence
@@ -54,20 +57,26 @@ def normalize(X, axis=0, min_confidence=None):
     return X / X_sum
 
 
+# TODO: Add docstrings
 def convolve(x, weights=None):
+    """TODO."""
     if weights is None:
         return x
     else:
         return weights.multiply(x).tocsr() if issparse(weights) else weights * x
 
 
+# TODO: Add docstrings
 def linreg(u, s):  # linear regression fit
+    """TODO."""
     ss_ = s.multiply(s).sum(0) if issparse(s) else (s**2).sum(0)
     us_ = s.multiply(u).sum(0) if issparse(s) else (s * u).sum(0)
     return us_ / ss_
 
 
+# TODO: Add docstrings
 def compute_dt(t, clipped=True, axis=0):
+    """TODO."""
     prepend = np.min(t, axis=axis)[None, :]
     dt = np.diff(np.sort(t, axis=axis), prepend=prepend, axis=axis)
     m_dt = np.max([np.mean(dt, axis=axis), np.max(t, axis=axis) / len(t)], axis=axis)
@@ -78,7 +87,9 @@ def compute_dt(t, clipped=True, axis=0):
     return dt
 
 
+# TODO: Add docstrings
 def root_time(t, root=None):
+    """TODO."""
     nans = np.isnan(np.sum(t, axis=0))
     if np.any(nans):
         t = t[:, ~nans]
@@ -94,7 +105,9 @@ def root_time(t, root=None):
     return t_rooted, t_switch
 
 
+# TODO: Add docstrings
 def compute_shared_time(t, perc=None, norm=True):
+    """TODO."""
     nans = np.isnan(np.sum(t, axis=0))
     if np.any(nans):
         t = np.array(t[:, ~nans])
@@ -122,19 +135,24 @@ def compute_shared_time(t, perc=None, norm=True):
 """Dynamics delineation"""
 
 
+# TODO: Add docstrings
 def unspliced(tau, u0, alpha, beta):
+    """TODO."""
     expu = exp(-beta * tau)
     return u0 * expu + alpha / beta * (1 - expu)
 
 
+# TODO: Add docstrings
 def spliced(tau, s0, u0, alpha, beta, gamma):
+    """TODO."""
     c = (alpha - u0 * beta) * invert(gamma - beta)
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
     return s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
 
 
+# TODO: Add docstrings
 def mRNA(tau, u0, s0, alpha, beta, gamma):
-
+    """TODO."""
     warnings.warn(
         "`mRNA` is deprecated since scVelo v0.2.4 and will be removed in a future "
         "version. Please use `SplicingDynamics` from `scvelo/core/` instead.",
@@ -147,7 +165,9 @@ def mRNA(tau, u0, s0, alpha, beta, gamma):
     )
 
 
+# TODO: Add docstrings
 def adjust_increments(tau, tau_=None):
+    """TODO."""
     tau_new = np.array(tau)
     tau_ord = np.sort(tau_new)
     dtau = np.diff(tau_ord, prepend=0)
@@ -179,7 +199,9 @@ def adjust_increments(tau, tau_=None):
     return tau_new if tau_ is None else (tau_new, tau_new_)
 
 
+# TODO: Add docstrings
 def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
+    """TODO."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         inv_u = (gamma >= beta) if gamma is not None else True
@@ -201,9 +223,11 @@ def tau_inv(u, s=None, u0=None, s0=None, alpha=None, beta=None, gamma=None):
     return tau
 
 
+# TODO: Add docstrings
 def assign_tau(
     u, s, alpha, beta, gamma, t_=None, u0_=None, s0_=None, assignment_mode=None
 ):
+    """TODO."""
     if assignment_mode in {"full_projection", "partial_projection"} or (
         assignment_mode == "projection" and beta < gamma
     ):
@@ -268,8 +292,7 @@ def compute_divergence(
     clusters=None,
     **kwargs,
 ):
-    """Estimates the divergence of ODE to observations
-    (avaiable metrics: distance, mse, likelihood, loglikelihood)
+    """Estimates the divergence of ODE to observations (avaiable metrics: distance, mse, likelihood, loglikelihood)
 
     Arguments
     ---------
@@ -644,11 +667,15 @@ def compute_divergence(
     return res
 
 
+# TODO: Add docstrings
 def assign_timepoints(**kwargs):
+    """TODO."""
     return compute_divergence(**kwargs, mode="assign_timepoints")
 
 
+# TODO: Add docstrings
 def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0, sorted=False):
+    """TODO."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         o = np.array(t < t_, dtype=int)
@@ -668,6 +695,7 @@ def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0, sorted=False
     return tau, alpha, u0, s0
 
 
+# TODO: Add docstrings
 def curve_dists(
     u,
     s,
@@ -682,6 +710,7 @@ def curve_dists(
     scaling=1,
     num=None,
 ):
+    """TODO."""
     if u0_ is None or s0_ is None:
         u0_, s0_ = SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
             t_, stacked=False
@@ -715,7 +744,10 @@ def curve_dists(
 """Base Class for Dynamics Recovery"""
 
 
+# TODO: Add docstrings
 class BaseDynamics:
+    """TODO."""
+
     def __init__(
         self,
         adata,
@@ -771,9 +803,10 @@ class BaseDynamics:
 
         self.perc = perc
         self.recoverable = True
+        # TODO: Refactor to handle failed instantiation properly
         try:
             self.initialize_weights()
-        except Exception:
+        except Warning:
             self.recoverable = False
             logg.warn(f"Model for {self.gene} could not be instantiated.")
 
@@ -798,7 +831,9 @@ class BaseDynamics:
         self.clusters, self.cats, self.varx, self.orth_beta = None, None, None, None
         self.diff_kinetics, self.pval_kinetics, self.pvals_kinetics = None, None, None
 
+    # TODO: Add docstrings
     def initialize_weights(self, weighted=True):
+        """TODO."""
         nonzero_s = np.ravel(self.s > 0)
         nonzero_u = np.ravel(self.u > 0)
 
@@ -824,7 +859,9 @@ class BaseDynamics:
                 w_upper = (self.u > np.max(u) / 3) & (self.s > np.max(s) / 3)
                 self.weights_upper &= w_upper
 
+    # TODO: Add docstrings
     def load_pars(self, adata, gene):
+        """TODO."""
         idx = adata.var_names.get_loc(gene) if isinstance(gene, str) else gene
         self.alpha = adata.var["fit_alpha"][idx]
         self.beta = adata.var["fit_beta"][idx] * adata.var["fit_scaling"][idx]
@@ -865,7 +902,9 @@ class BaseDynamics:
 
         self.loss = [self.get_loss()]
 
+    # TODO: Add docstrings
     def get_weights(self, weighted=None, weights_cluster=None):
+        """TODO."""
         weights = (
             np.array(
                 self.weights_outer
@@ -881,7 +920,9 @@ class BaseDynamics:
             weights &= weights_cluster
         return weights
 
+    # TODO: Add docstrings
     def get_reads(self, scaling=None, weighted=None, weights_cluster=None):
+        """TODO."""
         scaling = self.scaling if scaling is None else scaling
         u, s = self.u / scaling, self.s
         if weighted or weights_cluster is not None:
@@ -891,6 +932,7 @@ class BaseDynamics:
             u, s = u[weights], s[weights]
         return u, s
 
+    # TODO: Add docstrings
     def get_vars(
         self,
         alpha=None,
@@ -901,6 +943,7 @@ class BaseDynamics:
         u0_=None,
         s0_=None,
     ):
+        """TODO."""
         alpha = self.alpha if alpha is None else alpha
         beta = self.beta if beta is None else beta
         gamma = self.gamma if gamma is None else gamma
@@ -909,6 +952,7 @@ class BaseDynamics:
             t_ = self.t_ if u0_ is None else tau_inv(u0_, s0_, 0, 0, alpha, beta, gamma)
         return alpha, beta, gamma, scaling, t_
 
+    # TODO: Add docstrings
     def get_divergence(
         self,
         alpha=None,
@@ -921,6 +965,7 @@ class BaseDynamics:
         mode=None,
         **kwargs,
     ):
+        """TODO."""
         alpha, beta, gamma, scaling, t_ = self.get_vars(
             alpha, beta, gamma, scaling, t_, u0_, s0_
         )
@@ -937,6 +982,7 @@ class BaseDynamics:
         res = compute_divergence(u, s, alpha, beta, gamma, scaling, **kwargs)
         return res
 
+    # TODO: Add docstrings
     def get_time_assignment(
         self,
         alpha=None,
@@ -952,6 +998,7 @@ class BaseDynamics:
         weighted=None,
         weights_cluster=None,
     ):
+        """TODO."""
         if refit_time is None:
             refit_time = self.refit_time
 
@@ -991,6 +1038,7 @@ class BaseDynamics:
             t, tau, o = t[weights], tau[weights], o[weights]
         return t, tau, o
 
+    # TODO: Add docstrings
     def get_vals(
         self,
         t=None,
@@ -1003,6 +1051,7 @@ class BaseDynamics:
         s0_=None,
         refit_time=None,
     ):
+        """TODO."""
         alpha, beta, gamma, scaling, t_ = self.get_vars(
             alpha, beta, gamma, scaling, t_, u0_, s0_
         )
@@ -1011,6 +1060,7 @@ class BaseDynamics:
         )
         return t, t_, alpha, beta, gamma, scaling
 
+    # TODO: Add docstrings
     def get_dists(
         self,
         t=None,
@@ -1026,6 +1076,7 @@ class BaseDynamics:
         weights_cluster=None,
         reg=None,
     ):
+        """TODO."""
         weight_args = dict(weighted=weighted, weights_cluster=weights_cluster)
         u, s = self.get_reads(scaling, **weight_args)
 
@@ -1049,27 +1100,38 @@ class BaseDynamics:
                 reg = (gamma / beta - self.steady_state_ratio) * s / self.std_s
         return udiff, sdiff, reg
 
+    # TODO: Add docstrings
     def get_residuals_linear(self, **kwargs):
+        """TODO."""
         udiff, sdiff, reg = self.get_dists(**kwargs)
         return udiff, sdiff
 
+    # TODO: Add docstrings
     def get_residuals(self, **kwargs):
+        """TODO."""
         udiff, sdiff, reg = self.get_dists(**kwargs)
         return np.sign(sdiff) * np.sqrt(udiff**2 + sdiff**2)
 
+    # TODO: Add docstrings
     def get_distx(self, noise_model="normal", regularize=True, **kwargs):
+        """TODO."""
         udiff, sdiff, reg = self.get_dists(**kwargs)
         distx = udiff**2 + sdiff**2
         if regularize:
             distx += reg**2
         return np.sqrt(distx) if noise_model == "laplace" else distx
 
+    # TODO: Add docstrings
     def get_se(self, **kwargs):
+        """TODO."""
         return np.sum(self.get_distx(**kwargs))
 
+    # TODO: Add docstrings
     def get_mse(self, **kwargs):
+        """TODO."""
         return np.mean(self.get_distx(**kwargs))
 
+    # TODO: Add docstrings
     def get_loss(
         self,
         t=None,
@@ -1082,11 +1144,14 @@ class BaseDynamics:
         s0_=None,
         refit_time=None,
     ):
+        """TODO."""
         kwargs = dict(t=t, t_=t_, alpha=alpha, beta=beta, gamma=gamma, scaling=scaling)
         kwargs.update(dict(u0_=u0_, s0_=s0_, refit_time=refit_time))
         return self.get_se(**kwargs)
 
+    # TODO: Add docstrings
     def get_loglikelihood(self, varx=None, noise_model="normal", **kwargs):
+        """TODO."""
         if "weighted" not in kwargs:
             kwargs.update({"weighted": "upper"})
         udiff, sdiff, reg = self.get_dists(**kwargs)
@@ -1110,13 +1175,17 @@ class BaseDynamics:
             raise ValueError("That noise model is not supported.")
         return loglik
 
+    # TODO: Add docstrings
     def get_likelihood(self, **kwargs):
+        """TODO."""
         if "weighted" not in kwargs:
             kwargs.update({"weighted": "upper"})
         likelihood = np.exp(self.get_loglikelihood(**kwargs))
         return likelihood
 
+    # TODO: Add docstrings
     def get_curve_likelihood(self):
+        """TODO."""
         alpha, beta, gamma, scaling, t_ = self.get_vars()
         u, s = self.get_reads(scaling, weighted=False)
         varx = self.get_variance()
@@ -1132,28 +1201,37 @@ class BaseDynamics:
         likelihood = np.exp(np.max([log_likelihood, log_likelihood_]))
         return likelihood
 
+    # TODO: Add docstrings
     def get_variance(self, **kwargs):
+        """TODO."""
         if "weighted" not in kwargs:
             kwargs.update({"weighted": "upper"})
         udiff, sdiff, reg = self.get_dists(**kwargs)
         distx = udiff**2 + sdiff**2
         return np.mean(distx) - np.mean(np.sign(sdiff) * np.sqrt(distx)) ** 2
 
+    # TODO: Add docstrings
     def get_ut(self, **kwargs):
+        """TODO."""
         t, t_, alpha, beta, gamma, scaling = self.get_vals(**kwargs)
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
         return unspliced(tau, u0, alpha, beta)
 
+    # TODO: Add docstrings
     def get_st(self, **kwargs):
+        """TODO."""
         t, t_, alpha, beta, gamma, scaling = self.get_vals(**kwargs)
         tau, alpha, u0, s0 = vectorize(t, t_, alpha, beta, gamma)
         return spliced(tau, s0, u0, alpha, beta, gamma)
 
+    # TODO: Add docstrings
     def get_vt(self, mode="soft_eval"):
+        """TODO."""
         alpha, beta, gamma, scaling, _ = self.get_vars()
         o_, o, ut, st = self.get_divergence(mode=mode)
         return ut * beta - st * gamma
 
+    # TODO: Add docstrings
     def plot_phase(
         self,
         adata=None,
@@ -1168,6 +1246,7 @@ class BaseDynamics:
         show_assignments=None,
         **kwargs,
     ):
+        """TODO."""
         from scvelo.plotting.scatter import scatter
 
         if np.all([x is None for x in [alpha, beta, gamma, scaling, t_]]):
@@ -1197,6 +1276,7 @@ class BaseDynamics:
 
         return ax if not show else None
 
+    # TODO: Add docstrings
     def plot_profile_contour(
         self,
         xkey="gamma",
@@ -1219,6 +1299,7 @@ class BaseDynamics:
         return_color_scale=False,
         **kwargs,
     ):
+        """TODO."""
         from scvelo.plotting.utils import update_axes
 
         x_var = getattr(self, xkey)
@@ -1278,6 +1359,7 @@ class BaseDynamics:
         elif not show:
             return ax
 
+    # TODO: Add docstrings
     def plot_profile_hist(
         self,
         xkey="gamma",
@@ -1292,6 +1374,7 @@ class BaseDynamics:
         vmax=None,
         show=True,
     ):
+        """TODO."""
         from scvelo.plotting.utils import update_axes
 
         x_var = getattr(self, xkey)
@@ -1301,7 +1384,7 @@ class BaseDynamics:
         self.assignment_mode = None
 
         # TODO: Check if list comprehension can be used
-        zp = np.zeros((len(x)))
+        zp = np.zeros(len(x))
         for i, xi in enumerate(x):
             zp[i] = self.get_likelihood(**{xkey: xi}, refit_time=True)
 
@@ -1328,6 +1411,7 @@ class BaseDynamics:
         if not show:
             return ax
 
+    # TODO: Add docstrings
     def plot_profiles(
         self,
         params=None,
@@ -1342,6 +1426,7 @@ class BaseDynamics:
         dpi=None,
         **kwargs,
     ):
+        """TODO."""
         from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
         if params is None:
@@ -1404,6 +1489,7 @@ class BaseDynamics:
                     ax.set_ylabel("")
                     ax.set_yticks([])
 
+    # TODO: Add docstrings
     def plot_state_likelihoods(
         self,
         num=300,
@@ -1427,6 +1513,7 @@ class BaseDynamics:
         ax=None,
         **kwargs,
     ):
+        """TODO."""
         from scvelo.plotting.utils import rgb_custom_colormap, update_axes
 
         if color_map is None:
@@ -1574,8 +1661,10 @@ class BaseDynamics:
 
         return ax
 
+    # TODO: Add docstrings
     # for differential kinetic test
     def initialize_diff_kinetics(self, clusters):
+        """TODO."""
         # after fitting dyn. model
         if self.varx is None:
             self.varx = self.get_variance()
@@ -1587,14 +1676,18 @@ class BaseDynamics:
             mode="outside_of_trajectory"
         )
 
+    # TODO: Add docstrings
     def get_orth_fit(self, **kwargs):
+        """TODO."""
         kwargs["weighted"] = True  # include inner vals for orthogonal regression
         u, s = self.get_reads(**kwargs)
         a, b = np.sum(s * u), np.sum(u**2 - s**2)
         orth_beta = (b + ((b**2 + 4 * a**2) ** 0.5)) / (2 * a)
         return orth_beta
 
+    # TODO: Add docstrings
     def get_orth_distx(self, orth_beta=None, **kwargs):
+        """TODO."""
         if "weighted" not in kwargs:
             kwargs["weighted"] = "outer"
         u, s = self.get_reads(**kwargs)
@@ -1605,7 +1698,9 @@ class BaseDynamics:
         udiff = np.array(orth_beta * s_real - u) / self.std_u * self.scaling
         return udiff**2 + sdiff**2
 
+    # TODO: Add docstrings
     def get_pval(self, model="dynamical", **kwargs):
+        """TODO."""
         # assuming var-scaled udiff, sdiff follow N(0,1),
         # the sum of errors for the cluster follows chi2(df=2n)
         if "weighted" not in kwargs:
@@ -1618,9 +1713,7 @@ class BaseDynamics:
         return chi2.sf(df=2 * len(distx), x=np.sum(distx) / self.varx)
 
     def get_pval_diff_kinetics(self, orth_beta=None, min_cells=10, **kwargs):
-        """
-        Calculates the p-value for the likelihood ratio
-        using the asymptotic property of the chi^2 distr.
+        """Calculates the p-value for the likelihood ratio using the asymptotic property of the chi^2 distr.
 
         Derivation:
         - dists_dynamical and dists_orthogonal are squared N(0,1) distributed residuals
@@ -1642,7 +1735,6 @@ class BaseDynamics:
         -------
         p-value
         """
-
         if (
             "weights_cluster" in kwargs
             and np.sum(kwargs["weights_cluster"]) < min_cells
@@ -1658,7 +1750,9 @@ class BaseDynamics:
         )  # see derivation above
         return pval
 
+    # TODO: Add docstrings
     def get_cluster_mse(self, clusters=None, min_cells=10, weighted="outer"):
+        """TODO."""
         if self.clusters is None or clusters is not None:
             self.initialize_diff_kinetics(clusters)
         mse = np.array(
@@ -1681,7 +1775,9 @@ class BaseDynamics:
             ] = 0
         return mse
 
+    # TODO: Add docstrings
     def get_cluster_pvals(self, clusters=None, model=None, orth_beta=None, **kwargs):
+        """TODO."""
         if self.clusters is None or clusters is not None:
             self.initialize_diff_kinetics(clusters)
         pvals = np.array(
@@ -1698,9 +1794,11 @@ class BaseDynamics:
         )
         return pvals
 
+    # TODO: Add docstrings
     def differential_kinetic_test(
         self, clusters, as_df=None, min_cells=10, weighted="outer"
     ):
+        """TODO."""
         # after fitting dyn. model
         self.initialize_diff_kinetics(clusters)
         mse = self.get_cluster_mse(weighted=weighted, min_cells=min_cells)
@@ -1737,7 +1835,9 @@ class BaseDynamics:
             )
 
 
+# TODO: Add docstrings
 def get_reads(adata, key="fit", scaled=True, use_raw=False):
+    """TODO."""
     if "Ms" not in adata.layers.keys():
         use_raw = True
     s = make_dense(adata.layers["spliced" if use_raw else "Ms"])
@@ -1747,7 +1847,9 @@ def get_reads(adata, key="fit", scaled=True, use_raw=False):
     return u, s
 
 
+# TODO: Add docstrings
 def get_vars(adata, scaled=True, key="fit"):
+    """TODO."""
     alpha = (
         adata.var[f"{key}_alpha"].values if f"{key}_alpha" in adata.var.keys() else 1
     )
@@ -1762,7 +1864,9 @@ def get_vars(adata, scaled=True, key="fit"):
     return alpha, beta * scaling if scaled else beta, gamma, scaling, t_
 
 
+# TODO: Add docstrings
 def get_latent_vars(adata, scaled=True, key="fit"):
+    """TODO."""
     scaling = adata.var[f"{key}_scaling"].values
     std_u = adata.var[f"{key}_std_u"].values
     std_s = adata.var[f"{key}_std_s"].values
@@ -1787,9 +1891,11 @@ def get_latent_vars(adata, scaled=True, key="fit"):
     return std_u, std_s, u0_scaled, s0, pval_steady, steady_u, steady_s
 
 
+# TODO: Add docstrings
 def get_divergence(
     adata, mode="soft", use_latent_time=None, use_connectivities=None, **kwargs
 ):
+    """TODO."""
     vdata = adata[:, ~np.isnan(adata.var["fit_alpha"].values)].copy()
     alpha, beta, gamma, scaling, t_ = get_vars(vdata)
     std_u, std_s, u0, s0, pval_steady, steady_u, steady_s = get_latent_vars(vdata)
