@@ -1,10 +1,9 @@
 ---
 name: Enhancement request
 about: Anything you’d like to see in scVelo?
-title: ''
+title: ""
 labels: enhancement
-assignees: ''
+assignees: ""
 ---
 
 <!-- What kind of feature would you like to request? -->
-
