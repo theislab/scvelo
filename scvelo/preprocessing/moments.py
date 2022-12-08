@@ -53,7 +53,6 @@ def moments(
     Mu: `.layers`
         dense matrix with first order moments of unspliced counts.
     """
-
     adata = data.copy() if copy else data
 
     layers = [layer for layer in {"spliced", "unspliced"} if layer in adata.layers]
@@ -114,7 +113,6 @@ def second_order_moments(adata, adjusted=False):
     Mss: Second order moments for spliced abundances
     Mus: Second order moments for spliced with unspliced abundances
     """
-
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."
@@ -144,7 +142,6 @@ def second_order_moments_u(adata):
     -------
     Muu: Second order moments for unspliced abundances
     """
-
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."
@@ -157,7 +154,9 @@ def second_order_moments_u(adata):
     return Muu
 
 
+# TODO: Add docstrings
 def magic_impute(adata, knn=5, t=2, verbose=0, **kwargs):
+    """TODO."""
     logg.info(
         "To be used carefully. Magic has not yet been tested for this application."
     )
@@ -193,7 +192,6 @@ def get_moments(
     -------
     Mx: first or second order moments
     """
-
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."
