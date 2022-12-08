@@ -24,6 +24,7 @@ from .utils import (
 )
 
 
+# TODO: Add docstrings
 def compute_velocity_on_grid(
     X_emb,
     V_emb,
@@ -35,6 +36,7 @@ def compute_velocity_on_grid(
     adjust_for_stream=False,
     cutoff_perc=None,
 ):
+    """TODO."""
     # remove invalid cells
     idx_valid = np.isfinite(X_emb.sum(1) + V_emb.sum(1))
     X_emb = X_emb[idx_valid]
@@ -148,8 +150,7 @@ def velocity_embedding_grid(
     ncols=None,
     **kwargs,
 ):
-    """\
-    Scatter plot of velocities on a grid.
+    """Scatter plot of velocities on a grid.
 
     Arguments
     ---------
@@ -180,7 +181,6 @@ def velocity_embedding_grid(
     -------
     `matplotlib.Axis` if `show==False`
     """
-
     basis = default_basis(adata, **kwargs) if basis is None else get_basis(adata, basis)
     if vkey == "all":
         lkeys = list(adata.layers.keys())
