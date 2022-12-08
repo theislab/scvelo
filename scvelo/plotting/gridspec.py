@@ -30,7 +30,9 @@ _wraps_plot_velocity_embedding_stream = partial(
 )
 
 
+# TODO: Add docstrings
 def gridspec(ncols=4, nrows=1, figsize=None, dpi=None):
+    """TODO."""
     figsize, dpi = get_figure_params(figsize, dpi, ncols)
     gs = pl.GridSpec(
         nrows, ncols, pl.figure(None, (figsize[0] * ncols, figsize[1] * nrows), dpi=dpi)
@@ -38,17 +40,20 @@ def gridspec(ncols=4, nrows=1, figsize=None, dpi=None):
     return gs
 
 
+# TODO: Add docstrings
 class GridSpec:
+    """TODO."""
+
     def __init__(self, ncols=4, nrows=1, figsize=None, dpi=None, **scatter_kwargs):
-        """Specifies the geometry of the grid that a subplots can be placed in
+        """Specifies the geometry of the grid that a subplots can be placed in.
 
         Example
 
         .. code:: python
 
             with scv.GridSpec() as pl:
-                pl.scatter(adata, basis='pca')
-                pl.scatter(adata, basis='umap')
+                pl.scatter(adata, basis="pca")
+                pl.scatter(adata, basis="umap")
                 pl.hist(adata.obs.initial_size)
 
         Parameters
@@ -79,44 +84,62 @@ class GridSpec:
             ax.axis("off")
         pl.show()
 
+    # TODO: Add docstrings
     def get_new_grid(self):
+        """TODO."""
         self.gs = gridspec(self.ncols, self.nrows, self.figsize, self.dpi)
         geo = self.gs[0].get_geometry()
         self.max_count, self.count, self.new_row = geo[0] * geo[1], 0, True
 
+    # TODO: Add docstrings
     def get_ax(self):
+        """TODO."""
         if self.count >= self.max_count:
             self.get_new_grid()
         self.count += 1
         return pl.subplot(self.gs[self.count - 1])
 
+    # TODO: Add docstrings
     def get_kwargs(self, kwargs=None):
+        """TODO."""
         _kwargs = self.scatter_kwargs.copy()
         if kwargs is not None:
             _kwargs.update(kwargs)
         _kwargs.update({"ax": self.get_ax(), "show": False})
         return _kwargs
 
+    # TODO: Add docstrings
     @_wraps_plot_scatter
     def scatter(self, adata, **kwargs):
+        """TODO."""
         return scatter(adata, **self.get_kwargs(kwargs))
 
+    # TODO: Add docstrings
     @_wraps_plot_velocity_embedding
     def velocity_embedding(self, adata, **kwargs):
+        """TODO."""
         return velocity_embedding(adata, **self.get_kwargs(kwargs))
 
+    # TODO: Add docstrings
     @_wraps_plot_velocity_embedding_grid
     def velocity_embedding_grid(self, adata, **kwargs):
+        """TODO."""
         return velocity_embedding_grid(adata, **self.get_kwargs(kwargs))
 
+    # TODO: Add docstrings
     @_wraps_plot_velocity_embedding_stream
     def velocity_embedding_stream(self, adata, **kwargs):
+        """TODO."""
         return velocity_embedding_stream(adata, **self.get_kwargs(kwargs))
 
+    # TODO: Add docstrings
     @_wraps_plot_velocity_graph
     def velocity_graph(self, adata, **kwargs):
+        """TODO."""
         return velocity_graph(adata, **self.get_kwargs(kwargs))
 
+    # TODO: Add docstrings
     @_wraps_plot_hist
     def hist(self, array, **kwargs):
+        """TODO."""
         return hist(array, **self.get_kwargs(kwargs))
