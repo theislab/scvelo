@@ -1,6 +1,4 @@
-"""
-Loosely based on gist.github.com/MantasVaitkunas/7c16de233812adcb7028
-"""
+"""Loosely based on gist.github.com/MantasVaitkunas/7c16de233812adcb7028."""
 
 import os
 import warnings
@@ -8,13 +6,17 @@ import warnings
 __licence__ = "BSD (3 clause)"
 
 
+# TODO: Add docstrings
 def get_github_repo(app, path):
+    """TODO."""
     if path.endswith(".ipynb"):
         return app.config.github_nb_repo, "/"
     return app.config.github_repo, "/docs/source/"
 
 
+# TODO: Add docstrings
 def html_page_context(app, pagename, templatename, context, doctree):
+    """TODO."""
     if templatename != "page.html":
         return
 
@@ -38,7 +40,9 @@ def html_page_context(app, pagename, templatename, context, doctree):
     context["conf_py_path"] = conf_py_path
 
 
+# TODO: Add docstrings
 def setup(app):
+    """TODO."""
     app.add_config_value("github_nb_repo", "", True)
     app.add_config_value("github_repo", "", True)
     app.connect("html-page-context", html_page_context)
