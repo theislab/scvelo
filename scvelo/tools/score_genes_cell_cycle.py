@@ -22,9 +22,9 @@ g2m_genes_list = \
 # fmt: on
 
 
+# TODO: Fix docstrings
 def get_phase_marker_genes(adata):
-    """\
-    Return S and G2M phase marker genes.
+    """Return S and G2M phase marker genes.
 
     Parameters
     ----------
@@ -36,7 +36,6 @@ def get_phase_marker_genes(adata):
     -------
     List of S and/or G2M phase marker genes.
     """
-
     name, gene_names = adata.var_names[0], adata.var_names
     up, low = name.isupper(), name.islower()
     s_genes_list_ = [
@@ -52,8 +51,7 @@ def get_phase_marker_genes(adata):
 
 
 def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kwargs):
-    """\
-    Score cell cycle genes.
+    """Score cell cycle genes.
 
     Calculates scores and assigns a cell cycle phase (G1, S, G2M) using the list of cell
     cycle genes defined in Tirosh et al, 2015 (https://doi.org/10.1126/science.aad0501).
@@ -81,7 +79,6 @@ def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kw
     phase: `adata.obs`, dtype `object`
         The cell cycle phase (`S`, `G2M` or `G1`) for each cell.
     """
-
     logg.info("calculating cell cycle phase")
     from scanpy.tools._score_genes import score_genes
 
