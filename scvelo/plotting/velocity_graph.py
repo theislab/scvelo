@@ -45,8 +45,7 @@ def velocity_graph(
     ax=None,
     **kwargs,
 ):
-    """\
-    Plot of the velocity graph.
+    """Plot of the velocity graph.
 
     Arguments
     ---------
@@ -68,7 +67,6 @@ def velocity_graph(
     -------
     `matplotlib.Axis` if `show==False`
     """
-
     basis = default_basis(adata, **kwargs) if basis is None else get_basis(adata, basis)
     kwargs.update(
         {
