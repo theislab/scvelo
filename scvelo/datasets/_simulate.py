@@ -7,19 +7,25 @@ from anndata import AnnData
 from scvelo.core import invert, SplicingDynamics
 
 
+# TODO: Add docstrings
 # TODO Use `SplicingDynamics`
 def unspliced(tau, u0, alpha, beta):
+    """TODO."""
     expu = np.exp(-beta * tau)
     return u0 * expu + alpha / beta * (1 - expu)
 
 
+# TODO: Add docstrings
 def spliced(tau, s0, u0, alpha, beta, gamma):
+    """TODO."""
     c = (alpha - u0 * beta) * invert(gamma - beta)
     expu, exps = np.exp(-beta * tau), np.exp(-gamma * tau)
     return s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
 
 
+# TODO: Add docstrings
 def vectorize(t, t_, alpha, beta, gamma=None, alpha_=0, u0=0, s0=0, sorted=False):
+    """TODO."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         o = np.array(t < t_, dtype=int)
@@ -54,7 +60,6 @@ def simulation(
 ):
     """Simulation of mRNA splicing kinetics.
 
-
     Simulated mRNA metabolism with transcription, splicing and degradation.
     The parameters for each reaction are randomly sampled from a log-normal distribution
     and time events follow the Poisson law. The total time spent in a transcriptional
@@ -66,8 +71,7 @@ def simulation(
     Returns
     -------
     Returns `adata` object
-    """  # noqa E501
-
+    """
     np.random.seed(random_seed)
 
     def draw_poisson(n):
