@@ -11,7 +11,9 @@ from scvelo.core import l2_norm, prod_sum, sum
 warnings.simplefilter("ignore")
 
 
+# TODO: Add docstrings
 def round(k, dec=2, as_str=None):
+    """TODO."""
     if isinstance(k, (list, tuple, np.record, np.ndarray)):
         return [round(ki, dec) for ki in k]
     if "e" in f"{k}":
@@ -22,20 +24,24 @@ def round(k, dec=2, as_str=None):
     return f"{result}" if as_str else result
 
 
+# TODO: Add docstrings
 def mean(x, axis=0):
+    """TODO."""
     return x.mean(axis).A1 if issparse(x) else x.mean(axis)
 
 
+# TODO: Add docstrings
 def make_dense(X):
+    """TODO."""
     XA = X.A if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) else X
     if XA.ndim == 2:
         XA = XA[0] if XA.shape[0] == 1 else XA[:, 0] if XA.shape[1] == 1 else XA
     return np.array(XA)
 
 
+# TODO: Finish docstrings
 def sum_obs(A):
-    """summation over axis 0 (obs) equivalent to np.sum(A, 0)"""
-
+    """Summation over axis 0 (obs) equivalent to np.sum(A, 0)."""
     warnings.warn(
         "`sum_obs` is deprecated since scVelo v0.2.4 and will be removed in a future "
         "version. Please use `sum(A, axis=0)` from `scvelo/core/` instead.",
@@ -46,9 +52,9 @@ def sum_obs(A):
     return sum(A, axis=0)
 
 
+# TODO: Finish docstrings
 def sum_var(A):
-    """summation over axis 1 (var) equivalent to np.sum(A, 1)"""
-
+    """Summation over axis 1 (var) equivalent to np.sum(A, 1)."""
     warnings.warn(
         "`sum_var` is deprecated since scVelo v0.2.4 and will be removed in a future "
         "version. Please use `sum(A, axis=1)` from `scvelo/core/` instead.",
@@ -59,9 +65,9 @@ def sum_var(A):
     return sum(A, axis=1)
 
 
+# TODO: Finish docstrings
 def prod_sum_obs(A, B):
-    """dot product and sum over axis 0 (obs) equivalent to np.sum(A * B, 0)"""
-
+    """Dot product and sum over axis 0 (obs) equivalent to np.sum(A * B, 0)."""
     warnings.warn(
         "`prod_sum_obs` is deprecated since scVelo v0.2.4 and will be removed in a "
         "future version. Please use `prod_sum(A, B, axis=0)` from `scvelo/core/` "
@@ -73,9 +79,9 @@ def prod_sum_obs(A, B):
     return prod_sum(A, B, axis=0)
 
 
+# TODO: Finish docstrings
 def prod_sum_var(A, B):
-    """dot product and sum over axis 1 (var) equivalent to np.sum(A * B, 1)"""
-
+    """Dot product and sum over axis 1 (var) equivalent to np.sum(A * B, 1)."""
     warnings.warn(
         "`prod_sum_var` is deprecated since scVelo v0.2.4 and will be removed in a "
         "future version. Please use `prod_sum(A, B, axis=1)` from `scvelo/core/` "
@@ -87,11 +93,9 @@ def prod_sum_var(A, B):
     return prod_sum(A, B, axis=1)
 
 
+# TODO: Finish docstrings
 def norm(A):
-    """computes the L2-norm along axis 1
-    (e.g. genes or embedding dimensions) equivalent to np.linalg.norm(A, axis=1)
-    """
-
+    """Computes the L2-norm along axis 1."""
     warnings.warn(
         "`norm` is deprecated since scVelo v0.2.4 and will be removed in a future "
         "version. Please use `l2_norm(A, axis=1)` from `scvelo/core/` instead.",
@@ -102,11 +106,9 @@ def norm(A):
     return l2_norm(A, axis=1)
 
 
+# TODO: Finish docstrings
 def vector_norm(x):
-    """computes the L2-norm along axis 1
-    (e.g. genes or embedding dimensions) equivalent to np.linalg.norm(A, axis=1)
-    """
-
+    """Computes the L2-norm along axis 1."""
     warnings.warn(
         "`vector_norm` is deprecated since scVelo v0.2.4 and will be removed in a "
         "future version. Please use `l2_norm(x)` from `scvelo/core/` instead.",
@@ -117,7 +119,9 @@ def vector_norm(x):
     return l2_norm(x)
 
 
+# TODO: Add docstrings
 def R_squared(residual, total):
+    """TODO."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         r2 = np.ones(residual.shape[1]) - prod_sum(
@@ -127,7 +131,9 @@ def R_squared(residual, total):
     return r2
 
 
+# TODO: Add docstrings
 def cosine_correlation(dX, Vi):
+    """TODO."""
     dx = dX - dX.mean(-1)[:, None]
     Vi_norm = l2_norm(Vi, axis=0)
     with warnings.catch_warnings():
@@ -141,7 +147,9 @@ def cosine_correlation(dX, Vi):
     return result
 
 
+# TODO: Add docstrings
 def normalize(X):
+    """TODO."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if issparse(X):
@@ -150,7 +158,9 @@ def normalize(X):
             return X / X.sum(1)
 
 
+# TODO: Add docstrings
 def scale(X, min=0, max=1):
+    """TODO."""
     idx = np.isfinite(X)
     if any(idx):
         X = X - X[idx].min() + min
@@ -159,7 +169,9 @@ def scale(X, min=0, max=1):
     return X
 
 
+# TODO: Add docstrings
 def get_indices(dist, n_neighbors=None, mode_neighbors="distances"):
+    """TODO."""
     from scvelo.preprocessing.neighbors import compute_connectivities_umap
 
     D = dist.copy()
@@ -192,7 +204,9 @@ def get_indices(dist, n_neighbors=None, mode_neighbors="distances"):
     return indices, D
 
 
+# TODO: Add docstrings
 def get_indices_from_csr(conn):
+    """TODO."""
     # extracts indices from connectivity matrix, pads with nans
     ixs = np.ones((conn.shape[0], np.max((conn > 0).sum(1)))) * np.nan
     for i in range(ixs.shape[0]):
@@ -201,12 +215,15 @@ def get_indices_from_csr(conn):
     return ixs
 
 
+# TODO: Add docstrings
 def get_iterative_indices(
     indices,
     index,
     n_recurse_neighbors=2,
     max_neighs=None,
 ):
+    """TODO."""
+
     def iterate_indices(indices, index, n_recurse_neighbors):
         if n_recurse_neighbors > 1:
             index = iterate_indices(indices, index, n_recurse_neighbors - 1)
@@ -221,14 +238,18 @@ def get_iterative_indices(
     return indices
 
 
+# TODO: Add docstrings
 def geometric_matrix_sum(C, n_power=2):  # computes C + C^2 + C^3 + ...
+    """TODO."""
     C_n = (
         geometric_matrix_sum(C, n_power - 1) if n_power > 2 else C if n_power > 1 else 0
     )
     return C + C.dot(C_n)
 
 
+# TODO: Add docstrings
 def groups_to_bool(adata, groups, groupby=None):
+    """TODO."""
     groups = [groups] if isinstance(groups, str) else groups
     if isinstance(groups, (list, tuple, np.ndarray, np.record)):
         groupby = (
@@ -247,13 +268,17 @@ def groups_to_bool(adata, groups, groupby=None):
     return groups
 
 
+# TODO: Add docstrings
 def most_common_in_list(lst):
+    """TODO."""
     lst = [item for item in lst if item is not np.nan and item != "nan"]
     lst = list(lst)
     return max(set(lst), key=lst.count)
 
 
+# TODO: Add docstrings
 def randomized_velocity(adata, vkey="velocity", add_key="velocity_random"):
+    """TODO."""
     V_rnd = adata.layers[vkey].copy()
     for i in range(V_rnd.shape[1]):
         np.random.shuffle(V_rnd[:, i])
@@ -269,7 +294,10 @@ def randomized_velocity(adata, vkey="velocity", add_key="velocity_random"):
     velocity_embedding(adata, vkey=add_key, autoscale=False)
 
 
+# TODO: Add docstrings
 def extract_int_from_str(array):
+    """TODO."""
+
     def str_to_int(item):
         num = "".join(filter(str.isdigit, item))
         num = int(num) if len(num) > 0 else -1
@@ -287,6 +315,7 @@ def extract_int_from_str(array):
     return nums
 
 
+# TODO: Finish docstrings
 def strings_to_categoricals(adata):
     """Transform string annotations to categoricals."""
     from pandas import Categorical
@@ -314,7 +343,9 @@ def strings_to_categoricals(adata):
             df[key] = c
 
 
+# TODO: Add docstrings
 def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):
+    """TODO."""
     strings_to_categoricals(adata)
     if len(map_groups) != len(adata.obs[key].cat.categories):
         map_coarse = {}
@@ -368,9 +399,11 @@ def merge_groups(adata, key, map_groups, key_added=None, map_colors=None):
         adata.uns[f"{key_added}_colors"] = new_colors
 
 
+# TODO: Add docstrings
 def cutoff_small_velocities(
     adata, vkey="velocity", key_added="velocity_cut", frac_of_max=0.5, use_raw=False
 ):
+    """TODO."""
     x = adata.layers["spliced"] if use_raw else adata.layers["Ms"]
     y = adata.layers["unspliced"] if use_raw else adata.layers["Mu"]
 
@@ -389,7 +422,9 @@ def cutoff_small_velocities(
     velocity_embedding(adata, vkey=key_added)
 
 
+# TODO: Add docstrings
 def make_unique_list(key, allow_array=False):
+    """TODO."""
     from pandas import Index, unique
 
     if isinstance(key, Index):
@@ -405,6 +440,7 @@ def make_unique_list(key, allow_array=False):
     )
 
 
+# TODO: Finish docstrings
 def test_bimodality(x, bins=30, kde=True, plot=False):
     """Test for bimodal distribution."""
     from scipy.stats import gaussian_kde, norm
@@ -451,7 +487,9 @@ def test_bimodality(x, bins=30, kde=True, plot=False):
     return t_stat, p_val, means  # ~ t_test (reject unimodality if t_stat > 3)
 
 
+# TODO: Add docstrings
 def random_subsample(adata, fraction=0.1, return_subset=False, copy=False):
+    """TODO."""
     adata_sub = adata.copy() if copy else adata
     p, size = fraction, adata.n_obs
     subset = np.random.choice([True, False], size=size, p=[p, 1 - p])
@@ -459,13 +497,17 @@ def random_subsample(adata, fraction=0.1, return_subset=False, copy=False):
     return adata_sub if copy else subset if return_subset else None
 
 
+# TODO: Add docstrings
 def get_duplicates(array):
+    """TODO."""
     from collections import Counter
 
     return np.array([item for (item, count) in Counter(array).items() if count > 1])
 
 
+# TODO: Add docstrings
 def corrcoef(x, y, mode="pearsons"):
+    """TODO."""
     from scipy.stats import pearsonr, spearmanr
 
     corr, _ = spearmanr(x, y) if mode == "spearmans" else pearsonr(x, y)
@@ -510,15 +552,21 @@ def vcorrcoef(X, y, mode="pearsons", axis=-1):
     return corr
 
 
+# TODO: Add docstrings
 def isin(x, y):
+    """TODO."""
     return np.array(pd.DataFrame(x).isin(y)).flatten()
 
 
+# TODO: Add docstrings
 def indices_to_bool(indices, n):
+    """TODO."""
     return isin(np.arange(n), indices)
 
 
+# TODO: Add docstrings
 def convolve(adata, x):
+    """TODO."""
     from scvelo.preprocessing.neighbors import get_connectivities
 
     conn = get_connectivities(adata)
@@ -532,6 +580,7 @@ def convolve(adata, x):
     return Y
 
 
+# TODO: Finish docstrings
 def get_extrapolated_state(adata, vkey="velocity", dt=1, use_raw=None, dropna=True):
     """Get extrapolated cell state."""
     S = adata.layers["spliced" if use_raw else "Ms"]
@@ -543,8 +592,10 @@ def get_extrapolated_state(adata, vkey="velocity", dt=1, use_raw=None, dropna=Tr
     return St
 
 
+# TODO: Add docstrings
 # TODO: Generalize to use arbitrary modality i.e., not only layers
 def get_plasticity_score(adata, modality="Ms"):
+    """TODO."""
     idx_top_genes = np.argsort(adata.var["gene_count_corr"].values)[::-1][:200]
     Ms = np.array(adata.layers[modality][:, idx_top_genes])
     return scale(np.mean(Ms / np.max(Ms, axis=0), axis=1))

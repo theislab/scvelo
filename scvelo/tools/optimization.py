@@ -9,7 +9,9 @@ from scvelo.core import prod_sum, sum
 from .utils import make_dense
 
 
+# TODO: Add docstrings
 def get_weight(x, y=None, perc=95):
+    """TODO."""
     xy_norm = np.array(x.A if issparse(x) else x)
     if y is not None:
         if issparse(y):
@@ -24,9 +26,9 @@ def get_weight(x, y=None, perc=95):
     return weights
 
 
+# TODO: Add docstrings
 def leastsq_NxN(x, y, fit_offset=False, perc=None, constraint_positive_offset=True):
     """Solves least squares X*b=Y for b."""
-
     warnings.warn(
         "`leastsq_NxN` is deprecated since scVelo v0.2.4 and will be removed in a "
         "future version. Please use `LinearRegression` from `scvelo/core/` instead.",
@@ -74,8 +76,9 @@ def leastsq_NxN(x, y, fit_offset=False, perc=None, constraint_positive_offset=Tr
 leastsq = leastsq_NxN
 
 
+# TODO: Add docstrings
 def optimize_NxN(x, y, fit_offset=False, perc=None):
-    """Just to compare with closed-form solution"""
+    """Just to compare with closed-form solution."""
     if perc is not None:
         if not fit_offset and isinstance(perc, (list, tuple)):
             perc = perc[1]
@@ -94,21 +97,29 @@ def optimize_NxN(x, y, fit_offset=False, perc=None):
         xi = x[:, i] if weights is None else x[:, i][weights[:, i]]
         yi = y[:, i] if weights is None else y[:, i][weights[:, i]]
 
+        def _loss_fun(m, x, y):
+            if m.size > 1:
+                return np.sum((-y + x * m[1] + m[0]) ** 2)
+            else:
+                return np.sum((-y + x * m) ** 2)
+
         if fit_offset:
             offset[i], gamma[i] = minimize(
-                lambda m: np.sum((-yi + xi * m[1] + m[0]) ** 2),
+                _loss_fun,
+                args=(xi, yi),
                 method="L-BFGS-B",
-                x0=(0, 0.1),
+                x0=np.array([0, 0.1]),
                 bounds=[(0, None), (None, None)],
             ).x
         else:
             gamma[i] = minimize(
-                lambda m: np.sum((-yi + xi * m) ** 2), x0=0.1, method="L-BFGS-B"
+                _loss_fun, args=(xi, yi), x0=np.array([0.1]), method="L-BFGS-B"
             ).x
     offset[np.isnan(offset)], gamma[np.isnan(gamma)] = 0, 0
     return offset, gamma
 
 
+# TODO: Add docstrings
 def leastsq_generalized(
     x,
     y,
@@ -179,8 +190,9 @@ def leastsq_generalized(
     return offset, offset_ss, gamma
 
 
+# TODO: Add docstrings
 def maximum_likelihood(Ms, Mu, Mus, Mss, fit_offset=False, fit_offset2=False):
-    """Maximizing the log likelihood using weights according to empirical bayes"""
+    """Maximizing the log likelihood using weights according to empirical Bayes."""
     n_obs, n_var = Ms.shape
     offset = np.zeros(n_var, dtype="float32")
     offset_ss = np.zeros(n_var, dtype="float32")
@@ -190,15 +202,34 @@ def maximum_likelihood(Ms, Mu, Mus, Mss, fit_offset=False, fit_offset2=False):
         sigma = (A.dot(data) - b).std(1)
         return np.log(sigma).sum()
 
+    def _loss_fun(m, offset_type: int):
+        if m.size == 3:
+            return sse(
+                np.array([[1, -m[2], 0, 0], [1, m[2], 2, -2 * m[2]]]),
+                data,
+                b=np.array(m[0], m[1]),
+            )
+        elif offset_type == 1:
+            return sse(
+                np.array([[1, -m[1], 0, 0], [1, m[1], 2, -2 * m[1]]]),
+                data,
+                b=np.array(m[0], 0),
+            )
+        elif offset_type == 2:
+            sse(
+                np.array([[1, -m[1], 0, 0], [1, m[1], 2, -2 * m[1]]]),
+                data,
+                b=np.array(0, m[0]),
+            )
+        else:
+            sse(np.array([[1, -m, 0, 0], [1, m, 2, -2 * m]]), data, b=0)
+
     if fit_offset and fit_offset2:
         for i in range(n_var):
             data = np.vstack((Mu[:, i], Ms[:, i], Mus[:, i], Mss[:, i]))
             offset[i], offset_ss[i], gamma[i] = minimize(
-                lambda m: sse(
-                    np.array([[1, -m[2], 0, 0], [1, m[2], 2, -2 * m[2]]]),
-                    data,
-                    b=np.array(m[0], m[1]),
-                ),
+                _loss_fun,
+                args=(-1),
                 x0=(1e-4, 1e-4, 1),
                 method="L-BFGS-B",
             ).x
@@ -206,11 +237,8 @@ def maximum_likelihood(Ms, Mu, Mus, Mss, fit_offset=False, fit_offset2=False):
         for i in range(n_var):
             data = np.vstack((Mu[:, i], Ms[:, i], Mus[:, i], Mss[:, i]))
             offset[i], gamma[i] = minimize(
-                lambda m: sse(
-                    np.array([[1, -m[1], 0, 0], [1, m[1], 2, -2 * m[1]]]),
-                    data,
-                    b=np.array(m[0], 0),
-                ),
+                _loss_fun,
+                args=(1),
                 x0=(1e-4, 1),
                 method="L-BFGS-B",
             ).x
@@ -218,11 +246,8 @@ def maximum_likelihood(Ms, Mu, Mus, Mss, fit_offset=False, fit_offset2=False):
         for i in range(n_var):
             data = np.vstack((Mu[:, i], Ms[:, i], Mus[:, i], Mss[:, i]))
             offset_ss[i], gamma[i] = minimize(
-                lambda m: sse(
-                    np.array([[1, -m[1], 0, 0], [1, m[1], 2, -2 * m[1]]]),
-                    data,
-                    b=np.array(0, m[0]),
-                ),
+                _loss_fun,
+                args=(2),
                 x0=(1e-4, 1),
                 method="L-BFGS-B",
             ).x
@@ -230,7 +255,8 @@ def maximum_likelihood(Ms, Mu, Mus, Mss, fit_offset=False, fit_offset2=False):
         for i in range(n_var):
             data = np.vstack((Mu[:, i], Ms[:, i], Mus[:, i], Mss[:, i]))
             gamma[i] = minimize(
-                lambda m: sse(np.array([[1, -m, 0, 0], [1, m, 2, -2 * m]]), data, b=0),
+                _loss_fun,
+                args=(-1),
                 x0=gamma[i],
                 method="L-BFGS-B",
             ).x

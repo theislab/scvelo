@@ -6,6 +6,7 @@ typing_extensions
 importlib_metadata
 sphinx_rtd_theme>=0.3
 sphinx_autodoc_typehints<=1.6
+sphinxcontrib-bibtex>=2.3.0
 Jinja2<3.1
 
 # converting notebooks to html

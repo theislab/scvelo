@@ -2,6 +2,7 @@ from scvelo.preprocessing import filter_and_normalize, moments
 from . import velocity, velocity_embedding, velocity_graph
 
 
+# TODO: Add docstrings
 def run_all(
     data,
     basis=None,
@@ -13,6 +14,7 @@ def run_all(
     n_neighbors=30,
     copy=False,
 ):
+    """TODO."""
     from time import time
 
     start = time()
@@ -36,7 +38,9 @@ def run_all(
     return adata if copy else None
 
 
+# TODO: Add docstrings
 def convert_to_adata(vlm, basis=None):
+    """TODO."""
     from collections import OrderedDict
 
     from anndata import AnnData
@@ -90,7 +94,9 @@ def convert_to_adata(vlm, basis=None):
     return adata
 
 
+# TODO: Add docstrings
 def convert_to_loom(adata, basis=None):
+    """TODO."""
     import velocyto
 
     import numpy as np
@@ -309,7 +315,9 @@ def convert_to_loom(adata, basis=None):
     return VelocytoLoom(adata, basis)
 
 
+# TODO: Add docstrings
 def test():
+    """TODO."""
     from scvelo.datasets import simulation
     from scvelo.logging import print_version
     from .velocity_graph import velocity_graph

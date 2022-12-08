@@ -36,8 +36,7 @@ def bonemarrow(
     Returns
     -------
     Returns `adata` object
-    """  # noqa E501
-
+    """
     url = "https://ndownloader.figshare.com/files/27686835"
     adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
@@ -70,8 +69,7 @@ def dentategyrus(file_path: Optional[Union[str, Path]] = None, adjusted=True):
     Returns
     -------
     Returns `adata` object
-    """  # noqa E501
-
+    """
     if file_path is None and adjusted:
         file_path = "data/DentateGyrus/10X43_1.h5ad"
     elif file_path is None:
@@ -118,8 +116,7 @@ def dentategyrus_lamanno(
     Returns
     -------
     Returns `adata` object
-    """  # noqa E501
-
+    """
     url = "http://pklab.med.harvard.edu/velocyto/DentateGyrus/DentateGyrus.loom"
     adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
@@ -163,7 +160,6 @@ def forebrain(file_path: Union[str, Path] = "data/ForebrainGlut/hgForebrainGlut.
     -------
     Returns `adata` object
     """
-
     url = "http://pklab.med.harvard.edu/velocyto/hgForebrainGlut/hgForebrainGlut.loom"
     adata = read(file_path, backup_url=url, cleanup=True, sparse=True, cache=True)
     adata.var_names_make_unique()
@@ -194,8 +190,7 @@ def gastrulation(
     Returns
     -------
     Returns `adata` object
-    """  # noqa E501
-
+    """
     url = "https://ndownloader.figshare.com/files/28095525"
     adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
@@ -219,8 +214,7 @@ def gastrulation_e75(
     Returns
     -------
     Returns `adata` object
-    """  # noqa E501
-
+    """
     url = "https://ndownloader.figshare.com/files/30439878"
     adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
@@ -244,8 +238,7 @@ def gastrulation_erythroid(
     Returns
     -------
     Returns `adata` object
-    """  # noqa E501
-
+    """
     url = "https://ndownloader.figshare.com/files/27686871"
     adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
@@ -276,15 +269,16 @@ def pancreas(file_path: Union[str, Path] = "data/Pancreas/endocrinogenesis_day15
     Returns
     -------
     Returns `adata` object
-    """  # noqa E501
-
+    """
     url = f"{url_datadir}data/Pancreas/endocrinogenesis_day15.h5ad"
     adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
     return adata
 
 
+# TODO: Add docstrings
 def pancreatic_endocrinogenesis():
+    """TODO."""
     warnings.warn(
         "`scvelo.datasets.pancreatic_endocrinogenesis` is deprecated since scVelo "
         "v0.2.5 and will be removed in a future version. Please use "
@@ -316,8 +310,7 @@ def pbmc68k(file_path: Optional[Union[str, Path]] = "data/PBMC/pbmc68k.h5ad"):
     Returns
     -------
     Returns `adata` object
-    """  # noqa E501
-
+    """
     url = "https://ndownloader.figshare.com/files/27686886"
     adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
@@ -342,7 +335,6 @@ def toy_data(
     -------
     Returns `adata` object
     """
-
     adata_dg = dentategyrus(file_path=file_path)
 
     if n_obs is not None:

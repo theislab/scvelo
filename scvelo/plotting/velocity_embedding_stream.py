@@ -71,8 +71,7 @@ def velocity_embedding_stream(
     ncols=None,
     **kwargs,
 ):
-    """\
-    Stream plot of velocities on the embedding.
+    """Stream plot of velocities on the embedding.
 
     Arguments
     ---------
@@ -96,8 +95,8 @@ def velocity_embedding_stream(
         The streamline color. If given an array, it must have the same shape as u and v.
     arrow_size: `float` (default: 1)
         Scaling factor for the arrow size.
-    arrow_style: `str` (default: '-|>')
-        Arrow style specification, '-|>' or '->'.
+    arrow_style: `str` (default: `'-|>'`)
+        Arrow style specification, `'-|>'` or `'->'`.
     max_length: `float` (default: 4)
         Maximum length of streamline in axes coordinates.
     integration_direction: `str` (default: 'both')
@@ -115,7 +114,6 @@ def velocity_embedding_stream(
     -------
     `matplotlib.Axis` if `show==False`
     """
-
     basis = default_basis(adata, **kwargs) if basis is None else get_basis(adata, basis)
     if vkey == "all":
         lkeys = list(adata.layers.keys())

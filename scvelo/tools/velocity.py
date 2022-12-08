@@ -12,7 +12,10 @@ from .utils import groups_to_bool, make_dense, R_squared, strings_to_categorical
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
+# TODO: Add docstrings
 class Velocity:
+    """TODO."""
+
     def __init__(
         self,
         adata=None,
@@ -55,7 +58,9 @@ class Velocity:
             if "highly_variable" in adata.var.keys():
                 self._highly_variable = adata.var["highly_variable"]
 
+    # TODO: Add docstrings
     def compute_deterministic(self, fit_offset=False, perc=None):
+        """TODO."""
         subset = self._groups_for_fit
         Ms = self._Ms if subset is None else self._Ms[subset]
         Mu = self._Mu if subset is None else self._Mu[subset]
@@ -110,9 +115,11 @@ class Velocity:
                 f"Please be cautious when interpreting results."
             )
 
+    # TODO: Add docstrings
     def compute_stochastic(
         self, fit_offset=False, fit_offset2=False, mode=None, perc=None
     ):
+        """TODO."""
         if self._residual is None:
             self.compute_deterministic(fit_offset=fit_offset, perc=perc)
 
@@ -174,7 +181,9 @@ class Velocity:
         else:
             self._residual2 = _residual2
 
+    # TODO: Add docstrings
     def get_pars(self):
+        """TODO."""
         return (
             self._offset,
             self._offset2,
@@ -185,7 +194,9 @@ class Velocity:
             self._velocity_genes,
         )
 
+    # TODO: Add docstrings
     def get_pars_names(self):
+        """TODO."""
         return [
             "_offset",
             "_offset2",
@@ -197,7 +208,9 @@ class Velocity:
         ]
 
 
+# TODO: Add docstrings
 def write_residuals(adata, vkey, residual=None, cell_subset=None):
+    """TODO."""
     if residual is not None:
         if cell_subset is None:
             adata.layers[vkey] = residual
@@ -207,7 +220,9 @@ def write_residuals(adata, vkey, residual=None, cell_subset=None):
             adata.layers[vkey][cell_subset] = residual
 
 
+# TODO: Add docstrings
 def write_pars(adata, vkey, pars, pars_names, add_key=None):
+    """TODO."""
     for i, key in enumerate(pars_names):
         key = f"{vkey}{key}_{add_key}" if add_key is not None else f"{vkey}{key}"
         if len(set(pars[i])) > 1:
@@ -229,7 +244,7 @@ def velocity(
     constrain_ratio=None,
     use_raw=False,
     use_latent_time=None,
-    perc=[5, 95],
+    perc=None,
     min_r2=1e-2,
     min_likelihood=1e-3,
     r2_adjusted=None,
@@ -240,13 +255,13 @@ def velocity(
 ):
     """Estimates velocities in a gene-specific manner.
 
-    The steady-state model [Manno18]_ determines velocities by quantifying how
+    The steady-state model :cite:p:`LaManno18` determines velocities by quantifying how
     observations deviate from a presumed steady-state equilibrium ratio of unspliced to
     spliced mRNA levels. This steady-state ratio is obtained by performing a linear
     regression restricting the input data to the extreme quantiles. By including
-    second-order moments, the stochastic model [Bergen19]_ exploits not only the balance
+    second-order moments, the stochastic model :cite:p:`Bergen20` exploits not only the balance
     of unspliced to spliced mRNA levels but also their covariation. By contrast, the
-    likelihood-based dynamical model [Bergen19]_ solves the full splicing kinetics and
+    likelihood-based dynamical model :cite:p:`Bergen20` solves the full splicing kinetics and
     generalizes RNA velocity estimation to transient systems. It is also capable of
     capturing non-observed steady states.
 
@@ -303,8 +318,9 @@ def velocity(
         velocity vectors for each individual cell
     velocity_genes, velocity_beta, velocity_gamma, velocity_r2: `.var`
         parameters
-    """  # noqa E501
-
+    """
+    if perc is None:
+        perc = [5, 95]
     adata = data.copy() if copy else data
     if not use_raw and "Ms" not in adata.layers.keys():
         moments(adata)
@@ -480,7 +496,7 @@ def velocity_genes(
     use_highly_variable=True,
     copy=False,
 ):
-    """Estimates velocities in a gene-specific manner
+    """Estimates velocities in a gene-specific manner.
 
     Arguments
     ---------
@@ -503,7 +519,6 @@ def velocity_genes(
     velocity_genes: `.var`
         genes to be used for further velocity analysis (velocity graph and embedding)
     """
-
     adata = data.copy() if copy else data
     if f"{vkey}_genes" not in adata.var.keys():
         velocity(adata, vkey)

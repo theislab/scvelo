@@ -10,7 +10,8 @@ from .utils import groups_to_bool, scale, strings_to_categoricals
 
 
 def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False):
-    """Computes the principal curve
+    """Computes the principal curve.
+
     Arguments
     ---------
     data: :class:`~anndata.AnnData`
@@ -27,9 +28,8 @@ def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False
     principal_curve: `.uns`
         dictionary containing `projections`, `ixsort` and `arclength`
     """
-
     adata = data.copy() if copy else data
-    import rpy2.robjects as robjects
+    from rpy2 import robjects
     from rpy2.robjects.packages import importr
 
     if clusters_list is not None:
@@ -44,7 +44,7 @@ def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False
     n_obs, n_dim = X_emb.shape
 
     # convert array to R matrix
-    xvec = robjects.FloatVector(X_emb.T.reshape((X_emb.size)))
+    xvec = robjects.FloatVector(X_emb.T.reshape(X_emb.size))
     X_R = robjects.r.matrix(xvec, nrow=n_obs, ncol=n_dim)
 
     fit = importr("princurve").principal_curve(X_R)
@@ -58,7 +58,9 @@ def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False
     return adata if copy else None
 
 
+# TODO: Add docstrings
 def velocity_map(adata=None, T=None, n_dcs=10, return_model=False):
+    """TODO."""
     vpt = VPT(adata, n_dcs=n_dcs)
     if T is None:
         T = adata.uns["velocity_graph"] - adata.uns["velocity_graph_neg"]
@@ -69,8 +71,13 @@ def velocity_map(adata=None, T=None, n_dcs=10, return_model=False):
     return vpt if return_model else None
 
 
+# TODO: Add docstrings
 class VPT(DPT):
+    """TODO."""
+
+    # TODO: Add docstrings
     def set_iroot(self, root=None):
+        """TODO."""
         if (
             isinstance(root, str)
             and root in self._adata.obs.keys()
@@ -85,7 +92,9 @@ class VPT(DPT):
         else:
             self.iroot = None
 
+    # TODO: Add docstrings
     def compute_transitions(self, density_normalize=True):
+        """TODO."""
         T = self._connectivities
         if density_normalize:
             q = np.asarray(T.sum(axis=0))
@@ -106,7 +115,9 @@ class VPT(DPT):
         )
         self._transitions_sym = Z.dot(K).dot(Z)
 
+    # TODO: Add docstrings
     def compute_eigen(self, n_comps=10, sym=None, sort="decrease"):
+        """TODO."""
         if self._transitions_sym is None:
             raise ValueError("Run `.compute_transitions` first.")
         n_comps = min(self._transitions_sym.shape[0] - 1, n_comps)
@@ -114,7 +125,9 @@ class VPT(DPT):
         self._eigen_values = evals[::-1]
         self._eigen_basis = evecs[:, ::-1]
 
+    # TODO: Add docstrings
     def compute_pseudotime(self, inverse=False):
+        """TODO."""
         if self.iroot is not None:
             self._set_pseudotime()
             self.pseudotime = 1 - self.pseudotime if inverse else self.pseudotime
@@ -149,7 +162,7 @@ def velocity_pseudotime(
     .. code:: python
 
         scv.tl.velocity_pseudotime(adata)
-        scv.pl.scatter(adata, color='velocity_pseudotime', color_map='gnuplot')
+        scv.pl.scatter(adata, color="velocity_pseudotime", color_map="gnuplot")
 
     .. image:: https://user-images.githubusercontent.com/31883718/69545487-33fbc000-0f92-11ea-969b-194dc68400b0.png
        :width: 600px
@@ -188,8 +201,7 @@ def velocity_pseudotime(
     -------
     velocity_pseudotime: `.obs`
         Velocity pseudotime obtained from velocity graph.
-    """  # noqa E501
-
+    """
     strings_to_categoricals(adata)
     if root_key is None and "root_cells" in adata.obs.keys():
         root0 = adata.obs["root_cells"][0]

@@ -207,11 +207,11 @@ class TestMoments:
             assert (adata_1.layers[layer] != adata_2.layers[layer]).getnnz() == 0
 
         # Check `.obsm` is unchanged
-        assert set(adata_1.obsm) == set(["X_pca"])
+        assert set(adata_1.obsm) == {"X_pca"}
         np.testing.assert_equal(adata_1.obsm["X_pca"], adata_2.obsm["X_pca"])
 
         # Check `.obsp` is unchanged
-        assert set(adata_1.obsp) == set(["distances", "connectivities"])
+        assert set(adata_1.obsp) == {"distances", "connectivities"}
         assert issparse(adata_1.obsp["connectivities"])
         np.testing.assert_almost_equal(
             adata_1.obsp["connectivities"].A,
@@ -224,7 +224,7 @@ class TestMoments:
         )
 
         # Check `.uns` is unchanged
-        assert set(adata_1.uns["pca"]) == set(["params", "variance", "variance_ratio"])
+        assert set(adata_1.uns["pca"]) == {"params", "variance", "variance_ratio"}
         assert adata_1.uns["pca"]["params"] == adata_2.uns["pca"]["params"]
         np.testing.assert_equal(
             adata_1.uns["pca"]["variance"], adata_2.uns["pca"]["variance"]
@@ -234,9 +234,12 @@ class TestMoments:
             adata_2.uns["pca"]["variance_ratio"],
         )
 
-        assert set(adata_1.uns["neighbors"]) == set(
-            ["connectivities_key", "distances_key", "indices", "params"]
-        )
+        assert set(adata_1.uns["neighbors"]) == {
+            "connectivities_key",
+            "distances_key",
+            "indices",
+            "params",
+        }
         assert (
             adata_1.uns["neighbors"]["connectivities_key"]
             == adata_2.uns["neighbors"]["connectivities_key"]

@@ -5,6 +5,7 @@ import sys
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Dict, List, Mapping, Optional, Tuple, Union
+from urllib.error import URLError
 from urllib.request import urlretrieve
 
 import sphinx_autodoc_typehints
@@ -16,13 +17,13 @@ from sphinx.domains.python import PyObject, PyTypedField
 from sphinx.environment import BuildEnvironment
 from sphinx.ext import autosummary
 
-import matplotlib  # noqa
+import matplotlib
 
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE.parent.parent))
 sys.path.insert(0, os.path.abspath("_ext"))
 
-import scvelo  # isort:skip
+import scvelo  # isort:skip # noqa E402
 
 # remove PyCharm’s old six module
 
@@ -70,9 +71,8 @@ for nb in notebooks:
     url = notebooks_url + nb
     try:
         urlretrieve(url, nb)
-    except Exception as e:
+    except URLError as e:
         logger.error(f"Unable to retrieve notebook: `{url}`. Reason: `{e}`")
-        pass
 
 
 # -- General configuration ------------------------------------------------
@@ -91,6 +91,7 @@ extensions = [
     "sphinx_autodoc_typehints",
     "nbsphinx",
     "edit_on_github",
+    "sphinxcontrib.bibtex",
 ]
 
 
@@ -138,6 +139,10 @@ nbsphinx_prolog = r"""
     </div>
 """
 
+# bibliography
+bibtex_bibfiles = ["references.bib"]
+bibtex_reference_style = "author_year"
+
 # -- Options for HTML output ----------------------------------------------
 
 html_theme = "sphinx_rtd_theme"
@@ -147,7 +152,9 @@ github_nb_repo = "scvelo_notebooks"
 html_static_path = ["_static"]
 
 
+# TODO: Add docstrings
 def setup(app):
+    """TODO."""
     app.add_css_file("custom.css")
 
 
@@ -166,7 +173,9 @@ texinfo_documents = [
 # -- generate_options override ------------------------------------------
 
 
+# TODO: Add docstrings
 def process_generate_options(app: Sphinx):
+    """TODO."""
     genfiles = app.config.autosummary_generate
 
     if genfiles and not hasattr(genfiles, "__len__"):
@@ -208,9 +217,9 @@ autosummary.process_generate_options = process_generate_options
 
 # -- GitHub URLs for class and method pages ------------------------------------------
 
-
+# TODO: Finish docstrings
 def get_obj_module(qualname):
-    """Get a module/class/attribute and its original module by qualname"""
+    """Get a module/class/attribute and its original module by qualname."""
     modname = qualname
     classname = None
     attrname = None
@@ -229,8 +238,9 @@ def get_obj_module(qualname):
     return obj, sys.modules[modname]
 
 
+# TODO: Finish docstrings
 def get_linenos(obj):
-    """Get an object’s line numbers"""
+    """Get an object’s line numbers."""
     try:
         lines, start = inspect.getsourcelines(obj)
     except TypeError:
@@ -247,6 +257,7 @@ github_url_read = "https://github.com/theislab/scanpy/tree/master"
 github_url_scanpy = "https://github.com/theislab/scanpy/tree/master/scanpy"
 
 
+# TODO: Finish docstrings
 def modurl(qualname):
     """Get the full GitHub URL for some object’s qualname."""
     obj, module = get_obj_module(qualname)
@@ -268,7 +279,9 @@ def modurl(qualname):
     return f"{github_url}/{path}{fragment}"
 
 
+# TODO: Add docstrings
 def api_image(qualname: str) -> Optional[str]:
+    """TODO."""
     path = Path(__file__).parent / f"{qualname}.png"
     print(path, path.is_file())
     return (
@@ -292,7 +305,9 @@ qualname_overrides = {
 fa_orig = sphinx_autodoc_typehints.format_annotation
 
 
+# TODO: Add docstrings
 def format_annotation(annotation):
+    """TODO."""
     if getattr(annotation, "__origin__", None) is Union or hasattr(
         annotation, "__union_params__"
     ):
@@ -316,9 +331,13 @@ sphinx_autodoc_typehints.format_annotation = format_annotation
 # -- Prettier Param docs --------------------------------------------
 
 
+# TODO: Add docstrings
 class PrettyTypedField(PyTypedField):
+    """TODO."""
+
     list_type = nodes.definition_list
 
+    # TODO: Add docstrings
     def make_field(
         self,
         types: Dict[str, List[nodes.Node]],
@@ -326,6 +345,8 @@ class PrettyTypedField(PyTypedField):
         items: Tuple[str, List[nodes.inline]],
         env: BuildEnvironment = None,
     ) -> nodes.field:
+        """TODO."""
+
         def makerefs(rolename, name, node):
             return self.make_xrefs(rolename, domain, name, node, env=env)
 

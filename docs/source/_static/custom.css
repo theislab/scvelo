@@ -1,37 +1,46 @@
 /* ReadTheDocs theme colors */
 
-.wy-nav-top { background-color: #404040 }
-.wy-nav-content { max-width: 950px }
-.wy-side-nav-search { background-color: transparent }
-.wy-side-nav-search input[type="text"] { border-width: 0 }
-
+.wy-nav-top {
+    background-color: #404040;
+}
+.wy-nav-content {
+    max-width: 950px;
+}
+.wy-side-nav-search {
+    background-color: transparent;
+}
+.wy-side-nav-search input[type="text"] {
+    border-width: 0;
+}
 
 /* Custom classes */
-.small { font-size:40% }
-.smaller, .pr { font-size:70% }
-
+.small {
+    font-size: 40%;
+}
+.smaller,
+.pr {
+    font-size: 70%;
+}
 
 /* Custom classes with bootstrap buttons */
 
 .tutorial,
 .tutorial:visited,
-.tutorial:hover
-{
+.tutorial:hover {
     /* text-decoration: underline; */
     font-weight: bold;
     padding: 2px 5px;
     white-space: nowrap;
     max-width: 100%;
-    background: #EF3270;
-    border: solid 1px #EF3270;
-    border-radius: .25rem;
+    background: #ef3270;
+    border: solid 1px #ef3270;
+    border-radius: 0.25rem;
     font-size: 75%;
     /* font-family: SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",Courier,monospace; */
     color: #404040;
     overflow-x: auto;
     box-sizing: border-box;
 }
-
 
 /* Formatting of RTD markup: rubrics and sidebars and admonitions */
 
@@ -40,7 +49,9 @@
     margin-bottom: 6px;
     font-weight: normal;
 }
-.rst-content p.rubric::after { content: ":" }
+.rst-content p.rubric::after {
+    content: ":";
+}
 
 /* sidebar */
 .rst-content .sidebar {
@@ -60,7 +71,6 @@
 .rst-content .section .admonition ul {
     margin-bottom: 6px;
 }
-
 
 /* Code: literals and links */
 
@@ -92,7 +102,6 @@
     border: 0 solid transparent;
 }
 
-
 /* Parameter lists */
 
 .rst-content dl:not(.docutils) dl dt {
@@ -113,7 +122,7 @@
     padding: 0 2px;
 }
 
-.rst-content dl:not(.docutils) dl dt a.reference>code {
+.rst-content dl:not(.docutils) dl dt a.reference > code {
     text-decoration: underline;
 }
 
@@ -127,9 +136,13 @@
     font-size: 100%;
 }
 /* Parameters contain <strong> parts and don’t need bold font */
-.rst-content dl.field-list dl > dt { font-weight: unset }
+.rst-content dl.field-list dl > dt {
+    font-weight: unset;
+}
 /* Add colon between return tuple element name and type */
-.rst-content dl:not(.docutils) dl > dt .classifier::before { content: ' : ' }
+.rst-content dl:not(.docutils) dl > dt .classifier::before {
+    content: " : ";
+}
 
 /* Function headers */
 
@@ -140,44 +153,44 @@
 }
 
 .rst-content .section ul li p:last-child {
-   margin-bottom: 0;
-   margin-top: 0;
+    margin-bottom: 0;
+    margin-top: 0;
 }
 
 /* Adjust width of navigation bar on mobile */
 @media screen and (max-width: 768px) {
-	.header-bar {
-		display: none;
-	}
-
-	.wy-nav-content-wrap {
-		margin-left: 0px;
-	}
-
-	.wy-nav-side {
-		width: 300px;
-	}
-
-	.wy-nav-side.shift {
-    	max-width: 320px;
+    .header-bar {
+        display: none;
     }
 
-	/* Fix sidebar adjust */
-	.rst-versions {
-		width: 40%;
-		max-width: 320px;
-	}
+    .wy-nav-content-wrap {
+        margin-left: 0px;
+    }
+
+    .wy-nav-side {
+        width: 300px;
+    }
+
+    .wy-nav-side.shift {
+        max-width: 320px;
+    }
+
+    /* Fix sidebar adjust */
+    .rst-versions {
+        width: 40%;
+        max-width: 320px;
+    }
 }
 
 /* Handle landscape */
 @media screen and (min-width: 377px) {
-  .wy-nav-content-wrap.shift {
-    left: 320px;
-  }
+    .wy-nav-content-wrap.shift {
+        left: 320px;
+    }
 }
 
 /* make height responsive for notebook figures */
 .rst-content .image-reference img {
-   max-width: 100% !important;
-   height: auto !important;
+    max-width: 100% !important;
+    height: auto !important;
 }

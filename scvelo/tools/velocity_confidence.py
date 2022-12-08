@@ -13,7 +13,7 @@ def velocity_confidence(data, vkey="velocity", copy=False):
     .. code:: python
 
         scv.tl.velocity_confidence(adata)
-        scv.pl.scatter(adata, color='velocity_confidence', perc=[2,98])
+        scv.pl.scatter(adata, color="velocity_confidence", perc=[2, 98])
 
     .. image:: https://user-images.githubusercontent.com/31883718/69626334-b6df5200-1048-11ea-9171-495845c5bc7a.png
        :width: 600px
@@ -94,7 +94,6 @@ def velocity_confidence_transition(data, vkey="velocity", scale=10, copy=False):
     velocity_confidence_transition: `.obs`
         Confidence of transition for each cell
     """
-
     adata = data.copy() if copy else data
     if vkey not in adata.layers.keys():
         raise ValueError("You need to run `tl.velocity` first.")
@@ -126,9 +125,11 @@ def velocity_confidence_transition(data, vkey="velocity", scale=10, copy=False):
     return adata if copy else None
 
 
+# TODO: Add docstrings
 def score_robustness(
     data, adata_subset=None, fraction=0.5, vkey="velocity", copy=False
 ):
+    """TODO."""
     adata = data.copy() if copy else data
 
     if adata_subset is None:

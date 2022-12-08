@@ -7,7 +7,9 @@ from .utils import strings_to_categoricals, vcorrcoef
 from .velocity_pseudotime import velocity_pseudotime
 
 
+# TODO: Add docstrings
 def get_mean_var(X, ignore_zeros=False, perc=None):
+    """TODO."""
     data = X.data if issparse(X) else X
     mask_nans = np.isnan(data) | np.isinf(data) | np.isneginf(data)
 
@@ -87,11 +89,10 @@ def velocity_clusters(
     .. code:: python
 
         scv.tl.velocity_clusters(adata)
-        scv.pl.scatter(adata, color='velocity_clusters')
+        scv.pl.scatter(adata, color="velocity_clusters")
 
     .. image:: https://user-images.githubusercontent.com/31883718/69625627-484dc480-1047-11ea-847f-6607a3430427.png
        :width: 600px
-
 
     Arguments
     ----------
@@ -116,8 +117,7 @@ def velocity_clusters(
     -------
     velocity_clusters : `.obs`
         Clusters obtained from applying louvain modularity on velocity expression.
-    """  # noqa E501
-
+    """
     adata = data.copy() if copy else data
 
     logg.info("computing velocity clusters", r=True)
@@ -228,11 +228,9 @@ def rank_velocity_genes(
 
     .. code:: python
 
-        scv.tl.rank_velocity_genes(adata, groupby='clusters')
-        scv.pl.scatter(
-            adata, basis=adata.uns['rank_velocity_genes']['names']['Beta'][:3]
-        )
-        pd.DataFrame(adata.uns['rank_velocity_genes']['names']).head()
+        scv.tl.rank_velocity_genes(adata, groupby="clusters")
+        scv.pl.scatter(adata, basis=adata.uns["rank_velocity_genes"]["names"]["Beta"][:3])
+        pd.DataFrame(adata.uns["rank_velocity_genes"]["names"]).head()
 
     .. image:: https://user-images.githubusercontent.com/31883718/69626017-11c47980-1048-11ea-89f4-df3769df5ad5.png
        :width: 600px
@@ -274,8 +272,7 @@ def rank_velocity_genes(
         names. Ordered according to scores.
     velocity_score : `.var`
         Storing the score for each gene for each group. Ordered according to scores.
-    """  # noqa E501
-
+    """
     adata = data.copy() if copy else data
 
     if groupby is None or groupby == "velocity_clusters":
@@ -380,7 +377,7 @@ def rank_velocity_genes(
 
     adata.uns[key] = {
         "names": np.rec.fromarrays(
-            [n for n in rankings_gene_names], dtype=[(f"{rn}", "U50") for rn in groups]
+            list(rankings_gene_names), dtype=[(f"{rn}", "U50") for rn in groups]
         ),
         "scores": np.rec.fromarrays(
             [n.round(2) for n in rankings_gene_scores],

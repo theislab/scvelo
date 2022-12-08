@@ -8,7 +8,9 @@ from scvelo.tools.dynamical_model_utils import get_vars, tau_inv, unspliced, vec
 from .utils import make_dense
 
 
+# TODO: Add docstrings
 def get_dynamics(adata, key="fit", extrapolate=False, sorted=False, t=None):
+    """TODO."""
     alpha, beta, gamma, scaling, t_ = get_vars(adata, key=key)
     if extrapolate:
         u0_ = unspliced(t_, 0, alpha, beta)
@@ -26,9 +28,11 @@ def get_dynamics(adata, key="fit", extrapolate=False, sorted=False, t=None):
     return alpha, ut, st
 
 
+# TODO: Add docstrings
 def compute_dynamics(
     adata, basis, key="true", extrapolate=None, sort=True, t_=None, t=None
 ):
+    """TODO."""
     idx = adata.var_names.get_loc(basis) if isinstance(basis, str) else basis
     key = "fit" if f"{key}_gamma" not in adata.var_keys() else key
     alpha, beta, gamma, scaling, t_ = get_vars(adata[:, basis], key=key)
@@ -61,6 +65,7 @@ def compute_dynamics(
     return alpha, ut, st
 
 
+# TODO: Add docstrings
 def show_full_dynamics(
     adata,
     basis,
@@ -71,6 +76,7 @@ def show_full_dynamics(
     show_assignments=None,
     ax=None,
 ):
+    """TODO."""
     if ax is None:
         ax = pl.gca()
     color = linecolor if linecolor else "grey" if key == "true" else "purple"
@@ -115,6 +121,7 @@ def show_full_dynamics(
     return line, label
 
 
+# TODO: Add docstrings
 def simulation(
     adata,
     var_names="all",
@@ -127,6 +134,7 @@ def simulation(
     colors=None,
     **kwargs,
 ):
+    """TODO."""
     from scvelo.tools.utils import make_dense
     from .scatter import scatter
 

@@ -1,20 +1,20 @@
 ---
 name: Bug report
 about: scVelo doesn’t do what it should? Please help us fix it!
-title: ''
+title: ""
 labels: bug
-assignees: ''
+assignees: ""
 ---
 
 <!-- Description of the bug -->
+
 ...
 
-
 <!-- Reproducible example -->
+
 ```python
 # paste your code here, if applicable
 ```
-
 
 <!-- Error Output -->
 <details>
@@ -24,8 +24,8 @@ assignees: ''
 ```pytb
 # paste the error output here, if applicable
 ```
-</details>
 
+</details>
 
 <!-- Versions -->
 <details> <summary> Versions </summary>
@@ -33,4 +33,5 @@ assignees: ''
 ```pytb
 # paste the ouput of scv.logging.print_versions() here
 ```
+
 </details>

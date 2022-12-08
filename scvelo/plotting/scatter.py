@@ -13,7 +13,49 @@ from scvelo import logging as logg
 from scvelo import settings
 from scvelo.preprocessing.neighbors import get_connectivities
 from .docs import doc_params, doc_scatter
-from .utils import *
+from .utils import (
+    default_basis,
+    default_color,
+    default_color_map,
+    default_legend_loc,
+    default_size,
+    default_xkey,
+    default_ykey,
+    get_ax,
+    get_components,
+    get_figure_params,
+    get_kwargs,
+    get_obs_vector,
+    get_value_counts,
+    gets_vals_from_color_gradients,
+    groups_to_bool,
+    interpret_colorkey,
+    is_categorical,
+    is_int,
+    is_list,
+    is_list_of_int,
+    is_list_of_list,
+    is_list_of_str,
+    make_dense,
+    plot_density,
+    plot_linfit,
+    plot_outline,
+    plot_polyfit,
+    plot_rug,
+    plot_velocity_fits,
+    rgb_custom_colormap,
+    savefig_or_show,
+    set_colorbar,
+    set_colors_for_categorical_obs,
+    set_label,
+    set_legend,
+    set_margin,
+    set_title,
+    to_list,
+    to_val,
+    to_valid_bases_list,
+    update_axes,
+)
 
 
 @doc_params(scatter=doc_scatter)
@@ -79,8 +121,7 @@ def scatter(
     ax=None,
     **kwargs,
 ):
-    """\
-    Scatter plot along observations or variables axes.
+    """Scatter plot along observations or variables axes.
 
     Arguments
     ---------
@@ -96,7 +137,6 @@ def scatter(
     -------
     If `show==False` a `matplotlib.Axis`
     """
-
     if adata is None and (x is not None and y is not None):
         adata = AnnData(np.stack([x, y]).T)
 
@@ -220,16 +260,16 @@ def scatter(
 
         if any([isinstance(key, str) and "," in key for key in [y, layer]]):
             # comma split
-            y, layer, color = [
+            y, layer, color = (
                 [k.strip() for k in key.split(",")]
                 if isinstance(key, str) and "," in key
                 else to_list(key)
                 for key in [y, layer, color]
-            ]
+            )
             multikey = y if len(y) > 1 else layer if len(layer) > 1 else None
 
             if multikey is not None:
-                for i, mi in enumerate(multikey):
+                for i in multikey:
                     ax = scatter(
                         adata,
                         x=x,
@@ -500,10 +540,11 @@ def scatter(
                     c = get_connectivities(adata, n_neighbors=n_neighbors).dot(c)
                 # rescale color values to min and max acc. to rescale_color tuple
                 if rescale_color is not None:
+                    # TODO: Use type checking instead
                     try:
                         c += rescale_color[0] - np.nanmin(c)
                         c *= rescale_color[1] / np.nanmax(c)
-                    except Exception:
+                    except TypeError:
                         logg.warn("Could not rescale colors. Pass a tuple, e.g. [0,1].")
 
             # set vmid to 0 if color values obtained from velocity expression
@@ -755,8 +796,8 @@ def _wraps_plot_scatter(wrapper):
 @_wraps_plot_scatter
 @doc_params(scatter=doc_scatter)
 def trimap(adata, **kwargs):
-    """\
-    Scatter plot in trimap basis.
+    """Scatter plot in trimap basis.
+
     Parameters
     ----------
     {scatter}
@@ -765,15 +806,14 @@ def trimap(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
-
     return scatter(adata, basis="trimap", **kwargs)
 
 
 @_wraps_plot_scatter
 @doc_params(scatter=doc_scatter)
 def umap(adata, **kwargs):
-    """\
-    Scatter plot in UMAP basis.
+    """Scatter plot in UMAP basis.
+
     Parameters
     ----------
     {scatter}
@@ -782,15 +822,14 @@ def umap(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
-
     return scatter(adata, basis="umap", **kwargs)
 
 
 @_wraps_plot_scatter
 @doc_params(scatter=doc_scatter)
 def tsne(adata, **kwargs):
-    """\
-    Scatter plot in tsne basis.
+    """Scatter plot in tsne basis.
+
     Parameters
     ----------
     {scatter}
@@ -799,15 +838,14 @@ def tsne(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
-
     return scatter(adata, basis="tsne", **kwargs)
 
 
 @_wraps_plot_scatter
 @doc_params(scatter=doc_scatter)
 def diffmap(adata, **kwargs):
-    """\
-    Scatter plot in diffmap basis.
+    """Scatter plot in diffmap basis.
+
     Parameters
     ----------
     {scatter}
@@ -816,15 +854,14 @@ def diffmap(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
-
     return scatter(adata, basis="diffmap", **kwargs)
 
 
 @_wraps_plot_scatter
 @doc_params(scatter=doc_scatter)
 def phate(adata, **kwargs):
-    """\
-    Scatter plot in phate basis.
+    """Scatter plot in phate basis.
+
     Parameters
     ----------
     {scatter}
@@ -833,15 +870,14 @@ def phate(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
-
     return scatter(adata, basis="phate", **kwargs)
 
 
 @_wraps_plot_scatter
 @doc_params(scatter=doc_scatter)
 def draw_graph(adata, layout=None, **kwargs):
-    """\
-    Scatter plot in draw_graph basis.
+    """Scatter plot in draw_graph basis.
+
     Parameters
     ----------
     {scatter}
@@ -850,7 +886,6 @@ def draw_graph(adata, layout=None, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
-
     if layout is None:
         layout = f"{adata.uns['draw_graph']['params']['layout']}"
     basis = f"draw_graph_{layout}"
@@ -862,8 +897,8 @@ def draw_graph(adata, layout=None, **kwargs):
 @_wraps_plot_scatter
 @doc_params(scatter=doc_scatter)
 def pca(adata, **kwargs):
-    """\
-    Scatter plot in pca basis.
+    """Scatter plot in pca basis.
+
     Parameters
     ----------
     {scatter}
@@ -872,5 +907,4 @@ def pca(adata, **kwargs):
     -------
     If `show==False` a :class:`~matplotlib.axes.Axes` or a list of it.
     """
-
     return scatter(adata, basis="pca", **kwargs)

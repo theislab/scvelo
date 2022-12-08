@@ -5,6 +5,7 @@ from cycler import Cycler, cycler
 
 import numpy as np
 import pandas as pd
+from numpy.core._exceptions import UFuncTypeError
 from pandas import Index
 from scipy import stats
 from scipy.sparse import issparse
@@ -26,7 +27,9 @@ from . import palettes
 """helper functions"""
 
 
+# TODO: Add docstrings
 def make_dense(X):
+    """TODO."""
     if issparse(X):
         XA = X.A if X.ndim == 2 else X.A1
     else:
@@ -34,7 +37,9 @@ def make_dense(X):
     return np.array(XA)
 
 
+# TODO: Add docstrings
 def is_view(adata):
+    """TODO."""
     return (
         adata.is_view
         if hasattr(adata, "is_view")
@@ -46,7 +51,9 @@ def is_view(adata):
     )
 
 
+# TODO: Add docstrings
 def is_categorical(data, c=None):
+    """TODO."""
     from pandas.api.types import is_categorical_dtype as cat
 
     if c is None:
@@ -56,19 +63,27 @@ def is_categorical(data, c=None):
     return isinstance(c, str) and c in data.obs.keys() and cat(data.obs[c])
 
 
+# TODO: Add docstrings
 def is_int(key):
+    """TODO."""
     return isinstance(key, (int, np.integer))
 
 
+# TODO: Add docstrings
 def is_list(key):
+    """TODO."""
     return isinstance(key, (list, tuple, np.record))
 
 
+# TODO: Add docstrings
 def is_list_or_array(key):
+    """TODO."""
     return isinstance(key, (list, tuple, np.record, np.ndarray))
 
 
+# TODO: Add docstrings
 def is_list_of_str(key, max_len=None):
+    """TODO."""
     if max_len is not None:
         return (
             is_list_or_array(key)
@@ -79,27 +94,37 @@ def is_list_of_str(key, max_len=None):
         return is_list(key) and all(isinstance(item, str) for item in key)
 
 
+# TODO: Add docstrings
 def is_list_of_list(lst):
+    """TODO."""
     return lst is not None and any(
         isinstance(list_element, list) for list_element in lst
     )
 
 
+# TODO: Add docstrings
 def is_list_of_int(lst):
+    """TODO."""
     return is_list_or_array(lst) and all(is_int(item) for item in lst)
 
 
+# TODO: Add docstrings
 def to_list(key, max_len=20):
+    """TODO."""
     if isinstance(key, Index) or is_list_of_str(key, max_len):
         key = list(key)
     return key if is_list(key) and (max_len is None or len(key) < max_len) else [key]
 
 
+# TODO: Add docstrings
 def to_val(key):
+    """TODO."""
     return key[0] if isinstance(key, (list, tuple)) and len(key) == 1 else key
 
 
+# TODO: Add docstrings
 def get_figure_params(figsize, dpi=None, ncols=1):
+    """TODO."""
     figsize = rcParams["figure.figsize"] if figsize is None else figsize
     dpi = rcParams["figure.dpi"] if dpi is None else dpi
     if settings.presenter_view and figsize[0] * ncols * (dpi / 80) > 12:
@@ -109,7 +134,9 @@ def get_figure_params(figsize, dpi=None, ncols=1):
     return figsize, dpi
 
 
+# TODO: Add docstrings
 def get_ax(ax, show=None, figsize=None, dpi=None, projection=None):
+    """TODO."""
     figsize, _ = get_figure_params(figsize)
     if ax is None:
         projection = "3d" if projection == "3d" else None
@@ -124,26 +151,34 @@ def get_ax(ax, show=None, figsize=None, dpi=None, projection=None):
     return ax, show
 
 
+# TODO: Add docstrings
 def get_kwargs(kwargs, dict_new_kwargs):
+    """TODO."""
     kwargs = kwargs.copy()
     kwargs.update(dict_new_kwargs)
     return kwargs
 
 
+# TODO: Add docstrings
 def check_basis(adata, basis):
+    """TODO."""
     if basis in adata.obsm.keys() and f"X_{basis}" not in adata.obsm.keys():
         adata.obsm[f"X_{basis}"] = adata.obsm[basis]
         logg.info(f"Renamed '{basis}' to convention 'X_{basis}' (adata.obsm).")
 
 
+# TODO: Add docstrings
 def get_basis(adata, basis):
+    """TODO."""
     if isinstance(basis, str) and basis.startswith("X_"):
         basis = basis[2:]
     check_basis(adata, basis)
     return basis
 
 
+# TODO: Add docstrings
 def to_valid_bases_list(adata, keys):
+    """TODO."""
     if isinstance(keys, pd.DataFrame):
         keys = keys.index
     if not isinstance(keys, str):
@@ -175,7 +210,9 @@ def to_valid_bases_list(adata, keys):
     return keys
 
 
+# TODO: Add docstrings
 def get_components(components=None, basis=None, projection=None):
+    """TODO."""
     if components is None:
         components = "1,2,3" if projection == "3d" else "1,2"
     if isinstance(components, str):
@@ -186,7 +223,9 @@ def get_components(components=None, basis=None, projection=None):
     return components
 
 
+# TODO: Add docstrings
 def get_obs_vector(adata, basis, layer=None, use_raw=None):
+    """TODO."""
     return (
         adata.obs_vector(basis, layer=layer)
         if layer in adata.layers.keys()
@@ -196,7 +235,9 @@ def get_obs_vector(adata, basis, layer=None, use_raw=None):
     )
 
 
+# TODO: Add docstrings
 def get_value_counts(adata, color):
+    """TODO."""
     value_counts = adata.obs[color].value_counts()
     probs = np.array(adata.obs[color])
     for cat in value_counts.index:
@@ -204,7 +245,9 @@ def get_value_counts(adata, color):
     return np.array(probs, dtype=np.float32)
 
 
+# TODO: Add docstrings
 def get_groups(adata, groups, groupby=None):
+    """TODO."""
     if not isinstance(groupby, str) or groupby not in adata.obs.keys():
         groupby = (
             "clusters"
@@ -231,7 +274,9 @@ def get_groups(adata, groups, groupby=None):
     return groups, groupby
 
 
+# TODO: Add docstrings
 def groups_to_bool(adata, groups, groupby=None):
+    """TODO."""
     groups, groupby = get_groups(adata, groups, groupby)
     if isinstance(groups, (list, tuple, np.ndarray, np.record)):
         if groupby is not None and isinstance(groups[0], str):
@@ -253,7 +298,9 @@ def groups_to_bool(adata, groups, groupby=None):
     return groups
 
 
+# TODO: Add docstrings
 def gets_vals_from_color_gradients(adata, color=None, **scatter_kwargs):
+    """TODO."""
     color_gradients = scatter_kwargs.pop("color_gradients")
     scatter_kwargs.update({"color_gradients": None})
     if "colorbar" not in scatter_kwargs or scatter_kwargs["colorbar"] is None:
@@ -299,7 +346,9 @@ def gets_vals_from_color_gradients(adata, color=None, **scatter_kwargs):
 """get default parameters"""
 
 
+# TODO: Add docstrings
 def default_basis(adata, **kwargs):
+    """TODO."""
     if "x" in kwargs and "y" in kwargs:
         keys, x, y = ["embedding"], kwargs.pop("x"), kwargs.pop("y")
         adata.obsm["X_embedding"] = np.stack([x, y]).T
@@ -314,7 +363,9 @@ def default_basis(adata, **kwargs):
     return keys[-1] if len(keys) > 0 else None
 
 
+# TODO: Add docstrings
 def default_size(adata):
+    """TODO."""
     adjusted, classic = 1.2e5 / adata.n_obs, 20
     return (
         np.mean([adjusted, classic])
@@ -323,7 +374,9 @@ def default_size(adata):
     )
 
 
+# TODO: Add docstrings
 def default_color(adata, add_outline=None):
+    """TODO."""
     if (
         isinstance(add_outline, str)
         and add_outline in adata.var.keys()
@@ -340,7 +393,9 @@ def default_color(adata, add_outline=None):
     )
 
 
+# TODO: Add docstrings
 def default_color_map(adata, c):
+    """TODO."""
     cmap = None
     if isinstance(c, str) and c in adata.obs.keys() and not is_categorical(adata, c):
         c = adata.obs[c]
@@ -350,12 +405,15 @@ def default_color_map(adata, c):
         try:
             if np.min(c) in [-1, 0, False] and np.max(c) in [1, True]:
                 cmap = "viridis_r"
-        except Exception:
+        except UFuncTypeError as e:
+            logg.warn(f"Setting `cmap` to `None`: {e}")
             cmap = None
     return cmap
 
 
+# TODO: Add docstrings
 def default_legend_loc(adata, color, legend_loc):
+    """TODO."""
     n_categories = 0
     if is_categorical(adata, color):
         n_categories = len(adata.obs[color].cat.categories)
@@ -366,21 +424,27 @@ def default_legend_loc(adata, color, legend_loc):
     return legend_loc
 
 
+# TODO: Add docstrings
 def default_xkey(adata, use_raw):
+    """TODO."""
     use_raw = "spliced" in adata.layers.keys() and (
         use_raw or "Ms" not in adata.layers.keys()
     )
     return "spliced" if use_raw else "Ms" if "Ms" in adata.layers.keys() else "X"
 
 
+# TODO: Add docstrings
 def default_ykey(adata, use_raw):
+    """TODO."""
     use_raw = "unspliced" in adata.layers.keys() and (
         use_raw or "Mu" not in adata.layers.keys()
     )
     return "unspliced" if use_raw else "Mu" if "Mu" in adata.layers.keys() else None
 
 
+# TODO: Add docstrings
 def default_arrow(size):
+    """TODO."""
     if isinstance(size, (list, tuple)) and len(size) == 3:
         head_l, head_w, ax_l = size
     elif isinstance(size, (int, np.integer, float)):
@@ -393,6 +457,7 @@ def default_arrow(size):
 """set axes parameters (ticks, frame, labels, title, """
 
 
+# TODO: Add docstrings
 def update_axes(
     ax,
     xlim=None,
@@ -402,6 +467,7 @@ def update_axes(
     frameon=None,
     figsize=None,
 ):
+    """TODO."""
     if xlim is not None:
         ax.set_xlim(xlim)
     if ylim is not None:
@@ -421,9 +487,9 @@ def update_axes(
             ax.tick_params(axis="both", which="major", labelsize=labelsize)
         if isinstance(frameon, str) and frameon != "full":
             frameon = "bl" if frameon == "half" else frameon
-            bf, lf, tf, rf = [f in frameon for f in ["bottom", "left", "top", "right"]]
+            bf, lf, tf, rf = (f in frameon for f in ["bottom", "left", "top", "right"])
             if not np.any([bf, lf, tf, rf]):
-                bf, lf, tf, rf = [f in frameon for f in ["b", "l", "t", "r"]]
+                bf, lf, tf, rf = (f in frameon for f in ["b", "l", "t", "r"])
             ax.spines["top"].set_visible(tf)
             ax.spines["right"].set_visible(rf)
             if not bf:
@@ -448,7 +514,9 @@ def update_axes(
         ax.patch.set_alpha(0)
 
 
+# TODO: Add docstrings
 def set_artist_frame(ax, length=0.2, figsize=None):
+    """TODO."""
     ax.tick_params(
         axis="both",
         which="both",
@@ -477,7 +545,9 @@ def set_artist_frame(ax, length=0.2, figsize=None):
     ax.add_artist(arr)
 
 
+# TODO: Add docstrings
 def set_label(xlabel, ylabel, fontsize=None, basis=None, ax=None, **kwargs):
+    """TODO."""
     labels = np.array(["Ms", "Mu", "X"])
     labels_new = np.array(["spliced", "unspliced", "expression"])
     if xlabel in labels:
@@ -510,7 +580,9 @@ def set_label(xlabel, ylabel, fontsize=None, basis=None, ax=None, **kwargs):
         ax.set_ylabel(ylabel.replace("_", " "), rotation=rotation, **kwargs)
 
 
+# TODO: Add docstrings
 def set_title(title, layer=None, color=None, fontsize=None, ax=None):
+    """TODO."""
     if ax is None:
         ax = pl.gca()
     color = color if isinstance(color, str) and not is_color_like(color) else None
@@ -525,7 +597,9 @@ def set_title(title, layer=None, color=None, fontsize=None, ax=None):
     ax.set_title(title, fontsize=fontsize)
 
 
+# TODO: Add docstrings
 def set_frame(ax, frameon):
+    """TODO."""
     frameon = settings._frameon if frameon is None else frameon
     if not frameon:
         ax.set_xlabel("")
@@ -533,6 +607,7 @@ def set_frame(ax, frameon):
         ax.set_frame_on(False)
 
 
+# TODO: Add docstrings
 def set_legend(
     adata,
     ax,
@@ -545,9 +620,7 @@ def set_legend(
     legend_align_text,
     groups,
 ):
-    """
-    Adds a legend to the given ax with categorial data.
-    """
+    """Adds a legend to the given ax with categorial data."""
     # add legend
     if legend_fontoutline is None:
         legend_fontoutline = 1
@@ -607,7 +680,9 @@ def set_legend(
             ax.legend(loc=legend_loc, **kwargs)
 
 
+# TODO: Add docstrings
 def set_margin(ax, x, y, add_margin):
+    """TODO."""
     add_margin = 0.1 if add_margin is True else add_margin
     xmin, xmax = np.min(x), np.max(x)
     ymin, ymax = np.min(y), np.max(y)
@@ -620,14 +695,18 @@ def set_margin(ax, x, y, add_margin):
 """get color values"""
 
 
+# TODO: Add docstrings
 def clip(c, perc):
+    """TODO."""
     if np.size(perc) < 2:
         perc = [perc, 100] if perc < 50 else [0, perc]
     lb, ub = np.percentile(c, perc)
     return np.clip(c, lb, ub)
 
 
+# TODO: Add docstrings
 def get_colors(adata, c):
+    """TODO."""
     if is_color_like(c):
         return c
     else:
@@ -650,7 +729,9 @@ def get_colors(adata, c):
         )
 
 
+# TODO: Add docstrings
 def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
+    """TODO."""
     if c is None:
         c = default_color(adata)
     if issparse(c):
@@ -723,8 +804,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
 
 # adapted from scanpy
 def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
-    """
-    Sets adata.uns[f'{value_to_plot}_colors'] to given palette or default colors.
+    """Sets adata.uns[f'{value_to_plot}_colors'] to given palette or default colors.
 
     Parameters
     ----------
@@ -861,7 +941,9 @@ def set_colors_for_categorical_obs(adata, value_to_plot, palette=None):
         adata.uns[f"{value_to_plot}_colors"] = palette[:length]
 
 
+# TODO: Add docstrings
 def set_colorbar(smp, ax, orientation="vertical", labelsize=None):
+    """TODO."""
     cax = inset_axes(ax, width="2%", height="30%", loc=4, borderpad=0)
     cb = pl.colorbar(smp, orientation=orientation, cax=cax)
     cb.set_alpha(1)
@@ -871,7 +953,9 @@ def set_colorbar(smp, ax, orientation="vertical", labelsize=None):
     cb.update_ticks()
 
 
+# TODO: Add docstrings
 def default_palette(palette=None):
+    """TODO."""
     if palette is None:
         return rcParams["axes.prop_cycle"]
     elif not isinstance(palette, Cycler):
@@ -880,7 +964,9 @@ def default_palette(palette=None):
         return palette
 
 
+# TODO: Add docstrings
 def adjust_palette(palette, length):
+    """TODO."""
     islist = False
     if isinstance(palette, list):
         islist = True
@@ -919,7 +1005,6 @@ def rgb_custom_colormap(colors=None, alpha=None, N=256):
     -------
     :class:`~matplotlib.colors.ListedColormap`
     """
-
     if colors is None:
         colors = ["royalblue", "white", "forestgreen"]
     c = []
@@ -951,7 +1036,9 @@ def rgb_custom_colormap(colors=None, alpha=None, N=256):
 """save figure"""
 
 
+# TODO: Add docstrings
 def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
+    """TODO."""
     if isinstance(save, str):
         # check whether `save` contains a figure extension
         if ext is None:
@@ -999,11 +1086,15 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
         try:
             filename = filepath + f"{settings.plot_suffix}.{ext}"
             pl.savefig(filename, dpi=dpi, bbox_inches="tight")
-        except Exception:
+        except ValueError as e:
             # save as .png if .pdf is not feasible (e.g. specific streamplots)
             filename = filepath + f"{settings.plot_suffix}.png"
             pl.savefig(filename, dpi=dpi, bbox_inches="tight")
-            logg.msg(f"figure cannot be saved as {ext}, using png instead.", v=1)
+            logg_message = (
+                f"figure cannot be saved as {ext}, using png instead "
+                f"({e.__str__().lower()})."
+            )
+            logg.msg(logg_message, v=1)
         logg.msg("saving figure to file", filename, v=1)
     if show:
         pl.show()
@@ -1014,6 +1105,7 @@ def savefig_or_show(writekey=None, show=None, dpi=None, ext=None, save=None):
 """additional plots (linear fit, density, outline, rug)"""
 
 
+# TODO: Add docstrings
 def plot_linfit(
     x,
     y,
@@ -1024,6 +1116,7 @@ def plot_linfit(
     fontsize=None,
     ax=None,
 ):
+    """TODO."""
     if ax is None:
         ax = pl.gca()
     idx_valid = ~np.isnan(x + y)
@@ -1059,6 +1152,7 @@ def plot_linfit(
         ax.text(0.05, 0.95, txt, transform=ax.transAxes, bbox=bbox, **kwargs)
 
 
+# TODO: Add docstrings
 def plot_polyfit(
     x,
     y,
@@ -1069,6 +1163,7 @@ def plot_polyfit(
     fontsize=None,
     ax=None,
 ):
+    """TODO."""
     if ax is None:
         ax = pl.gca()
     idx_valid = ~np.isnan(x + y)
@@ -1107,7 +1202,9 @@ def plot_polyfit(
         ax.text(0.05, 0.95, txt, transform=ax.transAxes, bbox=bbox, **kwargs)
 
 
+# TODO: Add docstrings
 def plot_vlines(adata, basis, vkey, xkey, linewidth=1, linecolor=None, ax=None):
+    """TODO."""
     if ax is None:
         ax = pl.gca()
     xnew = np.linspace(0, np.percentile(make_dense(adata[:, basis].layers[xkey]), 98))
@@ -1139,6 +1236,7 @@ def plot_vlines(adata, basis, vkey, xkey, linewidth=1, linecolor=None, ax=None):
     return lines, fits
 
 
+# TODO: Add docstrings
 def plot_velocity_fits(
     adata,
     basis,
@@ -1151,6 +1249,7 @@ def plot_velocity_fits(
     show_assignments=None,
     ax=None,
 ):
+    """TODO."""
     if ax is None:
         ax = pl.gca()
     if use_raw is None:
@@ -1199,9 +1298,11 @@ def plot_velocity_fits(
         ax.legend(handles=lines, labels=fits, fontsize=legend_fontsize, loc=legend_loc)
 
 
+# TODO: Add docstrings
 def plot_density(
     x, y=None, add_density=True, eval_pts=50, scale=10, alpha=0.3, color="grey", ax=None
 ):
+    """TODO."""
     from scipy.stats import gaussian_kde as kde
 
     if ax is None:
@@ -1245,9 +1346,11 @@ def plot_density(
         ax.set_xlim(-offset)
 
 
+# TODO: Add docstrings
 def plot_outline(
     x, y, kwargs, outline_width=None, outline_color=None, zorder=None, ax=None
 ):
+    """TODO."""
     # Adapted from scanpy. The default outline is a black edge
     # followed by a thin white edged added around connected clusters.
     if ax is None:
@@ -1272,7 +1375,9 @@ def plot_outline(
     kwargs["s"] = s
 
 
+# TODO: Add docstrings
 def plot_rug(x, height=0.03, color=None, ax=None, **kwargs):
+    """TODO."""
     if ax is None:
         ax = pl.gca()
     x = np.asarray(x)
@@ -1289,7 +1394,9 @@ def plot_rug(x, height=0.03, color=None, ax=None, **kwargs):
 """for velocity_embedding"""
 
 
+# TODO: Add docstrings
 def velocity_embedding_changed(adata, basis, vkey):
+    """TODO."""
     if f"X_{basis}" not in adata.obsm.keys():
         changed = False
     else:
@@ -1336,8 +1443,7 @@ def hist(
     show=True,
     **kwargs,
 ):
-    """\
-    Plot a histogram.
+    """Plot a histogram.
 
     Arguments
     ---------
@@ -1410,7 +1516,6 @@ def hist(
     -------
     If `show==False` a `matplotlib.Axis`
     """
-
     if ax is None:
         fig, ax = pl.subplots(figsize=figsize, dpi=dpi)
 
@@ -1469,9 +1574,10 @@ def hist(
         if hist:
             ci, li = colors[i], labels[i] if labels is not None and not kde else None
             kwargs.update({"color": ci, "label": li})
+            # TODO: Check if proper exception is used and potentially remove
             try:
                 ax.hist(x_vals, bins=bins, alpha=alpha, density=normed, **kwargs)
-            except Exception:
+            except TypeError:
                 ax.hist(x_vals, bins=bins, alpha=alpha, **kwargs)
     if xlabel is None:
         xlabel = ""
@@ -1539,6 +1645,7 @@ def hist(
         pl.show()
 
 
+# TODO: Add docstrings
 def plot(
     arrays,
     normalize=False,
@@ -1553,6 +1660,7 @@ def plot(
     dpi=None,
     show=True,
 ):
+    """TODO."""
     ax, show = get_ax(ax, show, figsize, dpi)
     arrays = np.array(arrays)
     arrays = (
@@ -1580,6 +1688,7 @@ def plot(
         return ax
 
 
+# TODO: Add docstrings
 def fraction_timeseries(
     adata,
     xkey="clusters",
@@ -1595,6 +1704,7 @@ def fraction_timeseries(
     ylabel=None,
     show=True,
 ):
+    """TODO."""
     t = np.linspace(0, 1 + 1 / bins, bins)
     types = np.unique(adata.obs[xkey].values)
 
@@ -1635,7 +1745,9 @@ def fraction_timeseries(
 """deprecated"""
 
 
+# TODO: Add docstrings
 def make_unique_list(key, allow_array=False):
+    """TODO."""
     if isinstance(key, (Index, abc.KeysView)):
         key = list(key)
     is_list = (
@@ -1647,7 +1759,9 @@ def make_unique_list(key, allow_array=False):
     return key if is_list_of_str else key if is_list and len(key) < 20 else [key]
 
 
+# TODO: Add docstrings
 def make_unique_valid_list(adata, keys):
+    """TODO."""
     keys = make_unique_list(keys)
     if all(isinstance(item, str) for item in keys):
         for i, key in enumerate(keys):
@@ -1672,7 +1786,9 @@ def make_unique_valid_list(adata, keys):
     return keys
 
 
+# TODO: Add docstrings
 def get_temporal_connectivities(adata, tkey, n_convolve=30):
+    """TODO."""
     from scvelo.tools.utils import normalize
     from scvelo.tools.velocity_graph import vals_to_csr
 

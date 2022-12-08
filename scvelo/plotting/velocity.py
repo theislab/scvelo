@@ -28,7 +28,7 @@ def velocity(
     color=None,
     color_map=None,
     colorbar=True,
-    perc=[2, 98],
+    perc=None,
     alpha=0.5,
     size=None,
     groupby=None,
@@ -99,6 +99,8 @@ def velocity(
         Number of columns to arange multiplots into.
 
     """
+    if perc is None:
+        perc = [2, 98]
     basis = default_basis(adata) if basis is None else get_basis(adata, basis)
     color, color_map = kwargs.pop("c", color), kwargs.pop("cmap", color_map)
     if fits is None:

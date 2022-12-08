@@ -4,13 +4,17 @@ import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
 
 
+# TODO: Add docstrings
 def principal_curve(adata):
+    """TODO."""
     X_curve = adata.uns["principal_curve"]["projections"]
     ixsort = adata.uns["principal_curve"]["ixsort"]
     pl.plot(X_curve[ixsort, 0], X_curve[ixsort, 1], c="k", lw=3, zorder=2000000)
 
 
+# TODO: Add docstrings
 def pseudotime(adata, gene_list, ckey="velocity", reverse=False):
+    """TODO."""
     ixsort = adata.uns["principal_curve"]["ixsort"]
     arclength = adata.uns["principal_curve"]["arclength"]
     if reverse:

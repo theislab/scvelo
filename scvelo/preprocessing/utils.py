@@ -18,9 +18,9 @@ from scvelo.core import sum
 from scvelo.core._anndata import verify_dtypes as _verify_dtypes
 
 
+# TODO: Finish docstrings
 def sum_obs(A):
-    """summation over axis 0 (obs) equivalent to np.sum(A, 0)"""
-
+    """Summation over axis 0 (obs) equivalent to np.sum(A, 0)."""
     warnings.warn(
         "`sum_obs` is deprecated since scVelo v0.2.4 and will be removed in a future "
         "version. Please use `sum(A, axis=0)` from `scvelo/core/` instead.",
@@ -31,9 +31,9 @@ def sum_obs(A):
     return sum(A, axis=0)
 
 
+# TODO: Finish docstrings
 def sum_var(A):
-    """summation over axis 1 (var) equivalent to np.sum(A, 1)"""
-
+    """Summation over axis 1 (var) equivalent to np.sum(A, 1)."""
     warnings.warn(
         "`sum_var` is deprecated since scVelo v0.2.4 and will be removed in a future "
         "version. Please use `sum(A, axis=1)` from `scvelo/core/` instead.",
@@ -44,7 +44,9 @@ def sum_var(A):
     return sum(A, axis=1)
 
 
+# TODO: Add docstrings
 def show_proportions(adata, layers=None, use_raw=True):
+    """TODO."""
     warnings.warn(
         "`scvelo.preprocessing.show_proportions` is deprecated since scVelo v0.2.4 "
         "and will be removed in a future version. Please use "
@@ -56,7 +58,9 @@ def show_proportions(adata, layers=None, use_raw=True):
     _show_proportions(adata=adata, layers=layers, use_raw=use_raw)
 
 
+# TODO: Add docstrings
 def verify_dtypes(adata):
+    """TODO."""
     warnings.warn(
         "`scvelo.preprocessing.utils.verify_dtypes` is deprecated since scVelo v0.2.4 "
         "and will be removed in a future version. Please use "
@@ -68,7 +72,9 @@ def verify_dtypes(adata):
     return _verify_dtypes(adata=adata)
 
 
+# TODO: Add docstrings
 def cleanup(data, clean="layers", keep=None, copy=False):
+    """TODO."""
     warnings.warn(
         "`scvelo.preprocessing.cleanup` is deprecated since scVelo v0.2.4 and will be "
         "removed in a future version. Please use `scvelo.core.cleanup` instead.",
@@ -79,7 +85,9 @@ def cleanup(data, clean="layers", keep=None, copy=False):
     return _cleanup(data=data, clean=clean, keep=keep, copy=copy)
 
 
+# TODO: Add docstrings
 def get_size(adata, layer=None):
+    """TODO."""
     warnings.warn(
         "`scvelo.preprocessing.utils.get_size` is deprecated since scVelo v0.2.4 and "
         "will be removed in a future version. Please use `scvelo.core.get_size` "
@@ -91,7 +99,9 @@ def get_size(adata, layer=None):
     return _get_size(adata=adata, layer=layer)
 
 
+# TODO: Add docstrings
 def set_initial_size(adata, layers=None):
+    """TODO."""
     warnings.warn(
         "`scvelo.preprocessing.utils.set_initial_size` is deprecated since scVelo "
         "v0.2.4 and will be removed in a future version. Please use "
@@ -103,7 +113,9 @@ def set_initial_size(adata, layers=None):
     return _set_initial_size(adata=adata, layers=layers)
 
 
+# TODO: Add docstrings
 def get_initial_size(adata, layer=None, by_total_size=None):
+    """TODO."""
     warnings.warn(
         "`scvelo.preprocessing.get_initial_size` is deprecated since scVelo v0.2.4 and "
         "will be  removed in a future version. Please use "
@@ -154,6 +166,7 @@ def filter_genes(
     copy=False,
 ):
     """Filter genes based on number of cells or counts.
+
     Keep genes that have at least `min_counts` counts or are expressed in at
     least `min_cells` cells or have at most `max_counts` counts or are expressed
     in at most `max_cells` cells.
@@ -194,7 +207,6 @@ def filter_genes(
     -------
     Filters the object and adds `n_counts` to `adata.var`.
     """
-
     adata = data.copy() if copy else data
 
     # set initial cell sizes before filtering
@@ -274,7 +286,9 @@ def filter_genes(
     return adata if copy else None
 
 
+# TODO: Add docstrings
 def get_mean_var(X, ignore_zeros=False, perc=None):
+    """TODO."""
     data = X.data if issparse(X) else X
     mask_nans = np.isnan(data) | np.isinf(data) | np.isneginf(data)
 
@@ -322,6 +336,7 @@ def get_mean_var(X, ignore_zeros=False, perc=None):
     return mean, var
 
 
+# TODO: Finish docstrings
 def materialize_as_ndarray(key):
     """Convert distributed arrays to ndarrays."""
     if isinstance(key, (list, tuple)):
@@ -390,7 +405,6 @@ def filter_genes_dispersion(
     If an AnnData `adata` is passed, returns or updates `adata` depending on \
     `copy`. It filters the `adata` and adds the annotations
     """
-
     adata = data.copy() if copy else data
     _set_initial_size(adata)
 
@@ -500,7 +514,9 @@ def filter_genes_dispersion(
     return adata if copy else None
 
 
+# TODO: Add docstrings
 def csr_vcorrcoef(X, y):
+    """TODO."""
     mu_x = np.ravel(np.mean(X, axis=-1))
     mu_y = np.ravel(np.mean(y, axis=-1))
     nom = X.dot(y) - X.dot(np.repeat(mu_y, len(y))) - mu_x * np.sum(y - mu_y)
@@ -524,7 +540,9 @@ def csr_vcorrcoef(X, y):
     return nom / np.sqrt(denom_x * denom_y)
 
 
+# TODO: Add docstrings
 def counts_per_cell_quantile(X, max_proportion_per_cell=0.05, counts_per_cell=None):
+    """TODO."""
     if counts_per_cell is None:
         counts_per_cell = sum(X, axis=1)
     gene_subset = np.all(
@@ -535,11 +553,15 @@ def counts_per_cell_quantile(X, max_proportion_per_cell=0.05, counts_per_cell=No
     return sum(X[:, gene_subset], axis=1)
 
 
+# TODO: Add docstrings
 def not_yet_normalized(X):
+    """TODO."""
     return np.allclose(np.ravel(X[:5].data if issparse(X) else X[:5]) % 1, 0, atol=1e-3)
 
 
+# TODO: Add docstrings
 def check_if_valid_dtype(adata, layer="X"):
+    """TODO."""
     X = adata.X if layer == "X" else adata.layers[layer]
     if "int" in X.dtype.name:
         if layer == "X":
@@ -589,7 +611,6 @@ def normalize_per_cell(
     -------
     Returns or updates `adata` with normalized counts.
     """
-
     adata = data.copy() if copy else data
     if layers is None:
         layers = ["spliced", "unspliced"]
@@ -646,11 +667,13 @@ def normalize_per_cell(
                 and "gene_count_corr" not in adata.var.keys()
                 and X.shape[-1] > 3e3
             ):
+                # TODO: Proper handling of exception. Check why try-except is needed in
+                # the first place.
                 try:
                     adata.var["gene_count_corr"] = np.round(
                         csr_vcorrcoef(X.T, np.ravel((X > 0).sum(1))), 4
                     )
-                except Exception:
+                except ValueError:
                     pass
         else:
             logg.warn(
@@ -666,8 +689,10 @@ def normalize_per_cell(
 
 
 def log1p(data, copy=False):
-    """Logarithmize the data matrix.
-    Computes :math:`X = \\log(X + 1)`, where :math:`log` denotes the natural logarithm.
+    r"""Logarithmize the data matrix.
+
+    Computes :math:`X = \log(X + 1)`, where :math:`log` denotes the natural logarithm.
+
     Parameters
     ----------
     data: :class:`~anndata.AnnData`
@@ -679,7 +704,6 @@ def log1p(data, copy=False):
     -------
     Returns or updates `adata` depending on `copy`.
     """
-
     adata = data.copy() if copy else data
     X = (
         (adata.X.data if issparse(adata.X) else adata.X)
@@ -764,7 +788,6 @@ def filter_and_normalize(
     -------
     Returns or updates `adata` depending on `copy`.
     """
-
     adata = data.copy() if copy else data
 
     if "spliced" not in adata.layers.keys() or "unspliced" not in adata.layers.keys():
@@ -812,6 +835,7 @@ def filter_and_normalize(
     return adata if copy else None
 
 
+# TODO: Finish docstrings
 def recipe_velocity(
     adata,
     min_counts=3,
@@ -822,7 +846,7 @@ def recipe_velocity(
     log=True,
     copy=False,
 ):
-    """Runs pp.filter_and_normalize() and pp.moments()"""
+    """Runs pp.filter_and_normalize() and pp.moments()."""
     from .moments import moments
 
     filter_and_normalize(

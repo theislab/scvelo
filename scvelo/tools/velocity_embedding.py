@@ -9,7 +9,9 @@ from scvelo.core import l2_norm
 from .transition_matrix import transition_matrix
 
 
+# TODO: Addd docstrings
 def quiver_autoscale(X_emb, V_emb):
+    """TODO."""
     import matplotlib.pyplot as pl
 
     scale_factor = np.abs(X_emb).max()  # just so that it handles very large values
@@ -43,20 +45,20 @@ def velocity_embedding(
     T=None,
     copy=False,
 ):
-    """Projects the single cell velocities into any embedding.
+    r"""Projects the single cell velocities into any embedding.
 
     Given normalized difference of the embedding positions
 
     .. math::
-        \\tilde \\delta_{ij} = \\frac{x_j-x_i}{\\left\\lVert x_j-x_i \\right\\rVert},
+        \tilde \delta_{ij} = \frac{x_j-x_i}{\left\lVert x_j-x_i \right\rVert},
 
     the projections are obtained as expected displacements with respect to the
-    transition matrix :math:`\\tilde \\pi_{ij}` as
+    transition matrix :math:`\tilde \pi_{ij}` as
 
     .. math::
-        \\tilde \\nu_i = E_{\\tilde \\pi_{i\\cdot}} [\\tilde \\delta_{i \\cdot}]
-        = \\sum_{j \\neq i} \\left( \\tilde \\pi_{ij} - \\frac1n \\right) \\tilde
-        \\delta_{ij}.
+        \tilde \nu_i = E_{\tilde \pi_{i\cdot}} [\tilde \delta_{i \cdot}]
+        = \sum_{j \neq i} \left( \tilde \pi_{ij} - \frac1n \right) \tilde
+        \delta_{ij}.
 
 
     Arguments
@@ -95,7 +97,6 @@ def velocity_embedding(
     velocity_umap: `.obsm`
         coordinates of velocity projection on embedding (e.g., basis='umap')
     """
-
     adata = data.copy() if copy else data
 
     if basis is None:

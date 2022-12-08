@@ -28,13 +28,13 @@ def transition_matrix(
     vgraph=None,
     basis_constraint=None,
 ):
-    """Computes cell-to-cell transition probabilities
+    r"""Computes cell-to-cell transition probabilities
 
     .. math::
-        \\tilde \\pi_{ij} = \\frac1{z_i} \\exp( \\pi_{ij} / \\sigma),
+        \tilde \pi_{ij} = \frac1{z_i} \exp( \pi_{ij} / \sigma),
 
-    from the velocity graph :math:`\\pi_{ij}`, with row-normalization :math:`z_i` and
-    kernel width :math:`\\sigma` (scale parameter :math:`\\lambda = \\sigma^{-1}`).
+    from the velocity graph :math:`\pi_{ij}`, with row-normalization :math:`z_i` and
+    kernel width :math:`\sigma` (scale parameter :math:`\lambda = \sigma^{-1}`).
 
     Alternatively, use :func:`cellrank.tl.transition_matrix` to account for uncertainty
     in the velocity estimates.
@@ -73,7 +73,6 @@ def transition_matrix(
     -------
     Returns sparse matrix with transition probabilities.
     """
-
     if f"{vkey}_graph" not in adata.uns:
         raise ValueError(
             "You need to run `tl.velocity_graph` first to compute cosine correlations."
@@ -177,12 +176,11 @@ def get_cell_transitions(
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
     starting_cell: `int` (default: `0`)
-        Index (`int`) or name (`obs_names) of starting cell.
+        Index (`int`) or name (`obs_names`) of starting cell.
     n_steps: `int` (default: `100`)
         Number of transitions/steps to be simulated.
     backward: `bool` (default: `False`)
-        Whether to use the transition matrix to
-        push forward (`False`) or to pull backward (`True`)
+        Whether to use the transition matrix to push forward (`False`) or to pull backward (`True`)
     random_state: `int` or `None` (default: `None`)
         Set to `int` for reproducibility, otherwise `None` for a random seed.
     **kwargs:
@@ -193,7 +191,6 @@ def get_cell_transitions(
     Returns embedding coordinates (if basis is specified),
     otherwise return indices of simulated cell transitions.
     """
-
     np.random.seed(random_state)
     if isinstance(starting_cell, str) and starting_cell in adata.obs_names:
         starting_cell = adata.obs_names.get_loc(starting_cell)

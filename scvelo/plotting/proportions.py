@@ -54,7 +54,6 @@ def proportions(
     -------
     Plots the proportions of abundances as pie chart.
     """
-
     # get counts per cell for each layer
     if layers is None:
         layers = ["spliced", "unspliced", "ambigious"]

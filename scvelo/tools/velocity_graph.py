@@ -18,7 +18,9 @@ from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
 
 
+# TODO: Add docstrings
 def vals_to_csr(vals, rows, cols, shape, split_negative=False):
+    """TODO."""
     graph = coo_matrix((vals, (rows, cols)), shape=shape)
 
     if split_negative:
@@ -36,7 +38,10 @@ def vals_to_csr(vals, rows, cols, shape, split_negative=False):
         return graph.tocsr()
 
 
+# TODO: Add docstrings
 class VelocityGraph:
+    """TODO."""
+
     def __init__(
         self,
         adata,
@@ -166,7 +171,9 @@ class VelocityGraph:
         self.report = report
         self.adata = adata
 
+    # TODO: Add docstrings
     def compute_cosines(self, n_jobs=None, backend="loky"):
+        """TODO."""
         n_jobs = get_n_jobs(n_jobs=n_jobs)
 
         n_obs = self.X.shape[0]
@@ -267,17 +274,17 @@ def velocity_graph(
     n_jobs=None,
     backend="loky",
 ):
-    """Computes velocity graph based on cosine similarities.
+    r"""Computes velocity graph based on cosine similarities.
 
     The cosine similarities are computed between velocities and potential cell state
     transitions, i.e. it measures how well a corresponding change in gene expression
-    :math:`\\delta_{ij} = x_j - x_i` matches the predicted change according to the
-    velocity vector :math:`\\nu_i`,
+    :math:`\delta_{ij} = x_j - x_i` matches the predicted change according to the
+    velocity vector :math:`\nu_i`,
 
     .. math::
-        \\pi_{ij} = \\cos\\angle(\\delta_{ij}, \\nu_i)
-        = \\frac{\\delta_{ij}^T \\nu_i}{\\left\\lVert\\delta_{ij}\\right\\rVert
-        \\left\\lVert \\nu_i \\right\\rVert}.
+        \pi_{ij} = \cos\angle(\delta_{ij}, \nu_i)
+        = \frac{\delta_{ij}^T \nu_i}{\left\lVert\delta_{ij}\right\rVert
+        \left\lVert \nu_i \right\rVert}.
 
     Arguments
     ---------
@@ -324,7 +331,6 @@ def velocity_graph(
     velocity_graph: `.uns`
         sparse matrix with correlations of cell state transitions with velocities
     """
-
     adata = data.copy() if copy else data
     verify_neighbors(adata)
     if vkey not in adata.layers.keys():

@@ -46,21 +46,28 @@ class SplicingDynamics(DynamicsBase):
         alpha: float,
         beta: float,
         gamma: float,
-        initial_state: Union[List, ndarray] = [0, 0],
+        initial_state: Union[List, ndarray] = None,
     ):
 
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
 
-        self.initial_state = initial_state
+        if initial_state is None:
+            self.initial_state = [0, 0]
+        else:
+            self.initial_state = initial_state
 
+    # TODO: Add docstrings
     @property
     def initial_state(self):
+        """TODO."""
         return self._initial_state
 
+    # TODO: Add docstrings
     @initial_state.setter
     def initial_state(self, val):
+        """TODO."""
         if isinstance(val, list) or (isinstance(val, ndarray) and (val.ndim == 1)):
             self.u0 = val[0]
             self.s0 = val[1]
@@ -91,7 +98,6 @@ class SplicingDynamics(DynamicsBase):
             a dictionary with variables as keys. Otherwise, the solution is given as
             a `numpy.ndarray` of form `(n_steps, 2)`.
         """
-
         expu = np.exp(-self.beta * t)
         exps = np.exp(-self.gamma * t)
 
@@ -130,7 +136,6 @@ class SplicingDynamics(DynamicsBase):
         Union[Dict[str, ndarray], Tuple[ndarray], ndarray]
             Steady state of system.
         """
-
         if (self.beta <= 0) or (self.gamma <= 0):
             raise ValueError("Both `beta` and `gamma` need to be strictly positive.")
         else:

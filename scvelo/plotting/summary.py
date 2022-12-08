@@ -9,7 +9,9 @@ from .gridspec import GridSpec
 from .utils import make_unique_list
 
 
+# TODO: Add docstrings
 def summary(adata, basis="umap", color="clusters", n_top_genes=12, var_names=None):
+    """TODO."""
     if "fit_alpha" in adata.var.keys():
         tkey = "latent_time"
         if tkey not in adata.obs.keys():
