@@ -5,10 +5,12 @@ from typing import Mapping
 
 # Modified from https://github.com/scverse/scanpy/blob/master/scanpy/_utils/__init__.py
 def deprecated_arg_names(arg_mapping: Mapping[str, str]):
-    """
-    Decorator which marks a functions keyword arguments as deprecated. It will
+    """Marks a functions keyword arguments as deprecated.
+
+    This decorator marks a functions keyword arguments as deprecated. It will
     result in a warning being emitted when the deprecated keyword argument is
     used, and the function being called with the new argument.
+
     Parameters
     ----------
     arg_mapping
