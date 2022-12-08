@@ -1,8 +1,6 @@
 import warnings
 from collections import Counter
-from typing import Dict, Optional
-
-from typing_extensions import Literal
+from typing import Dict, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -17,6 +15,7 @@ from scvelo import settings
 from scvelo.core import get_initial_size
 
 
+# TODO: Add docstrings
 def _get_hnsw_neighbors(
     adata: AnnData,
     use_rep: str,
@@ -32,6 +31,7 @@ def _get_hnsw_neighbors(
     return neighbors
 
 
+# TODO: Add docstrings
 def _get_scanpy_neighbors(adata: AnnData, **kwargs):
     logg.switch_verbosity("off", module="scanpy")
     with warnings.catch_warnings():  # ignore numba warning (umap/issues/252)
@@ -43,6 +43,7 @@ def _get_scanpy_neighbors(adata: AnnData, **kwargs):
     return neighbors
 
 
+# TODO: Add docstrings
 def _get_sklearn_neighbors(
     adata: AnnData, use_rep: str, n_pcs: Optional[int], n_neighbors: int, **kwargs
 ):
@@ -63,6 +64,7 @@ def _get_sklearn_neighbors(
     return neighbors
 
 
+# TODO: Add docstrings
 def _get_rep(adata: AnnData, use_rep: str, n_pcs: int):
     if use_rep is None:
         rep = "X" if adata.n_vars < 50 or n_pcs == 0 else "X_pca"
@@ -81,6 +83,7 @@ def _get_rep(adata: AnnData, use_rep: str, n_pcs: int):
     return rep
 
 
+# TODO: Add docstrings
 def _set_neighbors_data(
     adata: AnnData,
     neighbors,
@@ -91,12 +94,15 @@ def _set_neighbors_data(
     use_rep: str,
 ):
     adata.uns["neighbors"] = {}
+    # TODO: Remove except statement. `n_obs` x `n_obs` arrays need to be written to
+    # `AnnData.obsp`.
     try:
         adata.obsp["distances"] = neighbors.distances
         adata.obsp["connectivities"] = neighbors.connectivities
         adata.uns["neighbors"]["connectivities_key"] = "connectivities"
         adata.uns["neighbors"]["distances_key"] = "distances"
-    except Exception:
+    except ValueError as e:
+        logg.warning(f"Could not write neighbors to `AnnData.obsp`: {e}")
         adata.uns["neighbors"]["distances"] = neighbors.distances
         adata.uns["neighbors"]["connectivities"] = neighbors.connectivities
 
@@ -111,6 +117,7 @@ def _set_neighbors_data(
     }
 
 
+# TODO: Add docstrings
 def _set_pca(adata, n_pcs: Optional[int], use_highly_variable: bool):
     if (
         "X_pca" not in adata.obsm.keys()
@@ -151,11 +158,10 @@ def neighbors(
     num_threads: int = -1,
     copy: bool = False,
 ):
-    """
-    Compute a neighborhood graph of observations.
+    """Compute a neighborhood graph of observations.
 
     The neighbor graph methods (umap, hnsw, sklearn) only differ in runtime and
-    yield the same result as Scanpy [Wolf18]_. Connectivities are computed with
+    yield the same result as Scanpy :cite:p:`Wolf18`. Connectivities are computed with
     adaptive kernel width as proposed in Haghverdi et al. 2016 (doi:10.1038/nmeth.3971).
 
     Parameters
@@ -207,7 +213,6 @@ def neighbors(
     distances : `.obsp`
         Sparse matrix of distances for each pair of neighbors.
     """
-
     adata = adata.copy() if copy else adata
 
     use_rep = _get_rep(adata=adata, use_rep=use_rep, n_pcs=n_pcs)
@@ -285,14 +290,19 @@ def neighbors(
     return adata if copy else None
 
 
+# TODO: Add docstrings
 class FastNeighbors:
+    """TODO."""
+
     def __init__(self, n_neighbors=30, num_threads=-1):
         self.n_neighbors = n_neighbors
         self.num_threads = num_threads
         self.knn_indices, self.knn_distances = None, None
         self.distances, self.connectivities = None, None
 
+    # TODO: Add docstrings
     def fit(self, X, metric="l2", M=16, ef=100, ef_construction=100, random_state=0):
+        """TODO."""
         try:
             import hnswlib
         except ImportError:
@@ -329,7 +339,9 @@ class FastNeighbors:
         self.knn_indices = knn_indices
 
 
+# TODO: Add docstrings
 def set_diagonal(knn_distances, knn_indices, remove_diag=False):
+    """TODO."""
     if remove_diag and knn_distances[0, 0] == 0:
         knn_distances = knn_distances[:, 1:]
         knn_indices = knn_indices[:, 1:].astype(int)
@@ -344,7 +356,9 @@ def set_diagonal(knn_distances, knn_indices, remove_diag=False):
     return knn_distances, knn_indices
 
 
+# TODO: Add docstrings
 def select_distances(dist, n_neighbors=None):
+    """TODO."""
     D = dist.copy()
     n_counts = (D > 0).sum(1).A1 if issparse(D) else (D > 0).sum(1)
     n_neighbors = (
@@ -362,7 +376,9 @@ def select_distances(dist, n_neighbors=None):
     return D
 
 
+# TODO: Add docstrings
 def select_connectivities(connectivities, n_neighbors=None):
+    """TODO."""
     C = connectivities.copy()
     n_counts = (C > 0).sum(1).A1 if issparse(C) else (C > 0).sum(1)
     n_neighbors = (
@@ -380,7 +396,9 @@ def select_connectivities(connectivities, n_neighbors=None):
     return C
 
 
+# TODO: Add docstrings
 def get_neighs(adata, mode="distances"):
+    """TODO."""
     if hasattr(adata, "obsp") and mode in adata.obsp.keys():
         return adata.obsp[mode]
     elif "neighbors" in adata.uns.keys() and mode in adata.uns["neighbors"]:
@@ -389,11 +407,15 @@ def get_neighs(adata, mode="distances"):
         raise ValueError("The selected mode is not valid.")
 
 
+# TODO: Add docstrings
 def get_n_neighs(adata):
+    """TODO."""
     return adata.uns.get("neighbors", {}).get("params", {}).get("n_neighbors", 0)
 
 
+# TODO: Add docstrings
 def verify_neighbors(adata):
+    """TODO."""
     valid = "neighbors" in adata.uns.keys() and "params" in adata.uns["neighbors"]
     if valid:
         n_neighs = (get_neighs(adata, "distances") > 0).sum(1)
@@ -408,7 +430,9 @@ def verify_neighbors(adata):
         )
 
 
+# TODO: Add docstrings
 def neighbors_to_be_recomputed(adata, n_neighbors=None):  # deprecated
+    """TODO."""
     # check whether neighbors graph is disrupted or has insufficient number of neighbors
     invalid_neighs = (
         "neighbors" not in adata.uns.keys()
@@ -422,9 +446,11 @@ def neighbors_to_be_recomputed(adata, n_neighbors=None):  # deprecated
         return n_neighs.max() * 0.1 > n_neighs.min()
 
 
+# TODO: Add docstrings
 def get_connectivities(
     adata, mode="connectivities", n_neighbors=None, recurse_neighbors=False
 ):
+    """TODO."""
     if "neighbors" in adata.uns.keys():
         C = get_neighs(adata, mode)
         if n_neighbors is not None and n_neighbors < get_n_neighs(adata):
@@ -445,7 +471,9 @@ def get_connectivities(
         return None
 
 
+# TODO: Add docstrings
 def get_csr_from_indices(knn_indices, knn_dists, n_obs, n_neighbors):
+    """TODO."""
     rows = np.zeros((n_obs * n_neighbors), dtype=np.int64)
     cols = np.zeros((n_obs * n_neighbors), dtype=np.int64)
     vals = np.zeros((n_obs * n_neighbors), dtype=np.float64)
@@ -468,6 +496,7 @@ def get_csr_from_indices(knn_indices, knn_dists, n_obs, n_neighbors):
     return result.tocsr()
 
 
+# TODO: Finish docstrings
 def compute_connectivities_umap(
     knn_indices,
     knn_dists,
@@ -476,8 +505,9 @@ def compute_connectivities_umap(
     set_op_mix_ratio=1.0,
     local_connectivity=1.0,
 ):
-    """\
-    This is from umap.fuzzy_simplicial_set [McInnes18]_.
+    """Computes fuzzy simplical set associated with data.
+
+    This is from umap.fuzzy_simplicial_set :cite:p:`McInnes18`.
     Given a set of data X, a neighborhood size, and a measure of distance
     compute the fuzzy simplicial set (here represented as a fuzzy graph in
     the form of a sparse matrix) associated to the data. This is done by
@@ -507,7 +537,9 @@ def compute_connectivities_umap(
     return distances, connectivities.tocsr()
 
 
+# TODO: Add docstrings
 def get_duplicate_cells(data):
+    """TODO."""
     if isinstance(data, AnnData):
         X = data.X
         lst = list(np.sum(np.abs(data.obsm["X_pca"]), 1) + get_initial_size(data))
@@ -530,7 +562,9 @@ def get_duplicate_cells(data):
     return idx_dup
 
 
+# TODO: Add docstrings
 def remove_duplicate_cells(adata):
+    """TODO."""
     if "X_pca" not in adata.obsm.keys():
         pca(adata)
     idx_duplicates = get_duplicate_cells(adata)
