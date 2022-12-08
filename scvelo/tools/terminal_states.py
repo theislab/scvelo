@@ -18,7 +18,7 @@ def cell_fate(
     n_neighbors=None,
     copy=False,
 ):
-    """Computes individual cell endpoints
+    """Computes individual cell endpoints.
 
     Arguments
     ---------
@@ -42,7 +42,6 @@ def cell_fate(
     cell_fate_confidence: `.obs`
         confidence of transitioning to the assigned fate
     """
-
     adata = data.copy() if copy else data
     logg.info("computing cell fates", r=True)
 
@@ -85,7 +84,7 @@ def cell_origin(
     n_neighbors=None,
     copy=False,
 ):
-    """Computes individual cell root points
+    """Computes individual cell root points.
 
     Arguments
     ---------
@@ -109,7 +108,6 @@ def cell_origin(
     cell_origin_confidence: `.obs`
         confidence of coming from assigned origin
     """
-
     adata = data.copy() if copy else data
     logg.info("computing cell fates", r=True)
 
@@ -143,10 +141,13 @@ def cell_origin(
     )
 
 
+# TODO: Add docstrings
 def eigs(T, k=10, eps=1e-3, perc=None, random_state=None, v0=None):
+    """TODO."""
     if random_state is not None:
         np.random.seed(random_state)
         v0 = np.random.rand(min(T.shape))
+    # TODO: Find proper exception and handle appropriately
     try:
         # find k eigs with largest real part, and sort in descending order of eigenvals
         eigvals, eigvecs = linalg.eigs(T.T, k=k, which="LR", v0=v0)
@@ -165,13 +166,16 @@ def eigs(T, k=10, eps=1e-3, perc=None, random_state=None, v0=None):
             eigvecs = np.clip(eigvecs, 0, ubs)
             eigvecs /= eigvecs.max(0)
 
-    except Exception:
+    except ValueError as e:
+        logg.warn(f"Failed to fine `k=`{k} egenvalues with real part: {e}")
         eigvals, eigvecs = np.empty(0), np.zeros(shape=(T.shape[0], 0))
 
     return eigvals, eigvecs
 
 
+# TODO: Add docstrings
 def verify_roots(adata, roots, modality="Ms"):
+    """TODO."""
     if "gene_count_corr" in adata.var.keys():
         p = get_plasticity_score(adata, modality)
         p_ub, root_ub = p > 0.5, roots > 0.9
@@ -190,7 +194,9 @@ def verify_roots(adata, roots, modality="Ms"):
     return roots
 
 
+# TODO: Add docstrings
 def write_to_obs(adata, key, vals, cell_subset=None):
+    """TODO."""
     if cell_subset is None:
         adata.obs[key] = vals
     else:
@@ -213,20 +219,20 @@ def terminal_states(
     copy=False,
     **kwargs,
 ):
-    """Computes terminal states (root and end points).
+    r"""Computes terminal states (root and end points).
 
     The end points and root cells are obtained as stationary states of the
     velocity-inferred transition matrix and its transposed, respectively,
     which is given by left eigenvectors corresponding to an eigenvalue of 1, i.e.
 
     .. math::
-        μ^{\\textrm{end}}=μ^{\\textrm{end}} \\pi, \\quad
-        μ^{\\textrm{root}}=μ^{\\textrm{root}} \\pi^{\\small \\textrm{T}}.
+        μ^{\textrm{end}}=μ^{\textrm{end}} \pi, \quad
+        μ^{\textrm{root}}=μ^{\textrm{root}} \pi^{\small \textrm{T}}.
 
     .. code:: python
 
         scv.tl.terminal_states(adata)
-        scv.pl.scatter(adata, color=['root_cells', 'end_points'])
+        scv.pl.scatter(adata, color=["root_cells", "end_points"])
 
     .. image:: https://user-images.githubusercontent.com/31883718/69496183-bcfdf300-0ecf-11ea-9aae-685300a0b1ba.png
 
@@ -265,8 +271,7 @@ def terminal_states(
         sparse matrix with transition probabilities.
     end_points: `.obs`
         sparse matrix with transition probabilities.
-    """  # noqa E501
-
+    """
     adata = data.copy() if copy else data
     verify_neighbors(adata)
 
