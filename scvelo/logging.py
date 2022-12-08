@@ -101,7 +101,10 @@ def msg(
         if not time and not memory and len(msg) > 0:
             _write_log(*msg, end=end)
         if reset:
-            settings._previous_memory_usage, _ = get_memory_usage()
+            try:
+                settings._previous_memory_usage, _ = get_memory_usage()
+            except ImportError as e:
+                ImportError(e)
             settings._previous_time = get_time()
         if time:
             elapsed = get_passed_time()
