@@ -13,7 +13,7 @@ setup(
     name="scvelo",
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     install_requires=read_requirements("requirements.txt"),
     extras_require=dict(
         louvain=["python-igraph", "louvain"],
