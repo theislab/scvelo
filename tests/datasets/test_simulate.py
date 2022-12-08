@@ -56,7 +56,7 @@ class TestSimulation:
         assert isinstance(adata, AnnData)
         assert adata.shape == (n_obs, n_vars)
         assert len(adata.layers) == 2
-        assert set(adata.layers) == set(["unspliced", "spliced"])
+        assert set(adata.layers) == {"unspliced", "spliced"}
 
         assert len(adata.obs.columns) == 1
         assert adata.obs.columns.isin(["true_t"]).all()
@@ -135,7 +135,7 @@ class TestSimulation:
         assert isinstance(adata, AnnData)
         assert adata.shape == (n_obs, n_vars)
         assert len(adata.layers) == 2
-        assert set(adata.layers) == set(["unspliced", "spliced"])
+        assert set(adata.layers) == {"unspliced", "spliced"}
 
         np.testing.assert_equal(adata.X % 1, 0)
         np.testing.assert_equal(adata.layers["unspliced"] % 1, 0)

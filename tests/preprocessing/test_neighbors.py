@@ -1033,24 +1033,27 @@ class TestNeighbors:
         assert returned_adata.var_names.equals(adata.var_names)
 
         # Check PCA
-        assert set(returned_adata.obsm) == set(["X_pca"])
+        assert set(returned_adata.obsm) == {"X_pca"}
         assert returned_adata.obsm["X_pca"].shape == (adata.n_obs, n_pcs)
 
         assert "pca" in returned_adata.uns
-        assert set(returned_adata.uns["pca"]) == set(
-            ["params", "variance", "variance_ratio"]
-        )
+        assert set(returned_adata.uns["pca"]) == {
+            "params",
+            "variance",
+            "variance_ratio",
+        }
         assert isinstance(returned_adata.uns["pca"]["params"], Dict)
-        assert set(returned_adata.uns["pca"]["params"]) == set(
-            ["use_highly_variable", "zero_center"]
-        )
+        assert set(returned_adata.uns["pca"]["params"]) == {
+            "use_highly_variable",
+            "zero_center",
+        }
         if "highly_variable" not in adata.var:
             assert returned_adata.uns["pca"]["params"]["use_highly_variable"] is False
         else:
             assert returned_adata.uns["pca"]["params"]["use_highly_variable"] is True
 
         # Check data related to neighbor graph
-        assert set(returned_adata.obsp) == set(["distances", "connectivities"])
+        assert set(returned_adata.obsp) == {"distances", "connectivities"}
         assert issparse(returned_adata.obsp["connectivities"])
         assert issparse(returned_adata.obsp["distances"])
         np.testing.assert_equal(
@@ -1069,9 +1072,13 @@ class TestNeighbors:
             returned_adata.uns["neighbors"]["indices"][:, 0],
             np.arange(returned_adata.n_obs),
         )
-        assert set(returned_adata.uns["neighbors"]["params"]) == set(
-            ["n_neighbors", "method", "metric", "n_pcs", "use_rep"]
-        )
+        assert set(returned_adata.uns["neighbors"]["params"]) == {
+            "n_neighbors",
+            "method",
+            "metric",
+            "n_pcs",
+            "use_rep",
+        }
         assert returned_adata.uns["neighbors"]["params"]["n_neighbors"] == n_neighbors
         assert returned_adata.uns["neighbors"]["params"]["method"] == method
         assert returned_adata.uns["neighbors"]["params"]["metric"] == "euclidean"
@@ -1900,7 +1907,7 @@ class TestSetPCA:
         if n_pcs is None:
             n_pcs = 30
 
-        assert set(adata.obsm) == set(["X_pca"])
+        assert set(adata.obsm) == {"X_pca"}
         assert adata.obsm["X_pca"].shape == (adata.n_obs, n_pcs)
         np.testing.assert_almost_equal(
             adata.obsm["X_pca"][:, :n_pcs],
@@ -1909,11 +1916,9 @@ class TestSetPCA:
         )
 
         assert "pca" in adata.uns
-        assert set(adata.uns["pca"]) == set(["params", "variance", "variance_ratio"])
+        assert set(adata.uns["pca"]) == {"params", "variance", "variance_ratio"}
         assert isinstance(adata.uns["pca"]["params"], Dict)
-        assert set(adata.uns["pca"]["params"]) == set(
-            ["use_highly_variable", "zero_center"]
-        )
+        assert set(adata.uns["pca"]["params"]) == {"use_highly_variable", "zero_center"}
         if "highly_variable" not in adata.var:
             assert adata.uns["pca"]["params"]["use_highly_variable"] is False
         else:
@@ -1987,15 +1992,13 @@ class TestSetPCA:
         )
         assert returned_val is None
 
-        assert set(adata.obsm) == set(["X_pca"])
+        assert set(adata.obsm) == {"X_pca"}
         assert adata.obsm["X_pca"].shape == (adata.n_obs, adata.n_vars - 1)
 
         assert "pca" in adata.uns
-        assert set(adata.uns["pca"]) == set(["params", "variance", "variance_ratio"])
+        assert set(adata.uns["pca"]) == {"params", "variance", "variance_ratio"}
         assert isinstance(adata.uns["pca"]["params"], Dict)
-        assert set(adata.uns["pca"]["params"]) == set(
-            ["use_highly_variable", "zero_center"]
-        )
+        assert set(adata.uns["pca"]["params"]) == {"use_highly_variable", "zero_center"}
         if "highly_variable" not in adata.var:
             assert adata.uns["pca"]["params"]["use_highly_variable"] is False
         else:
@@ -2031,15 +2034,13 @@ class TestSetPCA:
 
         assert returned_val is None
 
-        assert set(adata.obsm) == set(["X_pca"])
+        assert set(adata.obsm) == {"X_pca"}
         assert adata.obsm["X_pca"].shape == (adata.n_obs, adata.n_obs - 1)
 
         assert "pca" in adata.uns
-        assert set(adata.uns["pca"]) == set(["params", "variance", "variance_ratio"])
+        assert set(adata.uns["pca"]) == {"params", "variance", "variance_ratio"}
         assert isinstance(adata.uns["pca"]["params"], Dict)
-        assert set(adata.uns["pca"]["params"]) == set(
-            ["use_highly_variable", "zero_center"]
-        )
+        assert set(adata.uns["pca"]["params"]) == {"use_highly_variable", "zero_center"}
         if "highly_variable" not in adata.var:
             assert adata.uns["pca"]["params"]["use_highly_variable"] is False
         else:
