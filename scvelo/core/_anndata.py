@@ -1,7 +1,5 @@
 import re
-from typing import List, Optional, Union
-
-from typing_extensions import Literal
+from typing import List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -28,9 +26,8 @@ def clean_obs_names(
 ) -> Optional[AnnData]:
     """Clean up the obs_names.
 
-    For example an obs_name 'sample1_AGTCdate' is changed to 'AGTC' of the sample
-    'sample1_date'. The sample name is then saved in obs['sample_batch'].
-    The genetic codes are identified according to according to
+    For example an obs_name 'sample1_AGTCdate' is changed to 'AGTC' of the sample 'sample1_date'. The sample name is
+    then saved in obs['sample_batch']. The genetic codes are identified according to according to
     https://www.neb.com/tools-and-resources/usage-guidelines/the-genetic-code.
 
     Arguments
@@ -47,13 +44,9 @@ def clean_obs_names(
     Returns
     -------
     Optional[AnnData]
-        Returns or updates `adata` with the attributes
-        obs_names: list
-            updated names of the observations
-        sample_batch: `.obs`
-            names of the identified sample batches
+        Returns or updates `adata` with updated names of observations, and names of identified sample batches added
+        as column `"sample_batch"` to `.obs`.
     """
-
     if not inplace:
         adata = adata.copy()
 
@@ -114,7 +107,6 @@ def cleanup(
     Optional[AnnData]
         Returns or updates `adata` with selection of attributes kept.
     """
-
     if not inplace:
         adata = adata.copy()
     verify_dtypes(adata)
@@ -186,7 +178,6 @@ def get_df(
     :class:`pd.DataFrame`
         A dataframe.
     """
-
     if precision is not None:
         pd.set_option("display.precision", precision)
 
@@ -336,7 +327,6 @@ def get_initial_size(
     np.ndarray
         Initial counts per observation in the specified layer.
     """
-
     if by_total_size:
         sizes = [
             adata.obs[f"initial_size_{layer}"]
@@ -375,7 +365,6 @@ def get_modality(adata: AnnData, modality: Optional[str]) -> Union[ndarray, spma
     Union[ndarray, spmatrix]
         Retrieved modality from :class:`~anndata.AnnData` object.
     """
-
     if modality in ["X", None]:
         return adata.X
     elif modality in adata.layers.keys():
@@ -403,7 +392,6 @@ def get_size(adata: AnnData, modality: Optional[str] = None) -> ndarray:
     np.ndarray
         Counts per observation in the specified modality.
     """
-
     X = get_modality(adata=adata, modality=modality)
     return sum(X, axis=1)
 
@@ -427,7 +415,6 @@ def make_dense(
     Optional[AnnData]
         Copy of annotated data `adata` if `inplace=True` with dense modalities.
     """
-
     if not inplace:
         adata = adata.copy()
 
@@ -463,7 +450,6 @@ def make_sparse(
     Optional[AnnData]
         Copy of annotated data `adata` with sparse modalities if `inplace=True`.
     """
-
     if not inplace:
         adata = adata.copy()
 
@@ -502,7 +488,6 @@ def merge(
     Optional[:class:`anndata.AnnData`]
         Returns a :class:`~anndata.AnnData` object
     """
-
     adata.var_names_make_unique()
     ldata.var_names_make_unique()
 
@@ -595,7 +580,6 @@ def obs_df(adata: AnnData, keys: List[str], layer: Optional[str] = None) -> Data
         DataFrame indexed by observations. Columns correspond to variables of specified
         layer.
     """
-
     lookup_keys = [k for k in keys if k in adata.var_names]
     if len(lookup_keys) < len(keys):
         logg.warn(
@@ -626,7 +610,6 @@ def set_initial_size(adata: AnnData, layers: Optional[str] = None) -> None:
     -------
     None
     """
-
     if layers is None:
         layers = ["unspliced", "spliced"]
     verify_dtypes(adata)
@@ -667,7 +650,6 @@ def set_modality(
     Optional[AnnData]
         Copy of annotated data `adata` with updated modality if `inplace=True`.
     """
-
     if not inplace:
         adata = adata.copy()
 
@@ -702,7 +684,6 @@ def show_proportions(
     -------
     None
     """
-
     if layers is None:
         layers = ["unspliced", "spliced", "ambiguous"]
     layers_keys = [key for key in layers if key in adata.layers.keys()]
@@ -743,7 +724,6 @@ def var_df(adata: AnnData, keys: List[str], layer: Optional[str] = None):
         DataFrame indexed by features. Columns correspond to observations of specified
         layer.
     """
-
     lookup_keys = [k for k in keys if k in adata.obs_names]
     if len(lookup_keys) < len(keys):
         logg.warn(
@@ -757,6 +737,7 @@ def var_df(adata: AnnData, keys: List[str], layer: Optional[str] = None):
     return df
 
 
+# TODO: Deprecate function
 # TODO: Find better function name
 def verify_dtypes(adata: AnnData) -> None:
     """Verify that AnnData object is not corrupted.
@@ -770,10 +751,9 @@ def verify_dtypes(adata: AnnData) -> None:
     -------
     None
     """
-
     try:
         _ = adata[:, 0]
-    except Exception:
+    except IndexError:
         uns = adata.uns
         adata.uns = {}
         try:
@@ -782,7 +762,7 @@ def verify_dtypes(adata: AnnData) -> None:
                 "Safely deleted unstructured annotations (adata.uns), \n"
                 "as these do not comply with permissible anndata datatypes."
             )
-        except Exception:
+        except IndexError:
             logg.warn(
                 "The data might be corrupted. Please verify all annotation datatypes."
             )
