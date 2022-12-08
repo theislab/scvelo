@@ -13,6 +13,7 @@ from .velocity_graph import vals_to_csr
 from .velocity_pseudotime import velocity_pseudotime
 
 
+# TODO: Finish docstrings
 def get_igraph_from_adjacency(adjacency, directed=None):
     """Get igraph graph from adjacency matrix."""
     import igraph as ig
@@ -24,10 +25,7 @@ def get_igraph_from_adjacency(adjacency, directed=None):
     g = ig.Graph(directed=directed)
     g.add_vertices(adjacency.shape[0])  # this adds adjacency.shap[0] vertices
     g.add_edges(list(zip(sources, targets)))
-    try:
-        g.es["weight"] = weights
-    except Exception:
-        pass
+    g.es["weight"] = weights
     if g.vcount() != adjacency.shape[0]:
         logg.warn(
             f"The constructed graph has only {g.vcount()} nodes. "
@@ -36,7 +34,9 @@ def get_igraph_from_adjacency(adjacency, directed=None):
     return g
 
 
+# TODO: Add docstrings
 def get_sparse_from_igraph(graph, weight_attr=None):
+    """TODO."""
     edges = graph.get_edgelist()
     if weight_attr is None:
         weights = [1] * len(edges)
@@ -53,6 +53,7 @@ def get_sparse_from_igraph(graph, weight_attr=None):
         return csr_matrix(shape)
 
 
+# TODO: Finish docstrings
 def set_row_csr(csr, rows, value=0):
     """Set all nonzero elements to the given value. Useful to set to 0 mostly."""
     for row in rows:
@@ -63,7 +64,10 @@ def set_row_csr(csr, rows, value=0):
         csr.eliminate_zeros()
 
 
+# TODO: Add docstrings
 class PAGA_tree(PAGA):
+    """TODO."""
+
     def __init__(
         self,
         adata,
@@ -86,7 +90,9 @@ class PAGA_tree(PAGA):
             self.threshold_root_end_prior = 0.9
         self.minimum_spanning_tree = minimum_spanning_tree
 
+    # TODO: Add docstrings
     def compute_transitions(self):
+        """TODO."""
         try:
             import igraph
         except ImportError:
@@ -191,7 +197,7 @@ def paga(
     """PAGA graph with velocity-directed edges.
 
     Mapping out the coarse-grained connectivity structures of complex manifolds
-    [Wolf19]_. By quantifying the connectivity of partitions (groups, clusters) of the
+    :cite:p:`Wolf19`. By quantifying the connectivity of partitions (groups, clusters) of the
     single-cell graph, partition-based graph abstraction (PAGA) generates a much
     simpler abstracted graph (*PAGA graph*) of partitions, in which edge weights
     represent confidence in the presence of connections.
@@ -233,7 +239,6 @@ def paga(
         The adjacency matrix of the abstracted directed graph, weights correspond to
         confidence in the transitions between partitions.
     """
-
     if "neighbors" not in adata.uns:
         raise ValueError(
             "You need to run `pp.neighbors` first to compute a neighborhood graph."
