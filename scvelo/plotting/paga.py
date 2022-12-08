@@ -71,8 +71,7 @@ def paga(
     scatter_flag=None,
     **kwargs,
 ):
-    """\
-    Plot PAGA graph with velocity-directed edges.
+    """Plot PAGA graph with velocity-directed edges.
 
     PAGA graph with connectivities (dashed) and transitions (solid/arrows).
 
@@ -182,7 +181,6 @@ def paga(
     If `show==False`, one or more :class:`~matplotlib.axes.Axes` objects.
     Adds `'pos'` to `adata.uns['paga']` if `add_pos` is `True`.
     """
-
     if scatter_flag is None:
         scatter_flag = ax is None
     if layout_kwds is None:
@@ -376,9 +374,10 @@ def _compute_pos(
     if layout is None:
         layout = "fr"
     if layout == "fa":
+        # TODO: Deprecate `fr` usage.
         try:
             import fa2
-        except Exception:
+        except ImportError:
             logg.warn(
                 "Package 'fa2' is not installed, falling back to layout 'fr'."
                 "To use the faster and better ForceAtlas2 layout, "
@@ -454,6 +453,8 @@ def _compute_pos(
     return pos_array
 
 
+# TODO: Finish docstrings
+# TODO: Move to Scanpy
 def _paga(
     adata,
     threshold=None,
@@ -497,7 +498,8 @@ def _paga(
     ax=None,
     **scatter_kwargs,
 ):
-    """scanpy/_paga with some adjustments for directional graphs.
+    """Scanpy's `paga` with some adjustments for directional graphs.
+
     To be moved back to scanpy once finalized.
     """
     from scanpy.plotting._utils import setup_axes
@@ -519,7 +521,7 @@ def _paga(
     if is_flat(labels):
         labels = [labels for _ in range(len(colors))]
     title = (
-        [c for c in colors]
+        colors
         if title is None and len(colors) > 1
         else [title for _ in colors]
         if isinstance(title, str)
@@ -684,6 +686,8 @@ def _paga(
             return axs
 
 
+# TODO: Finish docstrings
+# TODO: Move to Scanpy
 def _paga_graph(
     adata,
     ax,
@@ -717,7 +721,8 @@ def _paga_graph(
     single_component=False,
     arrowsize=30,
 ):
-    """scanpy/_paga_graph with some adjustments for directional graphs.
+    """Scanpy's `paga_graph` with some adjustments for directional graphs.
+
     To be moved back to scanpy once finalized.
     """
     import warnings
@@ -943,7 +948,7 @@ def _paga_graph(
             from matplotlib.colors import rgb2hex
 
             colors = [rgb2hex(c) for c in colors]
-        for count, n in enumerate(nx_g_solid.nodes()):
+        for count in nx_g_solid.nodes():
             nx_g_solid.node[count]["label"] = f"{node_labels[count]}"
             nx_g_solid.node[count]["color"] = f"{colors[count]}"
             nx_g_solid.node[count]["viz"] = dict(
@@ -1060,10 +1065,11 @@ def _paga_graph(
     return sct
 
 
+# TODO: Finish docstrings
 def getbb(sc, ax):
-    """
-    Function to return a list of bounding boxes in data coordinates for a scatter plot.
-    Directly taken from https://stackoverflow.com/questions/55005272/
+    """Return list of bounding boxes in data coordinates for a scatter plot.
+
+    Directly taken from https://stackoverflow.com/questions/55005272/.
     """
     ax.figure.canvas.draw()  # need to draw before the transforms are set.
     transform = sc.get_transform()
