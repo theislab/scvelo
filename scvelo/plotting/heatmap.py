@@ -34,8 +34,7 @@ def heatmap(
     save=None,
     **kwargs,
 ):
-    """\
-    Plot time series for genes as heatmap.
+    """Plot time series for genes as heatmap.
 
     Arguments
     ---------
@@ -84,7 +83,6 @@ def heatmap(
     -------
     If `show==False` a `matplotlib.Axis`
     """
-
     import seaborn as sns
 
     var_names = [name for name in var_names if name in adata.var_names]
@@ -105,9 +103,11 @@ def heatmap(
     if n_convolve is not None:
         weights = np.ones(n_convolve) / n_convolve
         for gene in var_names:
+            # TODO: Handle exception properly
             try:
                 df[gene] = np.convolve(df[gene].values, weights, mode="same")
-            except Exception:
+            except ValueError as e:
+                logg.info(f"Skipping variable {gene}: {e}")
                 pass  # e.g. all-zero counts or nans cannot be convolved
 
     if sort:
@@ -153,9 +153,10 @@ def heatmap(
         context = context or "notebook"
 
     with sns.plotting_context(context=context, **args):
+        # TODO: Remove exception by requiring appropriate seaborn version
         try:
             cm = sns.clustermap(df.T, **kwargs)
-        except Exception:
+        except ImportWarning:
             logg.warn("Please upgrade seaborn with `pip install -U seaborn`.")
             kwargs.pop("dendrogram_ratio")
             kwargs.pop("cbar_pos")
