@@ -111,7 +111,6 @@ vega_20[2], vega_20[4], vega_20[7] = (
 
 def set_rcParams_scvelo(fontsize=12, color_map=None, frameon=None):
     """Set matplotlib.rcParams to scvelo defaults."""
-
     # dpi options (mpl default: 100, 100)
     rcParams["figure.dpi"] = 100
     rcParams["savefig.dpi"] = 150
@@ -181,7 +180,6 @@ def set_rcParams_scvelo(fontsize=12, color_map=None, frameon=None):
 
 def set_rcParams_scanpy(fontsize=12, color_map=None, frameon=None):
     """Set matplotlib.rcParams to Scanpy defaults."""
-
     # dpi options
     rcParams["figure.dpi"] = 100
     rcParams["savefig.dpi"] = 150
