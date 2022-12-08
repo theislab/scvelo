@@ -15,7 +15,10 @@ from .dynamical_model_utils import BaseDynamics, convolve, linreg, tau_inv, unsp
 from .utils import make_unique_list, test_bimodality
 
 
+# TODO: Add docstrings
 class DynamicsRecovery(BaseDynamics):
+    """TODO."""
+
     def __init__(self, adata, gene, load_pars=None, **kwargs):
         super().__init__(adata, gene, **kwargs)
         if load_pars and "fit_alpha" in adata.var.keys():
@@ -23,7 +26,9 @@ class DynamicsRecovery(BaseDynamics):
         elif self.recoverable:
             self.initialize()
 
+    # TODO: Add docstrings
     def initialize(self):
+        """TODO."""
         # set weights
         u, s, w, perc = self.u, self.s, self.weights, 98
         u_w = u[w]
@@ -68,11 +73,12 @@ class DynamicsRecovery(BaseDynamics):
             alpha, beta, gamma = np.array([alpha, beta, gamma]) * self.init_vals
 
         # initialize switching from u quantiles and alpha from s quantiles
+        # TODO: Check if correct exception type and try to improve.
         try:
             _, pval_u, means_u = test_bimodality(u_w, kde=True)
             _, pval_s, means_s = test_bimodality(s_w, kde=True)
-        except Exception:
-            logg.warn("skipping bimodality check for", self.gene)
+        except ValueError as e:
+            logg.warn(f"skipping bimodality check for {self.gene}: {e}.")
             _, _, pval_u, pval_s = 0, 0, 1, 1
             means_u, means_s = [0, 0], [0, 0]
 
@@ -107,12 +113,16 @@ class DynamicsRecovery(BaseDynamics):
 
         self.set_callbacks()
 
+    # TODO: Add docstrings
     def initialize_scaling(self, sight=0.5):  # fit scaling and update if improved
+        """TODO."""
         z_vals = self.scaling + np.linspace(-1, 1, num=4) * self.scaling * sight
         for z in z_vals:
             self.update(scaling=z, beta=self.beta / self.scaling * z)
 
+    # TODO: Add docstrings
     def fit(self, assignment_mode=None):
+        """TODO."""
         if self.max_iter > 0:
             # for comparison with exact time assignment
             if assignment_mode == "full_projection":
@@ -140,7 +150,10 @@ class DynamicsRecovery(BaseDynamics):
         self.likelihood = self.get_likelihood(refit_time=False)
         self.varx = self.get_variance()
 
+    # TODO: Add docstrings
     def fit_alpha(self, sight=0.5, **kwargs):
+        """TODO."""
+
         def mse(x):
             return self.get_mse(alpha=x[0], **kwargs)
 
@@ -151,7 +164,10 @@ class DynamicsRecovery(BaseDynamics):
         res = minimize(mse, np.array([val]), **self.simplex_kwargs)
         self.update(alpha=res.x[0])
 
+    # TODO: Add docstrings
     def fit_beta(self, sight=0.5, **kwargs):
+        """TODO."""
+
         def mse(x):
             return self.get_mse(beta=x[0], **kwargs)  # scaling=x[1])
 
@@ -162,7 +178,10 @@ class DynamicsRecovery(BaseDynamics):
         res = minimize(mse, np.array([val]), **self.simplex_kwargs)
         self.update(beta=res.x[0])
 
+    # TODO: Add docstrings
     def fit_gamma(self, sight=0.5, **kwargs):
+        """TODO."""
+
         def mse(x):
             return self.get_mse(gamma=x[0], **kwargs)
 
@@ -173,7 +192,10 @@ class DynamicsRecovery(BaseDynamics):
         res = minimize(mse, np.array([val]), **self.simplex_kwargs)
         self.update(gamma=res.x[0])
 
+    # TODO: Add docstrings
     def fit_t_and_alpha(self, **kwargs):
+        """TODO."""
+
         def mse(x):
             return self.get_mse(t_=x[0], alpha=x[1], **kwargs)
 
@@ -184,7 +206,10 @@ class DynamicsRecovery(BaseDynamics):
         res = minimize(mse, x0, callback=cb, **self.simplex_kwargs)  # using Nelder-Mead
         self.update(t_=res.x[0], alpha=res.x[1])
 
+    # TODO: Add docstrings
     def fit_rates(self, **kwargs):
+        """TODO."""
+
         def mse(x):
             return self.get_mse(alpha=x[0], gamma=x[1], **kwargs)
 
@@ -192,14 +217,20 @@ class DynamicsRecovery(BaseDynamics):
         res = minimize(mse, x0, tol=1e-2, callback=cb, **self.simplex_kwargs)
         self.update(alpha=res.x[0], gamma=res.x[1])
 
+    # TODO: Add docstrings
     def fit_t_(self, **kwargs):
+        """TODO."""
+
         def mse(x):
             return self.get_mse(t_=x[0], **kwargs)
 
         res = minimize(mse, self.t_, callback=self.cb_fit_t_, **self.simplex_kwargs)
         self.update(t_=res.x[0])
 
+    # TODO: Add docstrings
     def fit_rates_all(self, **kwargs):
+        """TODO."""
+
         def mse(x):
             return self.get_mse(alpha=x[0], beta=x[1], gamma=x[2], **kwargs)
 
@@ -207,7 +238,10 @@ class DynamicsRecovery(BaseDynamics):
         res = minimize(mse, x0, tol=1e-2, callback=cb, **self.simplex_kwargs)
         self.update(alpha=res.x[0], beta=res.x[1], gamma=res.x[2])
 
+    # TODO: Add docstrings
     def fit_t_and_rates(self, **kwargs):
+        """TODO."""
+
         def mse(x):
             return self.get_mse(t_=x[0], alpha=x[1], beta=x[2], gamma=x[3], **kwargs)
 
@@ -216,7 +250,10 @@ class DynamicsRecovery(BaseDynamics):
         res = minimize(mse, x0, tol=1e-2, callback=cb, **self.simplex_kwargs)
         self.update(t_=res.x[0], alpha=res.x[1], beta=res.x[2], gamma=res.x[3])
 
+    # TODO: Add docstrings
     def fit_scaling_(self, **kwargs):
+        """TODO."""
+
         def mse(x):
             return self.get_mse(t_=x[0], beta=x[1], scaling=x[2], **kwargs)
 
@@ -224,26 +261,40 @@ class DynamicsRecovery(BaseDynamics):
         res = minimize(mse, x0, callback=cb, **self.simplex_kwargs)
         self.update(t_=res.x[0], beta=res.x[1], scaling=res.x[2])
 
+    # TODO: Add docstrings
     # Callback functions for the Optimizer
     def cb_fit_t_and_alpha(self, x):
+        """TODO."""
         self.update(t_=x[0], alpha=x[1])
 
+    # TODO: Add docstrings
     def cb_fit_scaling_(self, x):
+        """TODO."""
         self.update(t_=x[0], beta=x[1], scaling=x[2])
 
+    # TODO: Add docstrings
     def cb_fit_rates(self, x):
+        """TODO."""
         self.update(alpha=x[0], gamma=x[1])
 
+    # TODO: Add docstrings
     def cb_fit_t_(self, x):
+        """TODO."""
         self.update(t_=x[0])
 
+    # TODO: Add docstrings
     def cb_fit_t_and_rates(self, x):
+        """TODO."""
         self.update(t_=x[0], alpha=x[1], beta=x[2], gamma=x[3])
 
+    # TODO: Add docstrings
     def cb_fit_rates_all(self, x):
+        """TODO."""
         self.update(alpha=x[0], beta=x[1], gamma=x[2])
 
+    # TODO: Add docstrings
     def set_callbacks(self):
+        """TODO."""
         # Overwrite callbacks
         if not self.high_pars_resolution:
             self.cb_fit_t_and_alpha = None
@@ -253,6 +304,7 @@ class DynamicsRecovery(BaseDynamics):
             self.cb_fit_t_and_rates = None
             self.cb_fit_rates_all = None
 
+    # TODO: Add docstrings
     def update(
         self,
         t=None,
@@ -265,6 +317,7 @@ class DynamicsRecovery(BaseDynamics):
         s0_=None,
         adjust_t_=True,
     ):
+        """TODO."""
         loss_prev = self.loss[-1] if len(self.loss) > 0 else 1e6
 
         _vars = self.get_vars(alpha, beta, gamma, scaling, t_, u0_, s0_)
@@ -329,7 +382,9 @@ default_pars_names += ["likelihood", "u0", "s0", "pval_steady"]
 default_pars_names += ["steady_u", "steady_s", "variance"]
 
 
+# TODO: Add docstrings
 def read_pars(adata, pars_names=None, key="fit"):
+    """TODO."""
     pars = []
     for name in default_pars_names if pars_names is None else pars_names:
         pkey = f"{key}_{name}"
@@ -340,7 +395,9 @@ def read_pars(adata, pars_names=None, key="fit"):
     return pars
 
 
+# TODO: Add docstrings
 def write_pars(adata, pars, pars_names=None, add_key="fit"):
+    """TODO."""
     for i, name in enumerate(default_pars_names if pars_names is None else pars_names):
         adata.var[f"{add_key}_{name}"] = pars[i]
 
@@ -426,22 +483,13 @@ def recover_dynamics(
 
     Returns
     -------
-    fit_alpha: `.var`
-        inferred transcription rates
-    fit_beta: `.var`
-        inferred splicing rates
-    fit_gamma: `.var`
-        inferred degradation rates
-    fit_t_: `.var`
-        inferred switching time points
-    fit_scaling: `.var`
-        internal variance scaling factor for un/spliced counts
-    fit_likelihood: `.var`
-        likelihood of model fit
-    fit_alignment_scaling: `.var`
-        scaling factor to align gene-wise latent times to a universal latent time
-    """  # noqa E501
-
+    adata: `AnnData`
+        Updated AnnData with inferred parameters added to `.var` if `copy=True`. The inferred parameters are
+        the transcription rates `fit_alpha`, splicing rates `fit_beta`, degradation rates `fit_gamma`,
+        switching times `fit_t_`, variance scaling factor for unspliced and spliced counts, model likelihoods
+        `fit_likelihood`, and the scaling factor to align gene-wise latent times to a universal latent time
+        `fit_alignment_scaling`.
+    """
     adata = data.copy() if copy else data
 
     n_jobs = get_n_jobs(n_jobs=n_jobs)
@@ -600,15 +648,15 @@ def recover_dynamics(
         fontsize = rcParams["font.size"]
         fig, axes = pl.subplots(nrows=n_rows, ncols=6, figsize=figsize)
         pl.subplots_adjust(wspace=0.7, hspace=0.5)
-        for i, gene in enumerate(var_names[:4]):
+        for var_id in range(4):
             if t_max is not False:
-                mi = dm.m[i]
-                P[i] *= np.array([1 / mi, 1 / mi, 1 / mi, mi, 1])[:, None]
-            ax = axes[i] if n_rows > 1 else axes
-            for j, pij in enumerate(P[i]):
+                mi = dm.m[var_id]
+                P[var_id] *= np.array([1 / mi, 1 / mi, 1 / mi, mi, 1])[:, None]
+            ax = axes[var_id] if n_rows > 1 else axes
+            for j, pij in enumerate(P[var_id]):
                 ax[j].plot(pij)
-            ax[len(P[i])].plot(L[i])
-            if i == 0:
+            ax[len(P[var_id])].plot(L[var_id])
+            if var_id == 0:
                 pars_names = ["alpha", "beta", "gamma", "t_", "scaling", "loss"]
                 for j, name in enumerate(pars_names):
                     ax[j].set_title(name, fontsize=fontsize)
@@ -644,12 +692,11 @@ def align_dynamics(
 
     Returns
     -------
-    alpha, beta, gamma, t_, alignment_scaling: `.var`
-        aligned parameters
-    fit_t, fit_tau, fit_tau_: `.layer`
-        aligned time
+    `alpha`, `beta`, `gamma`, `t_`, `alignment_scaling`: `.var`
+        Aligned parameters
+    `fit_t`, `fit_tau`, `fit_tau_`: `.layer`
+        Aligned time
     """
-
     adata = data.copy() if copy else data
     pars_names = ["alpha", "beta", "gamma", "t_", "scaling", "alignment_scaling"]
     alpha, beta, gamma, t_, scaling, mz = read_pars(adata, pars_names=pars_names)
@@ -777,8 +824,7 @@ def latent_time(
     -------
     latent_time: `.obs`
         latent time from learned dynamics for each cell
-    """  # noqa E501
-
+    """
     adata = data.copy() if copy else data
 
     from .dynamical_model_utils import compute_shared_time, root_time
@@ -948,8 +994,7 @@ def differential_kinetic_test(
         P-values of competing kinetic for each group and gene
     fit_diff_kinetics: `.var`
         Groups that have differential kinetics for each gene.
-    """  # noqa E501
-
+    """
     adata = data.copy() if copy else data
 
     if "Ms" not in adata.layers.keys() or "Mu" not in adata.layers.keys():
@@ -1014,7 +1059,7 @@ def differential_kinetic_test(
     idx = []
 
     progress = logg.ProgressReporter(len(var_names))
-    for i, gene in enumerate(var_names):
+    for gene in var_names:
         dm = DynamicsRecovery(adata, gene, use_raw=use_raw, load_pars=True, max_iter=0)
         if dm.recoverable:
             dm.differential_kinetic_test(clusters, **kwargs)
@@ -1076,7 +1121,6 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
         Structured array to be indexed by group id storing the gene
         names. Ordered according to scores.
     """
-
     from .dynamical_model_utils import get_divergence
 
     adata = data.copy() if copy else data
@@ -1115,7 +1159,7 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
 
     adata.uns[key] = {
         "names": np.rec.fromarrays(
-            [n for n in rankings_gene_names],
+            list(rankings_gene_names),
             dtype=[(f"{rn}", "U50") for rn in groups],
         ),
         "scores": np.rec.fromarrays(
@@ -1130,6 +1174,7 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
     return adata if copy else None
 
 
+# TODO: Add docstrings
 def _fit_recovery(
     var_names,
     adata,
@@ -1146,9 +1191,9 @@ def _fit_recovery(
     queue,
     **kwargs,
 ):
-
+    """TODO."""
     idx, dms = [], []
-    for i, gene in enumerate(var_names):
+    for gene in var_names:
         dm = DynamicsRecovery(
             adata,
             gene,
