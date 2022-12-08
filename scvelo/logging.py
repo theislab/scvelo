@@ -1,5 +1,4 @@
-"""Logging and Profiling
-"""
+"""Logging and Profiling."""
 from datetime import datetime
 from platform import python_version
 from sys import stdout
@@ -14,25 +13,35 @@ from scvelo import settings
 _VERBOSITY_LEVELS_FROM_STRINGS = {"error": 0, "warn": 1, "info": 2, "hint": 3}
 
 
+# TODO: Add docstrings
 def info(*args, **kwargs):
+    """TODO."""
     return msg(*args, v="info", **kwargs)
 
 
+# TODO: Add docstrings
 def error(*args, **kwargs):
+    """TODO."""
     args = ("Error:",) + args
     return msg(*args, v="error", **kwargs)
 
 
+# TODO: Add docstrings
 def warn(*args, **kwargs):
+    """TODO."""
     args = ("WARNING:",) + args
     return msg(*args, v="warn", **kwargs)
 
 
+# TODO: Add docstrings
 def hint(*args, **kwargs):
+    """TODO."""
     return msg(*args, v="hint", **kwargs)
 
 
+# TODO: Add docstrings
 def _settings_verbosity_greater_or_equal_than(v):
+    """TODO."""
     if isinstance(settings.verbosity, str):
         settings_v = _VERBOSITY_LEVELS_FROM_STRINGS[settings.verbosity]
     else:
@@ -52,9 +61,13 @@ def msg(
     m=None,
     r=None,
 ):
-    """Write message to logging output.
+    r"""Write message to logging output.
+
     Log output defaults to standard output but can be set to a file
     by setting `sc.settings.log_file = 'mylogfile.txt'`.
+
+    Parameters
+    ----------
     v : {'error', 'warn', 'info', 'hint'} or int, (default: 4)
         0/'error', 1/'warn', 2/'info', 3/'hint', 4, 5, 6...
     time, t : bool, optional (default: False)
@@ -88,10 +101,7 @@ def msg(
         if not time and not memory and len(msg) > 0:
             _write_log(*msg, end=end)
         if reset:
-            try:
-                settings._previous_memory_usage, _ = get_memory_usage()
-            except Exception:
-                pass
+            settings._previous_memory_usage, _ = get_memory_usage()
             settings._previous_time = get_time()
         if time:
             elapsed = get_passed_time()
@@ -104,14 +114,16 @@ def msg(
 m = msg
 
 
+# TODO: Add docstrings
 def _write_log(*msg, end="\n"):
     """Write message to log output, ignoring the verbosity level.
+
     This is the most basic function.
+
     Parameters
     ----------
-    *msg :
-        One or more arguments to be formatted as string. Same behavior as print
-        function.
+    msg
+        One or more arguments to be formatted as string. Same behavior as print function.
     """
     from .settings import logfile
 
@@ -125,8 +137,10 @@ def _write_log(*msg, end="\n"):
             f.write(out + end)
 
 
+# TODO: Add docstrings
 def _sec_to_str(t, show_microseconds=False):
     """Format time in seconds.
+
     Parameters
     ----------
     t : int
@@ -140,21 +154,24 @@ def _sec_to_str(t, show_microseconds=False):
     return t_str if show_microseconds else t_str[:-3]
 
 
+# TODO: Add docstrings
 def get_passed_time():
+    """TODO."""
     now = get_time()
     elapsed = now - settings._previous_time
     settings._previous_time = now
     return elapsed
 
 
+# TODO: Add docstrings
 def print_passed_time():
+    """TODO."""
     return _sec_to_str(get_passed_time())
 
 
+# TODO: Finish docstrings
 def timeout(func, args=(), timeout_duration=2, default=None, **kwargs):
-    """This will spwan a thread and run the given function using the args, kwargs and
-    return the given default value if the timeout_duration is exceeded
-    """
+    """Spwans thread and runs the given function using the args, kwargs, and return default value on timeout."""
     import threading
 
     class InterruptableThread(threading.Thread):
@@ -163,10 +180,7 @@ def timeout(func, args=(), timeout_duration=2, default=None, **kwargs):
             self.result = default
 
         def run(self):
-            try:
-                self.result = func(*args, **kwargs)
-            except Exception:
-                pass
+            self.result = func(*args, **kwargs)
 
     it = InterruptableThread()
     it.start()
@@ -174,7 +188,9 @@ def timeout(func, args=(), timeout_duration=2, default=None, **kwargs):
     return it.result
 
 
+# TODO: Add docstrings
 def get_latest_pypi_version():
+    """TODO."""
     from subprocess import CalledProcessError, check_output
 
     try:  # needs to work offline as well
@@ -184,7 +200,9 @@ def get_latest_pypi_version():
         return "0.0.0"
 
 
+# TODO: Add docstrings
 def check_if_latest_version():
+    """TODO."""
     from . import __version__
 
     latest_version = timeout(
@@ -200,7 +218,9 @@ def check_if_latest_version():
         )
 
 
+# TODO: Add docstrings
 def print_version():
+    """TODO."""
     from . import __version__
 
     _write_log(
@@ -210,7 +230,9 @@ def print_version():
     check_if_latest_version()
 
 
+# TODO: Add docstrings
 def print_versions():
+    """TODO."""
     for mod in [
         "scvelo",
         "scanpy",
@@ -233,11 +255,15 @@ def print_versions():
     check_if_latest_version()
 
 
+# TODO: Add docstrings
 def get_date_string():
+    """TODO."""
     return datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
+# TODO: Add docstrings
 def switch_verbosity(mode="on", module=None):
+    """TODO."""
     if module is None:
         from . import settings
     elif module == "scanpy":
@@ -258,14 +284,19 @@ def switch_verbosity(mode="on", module=None):
         settings.verbosity = mode
 
 
+# TODO: Add docstrings
 class ProgressReporter:
+    """TODO."""
+
     def __init__(self, total, interval=3):
         self.count = 0
         self.total = total
         self.timestamp = get_time()
         self.interval = interval
 
+    # TODO: Add docstrings
     def update(self):
+        """TODO."""
         self.count += 1
         if settings.verbosity > 1 and (
             get_time() - self.timestamp > self.interval or self.count == self.total
@@ -275,14 +306,16 @@ class ProgressReporter:
             stdout.write(f"\r... {percent}%")
             stdout.flush()
 
+    # TODO: Add docstrings
     def finish(self):
+        """TODO."""
         if settings.verbosity > 1:
             stdout.write("\r")
             stdout.flush()
 
 
 def profiler(command, filename="profile.stats", n_stats=10):
-    """Profiler for a python program
+    """Profiler for a python program.
 
     Runs cProfile and outputs ordered statistics that describe
     how often and for how long various parts of the program are executed.
