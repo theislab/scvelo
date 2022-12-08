@@ -13,7 +13,9 @@ from scvelo import logging as logg
 _msg_shown = False
 
 
+# TODO: Add docstrings
 def get_n_jobs(n_jobs):
+    """TODO."""
     if n_jobs is None or (n_jobs < 0 and os.cpu_count() + 1 + n_jobs <= 0):
         return 1
     elif n_jobs > os.cpu_count():
@@ -36,8 +38,7 @@ def parallelize(
     extractor: Optional[Callable[[Any], Any]] = None,
     show_progress_bar: bool = True,
 ) -> Union[np.ndarray, Any]:
-    """
-    Parallelize function call over a collection of elements.
+    """Parallelize function call over a collection of elements.
 
     Parameters
     ----------
@@ -48,8 +49,7 @@ def parallelize(
     n_jobs
         Number of parallel jobs.
     n_split
-        Split :paramref:`collection` into :paramref:`n_split` chunks.
-        If `None`, split into :paramref:`n_jobs` chunks.
+        Split `collection` into `n_split` chunks. If `None`, split into `n_jobs` chunks.
     unit
         Unit of the progress bar.
     as_array
@@ -67,9 +67,8 @@ def parallelize(
     Returns
     -------
     :class:`numpy.ndarray`
-        Result depending on :paramref:`extractor` and :paramref:`as_array`.
+        Result depending on `extractor` and `as_array`.
     """
-
     if show_progress_bar:
         try:
             try:
