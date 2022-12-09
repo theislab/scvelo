@@ -2,6 +2,96 @@
 requires = ['setuptools', 'setuptools_scm', 'wheel']
 build-backend = 'setuptools.build_meta'
 
+[project]
+name = "scvelo"
+version = "0.2.5"
+description = "RNA velocity generalized through dynamical modeling"
+readme = {file = "README.rst", content-type="text/rst"}
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Volker Bergen"},
+]
+maintainers = [
+    {name = "Volker Bergen", email = "volker.bergen@helmholtz-muenchen.de"},
+]
+keywords=[
+    "RNA",
+    "velocity",
+    "single cell",
+    "transcriptomics",
+    "stochastic",
+    "dynamical",
+]
+classifiers=[
+    "License :: OSI Approved :: BSD License",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+urls.Documentation = "https://scvelo.readthedocs.io/"
+urls.Source = "https://github.com/theislab/scvelo"
+urls.Home-page = "https://github.com/theislab/scvelo"
+dependencies = [
+    "anndata>=0.7.5",
+    "scanpy>=1.5",
+    "loompy>=2.0.12",
+    "umap-learn>=0.3.10",
+    "numba>=0.41.0",
+    "numpy>=1.17",
+    "pandas>=0.23, !=1.4.0",
+    "scipy>=1.4.1",
+    "scikit-learn>=0.21.2, <1.2.0",
+    "matplotlib>=3.3.0"
+]
+
+[project.optional-dependencies]
+louvain = [
+    "python-igraph",
+    "louvain"
+]
+hnswlib = [
+    "pybind11",
+    "hnswlib"
+]
+dev = [
+    "black==22.3.0",
+    "hnswlib",
+    "hypothesis",
+    "flake8==3.8.4",
+    "isort==5.10.1",
+    "louvain",
+    "magic-impute",
+    "pre-commit>=2.9.0",
+    "pybind11",
+    "pytest>=6.2.2",
+    "pytest-cov",
+    "python-igraph",
+    "setuptools_scm"
+]
+docs = [
+    # Just until rtd.org understands pyproject.toml
+    "scanpy",
+    "setuptools",
+    "setuptools_scm",
+    "importlib_metadata",
+    "sphinx_rtd_theme>=0.3",
+    "sphinx_autodoc_typehints<=1.6",
+    "sphinxcontrib-bibtex>=2.3.0",
+    "Jinja2<3.1",
+    # converting notebooks to html
+    "ipykernel",
+    "sphinx>=1.7,<4.0",
+    "nbsphinx>=0.7,<0.8.7"
+]
+
 [tool.black]
 include = '\.pyi?$'
 exclude = '''
