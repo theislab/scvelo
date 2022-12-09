@@ -28,11 +28,8 @@ try:
     __version__ = get_version(root="..", relative_to=__file__)
     del get_version
 except (LookupError, ImportError):
-    # TODO: Deprecate Python<3.8 usage.
-    try:
-        from importlib_metadata import version  # Python < 3.8
-    except ImportError:
-        from importlib.metadata import version  # Python = 3.8
+    from importlib.metadata import version
+
     __version__ = version(__name__)
     del version
 
