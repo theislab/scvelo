@@ -33,7 +33,7 @@ location such that pulled changes are also reflected in the environment.
 To contribute to scVelo, ``cd`` into the cloned directory and
 install the latest packages required for development together with the pre-commit hooks::
 
-    pip install -r requirements-dev.txt
+    pip install -e ".[dev]"
     pre-commit install
 
 

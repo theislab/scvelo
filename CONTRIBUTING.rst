@@ -32,12 +32,6 @@ The installation can be completed with
 
     pip install -e '.[dev]'
 
-The last line can, alternatively, be replaced by
-
-.. code:: bash
-
-    pip install -r requirements-dev.txt
-
 
 Windows
 ^^^^^^^
