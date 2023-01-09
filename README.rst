@@ -73,7 +73,7 @@ For further information visit `scvelo.org <https://scvelo.org>`_.
 .. |Docs| image:: https://readthedocs.org/projects/scvelo/badge/?version=latest
    :target: https://scvelo.readthedocs.io
 
-.. |CI| image:: https://img.shields.io/github/workflow/status/theislab/scvelo/CI/master
+.. |CI| image:: https://img.shields.io/github/actions/workflow/status/theislab/scvelo/ci.yml?branch=master
    :target: https://github.com/theislab/scvelo/actions?query=workflow%3ACI
 
 .. _scanpy: https://scanpy.readthedocs.io
