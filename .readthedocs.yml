@@ -1,9 +1,9 @@
 build:
-  image: latest
+    image: latest
 
 python:
-  install:
-  - method: pip
-    path: .
-    extra_requirements:
-    - docs
+    install:
+        - method: pip
+          path: .
+          extra_requirements:
+              - docs
