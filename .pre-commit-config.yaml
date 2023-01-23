@@ -11,9 +11,10 @@ repos:
       hooks:
           - id: black
     - repo: https://github.com/pre-commit/mirrors-prettier
-      rev: v3.0.0-alpha.3
+      rev: v2.5.1
       hooks:
           - id: prettier
+            language_version: "17.9.1"
     - repo: https://github.com/asottile/blacken-docs
       rev: v1.12.1
       hooks:
