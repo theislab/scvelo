@@ -506,10 +506,8 @@ def merge(
     common_vars = pd.unique(adata.var_names.intersection(ldata.var_names))
 
     if len(common_obs) == 0:
-        if "id_length" in kwargs:
-            id_length = kwargs.get("id_length")
-        clean_obs_names(adata, id_length=id_length)
-        clean_obs_names(ldata, id_length=id_length)
+        clean_obs_names(adata, **kwargs)
+        clean_obs_names(ldata, **kwargs)
         common_obs = adata.obs_names.intersection(ldata.obs_names)
 
     if copy:
