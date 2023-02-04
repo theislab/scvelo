@@ -1,4 +1,3 @@
-import warnings
 from pathlib import Path
 from typing import Optional, Union
 
@@ -274,20 +273,6 @@ def pancreas(file_path: Union[str, Path] = "data/Pancreas/endocrinogenesis_day15
     adata = read(file_path, backup_url=url, sparse=True, cache=True)
     adata.var_names_make_unique()
     return adata
-
-
-# TODO: Add docstrings
-def pancreatic_endocrinogenesis():
-    """TODO."""
-    warnings.warn(
-        "`scvelo.datasets.pancreatic_endocrinogenesis` is deprecated since scVelo "
-        "v0.2.5 and will be removed in a future version. Please use "
-        "`scvelo.datasets.pancreas` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return pancreas()
 
 
 def pbmc68k(file_path: Optional[Union[str, Path]] = "data/PBMC/pbmc68k.h5ad"):
