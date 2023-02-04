@@ -1,16 +1,9 @@
 import os
-import warnings
 from pathlib import Path
 from urllib.request import urlretrieve
 
 import numpy as np
 import pandas as pd
-
-from scvelo.core import clean_obs_names as _clean_obs_names
-from scvelo.core import get_df as _get_df
-from scvelo.core import merge as _merge
-from scvelo.core._anndata import obs_df as _obs_df
-from scvelo.core._anndata import var_df as _var_df
 
 
 # TODO: Finish docstrings
@@ -58,95 +51,6 @@ def load(filename, backup_url=None, header="infer", index_col="infer", **kwargs)
 
 
 read_csv = load
-
-
-# TODO: Add docstrings
-def clean_obs_names(data, base="[AGTCBDHKMNRSVWY]", ID_length=12, copy=False):
-    """TODO."""
-    warnings.warn(
-        "`scvelo.read_load.clean_obs_names` is deprecated since scVelo v0.2.4 and will "
-        "be removed in a future version. Please use `scvelo.core.clean_obs_names` "
-        "instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return _clean_obs_names(data=data, base=base, ID_length=ID_length, copy=copy)
-
-
-# TODO: Add docstrings
-def merge(adata, ldata, copy=True):
-    """TODO."""
-    warnings.warn(
-        "`scvelo.read_load.merge` is deprecated since scVelo v0.2.4 and will be "
-        "removed in a future version. Please use `scvelo.core.merge` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return _merge(adata=adata, ldata=ldata, copy=True)
-
-
-# TODO: Add docstrings
-def obs_df(adata, keys, layer=None):
-    """TODO."""
-    warnings.warn(
-        "`scvelo.read_load.obs_df` is deprecated since scVelo v0.2.4 and will be "
-        "removed in a future version. Please use `scvelo.core._anndata.obs_df` "
-        "instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return _obs_df(adata=adata, keys=keys, layer=layer)
-
-
-# TODO: Add docstrings
-def var_df(adata, keys, layer=None):
-    """TODO."""
-    warnings.warn(
-        "`scvelo.read_load.var_df` is deprecated since scVelo v0.2.4 and will be "
-        "removed in a future version. Please use `scvelo.core._anndata.var_df` "
-        "instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return _var_df(adata=adata, keys=keys, layer=layer)
-
-
-# TODO: Add docstrings
-def get_df(
-    data,
-    keys=None,
-    layer=None,
-    index=None,
-    columns=None,
-    sort_values=None,
-    dropna="all",
-    precision=None,
-):
-    """TODO."""
-    warnings.warn(
-        "`scvelo.read_load.get_df` is deprecated since scVelo v0.2.4 and will be "
-        "removed in a future version. Please use `scvelo.core.get_df` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return _get_df(
-        data=data,
-        keys=keys,
-        layer=layer,
-        index=index,
-        columns=columns,
-        sort_values=sort_values,
-        dropna=dropna,
-        precision=precision,
-    )
-
-
-DataFrame = get_df
 
 
 # TODO: Add docstrings
