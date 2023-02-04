@@ -817,20 +817,9 @@ def filter_and_normalize(
             subset=subset_highly_variable,
         )
 
-    log_advised = (
-        np.allclose(adata.X[:10].sum(), adata.layers["spliced"][:10].sum())
-        if "spliced" in adata.layers.keys()
-        else True
-    )
-
-    if log and log_advised:
+    if log:
         log1p(adata)
-    if log and log_advised:
         logg.info("Logarithmized X.")
-    elif log and not log_advised:
-        logg.warn("Did not modify X as it looks preprocessed already.")
-    elif log_advised and not log:
-        logg.warn("Consider logarithmizing X with `scv.pp.log1p` for better results.")
 
     return adata if copy else None
 
