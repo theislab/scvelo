@@ -21,33 +21,6 @@ exp = np.exp
 
 
 # TODO: Add docstrings
-def log(x, eps=1e-6):  # to avoid invalid values for log.
-    """TODO."""
-    warnings.warn(
-        "`clipped_log` is deprecated since scVelo v0.2.4 and will be removed in a "
-        "future version. Please use `clipped_log(x, eps=1e-6)` from `scvelo/core/`"
-        "instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return clipped_log(x, lb=0, ub=1, eps=1e-6)
-
-
-# TODO: Add docstrings
-def inv(x):
-    """TODO."""
-    warnings.warn(
-        "`inv` is deprecated since scVelo v0.2.4 and will be removed in a future "
-        "version. Please use `invert(x)` from `scvelo/core/` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return invert(x)
-
-
-# TODO: Add docstrings
 def normalize(X, axis=0, min_confidence=None):
     """TODO."""
     X_sum = np.sum(X, axis=axis)
@@ -148,21 +121,6 @@ def spliced(tau, s0, u0, alpha, beta, gamma):
     c = (alpha - u0 * beta) * invert(gamma - beta)
     expu, exps = exp(-beta * tau), exp(-gamma * tau)
     return s0 * exps + alpha / gamma * (1 - exps) + c * (exps - expu)
-
-
-# TODO: Add docstrings
-def mRNA(tau, u0, s0, alpha, beta, gamma):
-    """TODO."""
-    warnings.warn(
-        "`mRNA` is deprecated since scVelo v0.2.4 and will be removed in a future "
-        "version. Please use `SplicingDynamics` from `scvelo/core/` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return SplicingDynamics(alpha=alpha, beta=beta, gamma=gamma).get_solution(
-        tau, stacked=False
-    )
 
 
 # TODO: Add docstrings
