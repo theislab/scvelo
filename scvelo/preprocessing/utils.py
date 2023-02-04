@@ -8,123 +8,7 @@ from sklearn.utils import sparsefuncs
 from anndata import AnnData
 
 from scvelo import logging as logg
-from scvelo.core import cleanup as _cleanup
-from scvelo.core import get_initial_size as _get_initial_size
-from scvelo.core import get_size as _get_size
-from scvelo.core import multiply
-from scvelo.core import set_initial_size as _set_initial_size
-from scvelo.core import show_proportions as _show_proportions
-from scvelo.core import sum
-from scvelo.core._anndata import verify_dtypes as _verify_dtypes
-
-
-# TODO: Finish docstrings
-def sum_obs(A):
-    """Summation over axis 0 (obs) equivalent to np.sum(A, 0)."""
-    warnings.warn(
-        "`sum_obs` is deprecated since scVelo v0.2.4 and will be removed in a future "
-        "version. Please use `sum(A, axis=0)` from `scvelo/core/` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return sum(A, axis=0)
-
-
-# TODO: Finish docstrings
-def sum_var(A):
-    """Summation over axis 1 (var) equivalent to np.sum(A, 1)."""
-    warnings.warn(
-        "`sum_var` is deprecated since scVelo v0.2.4 and will be removed in a future "
-        "version. Please use `sum(A, axis=1)` from `scvelo/core/` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return sum(A, axis=1)
-
-
-# TODO: Add docstrings
-def show_proportions(adata, layers=None, use_raw=True):
-    """TODO."""
-    warnings.warn(
-        "`scvelo.preprocessing.show_proportions` is deprecated since scVelo v0.2.4 "
-        "and will be removed in a future version. Please use "
-        "`scvelo.core.show_proportions` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    _show_proportions(adata=adata, layers=layers, use_raw=use_raw)
-
-
-# TODO: Add docstrings
-def verify_dtypes(adata):
-    """TODO."""
-    warnings.warn(
-        "`scvelo.preprocessing.utils.verify_dtypes` is deprecated since scVelo v0.2.4 "
-        "and will be removed in a future version. Please use "
-        "`scvelo.core._anndata.verify_dtypes` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return _verify_dtypes(adata=adata)
-
-
-# TODO: Add docstrings
-def cleanup(data, clean="layers", keep=None, copy=False):
-    """TODO."""
-    warnings.warn(
-        "`scvelo.preprocessing.cleanup` is deprecated since scVelo v0.2.4 and will be "
-        "removed in a future version. Please use `scvelo.core.cleanup` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return _cleanup(data=data, clean=clean, keep=keep, copy=copy)
-
-
-# TODO: Add docstrings
-def get_size(adata, layer=None):
-    """TODO."""
-    warnings.warn(
-        "`scvelo.preprocessing.utils.get_size` is deprecated since scVelo v0.2.4 and "
-        "will be removed in a future version. Please use `scvelo.core.get_size` "
-        "instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return _get_size(adata=adata, layer=layer)
-
-
-# TODO: Add docstrings
-def set_initial_size(adata, layers=None):
-    """TODO."""
-    warnings.warn(
-        "`scvelo.preprocessing.utils.set_initial_size` is deprecated since scVelo "
-        "v0.2.4 and will be removed in a future version. Please use "
-        "`scvelo.core.set_initial_size` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return _set_initial_size(adata=adata, layers=layers)
-
-
-# TODO: Add docstrings
-def get_initial_size(adata, layer=None, by_total_size=None):
-    """TODO."""
-    warnings.warn(
-        "`scvelo.preprocessing.get_initial_size` is deprecated since scVelo v0.2.4 and "
-        "will be  removed in a future version. Please use "
-        "`scvelo.core.get_initial_size` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    return _get_initial_size(adata=adata, layer=layer, by_total_size=by_total_size)
+from scvelo.core import get_initial_size, get_size, multiply, set_initial_size, sum
 
 
 def _filter(X, min_counts=None, min_cells=None, max_counts=None, max_cells=None):
@@ -210,7 +94,7 @@ def filter_genes(
     adata = data.copy() if copy else data
 
     # set initial cell sizes before filtering
-    _set_initial_size(adata)
+    set_initial_size(adata)
 
     layers = [
         layer for layer in ["spliced", "unspliced"] if layer in adata.layers.keys()
@@ -406,7 +290,7 @@ def filter_genes_dispersion(
     `copy`. It filters the `adata` and adds the annotations
     """
     adata = data.copy() if copy else data
-    _set_initial_size(adata)
+    set_initial_size(adata)
 
     mean, var = materialize_as_ndarray(get_mean_var(adata.X))
 
@@ -623,7 +507,7 @@ def normalize_per_cell(
 
     if isinstance(counts_per_cell, str):
         if counts_per_cell not in adata.obs.keys():
-            _set_initial_size(adata, layers)
+            set_initial_size(adata, layers)
         counts_per_cell = (
             adata.obs[counts_per_cell].values
             if counts_per_cell in adata.obs.keys()
@@ -638,9 +522,9 @@ def normalize_per_cell(
             counts = (
                 counts_per_cell
                 if counts_per_cell is not None
-                else _get_initial_size(adata, layer)
+                else get_initial_size(adata, layer)
                 if use_initial_size
-                else _get_size(adata, layer)
+                else get_size(adata, layer)
             )
             if max_proportion_per_cell is not None and (
                 0 < max_proportion_per_cell < 1
@@ -681,7 +565,7 @@ def normalize_per_cell(
                 "To enforce normalization, set `enforce=True`."
             )
 
-    adata.obs["n_counts" if key_n_counts is None else key_n_counts] = _get_size(adata)
+    adata.obs["n_counts" if key_n_counts is None else key_n_counts] = get_size(adata)
     if len(modified_layers) > 0:
         logg.info("Normalized count data:", f"{', '.join(modified_layers)}.")
 
