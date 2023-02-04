@@ -4,12 +4,12 @@ import scvelo as scv
 
 
 def test_einsum():
-    from scvelo.tools.utils import norm, prod_sum_obs, prod_sum_var
+    from scvelo.core import l2_norm, prod_sum
 
     Ms, Mu = np.random.rand(5, 4), np.random.rand(5, 4)
-    assert np.allclose(prod_sum_obs(Ms, Mu), np.sum(Ms * Mu, 0))
-    assert np.allclose(prod_sum_var(Ms, Mu), np.sum(Ms * Mu, 1))
-    assert np.allclose(norm(Ms), np.linalg.norm(Ms, axis=1))
+    assert np.allclose(prod_sum(Ms, Mu, axis=0), np.sum(Ms * Mu, 0))
+    assert np.allclose(prod_sum(Ms, Mu, axis=1), np.sum(Ms * Mu, 1))
+    assert np.allclose(l2_norm(Ms), np.linalg.norm(Ms, axis=1))
 
 
 def test_neighbors():
