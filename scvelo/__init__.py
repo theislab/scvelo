@@ -11,7 +11,7 @@ from scvelo import utils
 from scvelo.core import get_df
 from scvelo.plotting.gridspec import GridSpec
 from scvelo.preprocessing.neighbors import Neighbors
-from scvelo.read_load import DataFrame, load, read_csv
+from scvelo.read_load import load, read_csv
 from scvelo.settings import set_figure_params
 from scvelo.tools.run import run_all, test
 from scvelo.tools.utils import round
@@ -36,7 +36,6 @@ except (LookupError, ImportError):
 
 __all__ = [
     "AnnData",
-    "DataFrame",
     "datasets",
     "get_df",
     "GridSpec",

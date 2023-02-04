@@ -7,7 +7,6 @@ from ._datasets import (
     gastrulation_e75,
     gastrulation_erythroid,
     pancreas,
-    pancreatic_endocrinogenesis,
     pbmc68k,
     toy_data,
 )
@@ -22,7 +21,6 @@ __all__ = [
     "gastrulation_e75",
     "gastrulation_erythroid",
     "pancreas",
-    "pancreatic_endocrinogenesis",
     "pbmc68k",
     "simulation",
     "toy_data",
