@@ -4,7 +4,7 @@ import matplotlib.pyplot as pl
 from matplotlib import rcParams
 
 from scvelo.core import SplicingDynamics
-from scvelo.tools.dynamical_model_utils import get_vars, tau_inv, unspliced, vectorize
+from scvelo.tools._em_model_utils import get_vars, tau_inv, unspliced, vectorize
 from .utils import make_dense
 
 

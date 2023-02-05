@@ -823,7 +823,7 @@ def latent_time(
     """
     adata = data.copy() if copy else data
 
-    from .dynamical_model_utils import compute_shared_time, root_time
+    from ._em_model_utils import compute_shared_time, root_time
     from .terminal_states import terminal_states
     from .utils import scale, vcorrcoef
     from .velocity_graph import velocity_graph
@@ -1117,7 +1117,7 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
         Structured array to be indexed by group id storing the gene
         names. Ordered according to scores.
     """
-    from .dynamical_model_utils import get_divergence
+    from ._em_model_utils import get_divergence
 
     adata = data.copy() if copy else data
 
