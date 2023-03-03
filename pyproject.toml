@@ -270,8 +270,6 @@ ignore = [
     "F403",
     # Underfined, or defined from star imports: module
     "F405",
-    # Line break occurred before a binary operator
-    "W503",
 ]
 
 [tool.ruff.per-file-ignores]
