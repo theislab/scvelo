@@ -7,7 +7,7 @@ requires = ["hatchling"]
 name = "scvelo"
 version = "0.3.0"
 description = "RNA velocity generalized through dynamical modeling"
-readme = {file = "README.rst", content-type="text/rst"}
+readme = {file = "README.rst", content-type="text/x-rst"}
 requires-python = ">=3.8"
 license = {file = "LICENSE"}
 authors = [
