@@ -5,116 +5,7 @@ requires = ["hatchling"]
 
 [project]
 name = "scvelo"
-version = "0.4.0"
-description = "RNA velocity generalized through dynamical modeling"
-readme = "README.rst"
-requires-python = ">=3.8"
-license = {file = "LICENSE"}
-authors = [
-    {name = "Volker Bergen", email = "volker.bergen@helmholtz-muenchen.de"},
-    {name = "Philipp Weiler"},
-    {name = "Adam Gayoso"},
-]
-classifiers = [
-    "License :: OSI Approved :: BSD License",
-    "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: Science/Research",
-    "Natural Language :: English",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Topic :: Scientific/Engineering :: Bio-Informatics",
-    "Topic :: Scientific/Engineering :: Visualization",
-]
-keywords=[
-    "RNA",
-    "velocity",
-    "single cell",
-    "transcriptomics",
-    "stochastic",
-    "dynamical",
-]
-maintainers = [
-    {name = "Philipp Weiler", email = "philipp.weiler@helmholtz-muenchen.de"},
-]
-urls.Documentation = "https://scvelo.org"
-urls.Source = "https://github.com/theislab/scvelo"
-urls.Home-page = "https://github.com/theislab/scvelo"
-dependencies = [
-    "anndata>=0.7.5",
-    "numpy>=1.17",
-    "pandas>=0.23.0,!=1.4.0",
-    "scikit-learn>=0.21.2",
-    "matplotlib>=3.3.0",
-    "scipy>=1.4.1",
-    "umap-learn>=0.4.0",
-    "loompy>=2.0.12",
-    "scanpy>=1.5.0",
-    "numba>=0.41.0",
-    "tqdm",
-]
-
-[project.optional-dependencies]
-dev = [
-    # CLI for bumping the version number
-    "bump2version",
-    "pre-commit",
-    "ruff",
-    "black",
-    "hypothesis",
-]
-doc = [
-    "sphinx>=4,<5.3",
-    "sphinx_rtd_theme",
-    "myst-nb",
-    "sphinxcontrib-bibtex>=1.0.0",
-    "scanpydoc[typehints]>=0.7.4",
-    # For notebooks
-    "ipython",
-    "ipykernel",
-    "sphinx-copybutton",
-]
-test = [
-    "pytest",
-    "pytest-cov",
-    # For vscode Python extension testing
-    "ruff",
-    "black",
-]
-louvain = [
-    "python-igraph",
-    "louvain",
-]
-hnswlib = ["pybind11", "hnswlib"]
-
-[tool.hatch.build.targets.wheel]
-packages = ['scvelo']
-
-[tool.coverage.run]
-source = ["scvelo"]
-omit = [
-    "**/test_*.py",
-]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-xfail_strict = true
-
-[tool.isort]
-include_trailing_comma = true
-multi_line_output = 3
-profile = "black"
-skip_glob = ["docs/*"]
-
-[tool.ruff]
-line-length = 88
-exclude = [".git","__pycache__","build","docs/","_build","dist"]
-ignore = ["E402","E501", "F821", "E741"]
-
-[project]
-name = "scvelo"
-version = "0.2.5"
+version = "0.3.0"
 description = "RNA velocity generalized through dynamical modeling"
 readme = {file = "README.rst", content-type="text/rst"}
 requires-python = ">=3.8"
@@ -139,10 +30,10 @@ classifiers=[
     "Intended Audience :: Science/Research",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Topic :: Scientific/Engineering :: Visualization",
 ]
@@ -171,17 +62,19 @@ hnswlib = [
     "pybind11",
     "hnswlib"
 ]
+test = [
+    "pytest",
+    "pytest-cov",
+]
 dev = [
-    "black==22.3.0",
+    "ruff",
+    "black",
     "hnswlib",
     "hypothesis",
-    "flake8==3.8.4",
-    "isort==5.10.1",
     "louvain",
     "magic-impute",
     "pre-commit>=2.9.0",
     "pybind11",
-    "pytest>=6.2.2",
     "pytest-cov",
     "python-igraph",
     "setuptools_scm"
@@ -201,6 +94,19 @@ docs = [
     "sphinx>=1.7,<4.0",
     "nbsphinx>=0.7,<0.8.7"
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["scvelo"]
+
+[tool.coverage.run]
+source = ["scvelo"]
+omit = [
+    "**/test_*.py",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+xfail_strict = true
 
 [tool.black]
 include = '\.pyi?$'
@@ -276,7 +182,19 @@ ignore = [
 "docs/*" = ["I", "BLE001"]
 "tests/*" = ["D"]
 "*/__init__.py" = ["F401"]
-"scvi/__init__.py" = ["I"]
+"scvelo/__init__.py" = ["I"]
 
 [tool.jupytext]
 formats = "ipynb,md"
+
+[tool.cruft]
+skip = [
+    "tests",
+    "src/**/__init__.py",
+    "src/**/basic.py",
+    "docs/api.md",
+    "docs/changelog.md",
+    "docs/references.bib",
+    "docs/references.md",
+    "docs/notebooks/example.ipynb"
+]
