@@ -1,8 +1,7 @@
+import numpy as np
 from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
-
-import numpy as np
 from numpy import ndarray
 from scipy.sparse import csr_matrix
 

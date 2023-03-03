@@ -3,6 +3,7 @@ import pandas as pd
 from scipy.sparse import issparse
 
 from scvelo import logging as logg
+
 from .utils import (
     interpret_colorkey,
     is_categorical,
@@ -136,15 +137,15 @@ def heatmap(
         kwargs["cbar_pos"] = None
 
     kwargs.update(
-        dict(
-            col_colors=col_color,
-            col_cluster=col_cluster,
-            row_cluster=row_cluster,
-            cmap=color_map,
-            xticklabels=False,
-            standard_scale=standard_scale,
-            figsize=figsize,
-        )
+        {
+            "col_colors": col_color,
+            "col_cluster": col_cluster,
+            "row_cluster": row_cluster,
+            "cmap": color_map,
+            "xticklabels": False,
+            "standard_scale": standard_scale,
+            "figsize": figsize,
+        }
     )
 
     args = {}

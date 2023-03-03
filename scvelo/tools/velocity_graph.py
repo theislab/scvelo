@@ -14,6 +14,7 @@ from scvelo.preprocessing.neighbors import (
     pca,
     verify_neighbors,
 )
+
 from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
 
@@ -59,7 +60,6 @@ class VelocityGraph:
         compute_uncertainties=None,
         mode_neighbors="distances",
     ):
-
         subset = np.ones(adata.n_vars, bool)
         if gene_subset is not None:
             var_names_subset = adata.var_names.isin(gene_subset)

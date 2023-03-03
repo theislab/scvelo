@@ -1,12 +1,12 @@
+import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
-from scipy.sparse import issparse
-
-import matplotlib.pyplot as pl
 from matplotlib import rcParams
+from scipy.sparse import issparse
 
 from scvelo.preprocessing.moments import second_order_moments
 from scvelo.tools.rank_velocity_genes import rank_velocity_genes
+
 from .scatter import scatter
 from .utils import (
     default_basis,
@@ -50,7 +50,7 @@ def velocity(
     The phase plot shows spliced against unspliced expressions with steady-state fit.
     Further the embedding is shown colored by velocity and expression.
 
-    Arguments
+    Arguments:
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -157,8 +157,13 @@ def velocity(
     size = default_size(adata) / 2 if size is None else size
     fontsize = rcParams["font.size"] * 0.8 if fontsize is None else fontsize
 
-    scatter_kwargs = dict(colorbar=colorbar, perc=perc, size=size, use_raw=use_raw)
-    scatter_kwargs.update(dict(fontsize=fontsize, legend_fontsize=legend_fontsize))
+    scatter_kwargs = {
+        "colorbar": colorbar,
+        "perc": perc,
+        "size": size,
+        "use_raw": use_raw,
+    }
+    scatter_kwargs.update({"fontsize": fontsize, "legend_fontsize": legend_fontsize})
 
     for v, var in enumerate(var_names):
         _adata = adata[:, var]

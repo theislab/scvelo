@@ -1,9 +1,8 @@
+import numpy as np
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
-
-import numpy as np
 from numpy import ndarray
 from numpy.testing import assert_almost_equal, assert_array_equal
 

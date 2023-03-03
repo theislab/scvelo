@@ -3,6 +3,7 @@ from scipy.sparse import issparse
 
 from scvelo import logging as logg
 from scvelo import settings
+
 from .utils import strings_to_categoricals, vcorrcoef
 from .velocity_pseudotime import velocity_pseudotime
 

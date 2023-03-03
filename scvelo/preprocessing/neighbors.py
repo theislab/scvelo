@@ -4,11 +4,10 @@ from typing import Dict, Literal, Optional
 
 import numpy as np
 import pandas as pd
-from scipy.sparse import coo_matrix, issparse
-
 from anndata import AnnData
 from scanpy import Neighbors
 from scanpy.preprocessing import pca
+from scipy.sparse import coo_matrix, issparse
 
 from scvelo import logging as logg
 from scvelo import settings

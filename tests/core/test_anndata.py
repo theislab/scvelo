@@ -1,15 +1,13 @@
 from typing import Dict, List, Optional, Tuple, Union
 
 import hypothesis.strategies as st
-import pytest
-from hypothesis import given
-
 import numpy as np
 import pandas as pd
+import pytest
+from anndata import AnnData
+from hypothesis import given
 from numpy.testing import assert_array_equal
 from scipy.sparse import csr_matrix, issparse
-
-from anndata import AnnData
 
 from scvelo.core import (
     clean_obs_names,
@@ -27,7 +25,8 @@ from scvelo.core import (
     sum,
 )
 from scvelo.core._anndata import obs_df, var_df
-from .test_base import get_adata, TestBase
+
+from .test_base import TestBase, get_adata
 
 
 # TODO: Make more sophisticated

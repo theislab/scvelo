@@ -1,11 +1,9 @@
 from typing import List
 
-import pytest
-
 import numpy as np
-from scipy.sparse import csr_matrix, issparse
-
+import pytest
 from anndata import AnnData
+from scipy.sparse import csr_matrix, issparse
 
 from scvelo.preprocessing.moments import (
     get_moments,

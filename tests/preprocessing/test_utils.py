@@ -1,15 +1,13 @@
 from typing import Callable, Dict, List, Optional, Union
 
+import numpy as np
+import pandas as pd
 import pytest
+from anndata import AnnData
 from hypothesis import given
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
-
-import numpy as np
-import pandas as pd
 from scipy.sparse import csc_matrix, csr_matrix, issparse, spmatrix
-
-from anndata import AnnData
 
 from scvelo.preprocessing.utils import (
     _filter,

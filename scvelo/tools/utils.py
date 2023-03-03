@@ -1,10 +1,9 @@
 import warnings
 
+import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix, issparse
-
-import matplotlib.pyplot as pl
 
 from scvelo.core import l2_norm, prod_sum, sum
 
@@ -439,8 +438,8 @@ def vcorrcoef(X, y, mode="pearsons", axis=-1):
 
     Use Pearsons / Spearmans to test for linear / monotonic relationship.
 
-    Arguments
-    ----------
+    Arguments:
+    ---------
     X: `np.ndarray`
         Data vector or matrix
     y: `np.ndarray`

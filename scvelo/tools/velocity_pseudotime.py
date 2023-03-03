@@ -1,10 +1,10 @@
 import numpy as np
-from scipy.sparse import issparse, linalg, spdiags
-
 from scanpy.tools._dpt import DPT
+from scipy.sparse import issparse, linalg, spdiags
 
 from scvelo import logging as logg
 from scvelo.preprocessing.moments import get_connectivities
+
 from .terminal_states import terminal_states
 from .utils import groups_to_bool, scale, strings_to_categoricals
 
@@ -49,7 +49,7 @@ def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False
 
     fit = importr("princurve").principal_curve(X_R)
 
-    adata.uns["principal_curve"] = dict()
+    adata.uns["principal_curve"] = {}
     adata.uns["principal_curve"]["ixsort"] = ixsort = np.array(fit[1]) - 1
     adata.uns["principal_curve"]["projections"] = np.array(fit[0])[ixsort]
     adata.uns["principal_curve"]["arclength"] = np.array(fit[2])

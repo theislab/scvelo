@@ -3,14 +3,14 @@ from typing import List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
+from anndata import AnnData
 from numpy import ndarray
 from pandas import DataFrame
 from pandas.api.types import is_categorical_dtype
 from scipy.sparse import csr_matrix, issparse, spmatrix
 
-from anndata import AnnData
-
 from scvelo import logging as logg
+
 from ._arithmetic import sum
 from ._utils import deprecated_arg_names
 
@@ -128,7 +128,7 @@ def cleanup(
             if attr in clean
         }
 
-    for (attr, attr_keys) in attributes_to_remove.items():
+    for attr, attr_keys in attributes_to_remove.items():
         for key in attr_keys:
             if key not in keep:
                 del getattr(adata, attr)[key]

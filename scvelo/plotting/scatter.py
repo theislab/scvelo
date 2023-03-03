@@ -1,17 +1,16 @@
 from inspect import signature
 
+import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
-from pandas import unique
-
-import matplotlib.pyplot as pl
-from matplotlib.colors import is_color_like
-
 from anndata import AnnData
+from matplotlib.colors import is_color_like
+from pandas import unique
 
 from scvelo import logging as logg
 from scvelo import settings
 from scvelo.preprocessing.neighbors import get_connectivities
+
 from .docs import doc_params, doc_scatter
 from .utils import (
     default_basis,
@@ -765,7 +764,7 @@ def scatter(
                     va="top",
                     fontsize=fontsize,
                     transform=ax.transAxes,
-                    bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.2),
+                    bbox={"boxstyle": "round", "facecolor": "wheat", "alpha": 0.2},
                 )
 
             set_label(xlabel, ylabel, fontsize, basis, ax=ax)

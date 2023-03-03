@@ -2,9 +2,8 @@ import builtins
 import warnings
 
 from cycler import cycler
-from packaging.version import parse
-
 from matplotlib import cbook, cm, colors, rcParams
+from packaging.version import parse
 
 """Settings
 """
@@ -261,7 +260,7 @@ def set_figure_params(
 ):
     """Set resolution/size, styling and format of figures.
 
-    Arguments
+    Arguments:
     ---------
     style : `str` (default: `None`)
         Init default values for ``matplotlib.rcParams`` suited for `scvelo` or `scanpy`.

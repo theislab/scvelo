@@ -103,12 +103,12 @@ napoleon_include_init_with_doc = False
 napoleon_use_rtype = False
 napoleon_custom_sections = [("Params", "Parameters")]
 
-intersphinx_mapping = dict(
-    python=("https://docs.python.org/3", None),
-    anndata=("https://anndata.readthedocs.io/en/latest/", None),
-    scanpy=("https://scanpy.readthedocs.io/en/latest/", None),
-    cellrank=("https://cellrank.readthedocs.io/en/latest/", None),
-)
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "anndata": ("https://anndata.readthedocs.io/en/latest/", None),
+    "scanpy": ("https://scanpy.readthedocs.io/en/latest/", None),
+    "cellrank": ("https://cellrank.readthedocs.io/en/latest/", None),
+}
 
 templates_path = ["_templates"]
 source_suffix = [".rst", ".ipynb"]
@@ -146,7 +146,7 @@ bibtex_reference_style = "author_year"
 # -- Options for HTML output ----------------------------------------------
 
 html_theme = "sphinx_rtd_theme"
-html_theme_options = dict(navigation_depth=1, titles_only=True)
+html_theme_options = {"navigation_depth": 1, "titles_only": True}
 github_repo = "scvelo"
 github_nb_repo = "scvelo_notebooks"
 html_static_path = ["_static"]
@@ -216,6 +216,7 @@ autosummary.process_generate_options = process_generate_options
 
 
 # -- GitHub URLs for class and method pages ------------------------------------------
+
 
 # TODO: Finish docstrings
 def get_obj_module(qualname):

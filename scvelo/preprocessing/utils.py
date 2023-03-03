@@ -2,10 +2,9 @@ import warnings
 
 import numpy as np
 import pandas as pd
+from anndata import AnnData
 from scipy.sparse import issparse
 from sklearn.utils import sparsefuncs
-
-from anndata import AnnData
 
 from scvelo import logging as logg
 from scvelo.core import get_initial_size, get_size, multiply, set_initial_size, sum
@@ -103,7 +102,6 @@ def filter_genes(
         layers.extend(["shared"])
 
     for layer in layers:
-
         if layer == "spliced":
             _min_counts, _min_cells, _max_counts, _max_cells = (
                 min_counts,
@@ -615,7 +613,7 @@ def filter_and_normalize(
     copy=False,
     **kwargs,
 ):
-    """Filtering, normalization and log transform
+    """Filtering, normalization and log transform.
 
     Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
 

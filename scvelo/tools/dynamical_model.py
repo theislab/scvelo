@@ -1,16 +1,16 @@
 import os
 
+import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize
-
-import matplotlib.pyplot as pl
 from matplotlib import rcParams
+from scipy.optimize import minimize
 
 from scvelo import logging as logg
 from scvelo import settings
 from scvelo.core import get_n_jobs, parallelize
 from scvelo.preprocessing.moments import get_connectivities
+
 from .dynamical_model_utils import BaseDynamics, convolve, linreg, tau_inv, unspliced
 from .utils import make_unique_list, test_bimodality
 
@@ -670,7 +670,7 @@ def recover_dynamics(
 def align_dynamics(
     data, t_max=None, dm=None, idx=None, mode=None, remove_outliers=None, copy=False
 ):
-    """Align dynamics to a common set of parameters
+    """Align dynamics to a common set of parameters.
 
     Arguments
     ---------

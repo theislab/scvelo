@@ -3,6 +3,7 @@ from scipy.sparse import csr_matrix, issparse
 
 from scvelo import logging as logg
 from scvelo import settings
+
 from .neighbors import get_connectivities, get_n_neighs, neighbors, verify_neighbors
 from .utils import normalize_per_cell, not_yet_normalized
 

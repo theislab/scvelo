@@ -1,12 +1,12 @@
+import matplotlib.pyplot as pl
 import numpy as np
+from matplotlib import rcParams
 from scipy.stats import norm as normal
 from sklearn.neighbors import NearestNeighbors
 
-import matplotlib.pyplot as pl
-from matplotlib import rcParams
-
 from scvelo.tools.utils import groups_to_bool
 from scvelo.tools.velocity_embedding import quiver_autoscale, velocity_embedding
+
 from .docs import doc_params, doc_scatter
 from .scatter import scatter
 from .utils import (

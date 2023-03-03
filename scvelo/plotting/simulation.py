@@ -1,10 +1,10 @@
-import numpy as np
-
 import matplotlib.pyplot as pl
+import numpy as np
 from matplotlib import rcParams
 
 from scvelo.core import SplicingDynamics
 from scvelo.tools.dynamical_model_utils import get_vars, tau_inv, unspliced, vectorize
+
 from .utils import make_dense
 
 
@@ -136,6 +136,7 @@ def simulation(
 ):
     """TODO."""
     from scvelo.tools.utils import make_dense
+
     from .scatter import scatter
 
     if ykey is None:
@@ -181,7 +182,7 @@ def simulation(
             elif key == "spliced":
                 ax.plot(t, st, label="spliced", color=colors[j], linewidth=linewidth)
             elif key == "alpha":
-                largs = dict(linewidth=linewidth, linestyle="--")
+                largs = {"linewidth": linewidth, "linestyle": "--"}
                 ax.plot(t, alpha, label="alpha", color=colors[j], **largs)
 
         pl.xlim(0)

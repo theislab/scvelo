@@ -2,15 +2,15 @@ import collections.abc as cabc
 import random
 from inspect import signature
 
-import numpy as np
-
 import matplotlib.pyplot as pl
+import numpy as np
 from matplotlib import rcParams
 from matplotlib.path import get_path_collection_extents
 
 from scvelo import logging as logg
 from scvelo import settings
 from scvelo.tools.paga import get_igraph_from_adjacency
+
 from .docs import doc_params, doc_scatter
 from .scatter import scatter
 from .utils import (
@@ -290,7 +290,7 @@ def paga(
             paga_kwargs["colorbar"] = False
 
         if isinstance(node_colors, str) and node_colors in adata.obsm.keys():
-            props = dict()
+            props = {}
             for name in adata.obs[paga_groups].cat.categories:
                 mask = (adata.obs[paga_groups] == name).values
                 props[name] = np.nanmean(adata.obsm[node_colors][mask], axis=0)
@@ -346,8 +346,12 @@ def paga(
         if scatter_flag and basis is not None:
             if "alpha" not in kwargs:
                 kwargs["alpha"] = 0.5
-            kwargs.update(dict(basis=basis, layer=layer, color=paga_groups, size=size))
-            kwargs.update(dict(vkey=vkey, title=title, ax=ax, show=False, save=None))
+            kwargs.update(
+                {"basis": basis, "layer": layer, "color": paga_groups, "size": size}
+            )
+            kwargs.update(
+                {"vkey": vkey, "title": title, "ax": ax, "show": False, "save": None}
+            )
             ax = scatter(adata, x=x, y=y, zorder=0, **kwargs)
         text_kwds = {"zorder": 1000, "alpha": legend_loc == "on data"}
         _paga(adata, ax=ax, show=False, text_kwds=text_kwds, **paga_kwargs)
@@ -731,11 +735,9 @@ def _paga_graph(
     import networkx as nx
     import pandas as pd
     import scipy
-    from pandas.api.types import is_categorical_dtype
-
     from matplotlib import patheffects
     from matplotlib.colors import is_color_like
-
+    from pandas.api.types import is_categorical_dtype
     from scanpy.plotting._utils import add_colors_for_categorical_sample_annotation
 
     node_labels = labels  # rename for clarity
@@ -951,9 +953,13 @@ def _paga_graph(
         for count in nx_g_solid.nodes():
             nx_g_solid.node[count]["label"] = f"{node_labels[count]}"
             nx_g_solid.node[count]["color"] = f"{colors[count]}"
-            nx_g_solid.node[count]["viz"] = dict(
-                position=dict(x=1000 * pos[count][0], y=1000 * pos[count][1], z=0)
-            )
+            nx_g_solid.node[count]["viz"] = {
+                "position": {
+                    "x": 1000 * pos[count][0],
+                    "y": 1000 * pos[count][1],
+                    "z": 0,
+                }
+            }
         filename = settings.writedir / "paga_graph.gexf"
         logg.warn(f"exporting to {filename}")
         settings.writedir.mkdir(parents=True, exist_ok=True)
@@ -1053,13 +1059,13 @@ def _paga_graph(
                 color_single = list(color_single)
                 color_single.append("grey")
                 fracs.append(1 - sum(fracs))
-            wedgeprops = dict(linewidth=0, edgecolor="k", antialiased=True)
+            wedgeprops = {"linewidth": 0, "edgecolor": "k", "antialiased": True}
             pie_axs[count].pie(
                 fracs, colors=color_single, wedgeprops=wedgeprops, normalize=True
             )
         if node_labels is not None:
-            text_kwds.update(dict(verticalalignment="center", fontweight=fontweight))
-            text_kwds.update(dict(horizontalalignment="center", size=fontsize))
+            text_kwds.update({"verticalalignment": "center", "fontweight": fontweight})
+            text_kwds.update({"horizontalalignment": "center", "size": fontsize})
             for ia, a in enumerate(pie_axs):
                 a.text(0.5, 0.5, node_labels[ia], transform=a.transAxes, **text_kwds)
     return sct

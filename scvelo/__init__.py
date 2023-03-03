@@ -1,4 +1,4 @@
-"""scvelo - RNA velocity generalized through dynamical modeling"""
+"""scvelo - RNA velocity generalized through dynamical modeling."""
 from anndata import AnnData
 from scanpy import read, read_loom
 

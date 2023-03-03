@@ -1,15 +1,13 @@
 from typing import Callable, Dict, Optional
 
 import hypothesis.strategies as st
-import pytest
-from hypothesis import given
-
 import numpy as np
 import pandas as pd
+import pytest
+from anndata import AnnData
+from hypothesis import given
 from scipy.sparse import csc_matrix, csr_matrix, issparse, load_npz, spmatrix
 from sklearn.neighbors import NearestNeighbors
-
-from anndata import AnnData
 
 from scvelo.preprocessing.neighbors import (
     _get_hnsw_neighbors,

@@ -2,10 +2,9 @@ from datetime import timedelta
 from typing import Tuple, Union
 
 import pytest
-from hypothesis import settings
-
 import scanpy as sc
 from anndata import AnnData
+from hypothesis import settings
 
 settings.register_profile("ci", deadline=timedelta(milliseconds=500))
 

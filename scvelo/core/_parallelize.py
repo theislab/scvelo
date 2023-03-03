@@ -3,9 +3,8 @@ from multiprocessing import Manager
 from threading import Thread
 from typing import Any, Callable, Optional, Sequence, Union
 
-from joblib import delayed, Parallel
-
 import numpy as np
+from joblib import Parallel, delayed
 from scipy.sparse import issparse, spmatrix
 
 from scvelo import logging as logg

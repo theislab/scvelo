@@ -2,10 +2,11 @@ import warnings
 
 import numpy as np
 import pandas as pd
-from scipy.sparse import csr_matrix, SparseEfficiencyWarning
+from scipy.sparse import SparseEfficiencyWarning, csr_matrix
 from scipy.spatial.distance import pdist, squareform
 
 from scvelo.preprocessing.neighbors import get_connectivities, get_neighs
+
 from .utils import normalize
 
 warnings.simplefilter("ignore", SparseEfficiencyWarning)
@@ -28,7 +29,7 @@ def transition_matrix(
     vgraph=None,
     basis_constraint=None,
 ):
-    r"""Computes cell-to-cell transition probabilities
+    r"""Computes cell-to-cell transition probabilities.
 
     .. math::
         \tilde \pi_{ij} = \frac1{z_i} \exp( \pi_{ij} / \sigma),
@@ -169,7 +170,7 @@ def get_cell_transitions(
     random_state=None,
     **kwargs,
 ):
-    """Simulate cell transitions
+    """Simulate cell transitions.
 
     Arguments
     ---------

@@ -48,7 +48,6 @@ class SplicingDynamics(DynamicsBase):
         gamma: float,
         initial_state: Union[List, ndarray] = None,
     ):
-
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma

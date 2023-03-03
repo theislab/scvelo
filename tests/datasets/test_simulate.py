@@ -1,12 +1,10 @@
 from typing import List
 
+import numpy as np
 import pytest
+from anndata import AnnData
 from hypothesis import given
 from hypothesis import strategies as st
-
-import numpy as np
-
-from anndata import AnnData
 
 from scvelo.datasets import simulation
 

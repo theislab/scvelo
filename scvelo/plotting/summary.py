@@ -5,6 +5,7 @@ from scvelo.tools.dynamical_model import latent_time
 from scvelo.tools.rank_velocity_genes import rank_velocity_genes
 from scvelo.tools.score_genes_cell_cycle import score_genes_cell_cycle
 from scvelo.tools.velocity_pseudotime import velocity_pseudotime
+
 from .gridspec import GridSpec
 from .utils import make_unique_list
 
@@ -37,9 +38,12 @@ def summary(adata, basis="umap", color="clusters", n_top_genes=12, var_names=Non
         var_names = [name for name in var_names if name in adata.var_names]
         nrows += int(np.ceil(len(var_names) / 4))
 
-    kwargs = dict(
-        c=color, legend_loc_lines="none", add_outline="fit_diff_kinetics", frameon=False
-    )
+    kwargs = {
+        "c": color,
+        "legend_loc_lines": "none",
+        "add_outline": "fit_diff_kinetics",
+        "frameon": False,
+    }
     with GridSpec(ncols=4, nrows=nrows) as pl:
         pl.scatter(adata, basis=basis, c=color)
         pl.velocity_embedding_stream(adata, c=tkey)

@@ -3,7 +3,6 @@ from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
-
 from scanpy import read
 
 from scvelo.core import cleanup
@@ -245,7 +244,7 @@ def gastrulation_erythroid(
 
 
 def pancreas(file_path: Union[str, Path] = "data/Pancreas/endocrinogenesis_day15.h5ad"):
-    """Pancreatic endocrinogenesis
+    """Pancreatic endocrinogenesis.
 
     Data from `Bastidas-Ponce et al. (2019) <https://doi.org/10.1242/dev.173849>`__.
 
@@ -306,8 +305,7 @@ def pbmc68k(file_path: Optional[Union[str, Path]] = "data/PBMC/pbmc68k.h5ad"):
 def toy_data(
     file_path: Union[str, Path] = "data/DentateGyrus/10X43_1.h5ad", n_obs=None
 ):
-    """
-    Randomly sampled from the Dentate Gyrus dataset.
+    """Randomly sampled from the Dentate Gyrus dataset.
 
     Arguments
     ---------
