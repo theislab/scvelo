@@ -49,6 +49,7 @@ dependencies = [
     "pandas>=0.23, !=1.4.0",
     "scipy>=1.4.1",
     "scikit-learn>=0.21.2, <1.2.0",
+    "scvi-tools>=0.20.1",
     "matplotlib>=3.3.0"
 ]
 
