@@ -11,6 +11,7 @@ from ._em_model_core import (
     recover_latent_time,
 )
 from ._steady_state_model import SecondOrderSteadyStateModel, SteadyStateModel
+from ._vi_model import VELOVI
 from .paga import paga
 from .rank_velocity_genes import rank_velocity_genes, velocity_clusters
 from .score_genes_cell_cycle import score_genes_cell_cycle
