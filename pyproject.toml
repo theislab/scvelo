@@ -12,9 +12,10 @@ requires-python = ">=3.8"
 license = {file = "LICENSE"}
 authors = [
     {name = "Volker Bergen"},
+    {name = "Philipp Weiler"}
 ]
 maintainers = [
-    {name = "Volker Bergen", email = "volker.bergen@helmholtz-muenchen.de"},
+    {name = "Philipp Weiler", email = "philipp.weiler@helmholtz-muenchen.de"},
 ]
 keywords=[
     "RNA",
