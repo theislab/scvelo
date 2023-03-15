@@ -1,16 +1,6 @@
 import logging
 import warnings
-from typing import (
-    Callable,
-    Iterable,
-    List,
-    Literal,
-    NamedTuple,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import Callable, Iterable, List, Literal, Optional, Sequence, Tuple, Union
 
 from joblib import delayed, Parallel
 
@@ -34,17 +24,9 @@ from scvi.nn import Encoder, FCLayers
 from scvi.train import TrainingPlan, TrainRunner
 from scvi.utils._docstrings import setup_anndata_dsp
 
+from ._core import DEFAULT_ACTIVATION_FUNCTION, REGISTRY_KEYS
+
 torch.backends.cudnn.benchmark = True
-
-
-class _REGISTRY_KEYS_NT(NamedTuple):
-    X_KEY: str = "X"
-    U_KEY: str = "U"
-
-
-REGISTRY_KEYS = _REGISTRY_KEYS_NT()
-
-DEFAULT_ACTIVATION_FUNCTION = torch.nn.Softplus()
 
 
 class DecoderVELOVI(nn.Module):

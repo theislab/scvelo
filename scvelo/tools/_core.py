@@ -1,6 +1,19 @@
 from abc import abstractmethod
+from typing import NamedTuple
+
+import torch
 
 from anndata import AnnData
+
+
+class _REGISTRY_KEYS_NT(NamedTuple):
+    X_KEY: str = "X"
+    U_KEY: str = "U"
+
+
+REGISTRY_KEYS = _REGISTRY_KEYS_NT()
+
+DEFAULT_ACTIVATION_FUNCTION = torch.nn.Softplus()
 
 
 class BaseInference:
