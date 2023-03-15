@@ -1,6 +1,7 @@
 import numpy as np
 
 import scvelo as scv
+from scvelo.tools import ExpectationMaximizationModel
 
 
 def test_einsum():
@@ -27,7 +28,11 @@ def test_dynamical_model():
     adata = scv.datasets.simulation(random_seed=0, n_vars=10)
     scv.pp.filter_and_normalize(adata)
     scv.pp.moments(adata)
-    scv.tl.recover_dynamics(adata, var_names=adata.var_names[0])
+    em_model = ExpectationMaximizationModel(
+        adata=adata, var_names_key=adata.var_names[0]
+    )
+    em_model.fit(return_model=False, copy=False)
+
     assert np.round(adata[:, adata.var_names[0]].var["fit_alpha"][0], 4) == 4.7409
 
 
@@ -38,7 +43,8 @@ def test_pipeline():
     scv.pp.pca(adata)
     scv.pp.moments(adata)
 
-    scv.tl.recover_dynamics(adata)
+    em_model = ExpectationMaximizationModel(adata=adata)
+    em_model.fit(copy=False)
     scv.tl.velocity(adata)
     scv.tl.velocity(adata, vkey="dynamical_velocity", mode="dynamical")
     adata.var.velocity_genes = True
