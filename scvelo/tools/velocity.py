@@ -6,9 +6,8 @@ from scvelo import logging as logg
 from scvelo import settings
 from scvelo.core import LinearRegression
 from scvelo.preprocessing.moments import moments, second_order_moments
-
 from .optimization import leastsq_generalized, maximum_likelihood
-from .utils import R_squared, groups_to_bool, make_dense, strings_to_categoricals
+from .utils import groups_to_bool, make_dense, R_squared, strings_to_categoricals
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 

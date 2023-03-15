@@ -3,6 +3,7 @@ import sys
 from typing import Optional
 
 import pytest
+
 from anndata import AnnData
 
 import scvelo as scv

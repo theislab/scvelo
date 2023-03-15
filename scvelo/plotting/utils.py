@@ -1,26 +1,27 @@
 import os
 from collections import abc
 
-import matplotlib.pyplot as pl
-import matplotlib.transforms as tx
+from cycler import Cycler, cycler
+
 import numpy as np
 import pandas as pd
-from cycler import Cycler, cycler
-from matplotlib import patheffects, rcParams
-from matplotlib.collections import LineCollection
-from matplotlib.colors import ListedColormap, cnames, is_color_like, to_rgb
-from matplotlib.gridspec import SubplotSpec
-from matplotlib.ticker import MaxNLocator
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from numpy.core._exceptions import UFuncTypeError
 from pandas import Index
 from scipy import stats
 from scipy.sparse import issparse
 
+import matplotlib.pyplot as pl
+import matplotlib.transforms as tx
+from matplotlib import patheffects, rcParams
+from matplotlib.collections import LineCollection
+from matplotlib.colors import cnames, is_color_like, ListedColormap, to_rgb
+from matplotlib.gridspec import SubplotSpec
+from matplotlib.ticker import MaxNLocator
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
 from scvelo import logging as logg
 from scvelo import settings
 from scvelo.tools.utils import strings_to_categoricals
-
 from . import palettes
 
 """helper functions"""

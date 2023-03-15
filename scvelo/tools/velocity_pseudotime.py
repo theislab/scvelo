@@ -1,10 +1,10 @@
-import numpy as np
 from scanpy.tools._dpt import DPT
+
+import numpy as np
 from scipy.sparse import issparse, linalg, spdiags
 
 from scvelo import logging as logg
 from scvelo.preprocessing.moments import get_connectivities
-
 from .terminal_states import terminal_states
 from .utils import groups_to_bool, scale, strings_to_categoricals
 

@@ -14,7 +14,6 @@ from scvelo.preprocessing.neighbors import (
     pca,
     verify_neighbors,
 )
-
 from .utils import cosine_correlation, get_indices, get_iterative_indices
 from .velocity import velocity
 

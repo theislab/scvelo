@@ -1,9 +1,10 @@
 import warnings
 
 import numpy as np
+
 from anndata import AnnData
 
-from scvelo.core import SplicingDynamics, invert
+from scvelo.core import invert, SplicingDynamics
 
 
 # TODO: Add docstrings

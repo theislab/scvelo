@@ -1,5 +1,4 @@
 from scvelo.preprocessing import filter_and_normalize, moments
-
 from . import velocity, velocity_embedding, velocity_graph
 
 
@@ -98,8 +97,9 @@ def convert_to_adata(vlm, basis=None):
 # TODO: Add docstrings
 def convert_to_loom(adata, basis=None):
     """TODO."""
-    import numpy as np
     import velocyto
+
+    import numpy as np
     from scipy.sparse import issparse
 
     class VelocytoLoom(velocyto.VelocytoLoom):
@@ -320,7 +320,6 @@ def test():
     """TODO."""
     from scvelo.datasets import simulation
     from scvelo.logging import print_version
-
     from .velocity_graph import velocity_graph
 
     print_version()

@@ -3,14 +3,14 @@ from typing import List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
-from anndata import AnnData
 from numpy import ndarray
 from pandas import DataFrame
 from pandas.api.types import is_categorical_dtype
 from scipy.sparse import csr_matrix, issparse, spmatrix
 
-from scvelo import logging as logg
+from anndata import AnnData
 
+from scvelo import logging as logg
 from ._arithmetic import sum
 from ._utils import deprecated_arg_names
 

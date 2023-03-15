@@ -1,17 +1,17 @@
 import warnings
 
-import matplotlib as mpl
-import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
-from matplotlib import gridspec, rcParams
 from scipy.sparse import issparse
 from scipy.stats.distributions import chi2, norm
 
-from scvelo import logging as logg
-from scvelo.core import SplicingDynamics, clipped_log, invert
-from scvelo.preprocessing.moments import get_connectivities
+import matplotlib as mpl
+import matplotlib.pyplot as pl
+from matplotlib import gridspec, rcParams
 
+from scvelo import logging as logg
+from scvelo.core import clipped_log, invert, SplicingDynamics
+from scvelo.preprocessing.moments import get_connectivities
 from .utils import make_dense, round
 
 exp = np.exp

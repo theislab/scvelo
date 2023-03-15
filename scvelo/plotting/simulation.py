@@ -1,10 +1,10 @@
-import matplotlib.pyplot as pl
 import numpy as np
+
+import matplotlib.pyplot as pl
 from matplotlib import rcParams
 
 from scvelo.core import SplicingDynamics
 from scvelo.tools.dynamical_model_utils import get_vars, tau_inv, unspliced, vectorize
-
 from .utils import make_dense
 
 
@@ -136,7 +136,6 @@ def simulation(
 ):
     """TODO."""
     from scvelo.tools.utils import make_dense
-
     from .scatter import scatter
 
     if ykey is None:

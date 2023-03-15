@@ -1,5 +1,6 @@
-import matplotlib.pyplot as pl
 import numpy as np
+
+import matplotlib.pyplot as pl
 from matplotlib.ticker import MaxNLocator
 
 

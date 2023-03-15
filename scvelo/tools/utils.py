@@ -1,9 +1,10 @@
 import warnings
 
-import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix, issparse
+
+import matplotlib.pyplot as pl
 
 from scvelo.core import l2_norm, prod_sum, sum
 

@@ -1,8 +1,8 @@
-import matplotlib.pyplot as pl
 import numpy as np
 
-from scvelo.core import sum
+import matplotlib.pyplot as pl
 
+from scvelo.core import sum
 from .utils import savefig_or_show
 
 

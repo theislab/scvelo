@@ -1,9 +1,9 @@
 from scanpy.tools import diffmap, dpt, louvain, tsne, umap
 
 from .dynamical_model import (
-    DynamicsRecovery,
     align_dynamics,
     differential_kinetic_test,
+    DynamicsRecovery,
     latent_time,
     rank_dynamical_genes,
     recover_dynamics,

@@ -1,12 +1,12 @@
-import matplotlib.pyplot as pl
 import numpy as np
 import pandas as pd
-from matplotlib import rcParams
 from scipy.sparse import issparse
+
+import matplotlib.pyplot as pl
+from matplotlib import rcParams
 
 from scvelo.preprocessing.moments import second_order_moments
 from scvelo.tools.rank_velocity_genes import rank_velocity_genes
-
 from .scatter import scatter
 from .utils import (
     default_basis,

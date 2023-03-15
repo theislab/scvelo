@@ -3,8 +3,9 @@ from typing import Tuple, Union
 
 import pytest
 import scanpy as sc
-from anndata import AnnData
 from hypothesis import settings
+
+from anndata import AnnData
 
 settings.register_profile("ci", deadline=timedelta(milliseconds=500))
 

@@ -2,8 +2,9 @@ import builtins
 import warnings
 
 from cycler import cycler
-from matplotlib import cbook, cm, colors, rcParams
 from packaging.version import parse
+
+from matplotlib import cbook, cm, colors, rcParams
 
 """Settings
 """

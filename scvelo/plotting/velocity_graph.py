@@ -6,7 +6,6 @@ from scipy.sparse import csr_matrix, issparse
 from scvelo import settings
 from scvelo.preprocessing.neighbors import get_neighs
 from scvelo.tools.transition_matrix import transition_matrix
-
 from .docs import doc_params, doc_scatter
 from .scatter import scatter
 from .utils import (
@@ -176,7 +175,7 @@ def draw_networkx_edges(
 
         import matplotlib.pyplot as plt
         from matplotlib.collections import LineCollection
-        from matplotlib.colors import Colormap, Normalize, colorConverter
+        from matplotlib.colors import colorConverter, Colormap, Normalize
         from matplotlib.patches import FancyArrowPatch
     except ImportError:
         raise ImportError("Matplotlib required for draw()")

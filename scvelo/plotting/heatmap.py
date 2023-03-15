@@ -3,7 +3,6 @@ import pandas as pd
 from scipy.sparse import issparse
 
 from scvelo import logging as logg
-
 from .utils import (
     interpret_colorkey,
     is_categorical,

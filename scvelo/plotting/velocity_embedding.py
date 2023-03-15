@@ -1,5 +1,6 @@
-import matplotlib.pyplot as pl
 import numpy as np
+
+import matplotlib.pyplot as pl
 from matplotlib import rcParams
 from matplotlib.colors import is_color_like
 
@@ -7,7 +8,6 @@ from scvelo.tools.utils import groups_to_bool
 from scvelo.tools.velocity_embedding import (
     velocity_embedding as compute_velocity_embedding,
 )
-
 from .docs import doc_params, doc_scatter
 from .scatter import scatter
 from .utils import (

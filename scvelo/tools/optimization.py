@@ -6,7 +6,6 @@ from scipy.optimize import minimize
 from scipy.sparse import csr_matrix, issparse
 
 from scvelo.core import prod_sum, sum
-
 from .utils import make_dense
 
 

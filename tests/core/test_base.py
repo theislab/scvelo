@@ -2,11 +2,13 @@ import random
 from typing import List, Optional, Union
 
 import hypothesis.strategies as st
-import numpy as np
-from anndata import AnnData
 from hypothesis import given
 from hypothesis.extra.numpy import arrays
+
+import numpy as np
 from scipy.sparse import csr_matrix, issparse
+
+from anndata import AnnData
 
 
 # TODO: Add possibility to generate adata object with floats as counts
