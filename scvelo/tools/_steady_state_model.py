@@ -75,7 +75,7 @@ class SteadyStateModel(BaseInference):
         min_r2: float = 0.01,
         min_ratio: float = 0.01,
         use_highly_variable: bool = True,
-        r2_adjusted: bool = False,
+        r2_adjusted: bool = True,
         fit_offset: bool = False,
         perc: Tuple[int, int] = (5, 95),
     ):
