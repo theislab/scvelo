@@ -8,8 +8,9 @@ from anndata import AnnData
 
 from scvelo import logging as logg
 from scvelo import settings
-from scvelo.core import BaseInference, get_n_jobs, parallelize
+from scvelo.core import get_n_jobs, parallelize
 from scvelo.preprocessing.moments import get_connectivities
+from ._core import BaseInference
 from ._em_model_core import (
     _flatten,
     _read_pars,

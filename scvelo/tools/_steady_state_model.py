@@ -6,8 +6,9 @@ import numpy as np
 from anndata import AnnData
 
 from scvelo import logging as logg
-from scvelo.core import BaseInference, LinearRegression
+from scvelo.core import LinearRegression
 from scvelo.preprocessing.moments import second_order_moments
+from ._core import BaseInference
 from .optimization import leastsq_generalized, maximum_likelihood
 from .utils import make_dense, R_squared
 
