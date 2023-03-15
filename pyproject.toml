@@ -68,6 +68,7 @@ test = [
 dev = [
     "ruff",
     "black",
+    "isort",
     "hnswlib",
     "hypothesis",
     "louvain",
@@ -126,6 +127,20 @@ exclude = '''
 )
 '''
 
+[tool.isort]
+profile = "black"
+use_parentheses = true
+known_num = "networkx,numpy,pandas,scipy,sklearn,statmodels"
+known_plot = "matplotlib,mpl_toolkits,seaborn"
+known_bio = "anndata"
+sections = "FUTURE,STDLIB,THIRDPARTY,NUM,PLOT,BIO,FIRSTPARTY,LOCALFOLDER"
+no_lines_before = "LOCALFOLDER"
+balanced_wrapping = true
+length_sort = "0"
+indent = "    "
+float_to_top = true
+order_by_type = false
+
 [tool.ruff]
 src = ["."]
 line-length = 119
@@ -134,7 +149,6 @@ select = [
     "F",  # Errors detected by Pyflakes
     "E",  # Error detected by Pycodestyle
     "W",  # Warning detected by Pycodestyle
-    "I",  # isort
     "D",  # pydocstyle
     "B",  # flake8-bugbear
     "TID",  # flake8-tidy-imports
@@ -180,10 +194,9 @@ ignore = [
 ]
 
 [tool.ruff.per-file-ignores]
-"docs/*" = ["I", "BLE001"]
+"docs/*" = ["BLE001"]
 "tests/*" = ["D"]
 "*/__init__.py" = ["F401"]
-"scvelo/__init__.py" = ["I"]
 
 [tool.jupytext]
 formats = "ipynb,md"
