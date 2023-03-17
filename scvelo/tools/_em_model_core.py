@@ -11,7 +11,7 @@ from scvelo import logging as logg
 from scvelo import settings
 from scvelo.core import get_n_jobs, parallelize
 from scvelo.preprocessing.moments import get_connectivities
-from .dynamical_model_utils import BaseDynamics, convolve, linreg, tau_inv, unspliced
+from ._em_model_utils import BaseDynamics, convolve, linreg, tau_inv, unspliced
 from .utils import make_unique_list, test_bimodality
 
 
@@ -382,9 +382,7 @@ default_pars_names += ["likelihood", "u0", "s0", "pval_steady"]
 default_pars_names += ["steady_u", "steady_s", "variance"]
 
 
-# TODO: Add docstrings
-def read_pars(adata, pars_names=None, key="fit"):
-    """TODO."""
+def _read_pars(adata, pars_names=None, key="fit"):
     pars = []
     for name in default_pars_names if pars_names is None else pars_names:
         pkey = f"{key}_{name}"
@@ -395,9 +393,7 @@ def read_pars(adata, pars_names=None, key="fit"):
     return pars
 
 
-# TODO: Add docstrings
-def write_pars(adata, pars, pars_names=None, add_key="fit"):
-    """TODO."""
+def _write_pars(adata, pars, pars_names=None, add_key="fit"):
     for i, name in enumerate(default_pars_names if pars_names is None else pars_names):
         adata.var[f"{add_key}_{name}"] = pars[i]
 
@@ -537,7 +533,7 @@ def recover_dynamics(
     if return_model is None:
         return_model = len(var_names) < 5
 
-    pars = read_pars(adata)
+    pars = _read_pars(adata)
     alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood = pars[:8]
     u0, s0, pval, steady_u, steady_s, varx = pars[8:]
     # likelihood[np.isnan(likelihood)] = 0
@@ -606,7 +602,7 @@ def recover_dynamics(
         steady_s,
         varx,
     ]
-    write_pars(adata, _pars)
+    _write_pars(adata, _pars)
     if "fit_t" in adata.layers.keys():
         adata.layers["fit_t"][:, idx] = (
             T[:, idx] if conn is None else conn.dot(T[:, idx])
@@ -699,7 +695,7 @@ def align_dynamics(
     """
     adata = data.copy() if copy else data
     pars_names = ["alpha", "beta", "gamma", "t_", "scaling", "alignment_scaling"]
-    alpha, beta, gamma, t_, scaling, mz = read_pars(adata, pars_names=pars_names)
+    alpha, beta, gamma, t_, scaling, mz = _read_pars(adata, pars_names=pars_names)
     T = np.zeros(adata.shape) * np.nan
     Tau = np.zeros(adata.shape) * np.nan
     Tau_ = np.zeros(adata.shape) * np.nan
@@ -757,7 +753,7 @@ def align_dynamics(
 
     mz[mz == 1] = np.nan
     pars_names = ["alpha", "beta", "gamma", "t_", "alignment_scaling"]
-    write_pars(adata, [alpha, beta, gamma, t_, mz], pars_names=pars_names)
+    _write_pars(adata, [alpha, beta, gamma, t_, mz], pars_names=pars_names)
     adata.layers["fit_t"] = T
     adata.layers["fit_tau"] = Tau
     adata.layers["fit_tau_"] = Tau_
@@ -827,7 +823,7 @@ def latent_time(
     """
     adata = data.copy() if copy else data
 
-    from .dynamical_model_utils import compute_shared_time, root_time
+    from ._em_model_utils import compute_shared_time, root_time
     from .terminal_states import terminal_states
     from .utils import scale, vcorrcoef
     from .velocity_graph import velocity_graph
@@ -1045,7 +1041,7 @@ def differential_kinetic_test(
     clusters = adata.obs[groupby] if isinstance(groupby, str) else groupby
     groups = clusters.cat.categories
     pars_names = ["diff_kinetics", "pval_kinetics"]
-    diff_kinetics, pval_kinetics = read_pars(adata, pars_names=pars_names)
+    diff_kinetics, pval_kinetics = _read_pars(adata, pars_names=pars_names)
 
     pvals = None
     if "fit_pvals_kinetics" in adata.varm.keys():
@@ -1077,7 +1073,7 @@ def differential_kinetic_test(
     progress.finish()
 
     pars_names = ["diff_kinetics", "pval_kinetics"]
-    write_pars(adata, [diff_kinetics, pval_kinetics], pars_names=pars_names)
+    _write_pars(adata, [diff_kinetics, pval_kinetics], pars_names=pars_names)
     adata.varm[f"{add_key}_pvals_kinetics"] = np.rec.fromarrays(
         pvals.T, dtype=[(f"{rn}", "float32") for rn in groups]
     ).T
@@ -1121,7 +1117,7 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
         Structured array to be indexed by group id storing the gene
         names. Ordered according to scores.
     """
-    from .dynamical_model_utils import get_divergence
+    from ._em_model_utils import get_divergence
 
     adata = data.copy() if copy else data
 

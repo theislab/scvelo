@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from scvelo.tools.dynamical_model import latent_time
+from scvelo.tools._em_model_core import latent_time
 from scvelo.tools.rank_velocity_genes import rank_velocity_genes
 from scvelo.tools.score_genes_cell_cycle import score_genes_cell_cycle
 from scvelo.tools.velocity_pseudotime import velocity_pseudotime

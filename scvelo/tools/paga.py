@@ -1,8 +1,8 @@
-from scanpy.tools._paga import PAGA
-
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
+
+from scanpy.tools._paga import PAGA
 
 # This is adapted from https://github.com/theislab/paga
 from scvelo import logging as logg

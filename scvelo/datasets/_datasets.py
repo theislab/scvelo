@@ -1,10 +1,10 @@
 from pathlib import Path
 from typing import Optional, Union
 
-from scanpy import read
-
 import numpy as np
 import pandas as pd
+
+from scanpy import read
 
 from scvelo.core import cleanup
 from scvelo.read_load import load
