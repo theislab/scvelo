@@ -1,7 +1,7 @@
-from scanpy.tools._dpt import DPT
-
 import numpy as np
 from scipy.sparse import issparse, linalg, spdiags
+
+from scanpy.tools._dpt import DPT
 
 from scvelo import logging as logg
 from scvelo.preprocessing.moments import get_connectivities

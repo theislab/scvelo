@@ -732,8 +732,6 @@ def _paga_graph(
     import warnings
     from pathlib import Path
 
-    from scanpy.plotting._utils import add_colors_for_categorical_sample_annotation
-
     import networkx as nx
     import pandas as pd
     import scipy
@@ -741,6 +739,8 @@ def _paga_graph(
 
     from matplotlib import patheffects
     from matplotlib.colors import is_color_like
+
+    from scanpy.plotting._utils import add_colors_for_categorical_sample_annotation
 
     node_labels = labels  # rename for clarity
     if (

@@ -707,7 +707,11 @@ class VELOVI(VAEMixin, UnsupervisedTrainingMixin, BaseModelClass):
                 px_rho = generative_outputs["px_rho"]
                 px_tau = generative_outputs["px_tau"]
 
-                (mixture_dist_s, mixture_dist_u, _,) = self.module.get_px(
+                (
+                    mixture_dist_s,
+                    mixture_dist_u,
+                    _,
+                ) = self.module.get_px(
                     px_pi,
                     px_rho,
                     px_tau,
@@ -857,7 +861,11 @@ class VELOVI(VAEMixin, UnsupervisedTrainingMixin, BaseModelClass):
                 px_rho = generative_outputs["px_rho"]
                 px_tau = generative_outputs["px_tau"]
 
-                (mixture_dist_s, mixture_dist_u, _,) = self.module.get_px(
+                (
+                    mixture_dist_s,
+                    mixture_dist_u,
+                    _,
+                ) = self.module.get_px(
                     px_pi,
                     px_rho,
                     px_tau,

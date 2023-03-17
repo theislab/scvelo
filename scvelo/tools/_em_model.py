@@ -43,8 +43,7 @@ class EMParams:
 
 
 class ExpectationMaximizationModel(BaseInference):
-    """
-    EM 'Dynamical' model for velocity estimation.
+    """EM 'Dynamical' model for velocity estimation.
 
     Parameters
     ----------

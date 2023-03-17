@@ -1,7 +1,6 @@
 """scvelo - RNA velocity generalized through dynamical modeling."""
-from scanpy import read, read_loom
-
 from anndata import AnnData
+from scanpy import read, read_loom
 
 from scvelo import datasets, logging
 from scvelo import plotting as pl
