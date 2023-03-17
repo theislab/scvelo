@@ -131,7 +131,7 @@ def leastsq_generalized(
     fit_offset2=False,
     perc=None,
 ):
-    """Solution to the 2-dim generalized least squares: gamma = inv(X'QX)X'QY"""
+    """Solution to the 2-dim generalized least squares: gamma = inv(X'QX)X'QY."""
     if perc is not None:
         if not fit_offset and isinstance(perc, (list, tuple)):
             perc = perc[1]

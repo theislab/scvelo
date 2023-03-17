@@ -250,9 +250,9 @@ def compute_divergence(
     clusters=None,
     **kwargs,
 ):
-    """Estimates the divergence of ODE to observations (avaiable metrics: distance, mse, likelihood, loglikelihood)
+    """Estimates the divergence of ODE to observations (avaiable metrics: distance, mse, likelihood, loglikelihood).
 
-    Arguments
+    Arguments:
     ---------
     mode: `'distance'`, `'mse'`, `'likelihood'` (default: `'distance'`)
 
@@ -928,14 +928,16 @@ class BaseDynamics:
             alpha, beta, gamma, scaling, t_, u0_, s0_
         )
         u, s = self.u / scaling, self.s
-        kwargs.update(dict(t_=t_, u0_=u0_, s0_=s0_, std_u=self.std_u, std_s=self.std_s))
         kwargs.update(
-            dict(
-                mode=mode,
-                assignment_mode=self.assignment_mode,
-                connectivities=self.connectivities,
-                fit_steady_states=self.fit_steady_states,
-            )
+            {"t_": t_, "u0_": u0_, "s0_": s0_, "std_u": self.std_u, "std_s": self.std_s}
+        )
+        kwargs.update(
+            {
+                "mode": mode,
+                "assignment_mode": self.assignment_mode,
+                "connectivities": self.connectivities,
+                "fit_steady_states": self.fit_steady_states,
+            }
         )
         res = compute_divergence(u, s, alpha, beta, gamma, scaling, **kwargs)
         return res
@@ -1035,7 +1037,7 @@ class BaseDynamics:
         reg=None,
     ):
         """TODO."""
-        weight_args = dict(weighted=weighted, weights_cluster=weights_cluster)
+        weight_args = {"weighted": weighted, "weights_cluster": weights_cluster}
         u, s = self.get_reads(scaling, **weight_args)
 
         alpha, beta, gamma, scaling, t_ = self.get_vars(
@@ -1103,8 +1105,15 @@ class BaseDynamics:
         refit_time=None,
     ):
         """TODO."""
-        kwargs = dict(t=t, t_=t_, alpha=alpha, beta=beta, gamma=gamma, scaling=scaling)
-        kwargs.update(dict(u0_=u0_, s0_=s0_, refit_time=refit_time))
+        kwargs = {
+            "t": t,
+            "t_": t_,
+            "alpha": alpha,
+            "beta": beta,
+            "gamma": gamma,
+            "scaling": scaling,
+        }
+        kwargs.update({"u0_": u0_, "s0_": s0_, "refit_time": refit_time})
         return self.get_se(**kwargs)
 
     # TODO: Add docstrings
@@ -1148,7 +1157,7 @@ class BaseDynamics:
         u, s = self.get_reads(scaling, weighted=False)
         varx = self.get_variance()
 
-        kwargs = dict(std_u=self.std_u, std_s=self.std_s, scaling=scaling)
+        kwargs = {"std_u": self.std_u, "std_s": self.std_s, "scaling": scaling}
         dist, dist_ = curve_dists(u, s, alpha, beta, gamma, t_, **kwargs)
         log_likelihood = -0.5 / len(dist) * np.sum(dist) / varx - 0.5 * np.log(
             2 * np.pi * varx
@@ -1393,7 +1402,12 @@ class BaseDynamics:
         n = len(params)
         gs = gridspec.GridSpec(n, n, figure=fig)
 
-        pkwargs = dict(color_map=color_map, vmin=vmin, vmax=vmax, figsize=figsize)
+        pkwargs = {
+            "color_map": color_map,
+            "vmin": vmin,
+            "vmax": vmax,
+            "figsize": figsize,
+        }
 
         for i in range(len(params)):
             for j in range(n - 1, i - 1, -1):
@@ -1893,7 +1907,9 @@ def get_divergence(
         else None
     )
 
-    kwargs_.update(dict(t_=t_, tau=tau, tau_=tau_, reg_time=reg_time, mode=mode))
+    kwargs_.update(
+        {"t_": t_, "tau": tau, "tau_": tau_, "reg_time": reg_time, "mode": mode}
+    )
     conn = get_connectivities(adata) if use_connectivities else None
 
     res = compute_divergence(

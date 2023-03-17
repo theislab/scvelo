@@ -181,7 +181,7 @@ def simulation(
             elif key == "spliced":
                 ax.plot(t, st, label="spliced", color=colors[j], linewidth=linewidth)
             elif key == "alpha":
-                largs = dict(linewidth=linewidth, linestyle="--")
+                largs = {"linewidth": linewidth, "linestyle": "--"}
                 ax.plot(t, alpha, label="alpha", color=colors[j], **largs)
 
         pl.xlim(0)

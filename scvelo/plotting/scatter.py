@@ -765,7 +765,7 @@ def scatter(
                     va="top",
                     fontsize=fontsize,
                     transform=ax.transAxes,
-                    bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.2),
+                    bbox={"boxstyle": "round", "facecolor": "wheat", "alpha": 0.2},
                 )
 
             set_label(xlabel, ylabel, fontsize, basis, ax=ax)

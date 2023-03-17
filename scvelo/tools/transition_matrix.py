@@ -28,7 +28,7 @@ def transition_matrix(
     vgraph=None,
     basis_constraint=None,
 ):
-    r"""Computes cell-to-cell transition probabilities
+    r"""Computes cell-to-cell transition probabilities.
 
     .. math::
         \tilde \pi_{ij} = \frac1{z_i} \exp( \pi_{ij} / \sigma),
@@ -169,7 +169,7 @@ def get_cell_transitions(
     random_state=None,
     **kwargs,
 ):
-    """Simulate cell transitions
+    """Simulate cell transitions.
 
     Arguments
     ---------

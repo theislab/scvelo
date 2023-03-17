@@ -666,7 +666,7 @@ def recover_dynamics(
 def align_dynamics(
     data, t_max=None, dm=None, idx=None, mode=None, remove_outliers=None, copy=False
 ):
-    """Align dynamics to a common set of parameters
+    """Align dynamics to a common set of parameters.
 
     Arguments
     ---------

@@ -128,7 +128,7 @@ def cleanup(
             if attr in clean
         }
 
-    for (attr, attr_keys) in attributes_to_remove.items():
+    for attr, attr_keys in attributes_to_remove.items():
         for key in attr_keys:
             if key not in keep:
                 del getattr(adata, attr)[key]

@@ -107,7 +107,7 @@ def proportions(
 
     # bar chart of abundances per category
     if groupby is not None and groupby in adata.obs.keys():
-        counts_groups = dict()
+        counts_groups = {}
         for cluster in adata.obs[groupby].cat.categories:
             counts_groups[cluster] = np.mean(
                 counts_layers[:, adata.obs[groupby] == cluster], axis=1

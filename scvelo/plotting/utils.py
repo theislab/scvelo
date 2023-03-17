@@ -478,7 +478,12 @@ def update_axes(
         set_artist_frame(ax, figsize=figsize)
     elif frameon:
         if is_embedding:
-            kwargs = dict(bottom=False, left=False, labelbottom=False, labelleft=False)
+            kwargs = {
+                "bottom": False,
+                "left": False,
+                "labelbottom": False,
+                "labelleft": False,
+            }
             ax.tick_params(which="both", **kwargs)
         else:
             ax.xaxis.set_major_locator(MaxNLocator(nbins=3, integer=True))
@@ -498,7 +503,7 @@ def update_axes(
             if not lf:
                 ax.set_ylabel("")
                 ax.spines["left"].set_visible(False)
-            kwargs = dict(bottom=bf, left=lf, labelbottom=bf, labelleft=lf)
+            kwargs = {"bottom": bf, "left": lf, "labelbottom": bf, "labelleft": lf}
             ax.tick_params(which="both", top=tf, right=rf, **kwargs)
 
     else:
@@ -506,7 +511,12 @@ def update_axes(
         ax.set_ylabel("")
         ax.get_xaxis().get_major_formatter().set_scientific(False)
         ax.get_yaxis().get_major_formatter().set_scientific(False)
-        kwargs = dict(bottom=False, left=False, labelbottom=False, labelleft=False)
+        kwargs = {
+            "bottom": False,
+            "left": False,
+            "labelbottom": False,
+            "labelleft": False,
+        }
         ax.tick_params(which="both", **kwargs)
         ax.set_frame_on(False)
 
@@ -538,7 +548,13 @@ def set_artist_frame(ax, length=0.2, figsize=None):
 
     from mpl_toolkits.axes_grid1.anchored_artists import AnchoredDirectionArrows
 
-    kwargs = dict(loc=3, pad=-1, back_length=0, fontsize=0, aspect_ratio=aspect_ratio)
+    kwargs = {
+        "loc": 3,
+        "pad": -1,
+        "back_length": 0,
+        "fontsize": 0,
+        "aspect_ratio": aspect_ratio,
+    }
     kwargs.update({"text_props": {"ec": "k", "fc": "k", "lw": 0.1}})
     kwargs.update({"arrow_props": {"ec": "none", "fc": "k"}, "length": length})
     arr = AnchoredDirectionArrows(ax.transAxes, "none", "none", **kwargs)
@@ -648,8 +664,8 @@ def set_legend(
             x_pos, y_pos = np.nanmedian(scatter_array[obs_vals == label, :], axis=0)
             if isinstance(label, str):
                 label = label.replace("_", " ")
-            kwargs = dict(verticalalignment="center", horizontalalignment="center")
-            kwargs.update(dict(weight=legend_fontweight, fontsize=legend_fontsize))
+            kwargs = {"verticalalignment": "center", "horizontalalignment": "center"}
+            kwargs.update({"weight": legend_fontweight, "fontsize": legend_fontsize})
             pe = [patheffects.withStroke(linewidth=legend_fontoutline, foreground="w")]
             text = ax.text(x_pos, y_pos, label, path_effects=pe, **kwargs)
             texts.append(text)
@@ -669,7 +685,7 @@ def set_legend(
                 label = label.replace("_", " ")
             ax.scatter([], [], c=[colors[idx]], label=label)
         ncol = 1 if len(categories) <= 14 else 2 if len(categories) <= 30 else 3
-        kwargs = dict(frameon=False, fontsize=legend_fontsize, ncol=ncol)
+        kwargs = {"frameon": False, "fontsize": legend_fontsize, "ncol": ncol}
         if legend_loc == "upper right":
             ax.legend(loc="upper left", bbox_to_anchor=(1, 1), **kwargs)
         elif legend_loc == "lower right":
@@ -1146,8 +1162,8 @@ def plot_linfit(
     xnew = np.linspace(np.min(x), np.max(x) * 1.02)
     ax.plot(xnew, offset + xnew * slope, linewidth=linewidth, color=color)
     if add_legend:
-        kwargs = dict(ha="left", va="top", fontsize=fontsize)
-        bbox = dict(boxstyle="round", facecolor="wheat", alpha=0.2)
+        kwargs = {"ha": "left", "va": "top", "fontsize": fontsize}
+        bbox = {"boxstyle": "round", "facecolor": "wheat", "alpha": 0.2}
         txt = r"$\rho = $" + f"{np.round(stats.pearsonr(x, y)[0], 2)}"
         ax.text(0.05, 0.95, txt, transform=ax.transAxes, bbox=bbox, **kwargs)
 
@@ -1196,8 +1212,8 @@ def plot_polyfit(
 
     if add_legend:
         R2 = np.sum((f(x) - np.mean(y)) ** 2) / np.sum((y - np.mean(y)) ** 2)
-        kwargs = dict(ha="left", va="top", fontsize=fontsize)
-        bbox = dict(boxstyle="round", facecolor="wheat", alpha=0.2)
+        kwargs = {"ha": "left", "va": "top", "fontsize": fontsize}
+        bbox = {"boxstyle": "round", "facecolor": "wheat", "alpha": 0.2}
         txt = r"$R^2 = $" + f"{np.round(R2, 2)}"
         ax.text(0.05, 0.95, txt, transform=ax.transAxes, bbox=bbox, **kwargs)
 
@@ -1227,7 +1243,7 @@ def plot_vlines(adata, basis, vkey, xkey, linewidth=1, linecolor=None, ax=None):
             c = linecolor[i]
         else:
             c = "k" if i == 0 else None
-        kwargs = dict(linestyle=linestyle, linewidth=linewidth)
+        kwargs = {"linestyle": linestyle, "linewidth": linewidth}
         (line,) = ax.plot(xnew, gamma / beta * xnew + offset / beta, c=c, **kwargs)
         lines.append(line)
         fits[i] = (

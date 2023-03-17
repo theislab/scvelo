@@ -1,19 +1,21 @@
 [build-system]
-requires = ['setuptools', 'setuptools_scm', 'wheel']
-build-backend = 'setuptools.build_meta'
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
 
 [project]
 name = "scvelo"
-version = "0.2.5"
+version = "0.3.0"
 description = "RNA velocity generalized through dynamical modeling"
-readme = {file = "README.rst", content-type="text/rst"}
+readme = {file = "README.md", content-type="text/markdown"}
 requires-python = ">=3.8"
 license = {file = "LICENSE"}
 authors = [
     {name = "Volker Bergen"},
+    {name = "Philipp Weiler"}
 ]
 maintainers = [
-    {name = "Volker Bergen", email = "volker.bergen@helmholtz-muenchen.de"},
+    {name = "Philipp Weiler", email = "philipp.weiler@helmholtz-muenchen.de"},
 ]
 keywords=[
     "RNA",
@@ -29,10 +31,9 @@ classifiers=[
     "Intended Audience :: Science/Research",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Topic :: Scientific/Engineering :: Visualization",
 ]
@@ -62,17 +63,20 @@ hnswlib = [
     "pybind11",
     "hnswlib"
 ]
+test = [
+    "pytest",
+    "pytest-cov",
+]
 dev = [
-    "black==22.3.0",
+    "ruff",
+    "black",
+    "isort",
     "hnswlib",
     "hypothesis",
-    "flake8==3.8.4",
-    "isort==5.10.1",
     "louvain",
     "magic-impute",
     "pre-commit>=2.9.0",
     "pybind11",
-    "pytest>=6.2.2",
     "pytest-cov",
     "python-igraph",
     "setuptools_scm"
@@ -93,20 +97,36 @@ docs = [
     "nbsphinx>=0.7,<0.8.7"
 ]
 
+[tool.hatch.build.targets.wheel]
+packages = ["scvelo"]
+
+[tool.coverage.run]
+source = ["scvelo"]
+omit = [
+    "**/test_*.py",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+xfail_strict = true
+
 [tool.black]
 include = '\.pyi?$'
 exclude = '''
-/(
-    \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
+(
+  /(
+      \.eggs
+    | \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+)
 '''
 
 [tool.isort]
@@ -122,3 +142,75 @@ length_sort = "0"
 indent = "    "
 float_to_top = true
 order_by_type = false
+
+[tool.ruff]
+src = ["."]
+line-length = 119
+target-version = "py38"
+select = [
+    "F",  # Errors detected by Pyflakes
+    "E",  # Error detected by Pycodestyle
+    "W",  # Warning detected by Pycodestyle
+    "D",  # pydocstyle
+    "B",  # flake8-bugbear
+    "TID",  # flake8-tidy-imports
+    "C4",  # flake8-comprehensions
+    "BLE",  # flake8-blind-except
+    "UP",  # pyupgrade
+    "RUF100",  # Report unused noqa directives
+]
+ignore = [
+    # line too long -> we accept long comment lines; black gets rid of long code lines
+    "E501",
+    # Do not assign a lambda expression, use a def -> lambda expression assignments are convenient
+    "E731",
+    # allow I, O, l as variable names -> I is the identity matrix
+    "E741",
+    # Missing docstring in public package
+    "D104",
+    # Missing docstring in public module
+    "D100",
+    # Missing docstring in __init__
+    "D107",
+    # Errors from function calls in argument defaults. These are fine when the result is immutable.
+    "B008",
+    # __magic__ methods are are often self-explanatory, allow missing docstrings
+    "D105",
+    # first line should end with a period [Bug: doesn't work with single-line docstrings]
+    "D400",
+    # First line should be in imperative mood; try rephrasing
+    "D401",
+    ## Disable one in each pair of mutually incompatible rules
+    # We don’t want a blank line before a class docstring
+    "D203",
+    # We want docstrings to start immediately after the opening triple quote
+    "D213",
+    # Missing argument description in the docstring TODO: enable
+    "D417",
+    # Unable to detect undefined names
+    "F403",
+    # Underfined, or defined from star imports: module
+    "F405",
+    # Within an except clause, raise exceptions with `raise ... from err`
+    "B904",
+]
+
+[tool.ruff.per-file-ignores]
+"docs/*" = ["BLE001"]
+"tests/*" = ["D"]
+"*/__init__.py" = ["F401"]
+
+[tool.jupytext]
+formats = "ipynb,md"
+
+[tool.cruft]
+skip = [
+    "tests",
+    "src/**/__init__.py",
+    "src/**/basic.py",
+    "docs/api.md",
+    "docs/changelog.md",
+    "docs/references.bib",
+    "docs/references.md",
+    "docs/notebooks/example.ipynb"
+]

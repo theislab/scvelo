@@ -37,9 +37,12 @@ def summary(adata, basis="umap", color="clusters", n_top_genes=12, var_names=Non
         var_names = [name for name in var_names if name in adata.var_names]
         nrows += int(np.ceil(len(var_names) / 4))
 
-    kwargs = dict(
-        c=color, legend_loc_lines="none", add_outline="fit_diff_kinetics", frameon=False
-    )
+    kwargs = {
+        "c": color,
+        "legend_loc_lines": "none",
+        "add_outline": "fit_diff_kinetics",
+        "frameon": False,
+    }
     with GridSpec(ncols=4, nrows=nrows) as pl:
         pl.scatter(adata, basis=basis, c=color)
         pl.velocity_embedding_stream(adata, c=tkey)

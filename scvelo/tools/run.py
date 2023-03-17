@@ -148,8 +148,8 @@ def convert_to_loom(adata, basis=None):
                 if issparse(self.A):
                     self.A = self.A.A
 
-            self.ca = dict()
-            self.ra = dict()
+            self.ca = {}
+            self.ra = {}
 
             self.ca["CellID"] = np.array(adata.obs_names)
             self.ra["Gene"] = np.array(adata.var_names)
