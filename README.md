@@ -1,6 +1,6 @@
 [![PyPi][badge-pypi]][link-pypi]
 [![PyPIDownloads][badge-pypidownloads]][link-pypidownloads]
-[![CI][badge-tests]][link-ci]
+[![CI][badge-ci]][link-ci]
 
 [badge-pypi]: https://img.shields.io/pypi/v/scvelo.svg
 [link-pypi]: https://pypi.org/project/scvelo
