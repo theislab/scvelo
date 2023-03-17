@@ -42,6 +42,8 @@ class EMParams:
     variance: np.ndarray
 
 
+# TODO: Refactor to use `EMParams`
+# TODO: Implement abstract methods
 class ExpectationMaximizationModel(BaseInference):
     """EM 'Dynamical' model for velocity estimation.
 
@@ -155,6 +157,16 @@ class ExpectationMaximizationModel(BaseInference):
             X = adata.layers[self._spliced_layer][:, var_names]
             var_names = var_names[np.argsort(np.sum(X, 0))[::-1][: self._n_top_genes]]
         self._var_names = var_names
+
+    # TODO: Implement
+    def state_dict(self):
+        """Return the state of the model."""
+        raise NotImplementedError
+
+    # TODO: Implement
+    def export_results_adata(self):
+        """Export the results to the AnnData object."""
+        raise NotImplementedError
 
     # TODO: Remove `use_raw` argument
     # TODO: Remove `return_model` argument

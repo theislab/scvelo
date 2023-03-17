@@ -35,6 +35,8 @@ class SecondOrderSteadyStateParams(SteadyStateParams):
     residual2: Tuple[np.ndarray, None]
 
 
+# TODO: Make equivalent to calling `scvelo.tools.velocity(adata, mode="deterministic")`
+# TODO: Save velocity (residual) to `state_dict`
 class SteadyStateModel(BaseInference):
     """Steady-state model for velocity estimation.
 
@@ -179,6 +181,7 @@ class SteadyStateModel(BaseInference):
         """Get velocity from steady-state model."""
         return self._state_dict.residual
 
+    # TODO: Actually implement result export
     def export_results_adata(self) -> None:
         """Export results to adata."""
         return super().export_results_adata()
