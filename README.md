@@ -1,6 +1,6 @@
 [![PyPi][badge-pypi]][link-pypi]
 [![PyPIDownloads][badge-pypidownloads]][link-pypidownloads]
-[![CI][badge-tests]][link-ci]
+[![CI][badge-ci]][link-ci]
 
 [badge-pypi]: https://img.shields.io/pypi/v/scvelo.svg
 [link-pypi]: https://pypi.org/project/scvelo
@@ -11,11 +11,7 @@
 
 # scVelo - RNA velocity generalized through dynamical modeling
 
-.. raw:: html
-
-    <a href="https://scvelo.org">
-    <img src="https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png" width="400px" align="left">
-    </a>
+<img src="https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png" width="400px" align="left">
 
 **scVelo** is a scalable toolkit for RNA velocity analysis in single cells, based on
 [Bergen et al. (Nature Biotech, 2020](https://doi.org/10.1038/s41587-020-0591-3).
@@ -68,27 +64,3 @@ Have a question or would like to start a new discussion? Head over to
 In either case, you can also always send us an [email](mailto:mail@scvelo.org).
 Your help to improve scVelo is highly appreciated.
 For further information visit [scvelo.org](https://scvelo.org).
-
-.. |PyPI| image:: https://img.shields.io/pypi/v/scvelo.svg
-:target: https://pypi.org/project/scvelo
-
-.. |PyPIDownloads| image:: https://pepy.tech/badge/scvelo
-:target: https://pepy.tech/project/scvelo
-
-.. |Docs| image:: https://readthedocs.org/projects/scvelo/badge/?version=latest
-:target: https://scvelo.readthedocs.io
-
-.. |CI| image:: https://img.shields.io/github/actions/workflow/status/theislab/scvelo/ci.yml?branch=master
-:target: https://github.com/theislab/scvelo/actions?query=workflow%3ACI
-
-.. \_scanpy: https://scanpy.readthedocs.io
-
-.. |br| raw:: html
-
-  <br/>
-
-.. |dim| raw:: html
-
-<span class="__dimensions_badge_embed__" data-id="pub.1129830274" data-style="small_rectangle"></span>
-
-   <script async src="https://badge.dimensions.ai/badge.js" charset="utf-8"></script>
