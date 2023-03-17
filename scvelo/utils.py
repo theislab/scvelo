@@ -28,7 +28,7 @@ from scvelo.tools.run import convert_to_adata, convert_to_loom
 from scvelo.tools.score_genes_cell_cycle import get_phase_marker_genes
 from scvelo.tools.transition_matrix import get_cell_transitions
 from scvelo.tools.transition_matrix import transition_matrix as get_transition_matrix
-from scvelo.tools.utils import *  # noqa
+from scvelo.tools.utils import *
 from scvelo.tools.velocity_graph import vals_to_csr
 
 __all__ = [

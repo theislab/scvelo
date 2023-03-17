@@ -136,15 +136,15 @@ def heatmap(
         kwargs["cbar_pos"] = None
 
     kwargs.update(
-        dict(
-            col_colors=col_color,
-            col_cluster=col_cluster,
-            row_cluster=row_cluster,
-            cmap=color_map,
-            xticklabels=False,
-            standard_scale=standard_scale,
-            figsize=figsize,
-        )
+        {
+            "col_colors": col_color,
+            "col_cluster": col_cluster,
+            "row_cluster": row_cluster,
+            "cmap": color_map,
+            "xticklabels": False,
+            "standard_scale": standard_scale,
+            "figsize": figsize,
+        }
     )
 
     args = {}
