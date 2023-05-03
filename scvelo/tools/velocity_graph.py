@@ -333,6 +333,10 @@ def velocity_graph(
     adata = data.copy() if copy else data
     verify_neighbors(adata)
     if vkey not in adata.layers.keys():
+        logg.warn(
+            f"{vkey} not found in layers\n"
+            f"Velocity is now computed using scVelo\n"
+        )
         velocity(adata, vkey=vkey)
     if sqrt_transform is None:
         sqrt_transform = variance_stabilization
