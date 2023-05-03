@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import List, Optional, Sequence
 
 import numpy as np
@@ -42,7 +42,6 @@ class EMParams:
     variance: np.ndarray
 
 
-# TODO: Refactor to use `EMParams`
 # TODO: Implement abstract methods
 class ExpectationMaximizationModel(BaseInference):
     """EM 'Dynamical' model for velocity estimation.
@@ -126,6 +125,10 @@ class ExpectationMaximizationModel(BaseInference):
         self._n_jobs = get_n_jobs(n_jobs=n_jobs)
         self._backend = backend
 
+    def _initialize_state_dict(self, adata, pars_names=None, key="fit"):
+        pars = _read_pars(adata, pars_names, key)
+        self._state_dict = EMParams(*pars)
+
     def _prepare_genes(self):
         """Initialize genes to use for the fitting."""
         var_names = self._var_names_key
@@ -202,10 +205,8 @@ class ExpectationMaximizationModel(BaseInference):
         if return_model is None:
             return_model = len(self._var_names) < 5
 
-        pars = _read_pars(self._adata)
-        alpha, beta, gamma, t_, scaling, std_u, std_s, likelihood = pars[:8]
-        u0, s0, pval, steady_u, steady_s, varx = pars[8:]
-        # likelihood[np.isnan(likelihood)] = 0
+        self._initialize_state_dict(self._adata)
+        sd = self._state_dict
         idx, L = [], []
         T = np.zeros(self._adata.shape) * np.nan
         Tau = np.zeros(self._adata.shape) * np.nan
@@ -239,32 +240,21 @@ class ExpectationMaximizationModel(BaseInference):
 
         for ix, dm in zip(idx, dms):
             T[:, ix], Tau[:, ix], Tau_[:, ix] = dm.t, dm.tau, dm.tau_
-            alpha[ix], beta[ix], gamma[ix], t_[ix], scaling[ix] = dm.pars[:, -1]
-            u0[ix], s0[ix], pval[ix] = dm.u0, dm.s0, dm.pval_steady
-            steady_u[ix], steady_s[ix] = dm.steady_u, dm.steady_s
-            beta[ix] /= scaling[ix]
-            steady_u[ix] *= scaling[ix]
+            (
+                sd.alpha[ix],
+                sd.beta[ix],
+                sd.gamma[ix],
+                sd.t_[ix],
+                sd.scaling[ix],
+            ) = dm.pars[:, -1]
+            sd.u0[ix], sd.s0[ix], sd.pval_steady[ix] = dm.u0, dm.s0, dm.pval_steady
+            sd.steady_u[ix], sd.steady_s[ix] = dm.steady_u, dm.steady_s
+            sd.beta[ix] /= sd.scaling[ix]
+            sd.steady_u[ix] *= sd.scaling[ix]
 
-            std_u[ix], std_s[ix] = dm.std_u, dm.std_s
-            likelihood[ix], varx[ix] = dm.likelihood, dm.varx
+            sd.std_u[ix], sd.std_s[ix] = dm.std_u, dm.std_s
+            sd.likelihood[ix], sd.variance[ix] = dm.likelihood, dm.varx
             L.append(dm.loss)
-
-        _pars = [
-            alpha,
-            beta,
-            gamma,
-            t_,
-            scaling,
-            std_u,
-            std_s,
-            likelihood,
-            u0,
-            s0,
-            pval,
-            steady_u,
-            steady_s,
-            varx,
-        ]
 
         adata = self._adata.copy() if copy else self._adata
 
@@ -274,7 +264,7 @@ class ExpectationMaximizationModel(BaseInference):
             "use_raw": use_raw,
         }
 
-        _write_pars(adata, _pars, add_key=self._fit_key)
+        _write_pars(adata, list(asdict(sd).values()), add_key=self._fit_key)
         if f"{self._fit_key}_t" in adata.layers.keys():
             adata.layers[f"{self._fit_key}_t"][:, idx] = (
                 T[:, idx] if conn is None else conn.dot(T[:, idx])
