@@ -1,5 +1,5 @@
 import os
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from typing import List, Optional, Sequence
 
 import numpy as np
@@ -11,13 +11,7 @@ from scvelo import settings
 from scvelo.core import get_n_jobs, parallelize
 from scvelo.preprocessing.moments import get_connectivities
 from ._core import BaseInference
-from ._em_model_core import (
-    _flatten,
-    _read_pars,
-    _write_pars,
-    align_dynamics,
-    DynamicsRecovery,
-)
+from ._em_model_core import _flatten, _write_pars, align_dynamics, DynamicsRecovery
 from ._steady_state_model import SteadyStateModel
 from .utils import make_unique_list
 
@@ -126,7 +120,14 @@ class ExpectationMaximizationModel(BaseInference):
         self._backend = backend
 
     def _initialize_state_dict(self, adata, pars_names=None, key="fit"):
-        pars = _read_pars(adata, pars_names, key)
+        pars = []
+        emparams_fields = [field.name for field in fields(EMParams)]
+        for name in emparams_fields if pars_names is None else pars_names:
+            pkey = f"{key}_{name}"
+            par = np.zeros(adata.n_vars) * np.nan
+            if pkey in adata.var.keys():
+                par = adata.var[pkey].values
+            pars.append(par)
         self._state_dict = EMParams(*pars)
 
     def _prepare_genes(self):
