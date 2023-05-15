@@ -11,7 +11,7 @@ from scvelo import settings
 from scvelo.core import get_n_jobs, parallelize
 from scvelo.preprocessing.moments import get_connectivities
 from ._core import BaseInference
-from ._em_model_core import _flatten, _write_pars, align_dynamics, DynamicsRecovery
+from ._em_model_core import _flatten, align_dynamics, DynamicsRecovery
 from ._steady_state_model import SteadyStateModel
 from .utils import make_unique_list
 
@@ -162,15 +162,17 @@ class ExpectationMaximizationModel(BaseInference):
             var_names = var_names[np.argsort(np.sum(X, 0))[::-1][: self._n_top_genes]]
         self._var_names = var_names
 
-    # TODO: Implement
     def state_dict(self):
         """Return the state of the model."""
-        raise NotImplementedError
+        return asdict(self._state_dict)
 
-    # TODO: Implement
-    def export_results_adata(self):
-        """Export the results to the AnnData object."""
-        raise NotImplementedError
+    def export_results_adata(self, copy: bool = True, add_key: str = "fit"):
+        """Export the results to the AnnData object and return it."""
+        adata = self._adata.copy() if copy else self._adata
+        adata.var[f"{add_key}_r2"] = self.r2
+        for key, value in asdict(self._state_dict).items():
+            adata.var[f"{add_key}_{key}"] = value
+        return adata
 
     # TODO: Remove `use_raw` argument
     # TODO: Remove `return_model` argument
@@ -257,7 +259,7 @@ class ExpectationMaximizationModel(BaseInference):
             sd.likelihood[ix], sd.variance[ix] = dm.likelihood, dm.varx
             L.append(dm.loss)
 
-        adata = self._adata.copy() if copy else self._adata
+        adata = self.export_results_adata(copy=copy, add_key=self._fit_key)
 
         adata.uns["recover_dynamics"] = {
             "fit_connected_states": fit_connected_states,
@@ -265,7 +267,6 @@ class ExpectationMaximizationModel(BaseInference):
             "use_raw": use_raw,
         }
 
-        _write_pars(adata, list(asdict(sd).values()), add_key=self._fit_key)
         if f"{self._fit_key}_t" in adata.layers.keys():
             adata.layers[f"{self._fit_key}_t"][:, idx] = (
                 T[:, idx] if conn is None else conn.dot(T[:, idx])
