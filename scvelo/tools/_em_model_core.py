@@ -760,12 +760,15 @@ def align_dynamics(
 
     if dm is not None and dm.recoverable:
         dm.m = m[idx]
-        dm.alpha, dm.beta, dm.gamma, dm.pars[:3] = (
-            np.array([dm.alpha, dm.beta, dm.gamma, dm.pars[:3]]) / dm.m[-1]
-        )
-        dm.t, dm.tau, dm.t_, dm.pars[4] = (
-            np.array([dm.t, dm.tau, dm.t_, dm.pars[4]]) * dm.m[-1]
-        )
+        dm.alpha = dm.alpha / dm.m[-1]
+        dm.beta = dm.beta / dm.m[-1]
+        dm.gamma = dm.gamma / dm.m[-1]
+        dm.pars[:3] = dm.pars[:3] / dm.m[-1]
+
+        dm.t = dm.t * dm.m[-1]
+        dm.tau = dm.tau * dm.m[-1]
+        dm.t_ = dm.t_ * dm.m[-1]
+        dm.pars[4] = dm.pars[4] * dm.m[-1]
 
     return adata if copy else dm
 
