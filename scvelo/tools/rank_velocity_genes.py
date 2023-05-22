@@ -170,8 +170,8 @@ def velocity_clusters(
         vc = vdata.obs["louvain"]
         vc_cats = vc.cat.categories
         mean_times = [np.mean(vdata.obs[sort_by][vc == cat]) for cat in vc_cats]
-        vdata.obs["louvain"].cat.reorder_categories(
-            vc_cats[np.argsort(mean_times)], inplace=True
+        vdata.obs["louvain"] = vdata.obs["louvain"].cat.reorder_categories(
+            vc_cats[np.argsort(mean_times)]
         )
 
     if isinstance(match_with, str) and match_with in adata.obs.keys():
