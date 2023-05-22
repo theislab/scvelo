@@ -165,6 +165,8 @@ class TestMagicImpute:
     @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
     @pytest.mark.parametrize("n_obs", [50, 100])
     def test_output(self, adata, capfd, dataset: str, n_obs: int):
+        _ = pytest.importorskip("magic")
+
         adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
         del adata.layers["Mu"]
         del adata.layers["Ms"]

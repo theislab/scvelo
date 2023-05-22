@@ -306,10 +306,10 @@ class FastNeighbors:
         try:
             import hnswlib
         except ImportError:
-            print(
+            raise ImportError(
                 "In order to use fast approx neighbor search, "
                 "you need to `pip install hnswlib`\n"
-            )
+            ) from None
 
         ef_c, ef = max(ef_construction, self.n_neighbors), max(self.n_neighbors, ef)
         metric = "l2" if metric == "euclidean" else metric
