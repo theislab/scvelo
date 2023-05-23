@@ -292,17 +292,6 @@ def get_df(
         )
         df = df.sort_values(by=sort_by, ascending=False)
 
-    if hasattr(data, "var_names"):
-        if df.index[0] in data.var_names:
-            df.var_names = df.index
-        elif df.columns[0] in data.var_names:
-            df.var_names = df.columns
-    if hasattr(data, "obs_names"):
-        if df.index[0] in data.obs_names:
-            df.obs_names = df.index
-        elif df.columns[0] in data.obs_names:
-            df.obs_names = df.columns
-
     return df
 
 
