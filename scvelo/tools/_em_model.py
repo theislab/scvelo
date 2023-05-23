@@ -120,17 +120,21 @@ class ExpectationMaximizationModel(BaseInference):
         self._backend = backend
 
     def _initialize_state_dict(
-        self, adata: AnnData, pars_names: Optional[List[str]] = None, key: str = "fit"
+        self, adata: AnnData, parameters: Optional[List[str]] = None, key: str = "fit"
     ):
-        pars = []
-        emparams_fields = [field.name for field in fields(EMParams)]
-        for name in emparams_fields if pars_names is None else pars_names:
-            pkey = f"{key}_{name}"
-            par = np.zeros(adata.n_vars) * np.nan
-            if pkey in adata.var.keys():
-                par = adata.var[pkey].values
-            pars.append(par)
-        self._state_dict = EMParams(*pars)
+        if parameters is None:
+            parameters = [field.name for field in fields(EMParams)]
+        parameter_dict = {}
+
+        for parameter in parameters:
+            if f"{key}_{parameter}" in adata.var.keys():
+                parameter_dict[parameter] = adata.var[f"{key}_{parameter}"].values
+            else:
+                _vals = np.empty(adata.n_vars)
+                _vals.fill(np.nan)
+                parameter_dict[parameter] = _vals
+
+        self._state_dict = EMParams(**parameter_dict)
 
     def _prepare_genes(self):
         """Initialize genes to use for the fitting."""
