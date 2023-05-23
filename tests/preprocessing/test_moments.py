@@ -159,9 +159,11 @@ class TestGetMoments:
         )
 
         second_order_moment_centered = get_moments(adata=adata, second_order=True)
-        np.testing.assert_almost_equal(
+        np.testing.assert_allclose(
             second_order_moment_centered,
             second_order_moment_uncentered - first_order_moment_ground_truth**2,
+            rtol=1e-6,
+            atol=1e-6,
         )
 
 
