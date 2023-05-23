@@ -188,6 +188,7 @@ class VelocityGraph:
             n_jobs=n_jobs,
             unit="cells",
             backend=backend,
+            as_array=False,
         )()
         uncertainties, vals, rows, cols = map(_flatten, zip(*res))
 
