@@ -965,7 +965,6 @@ def set_colorbar(smp, ax, orientation="vertical", labelsize=None):
     cb = pl.colorbar(smp, orientation=orientation, cax=cax)
     cb.set_alpha(1)
     cb.ax.tick_params(labelsize=labelsize)
-    cb.draw_all()
     cb.locator = MaxNLocator(nbins=3, integer=True)
     cb.update_ticks()
 
