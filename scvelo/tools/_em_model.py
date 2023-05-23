@@ -119,7 +119,9 @@ class ExpectationMaximizationModel(BaseInference):
         self._n_jobs = get_n_jobs(n_jobs=n_jobs)
         self._backend = backend
 
-    def _initialize_state_dict(self, adata, pars_names=None, key="fit"):
+    def _initialize_state_dict(
+        self, adata: AnnData, pars_names: Optional[List[str]] = None, key: str = "fit"
+    ):
         pars = []
         emparams_fields = [field.name for field in fields(EMParams)]
         for name in emparams_fields if pars_names is None else pars_names:
