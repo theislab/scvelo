@@ -156,11 +156,15 @@ class VelocityGraph:
         self.graph_neg = adata.uns[gkey_] if gkey_ in adata.uns.keys() else []
 
         if tkey in adata.obs.keys():
-            self.t0 = adata.obs[tkey].copy()
+            self.t0 = adata.obs[tkey].astype("category").copy()
             init = min(self.t0) if isinstance(min(self.t0), int) else 0
-            self.t0.cat.categories = np.arange(init, len(self.t0.cat.categories))
+            self.t0 = self.t0.cat.set_categories(
+                np.arange(init, len(self.t0.cat.categories)), rename=True
+            )
             self.t1 = self.t0.copy()
-            self.t1.cat.categories = self.t0.cat.categories + 1
+            self.t1 = self.t1.cat.set_categories(
+                self.t0.cat.categories + 1, rename=True
+            )
         else:
             self.t0 = None
 
@@ -184,6 +188,7 @@ class VelocityGraph:
             n_jobs=n_jobs,
             unit="cells",
             backend=backend,
+            as_array=False,
         )()
         uncertainties, vals, rows, cols = map(_flatten, zip(*res))
 

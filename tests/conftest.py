@@ -4,6 +4,8 @@ from typing import Tuple, Union
 import pytest
 from hypothesis import settings
 
+import matplotlib as mpl
+
 import scanpy as sc
 from anndata import AnnData
 
@@ -23,6 +25,11 @@ _pancreas_50obs = sc.read("tests/_data/pancreas_50obs.h5ad")
 _pancreas_50obs_preprocessed = sc.read("tests/_data/pancreas_50obs_preprocessed.h5ad")
 _pancreas_100obs = sc.read("tests/_data/pancreas_100obs.h5ad")
 _pancreas_100obs_preprocessed = sc.read("tests/_data/pancreas_100obs_preprocessed.h5ad")
+
+
+def pytest_sessionstart(session: pytest.Session) -> None:
+    del session
+    mpl.use("Agg")
 
 
 @pytest.fixture
