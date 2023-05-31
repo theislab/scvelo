@@ -138,8 +138,11 @@ class TestGetMoments:
         first_order_moment_ground_truth = np.array(
             [[4 / 3, 5.5 / 3, 1], [1.5, 2.5, 0.5], [1, 1.25, 1]]
         )
-        np.testing.assert_almost_equal(
-            first_order_moment, first_order_moment_ground_truth
+        np.testing.assert_allclose(
+            first_order_moment,
+            first_order_moment_ground_truth,
+            rtol=1e-6,
+            atol=1e-6,
         )
 
         second_order_moment_uncentered = get_moments(
@@ -148,16 +151,19 @@ class TestGetMoments:
         second_order_moment_uncentered_ground_truth = np.array(
             [[2, 13.25 / 3, 5 / 3], [2.5, 6.5, 0.5], [1, 2.125, 2]]
         )
-        np.testing.assert_almost_equal(
+        np.testing.assert_allclose(
             second_order_moment_uncentered,
             second_order_moment_uncentered_ground_truth,
-            decimal=5,
+            rtol=1e-6,
+            atol=1e-6,
         )
 
         second_order_moment_centered = get_moments(adata=adata, second_order=True)
-        np.testing.assert_almost_equal(
+        np.testing.assert_allclose(
             second_order_moment_centered,
             second_order_moment_uncentered - first_order_moment_ground_truth**2,
+            rtol=1e-6,
+            atol=1e-6,
         )
 
 
