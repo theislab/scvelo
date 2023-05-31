@@ -2321,7 +2321,7 @@ class TestRecipeVelocity:
             )
         )
         assert pancreas_50obs.var.columns.equals(pd.Index(["gene_count_corr"]))
-        assert [*pancreas_50obs.uns] == ["log1p", "pca", "neighbors"]
+        assert [*pancreas_50obs.uns] == ["pca", "neighbors"]
         assert [*pancreas_50obs.obsm] == ["X_pca"]
         assert [*pancreas_50obs.varm] == ["PCs"]
         assert [*pancreas_50obs.layers] == ["spliced", "unspliced", "Ms", "Mu"]
@@ -2373,7 +2373,7 @@ class TestRecipeVelocity:
             )
         )
         assert dentategyrus_50obs.var.columns.equals(pd.Index([]))
-        assert [*dentategyrus_50obs.uns] == ["log1p", "pca", "neighbors"]
+        assert [*dentategyrus_50obs.uns] == ["pca", "neighbors"]
         assert [*dentategyrus_50obs.obsm] == ["X_pca"]
         assert [*dentategyrus_50obs.varm] == ["PCs"]
         assert [*dentategyrus_50obs.layers] == [

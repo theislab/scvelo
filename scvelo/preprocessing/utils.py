@@ -5,6 +5,8 @@ import pandas as pd
 from scipy.sparse import issparse
 from sklearn.utils import sparsefuncs
 
+from anndata import AnnData
+
 from scvelo import logging as logg
 from scvelo.core import get_initial_size, get_size, multiply, set_initial_size, sum
 
@@ -585,10 +587,14 @@ def log1p(data, copy=False):
     -------
     Returns or updates `adata` depending on `copy`.
     """
-    from scanpy.pp import log1p as _log1p
-
-    res = _log1p(data, copy=copy)
-    return res if copy else None
+    adata = data.copy() if copy else data
+    X = (
+        (adata.X.data if issparse(adata.X) else adata.X)
+        if isinstance(adata, AnnData)
+        else adata
+    )
+    np.log1p(X, out=X)
+    return adata if copy else None
 
 
 def filter_and_normalize(
