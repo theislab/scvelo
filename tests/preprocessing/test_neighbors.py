@@ -647,10 +647,10 @@ class TestGetNeighs:
     def test_get_from_uns(self, adata: AnnData, mode: str):
         returned_value = get_neighs(adata=adata, mode=mode)
 
-        if issparse(returned_value):
-            assert (returned_value != adata.uns["neighbors"][mode]).sum() == 0
+        if isinstance(returned_value, (int, float)):
+            assert returned_value == 1
         else:
-            np.testing.assert_almost_equal(returned_value, adata.uns["neighbors"][mode])
+            assert (returned_value != adata.obsp[mode]).sum() == 0
 
     def test_selected_mode_not_available(self):
         adata = AnnData(np.eye(2))
