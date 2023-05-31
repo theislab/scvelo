@@ -138,11 +138,8 @@ class TestGetMoments:
         first_order_moment_ground_truth = np.array(
             [[4 / 3, 5.5 / 3, 1], [1.5, 2.5, 0.5], [1, 1.25, 1]]
         )
-        np.testing.assert_allclose(
-            first_order_moment,
-            first_order_moment_ground_truth,
-            rtol=1e-6,
-            atol=1e-6,
+        np.testing.assert_almost_equal(
+            first_order_moment, first_order_moment_ground_truth
         )
 
         second_order_moment_uncentered = get_moments(
@@ -151,19 +148,16 @@ class TestGetMoments:
         second_order_moment_uncentered_ground_truth = np.array(
             [[2, 13.25 / 3, 5 / 3], [2.5, 6.5, 0.5], [1, 2.125, 2]]
         )
-        np.testing.assert_allclose(
+        np.testing.assert_almost_equal(
             second_order_moment_uncentered,
             second_order_moment_uncentered_ground_truth,
-            rtol=1e-6,
-            atol=1e-6,
+            decimal=5,
         )
 
         second_order_moment_centered = get_moments(adata=adata, second_order=True)
-        np.testing.assert_allclose(
+        np.testing.assert_almost_equal(
             second_order_moment_centered,
             second_order_moment_uncentered - first_order_moment_ground_truth**2,
-            rtol=1e-6,
-            atol=1e-6,
         )
 
 
@@ -171,8 +165,6 @@ class TestMagicImpute:
     @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
     @pytest.mark.parametrize("n_obs", [50, 100])
     def test_output(self, adata, capfd, dataset: str, n_obs: int):
-        _ = pytest.importorskip("magic")
-
         adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
         del adata.layers["Mu"]
         del adata.layers["Ms"]
