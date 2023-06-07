@@ -9,7 +9,6 @@ from anndata import AnnData
 
 from scvelo.preprocessing.moments import (
     get_moments,
-    magic_impute,
     moments,
     second_order_moments,
     second_order_moments_u,
@@ -165,44 +164,6 @@ class TestGetMoments:
             rtol=1e-6,
             atol=1e-6,
         )
-
-
-class TestMagicImpute:
-    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
-    @pytest.mark.parametrize("n_obs", [50, 100])
-    def test_output(self, adata, capfd, dataset: str, n_obs: int):
-        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
-        del adata.layers["Mu"]
-        del adata.layers["Ms"]
-
-        magic_impute(adata=adata)
-
-        ground_truth_unspliced = np.load(
-            file=(
-                f"tests/_data/test_moments/magic_impute/dataset={dataset}-n_obs={n_obs}"
-                f"-layer=unspliced_magic_impute.npy"
-            )
-        )
-        np.testing.assert_almost_equal(
-            adata.layers["Mu"], ground_truth_unspliced, decimal=5
-        )
-
-        ground_truth_spliced = np.load(
-            file=(
-                f"tests/_data/test_moments/magic_impute/dataset={dataset}-n_obs={n_obs}"
-                f"-layer=spliced_magic_impute.npy"
-            )
-        )
-        np.testing.assert_almost_equal(
-            adata.layers["Ms"], ground_truth_spliced, decimal=5
-        )
-
-        expected_log = (
-            "To be used carefully. Magic has not yet been tested for this "
-            "application.\n"
-        )
-        actual_log, _ = capfd.readouterr()
-        assert actual_log == expected_log
 
 
 class TestMoments:
