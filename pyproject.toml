@@ -108,6 +108,14 @@ omit = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 xfail_strict = true
+filterwarnings = [
+    "ignore:invalid value encountered in:RuntimeWarning",
+    "ignore:overflow encountered in:RuntimeWarning",
+    "ignore::scipy.sparse.SparseEfficiencyWarning",
+    "ignore:X.dtype being converted:FutureWarning",
+    "ignore::anndata.OldFormatWarning",
+    "ignore::anndata.ImplicitModificationWarning",
+]
 
 [tool.black]
 include = '\.pyi?$'
