@@ -1149,7 +1149,7 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
     )
 
     idx_sorted = np.argsort(np.nan_to_num(ll), 1)[:, ::-1][:, :n_genes]
-    rankings_gene_names = vdata.var_names[idx_sorted]
+    rankings_gene_names = vdata.var_names.to_numpy()[idx_sorted]
     rankings_gene_scores = np.sort(np.nan_to_num(ll), 1)[:, ::-1][:, :n_genes]
 
     key = "rank_dynamical_genes"
