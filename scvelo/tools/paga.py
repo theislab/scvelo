@@ -96,9 +96,7 @@ class PAGA_tree(PAGA):
         try:
             import igraph
         except ImportError:
-            raise ImportError(
-                "To run paga, you need to install `pip install python-igraph`"
-            )
+            raise ImportError("To run paga, you need to install `pip install igraph`")
         vkey = f"{self.vkey}_graph"
         if vkey not in self._adata.uns:
             raise ValueError(
