@@ -47,7 +47,7 @@ Dependencies
 
 Parts of scVelo (directed PAGA and Louvain modularity) require (optional)::
 
-    pip install python-igraph louvain
+    pip install igraph louvain
 
 
 Using fast neighbor search via `hnswlib <https://github.com/nmslib/hnswlib>`_ further requires (optional)::
