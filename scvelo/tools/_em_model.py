@@ -65,15 +65,16 @@ class EMParams:
                     parameter_dict[para_name] = _vals
         return cls(**parameter_dict)
 
-    # TODO: Atm, fields are also written if they contain only NaN values. Is this useful?
     def export_to_adata(self, adata: AnnData, key: str = "fit"):
         for parameter in fields(self):
             para_name = parameter.name
             value = getattr(self, para_name)
-            if parameter.metadata["is_matrix"]:
-                adata.layers[f"{key}_{para_name.lower()}"] = value
-            else:
-                adata.var[f"{key}_{para_name.lower()}"] = value
+            # The parameter is only written if not all entries are nan.
+            if not np.all(np.isnan(value)):
+                if parameter.metadata["is_matrix"]:
+                    adata.layers[f"{key}_{para_name.lower()}"] = value
+                else:
+                    adata.var[f"{key}_{para_name.lower()}"] = value
         return adata
 
 
@@ -164,6 +165,7 @@ class ExpectationMaximizationModel(BaseInference):
             logg.warn("Duplicate var_names found. Making them unique.")
             self._adata.var_names_make_unique()
         self._state_dict = EMParams.from_adata(adata)
+        self._use_raw = False
 
     def _prepare_genes(self):
         """Initialize genes to use for the fitting."""
@@ -210,7 +212,9 @@ class ExpectationMaximizationModel(BaseInference):
             "fit_basal_transcription": self._fit_basal_transcription,
             "use_raw": self._use_raw,
         }
-        adata.varm["loss"] = self._loss
+        # loss is only written after the execution of fit()
+        if hasattr(self, "_loss"):
+            adata.varm["loss"] = self._loss
         return adata
 
     # TODO: Remove `use_raw` argument
