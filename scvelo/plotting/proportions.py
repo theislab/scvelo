@@ -56,7 +56,7 @@ def proportions(
     """
     # get counts per cell for each layer
     if layers is None:
-        layers = ["spliced", "unspliced", "ambigious"]
+        layers = ["spliced", "unspliced", "ambiguous"]
     layers_keys = [key for key in layers if key in adata.layers.keys()]
     counts_layers = [sum(adata.layers[key], axis=1) for key in layers_keys]
 
