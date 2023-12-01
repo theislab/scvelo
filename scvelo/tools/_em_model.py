@@ -227,6 +227,7 @@ class ExpectationMaximizationModel(BaseInference):
         load_pars: bool = False,
         steady_state_prior: Optional[List[bool]] = None,
         assignment_mode: str = "projection",
+        show_progress_bar: bool = True,
         **kwargs,
     ):
         """Fit the model."""
@@ -259,7 +260,7 @@ class ExpectationMaximizationModel(BaseInference):
             unit="gene",
             as_array=False,
             backend=self._backend,
-            show_progress_bar=False,  # len(self._var_names) > 9,
+            show_progress_bar=show_progress_bar,
         )(
             use_raw=use_raw,
             load_pars=load_pars,
