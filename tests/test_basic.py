@@ -32,6 +32,7 @@ def test_dynamical_model():
         adata=adata, var_names_key=adata.var_names[0]
     )
     em_model.fit(return_model=False, copy=False)
+    adata = em_model.export_results_adata(adata)
 
     assert np.round(adata[:, adata.var_names[0]].var["fit_alpha"][0], 4) == 4.7409
 
@@ -45,6 +46,7 @@ def test_pipeline():
 
     em_model = ExpectationMaximizationModel(adata=adata)
     em_model.fit(copy=False)
+    adata = em_model.export_results_adata(adata)
     scv.tl.velocity(adata)
     scv.tl.velocity(adata, vkey="dynamical_velocity", mode="dynamical")
     adata.var.velocity_genes = True
