@@ -631,7 +631,7 @@ def filter_and_normalize(
             scv.pp.log1p(adata)
 
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.

@@ -76,6 +76,7 @@ Tools (tl)
 
    tl.recover_dynamics
    tl.differential_kinetic_test
+   tl.VELOVI
 
 **Dynamical genes**
 
@@ -104,6 +105,18 @@ Tools (tl)
    tl.velocity_clusters
    tl.velocity_confidence
    tl.score_genes_cell_cycle
+
+Inference from metabolic labeling information
+---------
+
+.. autosummary::
+   :toctree: .
+
+   inference.get_labeling_time_mask
+   inference.get_labeling_times
+   inference.get_n_neighbors
+   inference.get_obs_dist_argsort
+   inference.get_parameters
 
 
 Plotting (pl)

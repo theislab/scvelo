@@ -61,7 +61,7 @@ def velocity_embedding(
         \delta_{ij}.
 
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.

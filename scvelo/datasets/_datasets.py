@@ -60,7 +60,7 @@ def dentategyrus(file_path: Optional[Union[str, Path]] = None, adjusted=True):
     .. image:: https://user-images.githubusercontent.com/31883718/79433223-255b8700-7fcd-11ea-8ecf-3dc9eb1a6159.png
        :width: 600px
 
-    Arguments
+    Arguments:
     ---------
     file_path
         Path where to save dataset and read it from.
@@ -150,7 +150,7 @@ def forebrain(file_path: Union[str, Path] = "data/ForebrainGlut/hgForebrainGlut.
     Forebrain tissue of a human week 10 embryo, focusing on glutamatergic neuronal
     lineage, obtained from elective routine abortions (10 weeks post-conception).
 
-    Arguments
+    Arguments:
     ---------
     file_path
         Path where to save dataset and read it from.
@@ -260,7 +260,7 @@ def pancreas(file_path: Union[str, Path] = "data/Pancreas/endocrinogenesis_day15
     .. image:: https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png
        :width: 600px
 
-    Arguments
+    Arguments:
     ---------
     file_path
         Path where to save dataset and read it from.
@@ -308,7 +308,7 @@ def toy_data(
 ):
     """Randomly sampled from the Dentate Gyrus dataset.
 
-    Arguments
+    Arguments:
     ---------
     file_path
         Path where to save dataset and read it from.

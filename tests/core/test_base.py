@@ -44,7 +44,7 @@ def get_adata(
 
     The largest possible value of a numerical entry is `1e5`.
 
-    Arguments
+    Arguments:
     ---------
         n_obs
             Number of observations. If set to `None`, a random integer between `1` and
@@ -112,7 +112,7 @@ def get_adata(
         sparse_entries
             Whether or not to make AnnData entries sparse.
 
-    Returns
+    Returns:
     -------
     AnnData
         Generated :class:`~anndata.AnnData` object.

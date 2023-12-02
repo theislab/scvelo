@@ -1008,7 +1008,7 @@ def adjust_palette(palette, length):
 def rgb_custom_colormap(colors=None, alpha=None, N=256):
     """Creates a custom colormap. Colors can be given as names or rgb values.
 
-    Arguments
+    Arguments:
     ---------
     colors: : `list` or `array` (default `['royalblue', 'white', 'forestgreen']`)
         List of colors, either as names or rgb values.
@@ -1461,7 +1461,7 @@ def hist(
 ):
     """Plot a histogram.
 
-    Arguments
+    Arguments:
     ---------
     arrays: : `list` or `array` (default `['royalblue', 'white', 'forestgreen']`)
         List of colors, either as names or rgb values.

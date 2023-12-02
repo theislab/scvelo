@@ -39,7 +39,7 @@ def transition_matrix(
     Alternatively, use :func:`cellrank.tl.transition_matrix` to account for uncertainty
     in the velocity estimates.
 
-    Arguments
+    Arguments:
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -171,7 +171,7 @@ def get_cell_transitions(
 ):
     """Simulate cell transitions.
 
-    Arguments
+    Arguments:
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.

@@ -123,7 +123,7 @@ def scatter(
 ):
     """Scatter plot along observations or variables axes.
 
-    Arguments
+    Arguments:
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.

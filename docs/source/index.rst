@@ -9,16 +9,12 @@ scVelo - RNA velocity generalized through dynamical modeling
 
 .. include:: _key_contributors.rst
 
-**scVelo** is a scalable toolkit for RNA velocity analysis in single cells, based on
-`Bergen et al. (Nature Biotech, 2020) <https://doi.org/10.1038/s41587-020-0591-3>`_.
-
-RNA velocity enables the recovery of directed dynamic information by leveraging splicing kinetics.
-scVelo generalizes the concept of RNA velocity
-(`La Manno et al., Nature, 2018 <https://doi.org/10.1038/s41586-018-0414-6>`_)
-by relaxing previously made assumptions with a stochastic and a dynamical model that solves the full
-transcriptional dynamics. It thereby adapts RNA velocity to widely varying specifications such as non-stationary populations.
-
-scVelo is compatible with Scanpy_ and hosts efficient implementations of all RNA velocity models.
+**scVelo** is a scalable toolkit for RNA velocity analysis in single cells; RNA velocity
+enables the recovery of directed dynamic information by leveraging splicing kinetics
+:cite:p:`LaManno18`. scVelo collects different
+methods for inferring RNA velocity using an expectation-maximization framework
+:cite:p:`Bergen20`, deep generative modeling :cite:p:`Gayoso2023`,
+or metabolically labeled transcripts :cite:p:`Weiler2023`.
 
 scVelo's key applications
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -28,30 +24,69 @@ scVelo's key applications
 - estimate reaction rates of transcription, splicing and degradation.
 - use statistical tests, e.g., to detect different kinetics regimes.
 
-scVelo has, for instance, recently been used to study immune response in COVID-19
-patients and dynamic processes in human lung regeneration. Find out more in this list of
-`application examples <https://scholar.google.com/scholar?cites=18195185735875895912>`_.
 
-Latest news
-^^^^^^^^^^^
-- Aug/2021: `Perspectives paper out in MSB <https://doi.org/10.15252/msb.202110282>`_
-- Feb/2021: scVelo goes multi-core
-- Dec/2020: Cover of `Nature Biotechnology <https://www.nature.com/nbt/volumes/38>`_
-- Nov/2020: Talk at `Single Cell Biology <https://coursesandconferences.wellcomegenomecampus.org/our-events/single-cell-biology-2020/>`_
-- Oct/2020: `Helmholtz Best Paper Award <https://twitter.com/ICBmunich/status/1318611467722199041>`_
-- Oct/2020: Map cell fates with `CellRank <https://cellrank.org>`_
-- Sep/2020: Talk at `Single Cell Omics <https://twitter.com/fabian_theis/status/1305621028056465412>`_
-- Aug/2020: `scVelo out in Nature Biotech <https://www.helmholtz-muenchen.de/en/aktuelles/latest-news/press-information-news/article/48658/index.html>`_
+Citing scVelo
+^^^^^^^^^^^^^
 
-References
-^^^^^^^^^^
-La Manno *et al.* (2018), RNA velocity of single cells, `Nature <https://doi.org/10.1038/s41586-018-0414-6>`_.
+If you include or rely on scVelo when publishing research, please adhere to the
+following citation guide:
 
-Bergen *et al.* (2020), Generalizing RNA velocity to transient cell states through dynamical modeling,
-`Nature Biotech <https://doi.org/10.1038/s41587-020-0591-3>`_.
+**EM and steady-state model**
 
-Bergen *et al.* (2021), RNA velocity - current challenges and future perspectives,
-`Molecular Systems Biology <https://doi.org/10.15252/msb.202110282>`_.
+If you use the *EM* (*dynamical*) or *steady-state model*, cite
+
+.. code-block:: bibtex
+
+    @article{Bergen2020,
+        title = {Generalizing RNA velocity to transient cell states through dynamical modeling},
+        volume = {38},
+        ISSN = {1546-1696},
+        url = {http://dx.doi.org/10.1038/s41587-020-0591-3},
+        DOI = {10.1038/s41587-020-0591-3},
+        number = {12},
+        journal = {Nature Biotechnology},
+        publisher = {Springer Science and Business Media LLC},
+        author = {Bergen, Volker and Lange, Marius and Peidli, Stefan and Wolf, F. Alexander and Theis, Fabian J.},
+        year = {2020},
+        month = aug,
+        pages = {1408–1414}
+    }
+
+
+**veloVI**
+
+If you use *veloVI* (*VI model*), cite
+
+.. code-block:: bibtex
+
+    @article{Gayoso2023,
+        title = {Deep generative modeling of transcriptional dynamics for RNA velocity analysis in single cells},
+        ISSN = {1548-7105},
+        url = {http://dx.doi.org/10.1038/s41592-023-01994-w},
+        DOI = {10.1038/s41592-023-01994-w},
+        journal = {Nature Methods},
+        publisher = {Springer Science and Business Media LLC},
+        author = {Gayoso, Adam and Weiler, Philipp and Lotfollahi, Mohammad and Klein, Dominik and Hong, Justin and Streets, Aaron and Theis, Fabian J. and Yosef, Nir},
+        year = {2023},
+        month = sep
+    }
+
+**RNA velocity inference through metabolic labeling information**
+
+If you use the implemented method for estimating RNA velocity from metabolic labeling
+information, cite
+
+.. code-block:: bibtex
+
+    @article{Weiler2023,
+        title = {Unified fate mapping in multiview single-cell data},
+        url = {http://dx.doi.org/10.1101/2023.07.19.549685},
+        DOI = {10.1101/2023.07.19.549685},
+        publisher = {Cold Spring Harbor Laboratory},
+        author = {Weiler, Philipp and Lange, Marius and Klein, Michal and Pe’er, Dana and Theis, Fabian J.},
+        year = {2023},
+        month = jul
+    }
 
 Support
 ^^^^^^^
@@ -59,9 +94,7 @@ Found a bug or would like to see a feature implemented? Feel free to submit an
 `issue <https://github.com/theislab/scvelo/issues/new/choose>`_.
 Have a question or would like to start a new discussion? Head over to
 `GitHub discussions <https://github.com/theislab/scvelo/discussions>`_.
-In either case, you can also always send us an `email <mailto:mail@scvelo.org>`_.
 Your help to improve scVelo is highly appreciated.
-For further information visit `scvelo.org <https://scvelo.org>`_.
 
 
 .. toctree::
@@ -103,24 +136,11 @@ For further information visit `scvelo.org <https://scvelo.org>`_.
 .. |Docs| image:: https://readthedocs.org/projects/scvelo/badge/?version=latest
    :target: https://scvelo.readthedocs.io
 
-.. |travis| image:: https://travis-ci.org/theislab/scvelo.svg?branch=main
-   :target: https://travis-ci.org/theislab/scvelo
-
 .. _Scanpy: https://scanpy.readthedocs.io
-
-.. _calendly: https://calendly.com/scvelo
 
 .. |br| raw:: html
 
   <br/>
-
-.. |meet| raw:: html
-
-  <!-- Calendly link widget begin -->
-  <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
-  <script src="https://assets.calendly.com/assets/external/widget.js" type="text/javascript"></script>
-  <a href="" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/scvelo'});return false;">here</a>
-  <!-- Calendly link widget end -->
 
 .. |dim| raw:: html
 

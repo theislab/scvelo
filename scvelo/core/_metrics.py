@@ -9,7 +9,7 @@ from scipy.sparse import issparse, spmatrix
 def l2_norm(x: Union[ndarray, spmatrix], axis: int = 1) -> Union[float, ndarray]:
     """Calculate l2 norm along a given axis.
 
-    Arguments
+    Arguments:
     ---------
     x
         Array to calculate l2 norm of.

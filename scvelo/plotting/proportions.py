@@ -22,7 +22,7 @@ def proportions(
 ):
     """Plot pie chart of spliced/unspliced proprtions.
 
-    Arguments
+    Arguments:
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.

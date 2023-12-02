@@ -15,7 +15,7 @@ from anndata import AnnData
 def _get_bounds(experiment: np.ndarray):
     """Returns bounds for constraint optimization problem.
 
-    Arguments
+    Arguments:
     ---------
     experiment
         Type of experiment (``"chase"`` or ``"pulse"``) that observation was generated from.
@@ -43,7 +43,7 @@ def get_mse(
 ):
     """Calculates mean squared error (MSE) between predicted and measurmed, newly synthesized mRNA.
 
-    Arguments
+    Arguments:
     ---------
     x
         Parameter estimate.
@@ -87,7 +87,7 @@ def _get_n_neighbors(
 ) -> pd.DataFrame:
     """Get number of neighbors required to include ``n_nontrivial_counts`` counts per labeling time.
 
-    Arguments
+    Arguments:
     ---------
     X
         Gene expression.
@@ -143,7 +143,9 @@ def _get_n_neighbors(
 def get_labeling_times(adata, time_key) -> List:
     """Get labeling times in dataset.
 
-    Arguments
+    See :cite:p:`Weiler2023`.
+
+    Arguments:
     ---------
     adata
         AnnData object.
@@ -162,7 +164,9 @@ def get_labeling_time_mask(
 ) -> Dict[float, np.ndarray]:
     """Get number of neighbors required to include ``n_nontrivial_counts`` counts per labeling time.
 
-    Arguments
+    See :cite:p:`Weiler2023`.
+
+    Arguments:
     ---------
     adata
         AnnData object.
@@ -187,7 +191,9 @@ def get_obs_dist_argsort(
 ) -> Dict[float, np.ndarray]:
     """Calculate argsorted pairwise distances per labeling_time_point.
 
-    Arguments
+    See :cite:p:`Weiler2023`.
+
+    Arguments:
     ---------
     adata
         AnnData object.
@@ -226,7 +232,9 @@ def get_n_neighbors(
 ) -> Dict[str, pd.DataFrame]:
     """Get number of neighbors required to include ``n_nontrivial_counts`` counts per labeling time.
 
-    Arguments
+    See :cite:p:`Weiler2023`.
+
+    Arguments:
     ---------
     adata
         AnnData object.
@@ -277,7 +285,7 @@ def get_n_neighbors(
 def get_counts(gex, labeling_time_mask, obs_dist_argsort, obs_id, neighbors):
     """Return gex counts used for fitting parameters.
 
-    Arguments
+    Arguments:
     ---------
     gex
         GEX vector of a given gene.
@@ -321,7 +329,7 @@ def _get_parameters(
 ):
     """Estimates parameters of splicing kinetics from metabolic labeling data.
 
-    Arguments
+    Arguments:
     ---------
     measured_labeled
         Measured labeled RNA.
@@ -381,7 +389,9 @@ def get_parameters(
 ):
     """Estimates parameters of splicing kinetics from metabolic labeling data.
 
-    Arguments
+    See :cite:p:`Weiler2023`.
+
+    Arguments:
     ---------
     adata
         AnnData object containing data.

@@ -267,7 +267,7 @@ def velocity(
 
     .. image:: https://user-images.githubusercontent.com/31883718/69636491-ff057100-1056-11ea-90b7-d04098112ce1.png
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -498,7 +498,7 @@ def velocity_genes(
 ):
     """Estimates velocities in a gene-specific manner.
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.

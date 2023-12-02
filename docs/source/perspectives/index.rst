@@ -21,7 +21,6 @@ transcriptional boost in erythroid lineage, and misleading arrow projections in 
 
 Notebook: `Perspectives <Perspectives>`_
 
-|
 Kinetic parameter analysis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. image:: https://user-images.githubusercontent.com/31883718/130656606-00bd44be-9071-4008-be1b-244fa9c2d244.png

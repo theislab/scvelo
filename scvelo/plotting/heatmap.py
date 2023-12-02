@@ -36,7 +36,7 @@ def heatmap(
 ):
     """Plot time series for genes as heatmap.
 
-    Arguments
+    Arguments:
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -76,7 +76,7 @@ def heatmap(
         If `True` or a `str`, save the figure. A string is appended to the default
         filename. Infer the filetype if ending on {'.pdf', '.png', '.svg'}.
     kwargs:
-        Arguments passed to seaborns clustermap,
+        Arguments: passed to seaborns clustermap,
         e.g., set `yticklabels=True` to display all gene names in all rows.
 
     Returns

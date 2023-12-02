@@ -94,7 +94,7 @@ def velocity_clusters(
     .. image:: https://user-images.githubusercontent.com/31883718/69625627-484dc480-1047-11ea-847f-6607a3430427.png
        :width: 600px
 
-    Arguments
+    Arguments:
     ----------
     data : :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -238,7 +238,7 @@ def rank_velocity_genes(
     .. image:: https://user-images.githubusercontent.com/31883718/69626572-30774000-1049-11ea-871f-e8a30c42f10e.png
        :width: 600px
 
-    Arguments
+    Arguments:
     ----------
     data : :class:`~anndata.AnnData`
         Annotated data matrix.

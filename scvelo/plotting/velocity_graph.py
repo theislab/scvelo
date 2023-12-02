@@ -47,7 +47,9 @@ def velocity_graph(
 ):
     """Plot of the velocity graph.
 
-    Arguments
+    Velocity graph with connectivities (dashed) and transitions (solid/arrows).
+
+    Arguments:
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -56,16 +58,28 @@ def velocity_graph(
     n_neighbors: `int` (default: 10)
         Number of neighbors to be included for generating connectivity / velocity graph.
     arrows: `bool` (default: `None`)
-        Whether to display arrows instead of edges.
-        Recommended to be used only on a cluster by setting groups parameter.
+        Whether to display arrows instead of edges. Recommended to be used only on a
+        cluster by setting groups parameter.
     arrowsize: `int` (default: 3)
         Size of the arrow heads.
+    threshold: `float` (default: None)
+        Threshold below which values are set to zero.
+    edge_width: `float` (default: 0.2)
+        Line width of edges.
+    edge_color: `str` (default: "grey")
+        Edge color. Can be a single color or a sequence of colors with the same length
+        as edgelist. Color can be string or rgb (or rgba) tuple of floats from 0-1. If
+        numeric values are specified they will be mapped to colors using the edge_cmap
+        and edge_vmin,edge_vmax parameters.
+    edges_on_top: `bool` (default: None)
+        Whether or not to plot edges on top.
 
     {scatter}
 
     Returns
     -------
-    `matplotlib.Axis` if `show==False`
+    If `show==False`, the `matplotlib.Axis` object.
+    This is a test.
     """
     basis = default_basis(adata, **kwargs) if basis is None else get_basis(adata, basis)
     kwargs.update(
@@ -128,7 +142,7 @@ def velocity_graph(
         warnings.simplefilter("ignore")
         X_emb = adata.obsm[f"X_{basis}"][:, get_components(components, basis)]
         node_size = (kwargs["size"] if "size" in kwargs else default_size(adata)) / 4
-        edges = draw_networkx_edges(
+        edges = _draw_networkx_edges(
             DiGraph(T) if arrows else Graph(T),
             X_emb,
             node_size=node_size,
@@ -146,7 +160,7 @@ def velocity_graph(
         return ax
 
 
-def draw_networkx_edges(
+def _draw_networkx_edges(
     G,
     pos,
     edgelist=None,

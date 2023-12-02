@@ -342,7 +342,7 @@ class ExpectationMaximizationModel(BaseInference):
     ):
         """Align dynamics to a common set of parameters.
 
-        Arguments
+        Arguments:
         ---------
         t_max: `float`, `False` or `None` (default: `None`)
             Total range for time assignments.

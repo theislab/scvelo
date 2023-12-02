@@ -272,7 +272,7 @@ def _get_dentategyrus_50obs(
     preprocessed
         Boolean identifier whether or not to return preprocessed dataset.
 
-    Returns
+    Returns:
     -------
     Union[AnnData, Tuple[AnnData, AnnData]]
         Specified version of dataset.
@@ -298,7 +298,7 @@ def _get_dentategyrus_100obs(
     preprocessed
         Boolean identifier whether or not to return preprocessed dataset.
 
-    Returns
+    Returns:
     -------
     Union[AnnData, Tuple[AnnData, AnnData]]
         Specified version of dataset.
@@ -326,7 +326,7 @@ def _get_dentategyrus_adata(
     preprocessed
         Boolean identifier whether or not to return preprocessed dataset.
 
-    Returns
+    Returns:
     -------
     Union[AnnData, Tuple[AnnData, AnnData]]
         Specified version of dataset.
@@ -350,7 +350,7 @@ def _get_pancreas_50obs(
     preprocessed
         Boolean identifier whether or not to return preprocessed dataset.
 
-    Returns
+    Returns:
     -------
     Union[AnnData, Tuple[AnnData, AnnData]]
         Specified version of dataset.
@@ -376,7 +376,7 @@ def _get_pancreas_100obs(
     preprocessed
         Boolean identifier whether or not to return preprocessed dataset.
 
-    Returns
+    Returns:
     -------
     Union[AnnData, Tuple[AnnData, AnnData]]
         Specified version of dataset.
@@ -404,7 +404,7 @@ def _get_pancreas_adata(
     preprocessed
         Boolean identifier whether or not to return preprocessed dataset.
 
-    Returns
+    Returns:
     -------
     Union[AnnData, Tuple[AnnData, AnnData]]
         Specified version of dataset.
