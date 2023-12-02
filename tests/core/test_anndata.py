@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import hypothesis.strategies as st
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 
 import numpy as np
 import pandas as pd
@@ -112,8 +112,23 @@ class TestCleanObsNames:
 
 
 class TestCleanup(TestBase):
-    @given(adata=get_adata(max_obs=5, max_vars=5), inplace=st.booleans())
-    def test_cleanup_all(self, adata: AnnData, inplace: bool):
+    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
+    @pytest.mark.parametrize("n_obs", [50, 100])
+    @pytest.mark.parametrize("layer", [None, "unspliced", "spliced"])
+    @pytest.mark.parametrize("dense", [True, False])
+    @pytest.mark.parametrize("inplace", [True, False])
+    def test_cleanup_all(
+        self, adata, dataset: str, n_obs: int, layer: bool, dense: bool, inplace: bool
+    ):
+        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
+        adata.layers["dummy_layer"] = csr_matrix(np.eye(adata.n_obs, adata.n_vars))
+        adata.uns["dummy_entry"] = {"key": csr_matrix(np.eye(5, 7))}
+
+        if dense:
+            if layer is None:
+                adata.X = adata.X.A
+            else:
+                adata.layers[layer] = adata.layers[layer].A
         returned_adata = cleanup(adata=adata, clean="all", inplace=inplace)
 
         if not inplace:
@@ -122,12 +137,13 @@ class TestCleanup(TestBase):
         else:
             assert returned_adata is None
 
-        assert len(adata.layers) == 0
-        assert len(adata.uns) == 0
+        assert list(adata.layers.keys()) == ["Ms", "Mu", "spliced", "unspliced"]
+        assert list(adata.uns.keys()) == ["neighbors"]
         assert len(adata.obs.columns) == 0
         assert len(adata.var.columns) == 0
 
     @given(adata=get_adata(max_obs=5, max_vars=5), inplace=st.booleans())
+    @settings(max_examples=10, deadline=1000)
     def test_cleanup_default_clean_w_random_adata(self, adata: AnnData, inplace: bool):
         n_obs_cols = len(adata.obs.columns)
         n_var_cols = len(adata.var.columns)

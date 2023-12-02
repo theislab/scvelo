@@ -18,7 +18,7 @@ def dentategyrus_adata(tmpdir_factory):
 
 
 @pytest.mark.skipif(
-    sys.version_info[:2] != (3, 8) or sys.platform != "linux",
+    sys.version_info[:2] != (3, 10) or sys.platform != "linux",
     reason="Limit number of downloads to speed up testing.",
 )
 class TestDataSets:
