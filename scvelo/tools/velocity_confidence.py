@@ -19,7 +19,7 @@ def velocity_confidence(data, vkey="velocity", copy=False):
        :width: 600px
 
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -28,7 +28,7 @@ def velocity_confidence(data, vkey="velocity", copy=False):
     copy: `bool` (default: `False`)
         Return a copy instead of writing to adata.
 
-    Returns
+    Returns:
     -------
     velocity_length: `.obs`
         Length of the velocity vectors for each individual cell
@@ -78,7 +78,7 @@ def velocity_confidence(data, vkey="velocity", copy=False):
 def velocity_confidence_transition(data, vkey="velocity", scale=10, copy=False):
     """Computes confidences of velocity transitions.
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.

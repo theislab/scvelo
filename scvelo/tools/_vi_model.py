@@ -33,6 +33,8 @@ def _softplus_inverse(x: np.ndarray) -> np.ndarray:
 class VELOVI(VAEMixin, UnsupervisedTrainingMixin, BaseModelClass):
     """Velocity Variational Inference.
 
+    See :cite:p:`Gayoso2023` for details.
+
     Parameters
     ----------
     adata

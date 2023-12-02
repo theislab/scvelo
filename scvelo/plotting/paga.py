@@ -75,8 +75,8 @@ def paga(
 
     PAGA graph with connectivities (dashed) and transitions (solid/arrows).
 
-    Parameters
-    ----------
+    Arguments:
+    ---------
     adata
         Annotated data matrix.
     threshold

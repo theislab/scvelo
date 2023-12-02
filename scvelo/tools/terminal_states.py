@@ -20,7 +20,7 @@ def cell_fate(
 ):
     """Computes individual cell endpoints.
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -86,7 +86,7 @@ def cell_origin(
 ):
     """Computes individual cell root points.
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -239,7 +239,7 @@ def terminal_states(
     Alternatively, we recommend to use :func:`cellrank.tl.terminal_states`
     providing an improved/generalized approach of identifying terminal states.
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.

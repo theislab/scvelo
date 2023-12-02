@@ -13,7 +13,7 @@ from ._base import DynamicsBase
 class SplicingDynamics(DynamicsBase):
     """Splicing dynamics.
 
-    Arguments
+    Arguments:
     ---------
     alpha
         Transcription rate.
@@ -80,7 +80,7 @@ class SplicingDynamics(DynamicsBase):
     ) -> Union[Dict, ndarray]:
         """Calculate solution of dynamics.
 
-        Arguments
+        Arguments:
         ---------
         t
             Time steps at which to evaluate solution.
@@ -122,7 +122,7 @@ class SplicingDynamics(DynamicsBase):
     ) -> Union[Dict[str, ndarray], Tuple[ndarray], ndarray]:
         """Return steady state of system.
 
-        Arguments
+        Arguments:
         ---------
         stacked
             Whether to stack states or return them individually. Defaults to `True`.

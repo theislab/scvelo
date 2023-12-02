@@ -290,7 +290,7 @@ def velocity_graph(
         = \frac{\delta_{ij}^T \nu_i}{\left\lVert\delta_{ij}\right\rVert
         \left\lVert \nu_i \right\rVert}.
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.

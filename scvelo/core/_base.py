@@ -14,7 +14,7 @@ class DynamicsBase(ABC):
     ) -> Union[Dict, Tuple[ndarray], ndarray]:
         """Calculate solution of dynamics.
 
-        Arguments
+        Arguments:
         ---------
         t
             Time steps at which to evaluate solution.
@@ -38,7 +38,7 @@ class DynamicsBase(ABC):
     ) -> Union[Dict[str, ndarray], Tuple[ndarray], ndarray]:
         """Return steady state of system.
 
-        Arguments
+        Arguments:
         ---------
         stacked
             Whether to stack states or return them individually. Defaults to `True`.

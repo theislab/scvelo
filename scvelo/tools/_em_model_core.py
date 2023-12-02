@@ -429,7 +429,7 @@ def recover_dynamics(
 
     .. image:: https://user-images.githubusercontent.com/31883718/69636459-ef862800-1056-11ea-8803-0a787ede5ce9.png
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -668,7 +668,7 @@ def align_dynamics(
 ):
     """Align dynamics to a common set of parameters.
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -793,7 +793,7 @@ def latent_time(
 
     .. image:: https://user-images.githubusercontent.com/31883718/69636500-03318e80-1057-11ea-9e14-ae9f907711cc.png
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix
@@ -972,7 +972,7 @@ def differential_kinetic_test(
 
     .. image:: https://user-images.githubusercontent.com/31883718/78930730-dc737200-7aa4-11ea-92f6-269b7609c3a5.png
 
-    Arguments
+    Arguments:
     ---------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
@@ -1103,7 +1103,7 @@ def rank_dynamical_genes(data, n_genes=100, groupby=None, copy=False):
     This ranks genes by their likelihood obtained from the
     dynamical model grouped by clusters specified in groupby.
 
-    Arguments
+    Arguments:
     ----------
     data : :class:`~anndata.AnnData`
         Annotated data matrix.

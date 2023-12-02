@@ -10,7 +10,7 @@ from ._arithmetic import prod_sum, sum
 class LinearRegression:
     """Extreme quantile and constraint least square linear regression.
 
-    Arguments
+    Arguments:
     ---------
     percentile
         Percentile of data on which linear regression line is fit. If `None`, all data
@@ -59,7 +59,7 @@ class LinearRegression:
     def _trim_data(self, data: List) -> List:
         """Trim data to extreme values.
 
-        Arguments
+        Arguments:
         ---------
         data
             Data to be trimmed to extreme quantiles.
@@ -97,7 +97,7 @@ class LinearRegression:
     def fit(self, x: ndarray, y: ndarray):
         """Fit linear model per column.
 
-        Arguments
+        Arguments:
         ---------
         x
             Training data of shape `(n_obs, n_vars)`.
@@ -107,7 +107,7 @@ class LinearRegression:
         Returns
         -------
         self
-            Returns an instance of self.
+            Returns: an instance of self.
         """
         n_obs = x.shape[0]
 

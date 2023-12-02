@@ -70,7 +70,7 @@ def velocity_embedding(
 ):
     """Scatter plot of velocities on the embedding.
 
-    Arguments
+    Arguments:
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.

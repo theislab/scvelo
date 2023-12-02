@@ -152,7 +152,7 @@ def velocity_embedding_grid(
 ):
     """Scatter plot of velocities on a grid.
 
-    Arguments
+    Arguments:
     ---------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
