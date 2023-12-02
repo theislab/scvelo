@@ -95,7 +95,6 @@ Found a bug or would like to see a feature implemented? Feel free to submit an
 Have a question or would like to start a new discussion? Head over to
 `GitHub discussions <https://github.com/theislab/scvelo/discussions>`_.
 Your help to improve scVelo is highly appreciated.
-For further information visit `scvelo.org <https://scvelo.org>`_.
 
 
 .. toctree::
