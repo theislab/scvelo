@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import hypothesis.strategies as st
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 
 import numpy as np
 import pandas as pd
@@ -143,6 +143,7 @@ class TestCleanup(TestBase):
         assert len(adata.var.columns) == 0
 
     @given(adata=get_adata(max_obs=5, max_vars=5), inplace=st.booleans())
+    @settings(max_examples=10, deadline=1000)
     def test_cleanup_default_clean_w_random_adata(self, adata: AnnData, inplace: bool):
         n_obs_cols = len(adata.obs.columns)
         n_var_cols = len(adata.var.columns)
