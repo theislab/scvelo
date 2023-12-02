@@ -135,7 +135,7 @@ nbsphinx_prolog = r"""
       <a href="https://colab.research.google.com/{{ docname|e }}" target="_parent">
       <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
       <a href="https://nbviewer.jupyter.org/{{ docname|e }}" target="_parent">
-      <img src="https://github.com/theislab/scvelo/raw/master/docs/source/_static/nbviewer-badge.svg" alt="Open In nbviewer"/></a>
+      <img src="https://github.com/theislab/scvelo/raw/main/docs/source/_static/nbviewer-badge.svg" alt="Open In nbviewer"/></a>
     </div>
 """
 
@@ -252,7 +252,7 @@ def get_linenos(obj):
 
 # set project_dir: project/docs/source/conf.py/../../.. → project/
 project_dir = Path(__file__).parent.parent.parent
-github_url_scvelo = "https://github.com/theislab/scvelo/tree/master"
+github_url_scvelo = "https://github.com/theislab/scvelo/tree/main"
 github_url_read_loom = "https://github.com/theislab/anndata/tree/master/anndata"
 github_url_read = "https://github.com/theislab/scanpy/tree/master"
 github_url_scanpy = "https://github.com/theislab/scanpy/tree/master/scanpy"

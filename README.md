@@ -6,7 +6,7 @@
 [link-pypi]: https://pypi.org/project/scvelo
 [badge-pypidownloads]: https://pepy.tech/badge/scvelo
 [link-pypidownloads]: https://pepy.tech/project/scvelo
-[badge-ci]: https://img.shields.io/github/actions/workflow/status/theislab/scvelo/ci.yml?branch=master
+[badge-ci]: https://img.shields.io/github/actions/workflow/status/theislab/scvelo/ci.yml?branch=main
 [link-ci]: https://github.com/theislab/scvelo/actions/workflows/ci.yml
 
 # scVelo - RNA velocity generalized through dynamical modeling

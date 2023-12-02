@@ -103,7 +103,7 @@ For further information visit `scvelo.org <https://scvelo.org>`_.
 .. |Docs| image:: https://readthedocs.org/projects/scvelo/badge/?version=latest
    :target: https://scvelo.readthedocs.io
 
-.. |travis| image:: https://travis-ci.org/theislab/scvelo.svg?branch=master
+.. |travis| image:: https://travis-ci.org/theislab/scvelo.svg?branch=main
    :target: https://travis-ci.org/theislab/scvelo
 
 .. _Scanpy: https://scanpy.readthedocs.io
