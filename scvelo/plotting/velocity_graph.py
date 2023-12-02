@@ -241,7 +241,6 @@ def _draw_networkx_edges(
             linewidths=width,
             antialiaseds=(1,),
             linestyle=style,
-            transOffset=ax.transData,
             alpha=alpha,
         )
 
