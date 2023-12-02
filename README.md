@@ -13,16 +13,13 @@
 
 <img src="https://user-images.githubusercontent.com/31883718/67709134-a0989480-f9bd-11e9-8ae6-f6391f5d95a0.png" width="400px" align="left">
 
-**scVelo** is a scalable toolkit for RNA velocity analysis in single cells, based on
-[Bergen et al. (Nature Biotech, 2020](https://doi.org/10.1038/s41587-020-0591-3).
-
-RNA velocity enables the recovery of directed dynamic information by leveraging splicing kinetics.
-scVelo generalizes the concept of RNA velocity
-[La Manno et al., Nature, 2018](https://doi.org/10.1038/s41586-018-0414-6>)
-by relaxing previously made assumptions with a stochastic and a dynamical model that solves the full
-transcriptional dynamics. It thereby adapts RNA velocity to widely varying specifications such as non-stationary populations.
-
-scVelo is compatible with scanpy\_ and hosts efficient implementations of all RNA velocity models.
+**scVelo** is a scalable toolkit for RNA velocity analysis in single cells; RNA velocity
+enables the recovery of directed dynamic information by leveraging splicing kinetics
+<sup>[1](https://doi.org/10.1038/s41586-018-0414-6)</sup>. scVelo collects different
+methods for inferring RNA velocity using an expectation-maximization framework
+<sup>[2](https://doi.org/10.1038/s41587-020-0591-3)</sup>, deep generative modeling
+<sup>[3](https://doi.org/10.1038/s41592-023-01994-w)</sup>,
+or metabolically labeled transcripts<sup>[4](https://doi.org/10.1101/2023.07.19.549685)</sup>.
 
 ## scVelo's key applications
 
@@ -32,28 +29,66 @@ scVelo is compatible with scanpy\_ and hosts efficient implementations of all RN
 -   estimate reaction rates of transcription, splicing and degradation.
 -   use statistical tests, e.g., to detect different kinetics regimes.
 
-scVelo has, for instance, recently been used to study immune response in COVID-19
-patients and dynamic processes in human lung regeneration. Find out more in this list of
-[application examples](https://scholar.google.com/scholar?cites=18195185735875895912).
+## Citing scVelo
 
-## Latest news
+If you include or rely on scVelo when publishing research, please adhere to the
+following citation guide:
 
--   Aug/2021: [Perspectives paper out in MSB](https://doi.org/10.15252/msb.202110282)
--   Feb/2021: scVelo goes multi-core
--   Dec/2020: Cover of [Nature Biotechnology](https://www.nature.com/nbt/volumes/38)
--   Nov/2020: Talk at [Single Cell Biology](https://coursesandconferences.wellcomegenomecampus.org/our-events/single-cell-biology-2020/)
--   Oct/2020: [Helmholtz Best Paper Award](https://twitter.com/ICBmunich/status/1318611467722199041)
--   Oct/2020: Map cell fates with [CellRank](https://cellrank.org)
--   Sep/2020: Talk at [Single Cell Omics](https://twitter.com/fabian_theis/status/1305621028056465412)
--   Aug/2020: [scVelo out in Nature Biotech](https://www.helmholtz-muenchen.de/en/aktuelles/latest-news/press-information-news/article/48658/index.html)
+### EM and steady-state model
 
-## References
+If you use the _EM_ (_dynamical_) or _steady-state model_, cite
 
-[La Manno _et al._ (2018), RNA velocity of single cells, Nature](https://doi.org/10.1038/s41586-018-0414-6).
+```bibtex
+@article{Bergen2020,
+  title = {Generalizing RNA velocity to transient cell states through dynamical modeling},
+  volume = {38},
+  ISSN = {1546-1696},
+  url = {http://dx.doi.org/10.1038/s41587-020-0591-3},
+  DOI = {10.1038/s41587-020-0591-3},
+  number = {12},
+  journal = {Nature Biotechnology},
+  publisher = {Springer Science and Business Media LLC},
+  author = {Bergen, Volker and Lange, Marius and Peidli, Stefan and Wolf, F. Alexander and Theis, Fabian J.},
+  year = {2020},
+  month = aug,
+  pages = {1408–1414}
+}
+```
 
-[Bergen _et al._ (2020), Generalizing RNA velocity to transient cell states through dynamical modeling, Nature Biotech](https://doi.org/10.1038/s41587-020-0591-3).
+### veloVI
 
-[Bergen _et al._ (2021), RNA velocity - current challenges and future perspectives, Molecular Systems Biology](https://doi.org/10.15252/msb.202110282).
+If you use _veloVI_ (_VI model_), cite
+
+```bibtex
+@article{Gayoso2023,
+  title = {Deep generative modeling of transcriptional dynamics for RNA velocity analysis in single cells},
+  ISSN = {1548-7105},
+  url = {http://dx.doi.org/10.1038/s41592-023-01994-w},
+  DOI = {10.1038/s41592-023-01994-w},
+  journal = {Nature Methods},
+  publisher = {Springer Science and Business Media LLC},
+  author = {Gayoso, Adam and Weiler, Philipp and Lotfollahi, Mohammad and Klein, Dominik and Hong, Justin and Streets, Aaron and Theis, Fabian J. and Yosef, Nir},
+  year = {2023},
+  month = sep
+}
+```
+
+### RNA velocity inference through metabolic labeling information
+
+If you use the implemented method for estimating RNA velocity from metabolic labeling
+information, cite
+
+```bibtex
+@article{Weiler2023,
+  title = {Unified fate mapping in multiview single-cell data},
+  url = {http://dx.doi.org/10.1101/2023.07.19.549685},
+  DOI = {10.1101/2023.07.19.549685},
+  publisher = {Cold Spring Harbor Laboratory},
+  author = {Weiler, Philipp and Lange, Marius and Klein, Michal and Pe’er, Dana and Theis, Fabian J.},
+  year = {2023},
+  month = jul
+}
+```
 
 ## Support
 
@@ -61,6 +96,5 @@ Found a bug or would like to see a feature implemented? Feel free to submit an
 [issue](https://github.com/theislab/scvelo/issues/new/choose).
 Have a question or would like to start a new discussion? Head over to
 [GitHub discussions](https://github.com/theislab/scvelo/discussions).
-In either case, you can also always send us an [email](mailto:mail@scvelo.org).
 Your help to improve scVelo is highly appreciated.
 For further information visit [scvelo.org](https://scvelo.org).
