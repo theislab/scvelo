@@ -5,7 +5,7 @@ requires = ["hatchling"]
 
 [project]
 name = "scvelo"
-version = "0.3.0"
+version = "0.3.1"
 description = "RNA velocity generalized through dynamical modeling"
 readme = {file = "README.md", content-type="text/markdown"}
 requires-python = ">=3.8"
