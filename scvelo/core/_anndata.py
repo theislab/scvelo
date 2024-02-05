@@ -498,7 +498,8 @@ def merge(
         if id_length in kwargs:
             clean_obs_names(adata, **kwargs)
             clean_obs_names(ldata, **kwargs)
-        else raise Exception("Error. There were no matching observation names and no id_length was given to clean the observation names.")
+        else:
+            raise Exception("Error. There were no matching observation names and no id_length was given to clean the observation names.")
         common_obs = adata.obs_names.intersection(ldata.obs_names)
 
     if copy:
