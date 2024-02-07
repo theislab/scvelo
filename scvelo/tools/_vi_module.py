@@ -11,7 +11,9 @@ from torch.distributions import MixtureSameFamily, Normal
 from scvi.module.base import auto_move_data, BaseModuleClass, LossOutput
 from scvi.nn import Encoder, FCLayers
 
-from ._core import DEFAULT_ACTIVATION_FUNCTION, REGISTRY_KEYS
+from ._core import REGISTRY_KEYS
+
+DEFAULT_ACTIVATION_FUNCTION = torch.nn.Softplus()
 
 torch.backends.cudnn.benchmark = True
 
