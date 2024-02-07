@@ -1,11 +1,12 @@
-# isort: skip_file
-import pytest
 import contextlib
+
+import pytest
 
 import scvelo as scv
 
 with contextlib.suppress(ImportError):
     from scvi.data import synthetic_iid
+
     from scvelo.tools import VELOVI
 
 
