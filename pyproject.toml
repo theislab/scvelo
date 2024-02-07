@@ -80,7 +80,6 @@ dev = [
     "pybind11",
     "pytest-cov",
     "igraph",
-    "scvi-tools>=0.20.1",
     "setuptools_scm",
 ]
 docs = [
