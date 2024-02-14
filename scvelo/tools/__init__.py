@@ -1,3 +1,5 @@
+import contextlib
+
 from scanpy.tools import diffmap, dpt, louvain, tsne, umap
 
 from ._em_model import ExpectationMaximizationModel
@@ -11,7 +13,6 @@ from ._em_model_core import (
     recover_latent_time,
 )
 from ._steady_state_model import SecondOrderSteadyStateModel, SteadyStateModel
-from ._vi_model import VELOVI
 from .paga import paga
 from .rank_velocity_genes import rank_velocity_genes, velocity_clusters
 from .score_genes_cell_cycle import score_genes_cell_cycle
@@ -22,6 +23,10 @@ from .velocity_confidence import velocity_confidence, velocity_confidence_transi
 from .velocity_embedding import velocity_embedding
 from .velocity_graph import velocity_graph
 from .velocity_pseudotime import velocity_map, velocity_pseudotime
+
+with contextlib.suppress(ImportError):
+    from ._vi_model import VELOVI
+
 
 __all__ = [
     "align_dynamics",
@@ -54,5 +59,8 @@ __all__ = [
     "SteadyStateModel",
     "SecondOrderSteadyStateModel",
     "ExpectationMaximizationModel",
-    "VELOVI",
 ]
+if "VELOVI" in locals():
+    __all__ += ["VELOVI"]
+
+del contextlib

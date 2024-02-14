@@ -1,7 +1,16 @@
-from scvi.data import synthetic_iid
+import contextlib
+
+import pytest
 
 import scvelo as scv
-from scvelo.tools import VELOVI
+
+with contextlib.suppress(ImportError):
+    from scvi.data import synthetic_iid
+
+    from scvelo.tools import VELOVI
+
+
+_ = pytest.importorskip("scvi")
 
 
 def test_preprocess_data():
