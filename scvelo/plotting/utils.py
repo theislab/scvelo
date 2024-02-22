@@ -466,6 +466,7 @@ def update_axes(
     is_embedding=False,
     frameon=None,
     figsize=None,
+    aspect="auto",
 ):
     """TODO."""
     if xlim is not None:
@@ -519,6 +520,8 @@ def update_axes(
         }
         ax.tick_params(which="both", **kwargs)
         ax.set_frame_on(False)
+
+    ax.set_aspect(aspect)
 
     if rcParams["savefig.transparent"]:
         ax.patch.set_alpha(0)

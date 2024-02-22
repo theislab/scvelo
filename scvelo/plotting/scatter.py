@@ -119,6 +119,7 @@ def scatter(
     show=None,
     save=None,
     ax=None,
+    aspect="auto",
     **kwargs,
 ):
     """Scatter plot along observations or variables axes.
@@ -770,7 +771,9 @@ def scatter(
 
             set_label(xlabel, ylabel, fontsize, basis, ax=ax)
             set_title(title, layer, color, fontsize, ax=ax)
-            update_axes(ax, xlim, ylim, fontsize, is_embedding, frameon, figsize)
+            update_axes(
+                ax, xlim, ylim, fontsize, is_embedding, frameon, figsize, aspect=aspect
+            )
             if add_margin:
                 set_margin(ax, x, y, add_margin)
             if colorbar is not False:
