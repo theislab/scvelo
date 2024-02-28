@@ -573,6 +573,20 @@ class TestGetDf:
         else:
             assert (df.columns == ["col_1", "col_2"]).all()
 
+    @given(
+        adata=get_adata(
+            max_obs=5,
+            max_vars=5,
+            layer_keys=["layer_1", "layer_2"],
+        ),
+        modality=st.sampled_from([None, "X", "layer_1", "layer_2"]),
+    )
+    def test_default(self, adata: AnnData, modality: Optional[None]):
+        df = get_df(adata, layer=modality)
+
+        assert isinstance(df, pd.DataFrame)
+        np.testing.assert_equal(adata.to_df().values, df.values)
+
 
 class TestGetInitialSize(TestBase):
     @given(
