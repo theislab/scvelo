@@ -1658,10 +1658,10 @@ def hist(
     if rcParams["savefig.transparent"]:
         ax.patch.set_alpha(0)
 
-    if not show:
+    if not (save | show):
         return ax
     else:
-        pl.show()
+        savefig_or_show("likelihood_histogram", dpi=dpi, save=save, show=show)
 
 
 # TODO: Add docstrings
