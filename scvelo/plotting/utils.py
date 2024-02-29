@@ -1658,7 +1658,7 @@ def hist(
     if rcParams["savefig.transparent"]:
         ax.patch.set_alpha(0)
 
-    if not (save | show):
+    if save == None and not show:
         return ax
     else:
         savefig_or_show("likelihood_histogram", dpi=dpi, save=save, show=show)
