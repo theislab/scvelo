@@ -98,7 +98,6 @@ docs = [
 ]
 
 [tool.setuptools]
-package-dir = {"" = "svcelo"}
 include-package-data = true
 
 [tool.setuptools_scm]
