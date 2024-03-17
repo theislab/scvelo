@@ -1460,6 +1460,7 @@ def hist(
     ax=None,
     dpi=None,
     show=True,
+    save=None,
     **kwargs,
 ):
     """Plot a histogram.
@@ -1530,6 +1531,9 @@ def hist(
         Figure dpi.
     show: `bool`, optional (default: `None`)
         Show the plot, do not return axis.
+    save: `bool` or `str`, optional (default: `None`)
+        If `True` or a `str`, save the figure. A string is appended to the default filename.
+        Infer the filetype if ending on {'.pdf', '.png', '.svg'}.
 
     Returns
     -------
@@ -1658,10 +1662,9 @@ def hist(
     if rcParams["savefig.transparent"]:
         ax.patch.set_alpha(0)
 
-    if not show:
+    savefig_or_show(dpi=dpi, save=save, show=show)
+    if show is False:
         return ax
-    else:
-        pl.show()
 
 
 # TODO: Add docstrings
