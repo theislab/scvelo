@@ -1,11 +1,10 @@
 [build-system]
-build-backend = "hatchling.build"
-requires = ["hatchling"]
-
+requires = ["setuptools>=61", "setuptools-scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "scvelo"
-version = "0.3.1"
+dynamic = ["version"]
 description = "RNA velocity generalized through dynamical modeling"
 readme = {file = "README.md", content-type="text/markdown"}
 requires-python = ">=3.8"
@@ -98,8 +97,10 @@ docs = [
     "nbsphinx>=0.7,<0.8.7"
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["scvelo"]
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools_scm]
 
 [tool.coverage.run]
 source = ["scvelo"]
