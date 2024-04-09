@@ -206,7 +206,8 @@ def get_df(
         if keys is None:
             df = data.to_df()
         else:
-            key = keys if isinstance(keys, str) else keys[0]
+            keys = [keys] if isinstance(keys, str) else keys
+            key = keys[0]
 
             if key in data.var_names:
                 df = obs_df(data, keys, layer=layer)
