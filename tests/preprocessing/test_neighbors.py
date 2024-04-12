@@ -810,10 +810,6 @@ class TestGetScanpyNeighbors:
             neighbors.connectivities.A, ground_truth_connectivities.A, decimal=4
         )
 
-        assert hasattr(neighbors, "knn_indices")
-        assert neighbors.knn_indices.shape == (adata.n_obs, n_neighbors)
-        np.testing.assert_equal(neighbors.knn_indices[:, 0], np.arange(adata.n_obs))
-
     @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
     @pytest.mark.parametrize("n_obs", [50, 100])
     @pytest.mark.parametrize("n_pcs", [15, 30])
@@ -861,10 +857,6 @@ class TestGetScanpyNeighbors:
         np.testing.assert_almost_equal(
             neighbors.connectivities.A, ground_truth_connectivities.A, decimal=4
         )
-
-        assert hasattr(neighbors, "knn_indices")
-        assert neighbors.knn_indices.shape == (adata.n_obs, n_neighbors)
-        np.testing.assert_equal(neighbors.knn_indices[:, 0], np.arange(adata.n_obs))
 
 
 class TestGetSklearnNeighbors:
@@ -1046,6 +1038,7 @@ class TestNeighbors:
         assert set(returned_adata.uns["pca"]["params"]) == {
             "use_highly_variable",
             "zero_center",
+            "mask_var",
         }
         if "highly_variable" not in adata.var:
             assert returned_adata.uns["pca"]["params"]["use_highly_variable"] is False
@@ -1063,15 +1056,16 @@ class TestNeighbors:
         assert "neighbors" in returned_adata.uns
         assert returned_adata.uns["neighbors"]["connectivities_key"] == "connectivities"
         assert returned_adata.uns["neighbors"]["distances_key"] == "distances"
-        assert "indices" in returned_adata.uns["neighbors"]
-        assert returned_adata.uns["neighbors"]["indices"].shape == (
-            returned_adata.n_obs,
-            n_neighbors,
-        )
-        np.testing.assert_equal(
-            returned_adata.uns["neighbors"]["indices"][:, 0],
-            np.arange(returned_adata.n_obs),
-        )
+        if method in ["hnsw", "sklearn"]:
+            assert "indices" in returned_adata.uns["neighbors"]
+            assert returned_adata.uns["neighbors"]["indices"].shape == (
+                returned_adata.n_obs,
+                n_neighbors,
+            )
+            np.testing.assert_equal(
+                returned_adata.uns["neighbors"]["indices"][:, 0],
+                np.arange(returned_adata.n_obs),
+            )
         assert set(returned_adata.uns["neighbors"]["params"]) == {
             "n_neighbors",
             "method",
@@ -1918,7 +1912,11 @@ class TestSetPCA:
         assert "pca" in adata.uns
         assert set(adata.uns["pca"]) == {"params", "variance", "variance_ratio"}
         assert isinstance(adata.uns["pca"]["params"], Dict)
-        assert set(adata.uns["pca"]["params"]) == {"use_highly_variable", "zero_center"}
+        assert set(adata.uns["pca"]["params"]) == {
+            "use_highly_variable",
+            "zero_center",
+            "mask_var",
+        }
         if "highly_variable" not in adata.var:
             assert adata.uns["pca"]["params"]["use_highly_variable"] is False
         else:
@@ -1998,7 +1996,11 @@ class TestSetPCA:
         assert "pca" in adata.uns
         assert set(adata.uns["pca"]) == {"params", "variance", "variance_ratio"}
         assert isinstance(adata.uns["pca"]["params"], Dict)
-        assert set(adata.uns["pca"]["params"]) == {"use_highly_variable", "zero_center"}
+        assert set(adata.uns["pca"]["params"]) == {
+            "use_highly_variable",
+            "zero_center",
+            "mask_var",
+        }
         if "highly_variable" not in adata.var:
             assert adata.uns["pca"]["params"]["use_highly_variable"] is False
         else:
@@ -2040,7 +2042,11 @@ class TestSetPCA:
         assert "pca" in adata.uns
         assert set(adata.uns["pca"]) == {"params", "variance", "variance_ratio"}
         assert isinstance(adata.uns["pca"]["params"], Dict)
-        assert set(adata.uns["pca"]["params"]) == {"use_highly_variable", "zero_center"}
+        assert set(adata.uns["pca"]["params"]) == {
+            "use_highly_variable",
+            "zero_center",
+            "mask_var",
+        }
         if "highly_variable" not in adata.var:
             assert adata.uns["pca"]["params"]["use_highly_variable"] is False
         else:
