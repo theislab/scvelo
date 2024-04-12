@@ -37,7 +37,7 @@ def _get_scanpy_neighbors(adata: AnnData, **kwargs):
     with warnings.catch_warnings():  # ignore numba warning (umap/issues/252)
         warnings.simplefilter("ignore")
         neighbors = Neighbors(adata)
-        neighbors.compute_neighbors(write_knn_indices=True, **kwargs)
+        neighbors.compute_neighbors(**kwargs)
     logg.switch_verbosity("on", module="scanpy")
 
     return neighbors
