@@ -17,7 +17,6 @@ from scvelo.preprocessing.neighbors import (
     _get_scanpy_neighbors,
     _get_sklearn_neighbors,
     _set_pca,
-    compute_connectivities_umap,
     get_connectivities,
     get_csr_from_indices,
     get_duplicate_cells,
@@ -32,37 +31,6 @@ from scvelo.preprocessing.neighbors import (
     verify_neighbors,
 )
 from tests.core import get_adata
-
-
-class TestComputeConnectivitiesUmap:
-    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
-    @pytest.mark.parametrize("n_obs", [50, 100])
-    def test_real_data(self, adata, dataset, n_obs):
-        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
-
-        knn_indices = adata.uns["neighbors"]["indices"]
-
-        knn_distances = []
-        for row_distance, row_index in zip(adata.obsp["distances"], knn_indices):
-            knn_distances.append(row_distance.A[0, row_index])
-        knn_distances = np.array(knn_distances)
-
-        distance_matrix, connectivity_matrix = compute_connectivities_umap(
-            knn_indices=knn_indices,
-            knn_dists=knn_distances,
-            n_obs=n_obs,
-            n_neighbors=adata.uns["neighbors"]["params"]["n_neighbors"],
-        )
-
-        assert isinstance(distance_matrix, csr_matrix)
-        np.testing.assert_almost_equal(
-            distance_matrix.A, adata.obsp["distances"].A, decimal=4
-        )
-
-        assert isinstance(connectivity_matrix, csr_matrix)
-        np.testing.assert_almost_equal(
-            connectivity_matrix.A, adata.obsp["connectivities"].A, decimal=4
-        )
 
 
 class TestGetConnectivities:
@@ -273,28 +241,6 @@ class TestGetCsrFromIndices:
 
         assert isinstance(returned_matrix, csr_matrix)
         assert (returned_matrix != ground_truth).getnnz() == 0
-
-    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
-    @pytest.mark.parametrize("n_obs", [50, 100])
-    def test_real_data(self, adata, dataset, n_obs):
-        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
-
-        knn_indices = adata.uns["neighbors"]["indices"]
-
-        knn_distances = []
-        for row_distance, row_index in zip(adata.obsp["distances"], knn_indices):
-            knn_distances.append(row_distance.A[0, row_index])
-        knn_distances = np.array(knn_distances)
-
-        returned_matrix = get_csr_from_indices(
-            knn_indices=knn_indices,
-            knn_dists=knn_distances,
-            n_obs=n_obs,
-            n_neighbors=adata.uns["neighbors"]["params"]["n_neighbors"],
-        )
-
-        assert isinstance(returned_matrix, csr_matrix)
-        assert (returned_matrix != adata.obsp["distances"]).getnnz() == 0
 
 
 class TestGetDuplicateCells:
@@ -1827,32 +1773,6 @@ class TestSetDiagonal:
         assert knn_indices_.shape == (3, 4)
         np.testing.assert_equal(knn_indices_[:, 0], np.arange(3))
         np.testing.assert_equal(knn_indices_[:, 1:], knn_indices)
-
-    @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
-    @pytest.mark.parametrize("n_obs", [50, 100])
-    @pytest.mark.parametrize("remove_diag", [True, False])
-    def test_real_data(self, adata, dataset, n_obs, remove_diag):
-        adata = adata(dataset=dataset, n_obs=n_obs, raw=False, preprocessed=True)
-        n_neighbors = adata.uns["neighbors"]["params"]["n_neighbors"]
-
-        knn_distances = adata.obsp["distances"][
-            np.repeat(np.arange(adata.n_obs), n_neighbors).reshape(adata.n_obs, -1),
-            adata.uns["neighbors"]["indices"],
-        ].A
-        knn_indices = adata.uns["neighbors"]["indices"]
-
-        knn_distances_, knn_indices_ = set_diagonal(
-            knn_distances=knn_distances,
-            knn_indices=knn_indices,
-            remove_diag=remove_diag,
-        )
-
-        if remove_diag:
-            np.testing.assert_equal(knn_distances_, knn_distances[:, 1:])
-            np.testing.assert_equal(knn_indices_, knn_indices[:, 1:])
-        else:
-            np.testing.assert_equal(knn_distances_, knn_distances)
-            np.testing.assert_equal(knn_indices_, knn_indices)
 
 
 class TestSetPCA:

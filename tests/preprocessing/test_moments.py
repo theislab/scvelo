@@ -204,7 +204,6 @@ class TestMoments:
         assert set(adata_1.uns["neighbors"]) == {
             "connectivities_key",
             "distances_key",
-            "indices",
             "params",
         }
         assert (
@@ -214,10 +213,6 @@ class TestMoments:
         assert (
             adata_1.uns["neighbors"]["distances_key"]
             == adata_2.uns["neighbors"]["distances_key"]
-        )
-        np.testing.assert_equal(
-            adata_1.uns["neighbors"]["indices"],
-            adata_2.uns["neighbors"]["indices"],
         )
         assert adata_1.uns["neighbors"]["params"] == adata_2.uns["neighbors"]["params"]
 

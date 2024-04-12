@@ -13,17 +13,6 @@ def test_einsum():
     assert np.allclose(l2_norm(Ms), np.linalg.norm(Ms, axis=1))
 
 
-def test_neighbors():
-    adata = scv.datasets.simulation(random_seed=0, n_vars=100)
-    scv.pp.filter_and_normalize(adata)
-    scv.pp.pca(adata)
-    scv.pp.neighbors(adata)
-    adata_ = scv.pp.neighbors(adata, method="sklearn", copy=True)
-    dists = np.round(adata.obsp["distances"][0].data, 2)
-    dists_ = np.round(adata_.obsp["distances"][0].data, 2)
-    assert np.all(dists == dists_)
-
-
 def test_dynamical_model():
     adata = scv.datasets.simulation(random_seed=0, n_vars=10)
     scv.pp.filter_and_normalize(adata)
