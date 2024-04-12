@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from scipy.sparse import csr_matrix, issparse
 
@@ -60,6 +62,12 @@ def moments(
         normalize_per_cell(adata)
 
     if n_neighbors is not None and n_neighbors > get_n_neighs(adata):
+        warnings.warn(
+            "Automatic neighbor calculation is deprecated since scvelo==0.4.0 and will be removed in a future version "
+            "of scVelo. Please compute neighbors first with Scanpy.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         neighbors(
             adata,
             n_neighbors=n_neighbors,
