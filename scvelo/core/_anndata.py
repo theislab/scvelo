@@ -1,4 +1,5 @@
 import re
+import warnings
 from typing import List, Literal, Optional, Union
 
 import numpy as np
@@ -178,6 +179,13 @@ def get_df(
     :class:`pd.DataFrame`
         A dataframe.
     """
+    warnings.warn(
+        "`get_df` is deprecated since scvelo==0.4.0 and will be removed in a future version "
+        "of scVelo. Please `AnnData::get_df` or Scanpy's `scanpy.get.obs_df` or `scanpy.get.var_df`.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if precision is not None:
         pd.set_option("display.precision", precision)
 
