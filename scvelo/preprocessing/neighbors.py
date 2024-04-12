@@ -124,6 +124,12 @@ def _set_pca(adata, n_pcs: Optional[int], use_highly_variable: bool):
         or n_pcs is not None
         and n_pcs > adata.obsm["X_pca"].shape[1]
     ):
+        warnings.warn(
+            "Automatic computation of PCA is deprecated since scvelo==0.4.0 and will be removed in a future version "
+            "of scVelo. Please compute PCA with Scanpy first.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if use_highly_variable and "highly_variable" in adata.var.keys():
             n_vars = np.sum(adata.var["highly_variable"])
         else:
@@ -213,6 +219,12 @@ def neighbors(
     distances : `.obsp`
         Sparse matrix of distances for each pair of neighbors.
     """
+    warnings.warn(
+        "`neighbors` is deprecated since scvelo==0.4.0 and will be removed in a future version "
+        "of scVelo. Please compute neighbors with Scanpy.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     adata = adata.copy() if copy else adata
 
     use_rep = _get_rep(adata=adata, use_rep=use_rep, n_pcs=n_pcs)
