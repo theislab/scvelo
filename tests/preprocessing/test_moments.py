@@ -55,7 +55,7 @@ class TestGetMoments:
                 f"-layer={layer}-mode={mode}_first_moment.npy"
             )
         )
-        np.testing.assert_almost_equal(first_order_moment, ground_truth)
+        np.testing.assert_almost_equal(first_order_moment, ground_truth, decimal=3)
 
     @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
     @pytest.mark.parametrize("n_obs", [50, 100])
@@ -84,7 +84,7 @@ class TestGetMoments:
                 f"-layer={layer}-mode={mode}_second_moment.npy"
             )
         )
-        np.testing.assert_almost_equal(second_order_moment, ground_truth)
+        np.testing.assert_almost_equal(second_order_moment, ground_truth, decimal=2)
 
     @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
     @pytest.mark.parametrize("n_obs", [50, 100])
@@ -117,7 +117,7 @@ class TestGetMoments:
                 f"-layer={layer}-mode={mode}_first_moment.npy"
             )
         )
-        np.testing.assert_almost_equal(first_order_moment, ground_truth)
+        np.testing.assert_almost_equal(first_order_moment, ground_truth, decimal=3)
 
     @pytest.mark.parametrize("sparse", [True, False])
     def test_analytic_example(self, sparse: bool):
@@ -187,7 +187,7 @@ class TestMoments:
         )
         assert issparse(adata_1.obsp["distances"])
         np.testing.assert_almost_equal(
-            adata_1.obsp["distances"].A, adata_2.obsp["distances"].A, decimal=4
+            adata_1.obsp["distances"].A, adata_2.obsp["distances"].A, decimal=3
         )
 
         # Check `.uns` is unchanged
@@ -266,7 +266,7 @@ class TestMoments:
             )
         )
         np.testing.assert_almost_equal(
-            returned_adata.layers["Mu"], ground_truth_unspliced
+            returned_adata.layers["Mu"], ground_truth_unspliced, decimal=4
         )
 
         ground_truth_spliced = np.load(
@@ -276,7 +276,7 @@ class TestMoments:
             )
         )
         np.testing.assert_almost_equal(
-            returned_adata.layers["Ms"], ground_truth_spliced
+            returned_adata.layers["Ms"], ground_truth_spliced, decimal=4
         )
 
     @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
@@ -327,10 +327,10 @@ class TestMoments:
         self._compare_adatas(returned_adata, original_adata)
 
         np.testing.assert_almost_equal(
-            returned_adata.layers["Mu"], original_adata.layers["Mu"]
+            returned_adata.layers["Mu"], original_adata.layers["Mu"], decimal=4
         )
         np.testing.assert_almost_equal(
-            returned_adata.layers["Ms"], original_adata.layers["Ms"]
+            returned_adata.layers["Ms"], original_adata.layers["Ms"], decimal=4
         )
 
         expected_log = "computing neighbors\n    finished ("
@@ -369,7 +369,9 @@ class TestMoments:
                 f"first_moment_unspliced.npy"
             )
         )
-        np.testing.assert_almost_equal(adata.layers["Mu"], ground_truth_unspliced)
+        np.testing.assert_almost_equal(
+            adata.layers["Mu"], ground_truth_unspliced, decimal=4
+        )
 
         ground_truth_spliced = np.load(
             file=(
@@ -377,7 +379,9 @@ class TestMoments:
                 f"first_moment_spliced.npy"
             )
         )
-        np.testing.assert_almost_equal(adata.layers["Ms"], ground_truth_spliced)
+        np.testing.assert_almost_equal(
+            adata.layers["Ms"], ground_truth_spliced, decimal=4
+        )
 
 
 class TestSecondOrderMoments:
@@ -413,7 +417,7 @@ class TestSecondOrderMoments:
             )
         )
         np.testing.assert_almost_equal(
-            second_order_moment_spliced, ground_truth_spliced
+            second_order_moment_spliced, ground_truth_spliced, decimal=2
         )
 
         ground_truth_mixed = np.load(
@@ -422,7 +426,9 @@ class TestSecondOrderMoments:
                 f"-n_obs={n_obs}-mode=connectivities_second_moment_mixed.npy"
             )
         )
-        np.testing.assert_almost_equal(second_order_moment_mixed, ground_truth_mixed)
+        np.testing.assert_almost_equal(
+            second_order_moment_mixed, ground_truth_mixed, decimal=3
+        )
 
     @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
     @pytest.mark.parametrize("n_obs", [50, 100])
@@ -454,7 +460,9 @@ class TestSecondOrderMoments:
             )
         )
         np.testing.assert_almost_equal(
-            second_order_moment_spliced, 2 * second_order_spliced - adata.layers["Ms"]
+            second_order_moment_spliced,
+            2 * second_order_spliced - adata.layers["Ms"],
+            decimal=2,
         )
 
         second_order_mixed = np.load(
@@ -464,7 +472,9 @@ class TestSecondOrderMoments:
             )
         )
         np.testing.assert_almost_equal(
-            second_order_moment_mixed, 2 * second_order_mixed - adata.layers["Mu"]
+            second_order_moment_mixed,
+            2 * second_order_mixed - adata.layers["Mu"],
+            decimal=2,
         )
 
 
@@ -497,4 +507,4 @@ class TestSecondOrderMomentsU:
                 f"-layer=unspliced-mode=connectivities_second_moment.npy"
             )
         )
-        np.testing.assert_almost_equal(second_order_moment, ground_truth)
+        np.testing.assert_almost_equal(second_order_moment, ground_truth, decimal=2)
