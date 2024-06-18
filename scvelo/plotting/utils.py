@@ -5,7 +5,6 @@ from cycler import Cycler, cycler
 
 import numpy as np
 import pandas as pd
-from numpy.core._exceptions import UFuncTypeError
 from pandas import Index
 from scipy import stats
 from scipy.sparse import issparse
@@ -23,6 +22,12 @@ from scvelo import logging as logg
 from scvelo import settings
 from scvelo.tools.utils import strings_to_categoricals
 from . import palettes
+
+try:
+    from numpy.core._exceptions import UFuncTypeError
+except ModuleNotFoundError:
+    from numpy._core._exceptions import UFuncTypeError
+
 
 """helper functions"""
 
