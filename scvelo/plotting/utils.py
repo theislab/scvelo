@@ -5,7 +5,6 @@ from cycler import Cycler, cycler
 
 import numpy as np
 import pandas as pd
-from numpy.core._exceptions import UFuncTypeError
 from pandas import Index
 from scipy import stats
 from scipy.sparse import issparse
@@ -23,6 +22,12 @@ from scvelo import logging as logg
 from scvelo import settings
 from scvelo.tools.utils import strings_to_categoricals
 from . import palettes
+
+try:
+    from numpy.core._exceptions import UFuncTypeError
+except ModuleNotFoundError:
+    from numpy._core._exceptions import UFuncTypeError
+
 
 """helper functions"""
 
@@ -1460,6 +1465,7 @@ def hist(
     ax=None,
     dpi=None,
     show=True,
+    save=None,
     **kwargs,
 ):
     """Plot a histogram.
@@ -1530,6 +1536,9 @@ def hist(
         Figure dpi.
     show: `bool`, optional (default: `None`)
         Show the plot, do not return axis.
+    save: `bool` or `str`, optional (default: `None`)
+        If `True` or a `str`, save the figure. A string is appended to the default filename.
+        Infer the filetype if ending on {'.pdf', '.png', '.svg'}.
 
     Returns
     -------
@@ -1658,10 +1667,9 @@ def hist(
     if rcParams["savefig.transparent"]:
         ax.patch.set_alpha(0)
 
-    if not show:
+    savefig_or_show(dpi=dpi, save=save, show=show)
+    if show is False:
         return ax
-    else:
-        pl.show()
 
 
 # TODO: Add docstrings

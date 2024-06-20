@@ -175,7 +175,9 @@ class VelocityGraph:
         self.adata = adata
 
     # TODO: Add docstrings
-    def compute_cosines(self, n_jobs=None, backend="loky"):
+    def compute_cosines(
+        self, n_jobs=None, backend="loky", show_progress_bar: bool = True
+    ):
         """TODO."""
         n_jobs = get_n_jobs(n_jobs=n_jobs)
 
@@ -189,6 +191,7 @@ class VelocityGraph:
             unit="cells",
             backend=backend,
             as_array=False,
+            show_progress_bar=show_progress_bar,
         )()
         uncertainties, vals, rows, cols = map(_flatten, zip(*res))
 
@@ -277,6 +280,7 @@ def velocity_graph(
     copy=False,
     n_jobs=None,
     backend="loky",
+    show_progress_bar: bool = True,
 ):
     r"""Computes velocity graph based on cosine similarities.
 
@@ -329,6 +333,8 @@ def velocity_graph(
     backend: `str` (default: "loky")
         Backend used for multiprocessing. See :class:`joblib.Parallel` for valid
         options.
+    show_progress_bar
+        Whether to show a progress bar.
 
     Returns
     -------
@@ -370,7 +376,9 @@ def velocity_graph(
     logg.info(
         f"computing velocity graph (using {n_jobs}/{os.cpu_count()} cores)", r=True
     )
-    vgraph.compute_cosines(n_jobs=n_jobs, backend=backend)
+    vgraph.compute_cosines(
+        n_jobs=n_jobs, backend=backend, show_progress_bar=show_progress_bar
+    )
 
     adata.uns[f"{vkey}_graph"] = vgraph.graph
     adata.uns[f"{vkey}_graph_neg"] = vgraph.graph_neg

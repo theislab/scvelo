@@ -419,6 +419,7 @@ def recover_dynamics(
     copy=False,
     n_jobs=None,
     backend="loky",
+    show_progress_bar: bool = True,
     **kwargs,
 ):
     """Recovers the full splicing kinetics of specified genes.
@@ -476,6 +477,8 @@ def recover_dynamics(
     backend: `str` (default: "loky")
         Backend used for multiprocessing. See :class:`joblib.Parallel` for valid
         options.
+    show_progress_bar
+        Whether to show a progress bar.
 
     Returns
     -------
@@ -557,7 +560,7 @@ def recover_dynamics(
         unit="gene",
         as_array=False,
         backend=backend,
-        show_progress_bar=len(var_names) > 9,
+        show_progress_bar=show_progress_bar,
     )(
         adata=adata,
         use_raw=use_raw,
