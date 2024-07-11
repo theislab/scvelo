@@ -36,7 +36,7 @@ except ModuleNotFoundError:
 def make_dense(X):
     """TODO."""
     if issparse(X):
-        XA = X.A if X.ndim == 2 else X.A1
+        XA = X.toarray() if X.ndim == 2 else X.A1
     else:
         XA = X.A1 if isinstance(X, np.matrix) else X
     return np.array(XA)
@@ -799,7 +799,7 @@ def interpret_colorkey(adata, c=None, layer=None, perc=None, use_raw=None):
                 if adata.raw is None and use_raw:
                     raise ValueError("AnnData object does not have `raw` counts.")
                 c = adata.raw.obs_vector(c) if use_raw else adata.obs_vector(c)
-            c = c.A.flatten() if issparse(c) else c
+            c = c.toarray().flatten() if issparse(c) else c
         elif c in adata.var.keys():  # color by observation key
             c = adata.var[c]
         elif np.any([var_key in c for var_key in adata.var.keys()]):

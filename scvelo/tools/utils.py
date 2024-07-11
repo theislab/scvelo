@@ -33,7 +33,7 @@ def mean(x, axis=0):
 # TODO: Add docstrings
 def make_dense(X):
     """TODO."""
-    XA = X.A if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) else X
+    XA = X.toarray() if issparse(X) and X.ndim == 2 else X.A1 if issparse(X) else X
     if XA.ndim == 2:
         XA = XA[0] if XA.shape[0] == 1 else XA[:, 0] if XA.shape[1] == 1 else XA
     return np.array(XA)
@@ -327,8 +327,8 @@ def cutoff_small_velocities(
     x = adata.layers["spliced"] if use_raw else adata.layers["Ms"]
     y = adata.layers["unspliced"] if use_raw else adata.layers["Mu"]
 
-    x_max = x.max(0).A[0] if issparse(x) else x.max(0)
-    y_max = y.max(0).A[0] if issparse(y) else y.max(0)
+    x_max = x.max(0).toarray()[0] if issparse(x) else x.max(0)
+    y_max = y.max(0).toarray()[0] if issparse(y) else y.max(0)
 
     xy_norm = x / np.clip(x_max, 1e-3, None) + y / np.clip(y_max, 1e-3, None)
     W = xy_norm >= np.percentile(xy_norm, 98, axis=0) * frac_of_max
@@ -449,9 +449,9 @@ def vcorrcoef(X, y, mode="pearsons", axis=-1):
         Which correlation metric to use.
     """
     if issparse(X):
-        X = np.array(X.A)
+        X = np.array(X.toarray())
     if issparse(y):
-        y = np.array(y.A)
+        y = np.array(y.toarray())
     if axis == 0:
         if X.ndim > 1:
             X = np.array(X.T)

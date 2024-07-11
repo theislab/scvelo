@@ -73,7 +73,10 @@ class LinearRegression:
             data = [data]
 
         data = np.array(
-            [data_mat.A if issparse(data_mat) else data_mat for data_mat in data]
+            [
+                data_mat.toarray() if issparse(data_mat) else data_mat
+                for data_mat in data
+            ]
         )
 
         # TODO: Add explanatory comment

@@ -100,7 +100,7 @@ def transition_matrix(
         graph = graph.multiply(basis_graph)
 
     if self_transitions:
-        confidence = graph.max(1).A.flatten()
+        confidence = graph.max(1).toarray().flatten()
         ub = np.percentile(confidence, 98)
         self_prob = np.clip(ub - confidence, 0, 1)
         graph.setdiag(self_prob)

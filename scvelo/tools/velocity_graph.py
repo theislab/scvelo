@@ -69,12 +69,12 @@ class VelocityGraph:
         xkey = xkey if xkey in adata.layers.keys() else "spliced"
 
         X = np.array(
-            adata.layers[xkey].A[:, subset]
+            adata.layers[xkey].toarray()[:, subset]
             if issparse(adata.layers[xkey])
             else adata.layers[xkey][:, subset]
         )
         V = np.array(
-            adata.layers[vkey].A[:, subset]
+            adata.layers[vkey].toarray()[:, subset]
             if issparse(adata.layers[vkey])
             else adata.layers[vkey][:, subset]
         )
@@ -209,7 +209,7 @@ class VelocityGraph:
             )
             self.uncertainties.eliminate_zeros()
 
-        confidence = self.graph.max(1).A.flatten()
+        confidence = self.graph.max(1).toarray().flatten()
         self.self_prob = np.clip(np.percentile(confidence, 98) - confidence, 0, 1)
 
     def _compute_cosines(self, obs_idx, queue):

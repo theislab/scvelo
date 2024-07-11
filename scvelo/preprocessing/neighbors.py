@@ -326,7 +326,7 @@ class FastNeighbors:
         ef_c, ef = max(ef_construction, self.n_neighbors), max(self.n_neighbors, ef)
         metric = "l2" if metric == "euclidean" else metric
 
-        X = X.A if issparse(X) else X
+        X = X.toarray() if issparse(X) else X
         ns, dim = X.shape
 
         knn = hnswlib.Index(space=metric, dim=dim)
@@ -564,7 +564,7 @@ def get_duplicate_cells(data):
         vals = [val for val, count in Counter(lst).items() if count > 1]
         idx_dup = np.where(pd.Series(lst).isin(vals))[0]
 
-        X_new = np.array(X[idx_dup].A if issparse(X) else X[idx_dup])
+        X_new = np.array(X[idx_dup].toarray() if issparse(X) else X[idx_dup])
         sorted_idx = np.lexsort(X_new.T)
         sorted_data = X_new[sorted_idx, :]
 

@@ -121,7 +121,7 @@ def _get_n_neighbors(
         rep_X = rep_X[rows, cols]
 
         if sparse_op:
-            n_neighbors_to_use = np.cumsum(rep_X.A > 0, axis=1)
+            n_neighbors_to_use = np.cumsum(rep_X.toarray() > 0, axis=1)
         else:
             n_neighbors_to_use = np.cumsum(rep_X > 0, axis=1)
 

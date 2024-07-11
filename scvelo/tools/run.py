@@ -56,8 +56,8 @@ def convert_to_adata(vlm, basis=None):
     layers = OrderedDict()
     layers["spliced"] = vlm.S_sz.T if hasattr(vlm, "S_sz") else vlm.S.T
     layers["unspliced"] = vlm.U_sz.T if hasattr(vlm, "U_sz") else vlm.U.T
-    if hasattr(vlm, "A") and (vlm.A.T.shape == layers["spliced"].shape):
-        layers["ambiguous"] = vlm.A.T
+    if hasattr(vlm, "A") and (vlm.toarray().T.shape == layers["spliced"].shape):
+        layers["ambiguous"] = vlm.toarray().T
 
     if hasattr(vlm, "velocity"):
         layers["velocity"] = vlm.velocity.T
@@ -109,12 +109,12 @@ def convert_to_loom(adata, basis=None):
             self.S = adata.layers["spliced"].T
             self.U = adata.layers["unspliced"].T
             self.S = (
-                np.array(self.S.A, **kwargs)
+                np.array(self.S.toarray(), **kwargs)
                 if issparse(self.S)
                 else np.array(self.S, **kwargs)
             )
             self.U = (
-                np.array(self.U.A, **kwargs)
+                np.array(self.U.toarray(), **kwargs)
                 if issparse(self.U)
                 else np.array(self.U, **kwargs)
             )
@@ -146,7 +146,7 @@ def convert_to_loom(adata, basis=None):
             if "ambiguous" in adata.layers.keys():
                 self.A = np.array(adata.layers["ambiguous"].T)
                 if issparse(self.A):
-                    self.A = self.A.A
+                    self.A = self.A.toarray()
 
             self.ca = {}
             self.ra = {}

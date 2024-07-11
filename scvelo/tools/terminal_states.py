@@ -57,7 +57,7 @@ def cell_fate(
     T = transition_matrix(_adata, self_transitions=self_transitions)
     fate = np.linalg.inv(np.eye(_adata.n_obs) - T)
     if issparse(T):
-        fate = fate.A
+        fate = fate.toarray()
     cell_fates = np.array(_adata.obs[groupby][fate.argmax(1)])
     if disconnected_groups is not None:
         idx = _adata.obs[groupby].isin(disconnected_groups)
@@ -123,7 +123,7 @@ def cell_origin(
     T = transition_matrix(_adata, self_transitions=self_transitions, backward=True)
     fate = np.linalg.inv(np.eye(_adata.n_obs) - T)
     if issparse(T):
-        fate = fate.A
+        fate = fate.toarray()
     cell_fates = np.array(_adata.obs[groupby][fate.argmax(1)])
     if disconnected_groups is not None:
         idx = _adata.obs[groupby].isin(disconnected_groups)

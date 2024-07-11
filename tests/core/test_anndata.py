@@ -126,9 +126,9 @@ class TestCleanup(TestBase):
 
         if dense:
             if layer is None:
-                adata.X = adata.X.A
+                adata.X = adata.X.toarray()
             else:
-                adata.layers[layer] = adata.layers[layer].A
+                adata.layers[layer] = adata.layers[layer].toarray()
         returned_adata = cleanup(adata=adata, clean="all", inplace=inplace)
 
         if not inplace:

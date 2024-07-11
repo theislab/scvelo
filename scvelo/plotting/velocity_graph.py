@@ -133,7 +133,7 @@ def velocity_graph(
 
     if groups is not None:
         if issparse(T):
-            T = T.A
+            T = T.toarray()
         T[~groups_to_bool(adata, groups, color)] = 0
         T = csr_matrix(T)
         T.eliminate_zeros()

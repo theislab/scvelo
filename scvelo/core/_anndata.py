@@ -284,7 +284,7 @@ def get_df(
         df = data
 
     if issparse(df):
-        df = np.array(df.A)
+        df = np.array(df.toarray())
     if columns is None and hasattr(df, "names"):
         columns = df.names
 
@@ -426,7 +426,7 @@ def make_dense(
     for modality in modalities:
         count_data = get_modality(adata=adata, modality=modality)
         if issparse(count_data):
-            set_modality(adata=adata, modality=modality, new_value=count_data.A)
+            set_modality(adata=adata, modality=modality, new_value=count_data.toarray())
 
     return adata if not inplace else None
 
