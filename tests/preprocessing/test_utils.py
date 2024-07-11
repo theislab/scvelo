@@ -275,7 +275,7 @@ class TestCsrVcorrcoef:
     def test_sparse_arrays(self, X: spmatrix, y: np.ndarray):
         pearsonr = csr_vcorrcoef(X=X, y=y)
 
-        X_dense = X.A.squeeze()
+        X_dense = X.toarray().squeeze()
 
         if X_dense.ndim == 1:
             np.testing.assert_almost_equal(np.corrcoef(X_dense, y)[0, 1], pearsonr)
@@ -427,7 +427,7 @@ class TestGetMeanVar:
     def test_percentile_sparse_input(
         self, X, percentile, lower_percentile, upper_percentile
     ):
-        clipped_array = X.A.copy().astype(float)
+        clipped_array = X.toarray().copy().astype(float)
         clipped_array[
             (clipped_array <= lower_percentile) & (clipped_array != 0)
         ] = lower_percentile
@@ -2143,7 +2143,7 @@ class TestNormalizePerCell:
         normalize_per_cell(adata, counts_per_cell=counts_per_cell)
         if issparse(adata.X):
             assert issparse(adata.X)
-            np.testing.assert_almost_equal(adata.X.A, normed_counts)
+            np.testing.assert_almost_equal(adata.X.toarray(), normed_counts)
         else:
             np.testing.assert_almost_equal(adata.X, normed_counts)
 
@@ -2169,7 +2169,7 @@ class TestNormalizePerCell:
         normalize_per_cell(adata, use_initial_size=use_initial_size)
         if issparse(adata.X):
             assert issparse(adata.X)
-            np.testing.assert_almost_equal(adata.X.A, normed_counts)
+            np.testing.assert_almost_equal(adata.X.toarray(), normed_counts)
         else:
             np.testing.assert_almost_equal(adata.X, normed_counts)
 
@@ -2214,7 +2214,7 @@ class TestNormalizePerCell:
 
         if issparse(X):
             assert issparse(adata.X)
-            np.testing.assert_almost_equal(adata.X.A, np.diag([1, 0.5]))
+            np.testing.assert_almost_equal(adata.X.toarray(), np.diag([1, 0.5]))
         else:
             np.testing.assert_almost_equal(adata.X, np.diag([1, 0.5]))
 
@@ -2231,7 +2231,7 @@ class TestNormalizePerCell:
                 if issparse(layers[layer]):
                     assert issparse(adata.layers[layer])
                     np.testing.assert_almost_equal(
-                        adata.layers[layer].A, normalized_layer
+                        adata.layers[layer].toarray(), normalized_layer
                     )
                 else:
                     np.testing.assert_almost_equal(
@@ -2241,7 +2241,7 @@ class TestNormalizePerCell:
                 if issparse(layers[layer]):
                     assert issparse(adata.layers[layer])
                     np.testing.assert_almost_equal(
-                        adata.layers[layer].A, layers[layer].A
+                        adata.layers[layer].toarray(), layers[layer].toarray()
                     )
                 else:
                     np.testing.assert_almost_equal(adata.layers[layer], layers[layer])

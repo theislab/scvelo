@@ -89,12 +89,12 @@ def moments(
         adata.layers["Ms"] = (
             csr_matrix.dot(connectivities, csr_matrix(adata.layers["spliced"]))
             .astype(np.float32)
-            .A
+            .toarray()
         )
         adata.layers["Mu"] = (
             csr_matrix.dot(connectivities, csr_matrix(adata.layers["unspliced"]))
             .astype(np.float32)
-            .A
+            .toarray()
         )
         # if renormalize: normalize_per_cell(adata, layers={'Ms', 'Mu'}, enforce=True)
 
@@ -130,8 +130,8 @@ def second_order_moments(adata, adjusted=False):
     s, u = csr_matrix(adata.layers["spliced"]), csr_matrix(adata.layers["unspliced"])
     if s.shape[0] == 1:
         s, u = s.T, u.T
-    Mss = csr_matrix.dot(connectivities, s.multiply(s)).astype(np.float32).A
-    Mus = csr_matrix.dot(connectivities, s.multiply(u)).astype(np.float32).A
+    Mss = csr_matrix.dot(connectivities, s.multiply(s)).astype(np.float32).toarray()
+    Mus = csr_matrix.dot(connectivities, s.multiply(u)).astype(np.float32).toarray()
     if adjusted:
         Mss = 2 * Mss - adata.layers["Ms"].reshape(Mss.shape)
         Mus = 2 * Mus - adata.layers["Mu"].reshape(Mus.shape)
@@ -157,7 +157,7 @@ def second_order_moments_u(adata):
 
     connectivities = get_connectivities(adata)
     u = csr_matrix(adata.layers["unspliced"])
-    Muu = csr_matrix.dot(connectivities, u.multiply(u)).astype(np.float32).A
+    Muu = csr_matrix.dot(connectivities, u.multiply(u)).astype(np.float32).toarray()
 
     return Muu
 
@@ -222,5 +222,5 @@ def get_moments(
     else:
         Mx = csr_matrix.dot(connectivities, X)
     if issparse(X):
-        Mx = Mx.astype(np.float32).A
+        Mx = Mx.astype(np.float32).toarray()
     return Mx

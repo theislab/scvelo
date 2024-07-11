@@ -169,7 +169,7 @@ def velocity(
         _adata = adata[:, var]
         s, u = _adata.layers[skey], _adata.layers[ukey]
         if issparse(s):
-            s, u = s.A, u.A
+            s, u = s.toarray(), u.toarray()
 
         # spliced/unspliced phase portrait with steady-state estimate
         ax = pl.subplot(gs[v * nplts])

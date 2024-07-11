@@ -42,9 +42,9 @@ class TestGetMoments:
 
         if dense:
             if layer is None:
-                adata.X = adata.X.A
+                adata.X = adata.X.toarray()
             else:
-                adata.layers[layer] = adata.layers[layer].A
+                adata.layers[layer] = adata.layers[layer].toarray()
 
         first_order_moment = get_moments(adata=adata, layer=layer, mode=mode)
         assert isinstance(first_order_moment, np.ndarray)
@@ -69,9 +69,9 @@ class TestGetMoments:
 
         if dense:
             if layer is None:
-                adata.X = adata.X.A
+                adata.X = adata.X.toarray()
             else:
-                adata.layers[layer] = adata.layers[layer].A
+                adata.layers[layer] = adata.layers[layer].toarray()
 
         second_order_moment = get_moments(
             adata=adata, layer=layer, mode=mode, second_order=True, centered=False
@@ -98,9 +98,9 @@ class TestGetMoments:
 
         if dense:
             if layer is None:
-                adata.X = adata.X.A
+                adata.X = adata.X.toarray()
             else:
-                adata.layers[layer] = adata.layers[layer].A
+                adata.layers[layer] = adata.layers[layer].toarray()
 
         if layer is None:
             first_order_moment = get_moments(adata=adata, layer=adata.X, mode=mode)
@@ -181,13 +181,15 @@ class TestMoments:
         assert set(adata_1.obsp) == {"distances", "connectivities"}
         assert issparse(adata_1.obsp["connectivities"])
         np.testing.assert_almost_equal(
-            adata_1.obsp["connectivities"].A,
-            adata_2.obsp["connectivities"].A,
+            adata_1.obsp["connectivities"].toarray(),
+            adata_2.obsp["connectivities"].toarray(),
             decimal=4,
         )
         assert issparse(adata_1.obsp["distances"])
         np.testing.assert_almost_equal(
-            adata_1.obsp["distances"].A, adata_2.obsp["distances"].A, decimal=3
+            adata_1.obsp["distances"].toarray(),
+            adata_2.obsp["distances"].toarray(),
+            decimal=3,
         )
 
         # Check `.uns` is unchanged

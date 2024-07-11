@@ -158,7 +158,7 @@ def velocity_embedding(
         T.eliminate_zeros()
 
         densify = adata.n_obs < 1e4
-        TA = T.A if densify else None
+        TA = T.toarray() if densify else None
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -179,7 +179,7 @@ def velocity_embedding(
             )
             delta = T.dot(X[:, vgenes]) - X[:, vgenes]
             if issparse(delta):
-                delta = delta.A
+                delta = delta.toarray()
             cos_proj = (V * delta).sum(1) / l2_norm(delta)
             V_emb *= np.clip(cos_proj[:, None] * 10, 0, 1)
 

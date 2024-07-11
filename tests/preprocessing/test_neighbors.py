@@ -165,7 +165,7 @@ class TestGetConnectivities:
         )
 
         assert issparse(connectivities)
-        np.testing.assert_almost_equal(connectivities.A, ground_truth.A)
+        np.testing.assert_almost_equal(connectivities.toarray(), ground_truth.toarray())
 
 
 class TestGetCsrFromIndices:
@@ -378,7 +378,7 @@ class TestGetHnswNeighbors:
         assert issparse(neighbors.distances)
         assert (neighbors.distances.getnnz(axis=1) == n_neighbors - 1).all()
         np.testing.assert_almost_equal(
-            neighbors.distances.A, ground_truth_distances.A, decimal=4
+            neighbors.distances.toarray(), ground_truth_distances.toarray(), decimal=4
         )
 
         assert hasattr(neighbors, "connectivities")
@@ -386,7 +386,9 @@ class TestGetHnswNeighbors:
         assert (neighbors.connectivities.getnnz(axis=1) >= n_neighbors - 1).all()
         assert (neighbors.connectivities != neighbors.connectivities.T).getnnz() == 0
         np.testing.assert_almost_equal(
-            neighbors.connectivities.A, ground_truth_connectivities.A, decimal=4
+            neighbors.connectivities.toarray(),
+            ground_truth_connectivities.toarray(),
+            decimal=4,
         )
 
         assert hasattr(neighbors, "knn_indices")
@@ -434,7 +436,7 @@ class TestGetHnswNeighbors:
         assert issparse(neighbors.distances)
         assert (neighbors.distances.getnnz(axis=1) == n_neighbors - 1).all()
         np.testing.assert_almost_equal(
-            neighbors.distances.A, ground_truth_distances.A, decimal=4
+            neighbors.distances.toarray(), ground_truth_distances.toarray(), decimal=4
         )
 
         assert hasattr(neighbors, "connectivities")
@@ -442,7 +444,9 @@ class TestGetHnswNeighbors:
         assert (neighbors.connectivities.getnnz(axis=1) >= n_neighbors - 1).all()
         assert (neighbors.connectivities != neighbors.connectivities.T).getnnz() == 0
         np.testing.assert_almost_equal(
-            neighbors.connectivities.A, ground_truth_connectivities.A, decimal=4
+            neighbors.connectivities.toarray(),
+            ground_truth_connectivities.toarray(),
+            decimal=4,
         )
 
         assert hasattr(neighbors, "knn_indices")
@@ -745,7 +749,7 @@ class TestGetScanpyNeighbors:
         assert issparse(neighbors.distances)
         assert (neighbors.distances.getnnz(axis=1) == n_neighbors - 1).all()
         np.testing.assert_almost_equal(
-            neighbors.distances.A, ground_truth_distances.A, decimal=4
+            neighbors.distances.toarray(), ground_truth_distances.toarray(), decimal=4
         )
 
         assert hasattr(neighbors, "connectivities")
@@ -753,7 +757,9 @@ class TestGetScanpyNeighbors:
         assert (neighbors.connectivities.getnnz(axis=1) >= n_neighbors - 1).all()
         assert (neighbors.connectivities != neighbors.connectivities.T).getnnz() == 0
         np.testing.assert_almost_equal(
-            neighbors.connectivities.A, ground_truth_connectivities.A, decimal=4
+            neighbors.connectivities.toarray(),
+            ground_truth_connectivities.toarray(),
+            decimal=4,
         )
 
     @pytest.mark.parametrize("dataset", ["pancreas", "dentategyrus"])
@@ -793,7 +799,7 @@ class TestGetScanpyNeighbors:
         assert issparse(neighbors.distances)
         assert (neighbors.distances.getnnz(axis=1) == n_neighbors - 1).all()
         np.testing.assert_almost_equal(
-            neighbors.distances.A, ground_truth_distances.A, decimal=4
+            neighbors.distances.toarray(), ground_truth_distances.toarray(), decimal=4
         )
 
         assert hasattr(neighbors, "connectivities")
@@ -801,7 +807,9 @@ class TestGetScanpyNeighbors:
         assert (neighbors.connectivities.getnnz(axis=1) >= n_neighbors - 1).all()
         assert (neighbors.connectivities != neighbors.connectivities.T).getnnz() == 0
         np.testing.assert_almost_equal(
-            neighbors.connectivities.A, ground_truth_connectivities.A, decimal=4
+            neighbors.connectivities.toarray(),
+            ground_truth_connectivities.toarray(),
+            decimal=4,
         )
 
 
@@ -847,7 +855,7 @@ class TestGetSklearnNeighbors:
         assert issparse(neighbors.distances)
         assert (neighbors.distances.getnnz(axis=1) == n_neighbors - 1).all()
         np.testing.assert_almost_equal(
-            neighbors.distances.A, ground_truth_distances.A, decimal=4
+            neighbors.distances.toarray(), ground_truth_distances.toarray(), decimal=4
         )
 
         assert hasattr(neighbors, "connectivities")
@@ -855,7 +863,9 @@ class TestGetSklearnNeighbors:
         assert (neighbors.connectivities.getnnz(axis=1) >= n_neighbors - 1).all()
         assert (neighbors.connectivities != neighbors.connectivities.T).getnnz() == 0
         np.testing.assert_almost_equal(
-            neighbors.connectivities.A, ground_truth_connectivities.A, decimal=4
+            neighbors.connectivities.toarray(),
+            ground_truth_connectivities.toarray(),
+            decimal=4,
         )
 
         assert hasattr(neighbors, "knn_indices")
@@ -901,7 +911,7 @@ class TestGetSklearnNeighbors:
         assert issparse(neighbors.distances)
         assert (neighbors.distances.getnnz(axis=1) == n_neighbors - 1).all()
         np.testing.assert_almost_equal(
-            neighbors.distances.A, ground_truth_distances.A, decimal=4
+            neighbors.distances.toarray(), ground_truth_distances.toarray(), decimal=4
         )
 
         assert hasattr(neighbors, "connectivities")
@@ -909,7 +919,9 @@ class TestGetSklearnNeighbors:
         assert (neighbors.connectivities.getnnz(axis=1) >= n_neighbors - 1).all()
         assert (neighbors.connectivities != neighbors.connectivities.T).getnnz() == 0
         np.testing.assert_almost_equal(
-            neighbors.connectivities.A, ground_truth_connectivities.A, decimal=4
+            neighbors.connectivities.toarray(),
+            ground_truth_connectivities.toarray(),
+            decimal=4,
         )
 
         assert hasattr(neighbors, "knn_indices")
@@ -1227,7 +1239,7 @@ class TestRemoveDuplicateCells:
 
         if sparse_format:
             assert issparse(adata.X)
-            np.testing.assert_almost_equal(adata.X.A, X_without_duplicates)
+            np.testing.assert_almost_equal(adata.X.toarray(), X_without_duplicates)
         else:
             np.testing.assert_almost_equal(adata.X, X_without_duplicates)
         np.testing.assert_almost_equal(adata.obsm["X_pca"], X_pca_without_duplicates)
@@ -1296,7 +1308,7 @@ class TestRemoveDuplicateCells:
 
         if sparse_format:
             assert issparse(adata.X)
-            np.testing.assert_almost_equal(adata.X.A, X_without_duplicates)
+            np.testing.assert_almost_equal(adata.X.toarray(), X_without_duplicates)
         else:
             np.testing.assert_almost_equal(adata.X, X_without_duplicates)
 
@@ -1373,7 +1385,7 @@ class TestRemoveDuplicateCells:
 
         if sparse_format:
             assert issparse(adata.X)
-            np.testing.assert_almost_equal(adata.X.A, X_without_duplicates)
+            np.testing.assert_almost_equal(adata.X.toarray(), X_without_duplicates)
         else:
             np.testing.assert_almost_equal(adata.X, X_without_duplicates)
 
@@ -1811,11 +1823,11 @@ class TestSetPCA:
         assert (adata.obs.columns == cleaned_adata.obs.columns).all()
         pd.testing.assert_frame_equal(adata.obs, cleaned_adata.obs)
         pd.testing.assert_frame_equal(adata.var, cleaned_adata.var)
-        np.testing.assert_almost_equal(adata.X.A, cleaned_adata.X.A)
+        np.testing.assert_almost_equal(adata.X.toarray(), cleaned_adata.X.toarray())
         for layer in adata.layers:
             np.testing.assert_almost_equal(
-                adata.layers[layer].A,
-                cleaned_adata.layers[layer].A,
+                adata.layers[layer].toarray(),
+                cleaned_adata.layers[layer].toarray(),
             )
 
         if n_pcs is None:

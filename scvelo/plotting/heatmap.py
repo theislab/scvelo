@@ -97,7 +97,7 @@ def heatmap(
         else adata[:, var_names].X
     )
     if issparse(X):
-        X = X.A
+        X = X.toarray()
     df = pd.DataFrame(X[np.argsort(time)], columns=var_names)
 
     if n_convolve is not None:

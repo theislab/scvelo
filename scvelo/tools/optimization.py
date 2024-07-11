@@ -12,10 +12,10 @@ from .utils import make_dense
 # TODO: Add docstrings
 def get_weight(x, y=None, perc=95):
     """TODO."""
-    xy_norm = np.array(x.A if issparse(x) else x)
+    xy_norm = np.array(x.toarray() if issparse(x) else x)
     if y is not None:
         if issparse(y):
-            y = y.A
+            y = y.toarray()
         xy_norm = xy_norm / np.clip(np.max(xy_norm, axis=0), 1e-3, None)
         xy_norm += y / np.clip(np.max(y, axis=0), 1e-3, None)
     if isinstance(perc, numbers.Number):
@@ -84,7 +84,7 @@ def optimize_NxN(x, y, fit_offset=False, perc=None):
             perc = perc[1]
         weights = get_weight(x, y, perc).astype(bool)
         if issparse(weights):
-            weights = weights.A
+            weights = weights.toarray()
     else:
         weights = None
 
