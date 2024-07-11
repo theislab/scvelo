@@ -305,7 +305,7 @@ def get_counts(gex, labeling_time_mask, obs_dist_argsort, obs_id, neighbors):
     # IDs of observations in each labeling time to consider
     obs_ids = {
         idx: obs_dist_argsort[idx][obs_id, : (val + 1)]
-        for idx, val in neighbors.iteritems()
+        for idx, val in neighbors.items()
     }
     # Stacked counts to consider
     counts = np.hstack(
@@ -452,7 +452,7 @@ def get_parameters(
             )
 
             _labeling_times = np.hstack(
-                [[idx] * (val + 1) for idx, val in neighbors.iteritems()]
+                [[idx] * (val + 1) for idx, val in neighbors.items()]
             )
 
             experiment = (
