@@ -197,8 +197,12 @@ def get_latest_pypi_version():
     from subprocess import CalledProcessError, check_output
 
     try:  # needs to work offline as well
-        result = check_output(["pip", "search", "scvelo"])
-        return f"{result.split()[-1]}"[2:-1]
+        result = check_output(
+            r'pip index versions scvelo | grep -o "$scvelo \(.*\)" | sed -E -n "s/.*\((.*)\).*$/\1/p"',
+            shell=True,
+            encoding="utf-8",
+        )
+        return result
     except CalledProcessError:
         return "0.0.0"
 
