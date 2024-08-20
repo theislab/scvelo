@@ -5,6 +5,8 @@ import pandas as pd
 from scipy.sparse import issparse
 from sklearn.utils import sparsefuncs
 
+from anndata import AnnData
+
 from scvelo import logging as logg
 from scvelo.core import get_initial_size, get_size, multiply, set_initial_size, sum
 
@@ -731,3 +733,73 @@ def recipe_velocity(
     )
     moments(adata, n_neighbors=n_neighbors, n_pcs=n_pcs)
     return adata if copy else None
+
+
+def min_max_scale(
+    adata: AnnData,
+    spliced_layer: str,
+    unspliced_layer: str,
+    copy: bool = False,
+) -> AnnData:
+    """Scale the spliced and unspliced layers to the range ``[0, 1]``."""
+    from sklearn.preprocessing import MinMaxScaler
+
+    adata = adata.copy() if copy else adata
+    adata.layers[spliced_layer] = MinMaxScaler().fit_transform(
+        adata.layers[spliced_layer]
+    )
+    adata.layers[unspliced_layer] = MinMaxScaler().fit_transform(
+        adata.layers[unspliced_layer]
+    )
+
+    return adata
+
+
+def filter_genes_r2(adata: AnnData, copy: bool = False) -> AnnData:
+    """Filter out genes according to a linear regression fit."""
+    from scvelo.tools import velocity
+
+    adata = velocity(adata, mode="deterministic", copy=copy)
+    adata = adata[
+        :, np.logical_and(adata.var.velocity_r2 > 0, adata.var.velocity_gamma > 0)
+    ]
+    adata = adata[:, adata.var.velocity_genes]
+
+    return adata
+
+
+def velovi_preprocess_recipe(
+    adata: AnnData,
+    spliced_layer: str = "Ms",
+    unspliced_layer: str = "Mu",
+    min_max_scale: bool = True,
+    filter_on_r2: bool = True,
+    copy: bool = False,
+) -> AnnData:
+    """Preprocess data for use with VELOVI.
+
+    Removes poorly detected genes and min-max scales the data.
+
+    Parameters
+    ----------
+    adata
+        Annotated data matrix.
+    spliced_layer
+        Name of the spliced layer.
+    unspliced_layer
+        Name of the unspliced layer.
+    min_max_scale
+        Min-max scale spliced and unspliced.
+    filter_on_r2
+        Filter out genes according to linear regression fit.
+
+    Returns
+    -------
+    Preprocessed adata.
+    """
+    if min_max_scale:
+        adata = min_max_scale(adata, spliced_layer, unspliced_layer, copy=copy)
+    if filter_on_r2:
+        adata = filter_genes_r2(adata, copy=copy)
+
+    return adata
