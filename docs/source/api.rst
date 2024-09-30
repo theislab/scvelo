@@ -76,7 +76,6 @@ Tools (tl)
 
    tl.recover_dynamics
    tl.differential_kinetic_test
-   tl.VELOVI
 
 **Dynamical genes**
 

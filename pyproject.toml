@@ -53,9 +53,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-vi = [
-    "scvi-tools>=0.20.1",
-]
 louvain = [
     "igraph",
     "louvain"
@@ -93,7 +90,7 @@ docs = [
     "Jinja2<3.1",
     # converting notebooks to html
     "ipykernel",
-    "sphinx>=1.7,<4.0",
+    "sphinx>=1.7",
     "nbsphinx>=0.7,<0.8.7"
 ]
 
@@ -142,9 +139,9 @@ exclude = '''
 [tool.isort]
 profile = "black"
 use_parentheses = true
-known_num = "networkx,numpy,pandas,scipy,sklearn,statmodels,torch"
+known_num = "networkx,numpy,pandas,scipy,sklearn,statmodels"
 known_plot = "matplotlib,mpl_toolkits,seaborn"
-known_bio = "anndata,scanpy,scvi"
+known_bio = "anndata,scanpy"
 sections = "FUTURE,STDLIB,THIRDPARTY,NUM,PLOT,BIO,FIRSTPARTY,LOCALFOLDER"
 no_lines_before = "LOCALFOLDER"
 balanced_wrapping = true

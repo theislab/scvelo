@@ -1,5 +1,3 @@
-import contextlib
-
 from scanpy.tools import diffmap, dpt, louvain, tsne, umap
 
 from ._em_model import ExpectationMaximizationModel
@@ -23,10 +21,6 @@ from .velocity_confidence import velocity_confidence, velocity_confidence_transi
 from .velocity_embedding import velocity_embedding
 from .velocity_graph import velocity_graph
 from .velocity_pseudotime import velocity_map, velocity_pseudotime
-
-with contextlib.suppress(ImportError):
-    from ._vi_model import VELOVI
-
 
 __all__ = [
     "align_dynamics",
@@ -60,7 +54,3 @@ __all__ = [
     "SecondOrderSteadyStateModel",
     "ExpectationMaximizationModel",
 ]
-if "VELOVI" in locals():
-    __all__ += ["VELOVI"]
-
-del contextlib
