@@ -1,5 +1,3 @@
-from scanpy.tools import diffmap, dpt, louvain, tsne, umap
-
 from ._em_model import ExpectationMaximizationModel
 from ._em_model_core import (
     align_dynamics,
@@ -25,12 +23,9 @@ from .velocity_pseudotime import velocity_map, velocity_pseudotime
 __all__ = [
     "align_dynamics",
     "differential_kinetic_test",
-    "diffmap",
-    "dpt",
     "DynamicsRecovery",
     "eigs",
     "latent_time",
-    "louvain",
     "paga",
     "rank_dynamical_genes",
     "rank_velocity_genes",
@@ -39,8 +34,6 @@ __all__ = [
     "score_genes_cell_cycle",
     "terminal_states",
     "transition_matrix",
-    "tsne",
-    "umap",
     "velocity",
     "velocity_clusters",
     "velocity_confidence",

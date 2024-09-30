@@ -8,20 +8,10 @@ Import scVelo as::
    import scvelo as scv
 
 
-After reading the data (``scv.read``) or loading an in-built dataset (``scv.datasets.*``),
+After reading the data or loading an in-built dataset (``scv.datasets.*``),
 the typical workflow consists of subsequent calls of
 preprocessing (``scv.pp.*``), analysis tools (``scv.tl.*``) and plotting (``scv.pl.*``).
 Further, several utilities (``scv.utils.*``) are provided to facilitate data analysis.
-
-
-Read / Load
------------
-
-.. autosummary::
-   :toctree: .
-
-   read
-   read_loom
 
 
 Preprocessing (pp)
@@ -50,15 +40,6 @@ Preprocessing (pp)
 
 Tools (tl)
 ----------
-
-**Clustering and embedding**
-(more at `scanpy-docs <https://scanpy.readthedocs.io/en/stable/api/>`_)
-
-.. autosummary::
-   :toctree: .
-
-   tl.louvain
-   tl.umap
 
 **Velocity estimation**
 
