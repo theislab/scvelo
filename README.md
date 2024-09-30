@@ -55,24 +55,6 @@ If you use the _EM_ (_dynamical_) or _steady-state model_, cite
 }
 ```
 
-### veloVI
-
-If you use _veloVI_ (_VI model_), cite
-
-```bibtex
-@article{Gayoso2023,
-  title = {Deep generative modeling of transcriptional dynamics for RNA velocity analysis in single cells},
-  ISSN = {1548-7105},
-  url = {http://dx.doi.org/10.1038/s41592-023-01994-w},
-  DOI = {10.1038/s41592-023-01994-w},
-  journal = {Nature Methods},
-  publisher = {Springer Science and Business Media LLC},
-  author = {Gayoso, Adam and Weiler, Philipp and Lotfollahi, Mohammad and Klein, Dominik and Hong, Justin and Streets, Aaron and Theis, Fabian J. and Yosef, Nir},
-  year = {2023},
-  month = sep
-}
-```
-
 ### RNA velocity inference through metabolic labeling information
 
 If you use the implemented method for estimating RNA velocity from metabolic labeling
