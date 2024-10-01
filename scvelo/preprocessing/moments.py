@@ -24,8 +24,8 @@ def moments(
     First-/second-order moments are computed for each cell across its nearest neighbors,
     where the neighbor graph is obtained from euclidean distances in PCA space.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
     n_neighbors: `int` (default: 30)
@@ -111,8 +111,8 @@ def moments(
 def second_order_moments(adata, adjusted=False):
     """Computes second order moments for stochastic velocity estimation.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: `AnnData`
         Annotated data matrix.
 
@@ -141,8 +141,8 @@ def second_order_moments(adata, adjusted=False):
 def second_order_moments_u(adata):
     """Computes second order moments for stochastic velocity estimation.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: `AnnData`
         Annotated data matrix.
 
@@ -170,8 +170,8 @@ def get_moments(
     First and second order moments.
     If centered, that corresponds to means and variances across nearest neighbors.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: `AnnData`
         Annotated data matrix.
     layer: `str` (default: `None`)

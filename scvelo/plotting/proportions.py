@@ -22,8 +22,8 @@ def proportions(
 ):
     """Plot pie chart of spliced/unspliced proprtions.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
     groupby: `str` (default: 'clusters')

@@ -12,8 +12,8 @@ from .utils import groups_to_bool, scale, strings_to_categoricals
 def principal_curve(data, basis="pca", n_comps=4, clusters_list=None, copy=False):
     """Computes the principal curve.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
     basis: `str` (default: `'pca'`)
@@ -167,8 +167,8 @@ def velocity_pseudotime(
     .. image:: https://user-images.githubusercontent.com/31883718/69545487-33fbc000-0f92-11ea-969b-194dc68400b0.png
        :width: 600px
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix
     vkey: `str` (default: `'velocity'`)

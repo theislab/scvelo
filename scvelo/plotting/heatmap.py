@@ -36,8 +36,8 @@ def heatmap(
 ):
     """Plot time series for genes as heatmap.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
     var_names: `str`,  list of `str`

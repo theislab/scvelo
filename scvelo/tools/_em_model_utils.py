@@ -252,8 +252,8 @@ def compute_divergence(
 ):
     """Estimates the divergence of ODE to observations (avaiable metrics: distance, mse, likelihood, loglikelihood).
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     mode: `'distance'`, `'mse'`, `'likelihood'` (default: `'distance'`)
 
     """

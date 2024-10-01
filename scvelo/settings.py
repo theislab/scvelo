@@ -262,8 +262,8 @@ def set_figure_params(
 ):
     """Set resolution/size, styling and format of figures.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     style : `str` (default: `None`)
         Init default values for ``matplotlib.rcParams`` suited for `scvelo` or `scanpy`.
         Use `None` for the default matplotlib values.

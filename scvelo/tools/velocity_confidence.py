@@ -19,8 +19,8 @@ def velocity_confidence(data, vkey="velocity", copy=False):
        :width: 600px
 
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
     vkey: `str` (default: `'velocity'`)
@@ -78,8 +78,8 @@ def velocity_confidence(data, vkey="velocity", copy=False):
 def velocity_confidence_transition(data, vkey="velocity", scale=10, copy=False):
     """Computes confidences of velocity transitions.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
     vkey: `str` (default: `'velocity'`)

@@ -31,8 +31,8 @@ def clean_obs_names(
     then saved in obs['sample_batch']. The genetic codes are identified according to according to
     https://www.neb.com/tools-and-resources/usage-guidelines/the-genetic-code.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data matrix.
     alphabet
@@ -92,8 +92,8 @@ def cleanup(
 ) -> Optional[AnnData]:
     """Delete not needed attributes.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data matrix.
     clean
@@ -154,8 +154,8 @@ def get_df(
     Return values for specified key
     (in obs, var, obsm, varm, obsp, varp, uns, or layers) as a dataframe.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     data
         AnnData object or a numpy array to get values from.
     keys
@@ -313,8 +313,8 @@ def get_initial_size(
 ) -> Optional[ndarray]:
     """Get initial counts per observation of a layer.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data matrix.
     layer
@@ -354,8 +354,8 @@ def get_initial_size(
 def get_modality(adata: AnnData, modality: Optional[str]) -> Union[ndarray, spmatrix]:
     """Extract data of one modality.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data to extract modality from.
     modality
@@ -381,8 +381,8 @@ def get_modality(adata: AnnData, modality: Optional[str]) -> Union[ndarray, spma
 def get_size(adata: AnnData, modality: Optional[str] = None) -> ndarray:
     """Get counts per observation in a modality.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data matrix.
     modality
@@ -402,8 +402,8 @@ def make_dense(
 ) -> Optional[AnnData]:
     """Densify sparse AnnData entry.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data object.
     modality
@@ -437,8 +437,8 @@ def make_sparse(
 ) -> Optional[AnnData]:
     """Make AnnData entry sparse.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data object.
     modality
@@ -475,8 +475,8 @@ def merge(
 ) -> Optional[AnnData]:
     """Merge two annotated data matrices.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data matrix (reference data set).
     ldata
@@ -564,8 +564,8 @@ def merge(
 def obs_df(adata: AnnData, keys: List[str], layer: Optional[str] = None) -> DataFrame:
     """Extract layer as Pandas DataFrame indexed by observation.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data matrix (reference data set).
     keys
@@ -598,8 +598,8 @@ def set_initial_size(adata: AnnData, layers: Optional[str] = None) -> None:
 
     The initial size is only set if it does not already exist.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data matrix.
     layers
@@ -632,8 +632,8 @@ def set_modality(
 ) -> Optional[AnnData]:
     """Set modality of annotated data object to new value.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data object.
     new_value
@@ -670,8 +670,8 @@ def show_proportions(
 
     The proportions are printed.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data matrix.
     layers
@@ -708,8 +708,8 @@ def show_proportions(
 def var_df(adata: AnnData, keys: List[str], layer: Optional[str] = None):
     """Extract layer as Pandas DataFrame indexed by features.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data matrix (reference data set).
     keys
@@ -741,8 +741,8 @@ def var_df(adata: AnnData, keys: List[str], layer: Optional[str] = None):
 def verify_dtypes(adata: AnnData) -> None:
     """Verify that AnnData object is not corrupted.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         Annotated data matrix to check.
 
