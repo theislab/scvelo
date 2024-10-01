@@ -143,7 +143,7 @@ def _get_n_neighbors(
 def get_labeling_times(adata, time_key) -> List:
     """Get labeling times in dataset.
 
-    See :cite:p:`Weiler2024`.
+    See :cite:p:`Weiler24`.
 
     Parameters
     ----------
@@ -164,7 +164,7 @@ def get_labeling_time_mask(
 ) -> Dict[float, np.ndarray]:
     """Get number of neighbors required to include ``n_nontrivial_counts`` counts per labeling time.
 
-    See :cite:p:`Weiler2024`.
+    See :cite:p:`Weiler24`.
 
     Parameters
     ----------
@@ -191,7 +191,7 @@ def get_obs_dist_argsort(
 ) -> Dict[float, np.ndarray]:
     """Calculate argsorted pairwise distances per labeling_time_point.
 
-    See :cite:p:`Weiler2024`.
+    See :cite:p:`Weiler24`.
 
     Parameters
     ----------
@@ -232,7 +232,7 @@ def get_n_neighbors(
 ) -> Dict[str, pd.DataFrame]:
     """Get number of neighbors required to include ``n_nontrivial_counts`` counts per labeling time.
 
-    See :cite:p:`Weiler2024`.
+    See :cite:p:`Weiler24`.
 
     Parameters
     ----------
@@ -389,7 +389,7 @@ def get_parameters(
 ):
     """Estimates parameters of splicing kinetics from metabolic labeling data.
 
-    See :cite:p:`Weiler2024`.
+    See :cite:p:`Weiler24`.
 
     Parameters
     ----------

@@ -19,7 +19,7 @@ def bonemarrow(
 ):
     """Human bone marrow.
 
-    Data from `Setty et al. (2019) <https://doi.org/10.1038/s41587-019-0068-4>`__.
+    Data from :cite:p:`Setty19`.
 
     The bone marrow is the primary site of new blood cell production or haematopoiesis.
     It is composed of hematopoietic cells, marrow adipose tissue, and supportive stromal
@@ -45,7 +45,7 @@ def bonemarrow(
 def dentategyrus(file_path: Optional[Union[str, Path]] = None, adjusted=True):
     """Dentate Gyrus neurogenesis.
 
-    Data from `Hochgerner et al. (2018) <https://doi.org/10.1038/s41593-017-0056-2>`__.
+    Data from :cite:p:`Hochgerner18`.
 
     Dentate gyrus (DG) is part of the hippocampus involved in learning, episodic memory
     formation and spatial coding. The experiment from the developing DG comprises two
@@ -102,7 +102,7 @@ def dentategyrus_lamanno(
 ):
     """Dentate Gyrus neurogenesis.
 
-    From `La Manno et al. (2018) <https://doi.org/10.1038/s41586-018-0414-6>`__.
+    From :cite:p:`LaManno18`.
 
     The experiment from the developing mouse hippocampus comprises two time points
     (P0 and P5) and reveals the complex manifold with multiple branching lineages
@@ -145,7 +145,7 @@ def dentategyrus_lamanno(
 def forebrain(file_path: Union[str, Path] = "data/ForebrainGlut/hgForebrainGlut.loom"):
     """Developing human forebrain.
 
-    From `La Manno et al. (2018) <https://doi.org/10.1038/s41586-018-0414-6>`__.
+    From :cite:p:`LaManno18`.
 
     Forebrain tissue of a human week 10 embryo, focusing on glutamatergic neuronal
     lineage, obtained from elective routine abortions (10 weeks post-conception).
@@ -170,7 +170,7 @@ def gastrulation(
 ):
     """Mouse gastrulation.
 
-    Data from `Pijuan-Sala et al. (2019) <https://doi.org/10.1038/s41586-019-0933-9>`__.
+    Data from :cite:p:`PijuanSala19`.
 
     Gastrulation represents a key developmental event during which embryonic pluripotent
     cells diversify into lineage-specific precursors that will generate the adult
@@ -201,7 +201,7 @@ def gastrulation_e75(
 ):
     """Mouse gastrulation subset to E7.5.
 
-    Data from `Pijuan-Sala et al. (2019) <https://doi.org/10.1038/s41586-019-0933-9>`__.
+    Data from :cite:p:`PijuanSala19`.
 
     Gastrulation represents a key developmental event during which embryonic pluripotent
     cells diversify into lineage-specific precursors that will generate the adult
@@ -225,7 +225,7 @@ def gastrulation_erythroid(
 ):
     """Mouse gastrulation subset to erythroid lineage.
 
-    Data from `Pijuan-Sala et al. (2019) <https://doi.org/10.1038/s41586-019-0933-9>`__.
+    Data from :cite:p:`PijuanSala19`.
 
     Gastrulation represents a key developmental event during which embryonic pluripotent
     cells diversify into lineage-specific precursors that will generate the adult
@@ -247,7 +247,7 @@ def gastrulation_erythroid(
 def pancreas(file_path: Union[str, Path] = "data/Pancreas/endocrinogenesis_day15.h5ad"):
     """Pancreatic endocrinogenesis.
 
-    Data from `Bastidas-Ponce et al. (2019) <https://doi.org/10.1242/dev.173849>`__.
+    Data from :cite:p:`BastidasPonce19`.
 
     Pancreatic epithelial and Ngn3-Venus fusion (NVF) cells during secondary transition
     with transcriptome profiles sampled from embryonic day 15.5.
@@ -278,7 +278,7 @@ def pancreas(file_path: Union[str, Path] = "data/Pancreas/endocrinogenesis_day15
 def pbmc68k(file_path: Optional[Union[str, Path]] = "data/PBMC/pbmc68k.h5ad"):
     """Peripheral blood mononuclear cells.
 
-    Data from `Zheng et al. (2017) <https://doi.org/10.1038/ncomms14049>`__.
+    Data from :cite:p:`Zheng17`.
 
     This experiment contains 68k peripheral blood mononuclear cells (PBMC) measured
     using 10X.

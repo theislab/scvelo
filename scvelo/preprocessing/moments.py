@@ -39,7 +39,7 @@ def moments(
     method : {{'umap', 'hnsw', 'sklearn', `None`}}  (default: `'umap'`)
         Method to compute neighbors, only differs in runtime.
         Connectivities are computed with adaptive kernel width as proposed in
-        Haghverdi et al. 2016 (https://doi.org/10.1038/nmeth.3971).
+        :cite:p:`Haghverdi16`.
     use_rep : `None`, `'X'` or any key for `.obsm` (default: None)
         Use the indicated representation. If `None`, the representation is chosen
         automatically: for .n_vars < 50, .X is used, otherwise ‘X_pca’ is used.

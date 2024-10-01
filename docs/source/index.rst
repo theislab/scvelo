@@ -13,7 +13,7 @@ scVelo - RNA velocity generalized through dynamical modeling
 enables the recovery of directed dynamic information by leveraging splicing kinetics
 :cite:p:`LaManno18`. scVelo collects different
 methods for inferring RNA velocity using an expectation-maximization framework
-:cite:p:`Bergen20` or metabolically labeled transcripts :cite:p:`Weiler2024`.
+:cite:p:`Bergen20` or metabolically labeled transcripts :cite:p:`Weiler24`.
 
 scVelo's key applications
 ^^^^^^^^^^^^^^^^^^^^^^^^^

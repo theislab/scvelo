@@ -168,7 +168,7 @@ def neighbors(
 
     The neighbor graph methods (umap, hnsw, sklearn) only differ in runtime and
     yield the same result as Scanpy :cite:p:`Wolf18`. Connectivities are computed with
-    adaptive kernel width as proposed in Haghverdi et al. 2016 (doi:10.1038/nmeth.3971).
+    adaptive kernel width as proposed in :cite:p:`Haghverdi16`.
 
     Parameters
     ----------
@@ -188,7 +188,7 @@ def neighbors(
         or 30 components are used when PCA is computed internally.
     use_rep : `None`, `'X'` or any key for `.obsm` (default: None)
         Use the indicated representation. If `None`, the representation is chosen
-        automatically: for .n_vars < 50, .X is used, otherwise ‘X_pca’ is used.
+        automatically: for .n_vars < 50, .X is used, otherwise 'X_pca' is used.
     use_highly_variable: `bool` (default: True)
         Whether to use highly variable genes only, stored in .var['highly_variable'].
     knn
@@ -203,7 +203,7 @@ def neighbors(
         The 'hnsw' method is most efficient and requires to `pip install hnswlib`.
         Connectivities are computed with adaptive kernel.
     metric
-        A known metric’s name or a callable that returns a distance.
+        A known metric's name or a callable that returns a distance.
     metric_kwds
         Options for the metric.
     num_threads
