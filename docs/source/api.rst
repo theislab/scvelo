@@ -33,7 +33,6 @@ Preprocessing (pp)
 .. autosummary::
    :toctree: .
 
-   pp.pca
    pp.neighbors
    pp.moments
 
@@ -85,6 +84,7 @@ Tools (tl)
    tl.velocity_clusters
    tl.velocity_confidence
    tl.score_genes_cell_cycle
+
 
 Inference from metabolic labeling information
 ---------

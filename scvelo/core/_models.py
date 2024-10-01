@@ -13,8 +13,8 @@ from ._base import DynamicsBase
 class SplicingDynamics(DynamicsBase):
     """Splicing dynamics.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     alpha
         Transcription rate.
     beta

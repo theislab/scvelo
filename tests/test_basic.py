@@ -1,5 +1,7 @@
 import numpy as np
 
+import scanpy as sc
+
 import scvelo as scv
 from scvelo.tools import ExpectationMaximizationModel
 
@@ -30,7 +32,7 @@ def test_pipeline():
     adata = scv.datasets.simulation(random_seed=0, n_vars=10)
 
     scv.pp.filter_and_normalize(adata, n_top_genes=5)
-    scv.pp.pca(adata)
+    sc.pp.pca(adata)
     scv.pp.moments(adata)
 
     em_model = ExpectationMaximizationModel(adata=adata)
@@ -76,8 +78,8 @@ def test_highly_variable_subset():
     scv.pp.filter_and_normalize(adata, n_top_genes=5, subset_highly_variable=True)
     scv.pp.filter_and_normalize(bdata, n_top_genes=5, subset_highly_variable=False)
 
-    scv.pp.pca(adata)
-    scv.pp.pca(bdata)
+    sc.pp.pca(adata)
+    sc.pp.pca(bdata)
 
     scv.pp.moments(adata, use_rep="pca")
     scv.pp.moments(bdata, use_rep="pca")

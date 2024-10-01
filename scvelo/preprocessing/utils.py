@@ -631,8 +631,8 @@ def filter_and_normalize(
             scv.pp.log1p(adata)
 
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
     min_counts: `int` (default: `None`)

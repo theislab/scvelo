@@ -24,8 +24,8 @@ def moments(
     First-/second-order moments are computed for each cell across its nearest neighbors,
     where the neighbor graph is obtained from euclidean distances in PCA space.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
     n_neighbors: `int` (default: 30)
@@ -39,7 +39,7 @@ def moments(
     method : {{'umap', 'hnsw', 'sklearn', `None`}}  (default: `'umap'`)
         Method to compute neighbors, only differs in runtime.
         Connectivities are computed with adaptive kernel width as proposed in
-        Haghverdi et al. 2016 (https://doi.org/10.1038/nmeth.3971).
+        :cite:p:`Haghverdi16`.
     use_rep : `None`, `'X'` or any key for `.obsm` (default: None)
         Use the indicated representation. If `None`, the representation is chosen
         automatically: for .n_vars < 50, .X is used, otherwise ‘X_pca’ is used.
@@ -111,8 +111,8 @@ def moments(
 def second_order_moments(adata, adjusted=False):
     """Computes second order moments for stochastic velocity estimation.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: `AnnData`
         Annotated data matrix.
 
@@ -141,8 +141,8 @@ def second_order_moments(adata, adjusted=False):
 def second_order_moments_u(adata):
     """Computes second order moments for stochastic velocity estimation.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: `AnnData`
         Annotated data matrix.
 
@@ -170,8 +170,8 @@ def get_moments(
     First and second order moments.
     If centered, that corresponds to means and variances across nearest neighbors.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: `AnnData`
         Annotated data matrix.
     layer: `str` (default: `None`)

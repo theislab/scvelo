@@ -50,8 +50,8 @@ def velocity(
     The phase plot shows spliced against unspliced expressions with steady-state fit.
     Further the embedding is shown colored by velocity and expression.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
     var_names: `str` or list of `str` (default: `None`)

@@ -49,8 +49,8 @@ def velocity_graph(
 
     Velocity graph with connectivities (dashed) and transitions (solid/arrows).
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
     which_graph: `'velocity_graph'` or `'connectivities'`  (default: `None`)

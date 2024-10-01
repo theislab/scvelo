@@ -439,8 +439,8 @@ def vcorrcoef(X, y, mode="pearsons", axis=-1):
 
     Use Pearsons / Spearmans to test for linear / monotonic relationship.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     X: `np.ndarray`
         Data vector or matrix
     y: `np.ndarray`

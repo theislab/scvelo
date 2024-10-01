@@ -54,7 +54,7 @@ def score_genes_cell_cycle(adata, s_genes=None, g2m_genes=None, copy=False, **kw
     """Score cell cycle genes.
 
     Calculates scores and assigns a cell cycle phase (G1, S, G2M) using the list of cell
-    cycle genes defined in Tirosh et al, 2015 (https://doi.org/10.1126/science.aad0501).
+    cycle genes defined in :cite:p:`Tirosh16`.
 
     Parameters
     ----------

@@ -11,8 +11,9 @@ counting pipeline.
 
 scVelo workflow at a glance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Import scvelo as::
+Import Scanpy and scvelo as::
 
+    import scanpy as sc
     import scvelo as scv
 
 For beautified visualization you can change the matplotlib settings to our defaults with::
@@ -23,7 +24,7 @@ Read your data
 ''''''''''''''
 Read your data file (loom, h5ad, csv, ...) using::
 
-    adata = scv.read(filename, cache=True)
+    adata = sc.read(filename, cache=True)
 
 which stores the data matrix (``adata.X``),
 annotation of cells / observations (``adata.obs``) and genes / variables (``adata.var``), unstructured annotation such
@@ -35,7 +36,7 @@ as graphs (``adata.uns``) and additional data layers where spliced and unspliced
 
 If you already have an existing preprocessed adata object you can simply merge the spliced/unspliced counts via::
 
-    ldata = scv.read(filename.loom, cache=True)
+    ldata = sc.read(filename.loom, cache=True)
     adata = scv.utils.merge(adata, ldata)
 
 If you do not have a datasets yet, you can still play around using one of the in-built datasets, e.g.::

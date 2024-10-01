@@ -19,7 +19,7 @@ Potential pitfalls
 This notebook reproduces Fig. 2 with several use cases, including multiple kinetics in Dentate Gyrus,
 transcriptional boost in erythroid lineage, and misleading arrow projections in mature PBMCs.
 
-Notebook: `Perspectives <Perspectives>`_
+Notebook: :doc:`Perspectives <Perspectives>`
 
 Kinetic parameter analysis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -30,4 +30,4 @@ Kinetic parameter analysis
 This notebook reproduces Fig. 3, where we demonstrate how time-variable kinetic rates
 shape the curvature patterns of gene activation.
 
-Notebook: `Kinetic parameter analysis <Perspectives_parameters>`_
+Notebook: :doc:`Kinetic parameter analysis <Perspectives_parameters>`
