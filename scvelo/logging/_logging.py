@@ -1,4 +1,5 @@
 """Logging and Profiling."""
+from collections.abc import Iterable
 from datetime import datetime
 from platform import python_version
 from sys import stdout
@@ -233,29 +234,45 @@ def print_version():
     check_if_latest_version()
 
 
-# TODO: Add docstrings
-def print_versions():
-    """TODO."""
-    for mod in [
-        "scvelo",
-        "scanpy",
-        "anndata",
-        "loompy",
-        "numpy",
-        "scipy",
-        "matplotlib",
-        "sklearn",
-        "pandas",
-    ]:
-        mod_name = mod[0] if isinstance(mod, tuple) else mod
-        mod_install = mod[1] if isinstance(mod, tuple) else mod
+_DEPENDENCIES_NUMERICS = [
+    "anndata",
+    "loompy",
+    "numba",
+    "numpy",
+    "pandas",
+    "scanpy",
+    "scipy",
+    ("sklearn", "scikit-learn"),
+]
+
+
+_DEPENDENCIES_PLOTTING = ["matplotlib"]
+
+
+# Adapted from https://github.com/theislab/cellrank/blob/main/src/cellrank/logging/_logging.py#L98-L128
+def _versions_dependencies(dependencies: Iterable[str]):
+    # this is not the same as the requirements!
+    for mod in dependencies:
+        mod_name, dist_name = mod if isinstance(mod, tuple) else (mod, mod)
         try:
-            mod_version = __import__(mod_name).__version__
-            _write_log(f"{mod_install}=={mod_version}", end="  ")
+            imp = __import__(mod_name)
+            yield dist_name, imp.__version__
         except (ImportError, AttributeError):
             pass
-    _write_log("")
-    check_if_latest_version()
+
+
+def print_versions():
+    """Print versions of relevant packages."""
+    from scvelo import settings
+
+    modules = ["scvelo"] + _DEPENDENCIES_NUMERICS + _DEPENDENCIES_PLOTTING
+    print(
+        " ".join(
+            f"{module}=={version}"
+            for module, version in _versions_dependencies(modules)
+        ),
+        file=settings.logfile,
+    )
 
 
 # TODO: Add docstrings
