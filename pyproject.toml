@@ -85,12 +85,11 @@ docs = [
     "setuptools_scm",
     "importlib_metadata",
     "sphinx_rtd_theme>=0.3",
-    "sphinx_autodoc_typehints<=1.6",
+    "sphinx_autodoc_typehints>=1.10.3",
     "sphinxcontrib-bibtex>=2.3.0",
-    "Jinja2<3.1",
     # converting notebooks to html
     "ipykernel",
-    "sphinx>=1.7",
+    "sphinx>=1.7,<8.0",
     "nbsphinx>=0.7,<0.8.7"
 ]
 
