@@ -229,7 +229,7 @@ def print_version():
 
     _write_log(
         f"Running scvelo {__version__} "
-        f"(python {python_version()}) on {get_date_string()}.",
+        f"(Python {python_version()}) on {datetime.now().strftime('%Y-%m-%d %H:%M')}.",
     )
     check_if_latest_version()
 
@@ -273,12 +273,6 @@ def print_versions():
         ),
         file=settings.logfile,
     )
-
-
-# TODO: Add docstrings
-def get_date_string():
-    """TODO."""
-    return datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
 # TODO: Add docstrings
