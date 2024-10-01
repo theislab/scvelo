@@ -293,28 +293,3 @@ class ProgressReporter:
         if settings.verbosity > 1:
             stdout.write("\r")
             stdout.flush()
-
-
-def profiler(command, filename="profile.stats", n_stats=10):
-    """Profiler for a python program.
-
-    Runs cProfile and outputs ordered statistics that describe
-    how often and for how long various parts of the program are executed.
-
-    Stats can be visualized with `!snakeviz profile.stats`.
-
-    Parameters
-    ----------
-    command: str
-        Command string to be executed.
-    filename: str
-        Name under which to store the stats.
-    n_stats: int or None
-        Number of top stats to show.
-    """
-    import cProfile
-    import pstats
-
-    cProfile.run(command, filename)
-    stats = pstats.Stats(filename).strip_dirs().sort_stats("time")
-    return stats.print_stats(n_stats or {})
