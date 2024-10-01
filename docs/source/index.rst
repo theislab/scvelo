@@ -14,7 +14,7 @@ enables the recovery of directed dynamic information by leveraging splicing kine
 :cite:p:`LaManno18`. scVelo collects different
 methods for inferring RNA velocity using an expectation-maximization framework
 :cite:p:`Bergen20`, deep generative modeling :cite:p:`Gayoso2023`,
-or metabolically labeled transcripts :cite:p:`Weiler2023`.
+or metabolically labeled transcripts :cite:p:`Weiler2024`.
 
 scVelo's key applications
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -59,14 +59,19 @@ information, cite
 
 .. code-block:: bibtex
 
-    @article{Weiler2023,
-        title = {Unified fate mapping in multiview single-cell data},
-        url = {http://dx.doi.org/10.1101/2023.07.19.549685},
-        DOI = {10.1101/2023.07.19.549685},
-        publisher = {Cold Spring Harbor Laboratory},
-        author = {Weiler, Philipp and Lange, Marius and Klein, Michal and Pe’er, Dana and Theis, Fabian J.},
-        year = {2023},
-        month = jul
+    @article{Weiler2024,
+        author = {Weiler, Philipp and Lange, Marius and Klein, Michal and Pe'er, Dana and Theis, Fabian},
+        publisher = {Springer Science and Business Media LLC},
+        url = {http://dx.doi.org/10.1038/s41592-024-02303-9},
+        doi = {10.1038/s41592-024-02303-9},
+        issn = {1548-7105},
+        journal = {Nature Methods},
+        month = jun,
+        number = {7},
+        pages = {1196--1205},
+        title = {CellRank 2: unified fate mapping in multiview single-cell data},
+        volume = {21},
+        year = {2024},
     }
 
 Support
