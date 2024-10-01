@@ -1,10 +1,9 @@
 """Logging and Profiling."""
+from collections.abc import Iterable
 from datetime import datetime
 from platform import python_version
 from sys import stdout
 from time import time as get_time
-
-from packaging.version import parse
 
 from anndata.logging import get_memory_usage
 
@@ -114,9 +113,6 @@ def msg(
             _write_log(get_memory_usage(), end=end)
 
 
-m = msg
-
-
 # TODO: Add docstrings
 def _write_log(*msg, end="\n"):
     """Write message to log output, ignoring the verbosity level.
@@ -128,7 +124,7 @@ def _write_log(*msg, end="\n"):
     msg
         One or more arguments to be formatted as string. Same behavior as print function.
     """
-    from .settings import logfile
+    from scvelo.settings import logfile
 
     if logfile == "":
         print(*msg, end=end)
@@ -166,12 +162,6 @@ def get_passed_time():
     return elapsed
 
 
-# TODO: Add docstrings
-def print_passed_time():
-    """TODO."""
-    return _sec_to_str(get_passed_time())
-
-
 # TODO: Finish docstrings
 def timeout(func, args=(), timeout_duration=2, default=None, **kwargs):
     """Spwans thread and runs the given function using the args, kwargs, and return default value on timeout."""
@@ -192,76 +182,55 @@ def timeout(func, args=(), timeout_duration=2, default=None, **kwargs):
 
 
 # TODO: Add docstrings
-def get_latest_pypi_version():
-    """TODO."""
-    from subprocess import CalledProcessError, check_output
-
-    try:  # needs to work offline as well
-        result = check_output(["pip", "search", "scvelo"])
-        return f"{result.split()[-1]}"[2:-1]
-    except CalledProcessError:
-        return "0.0.0"
-
-
-# TODO: Add docstrings
-def check_if_latest_version():
-    """TODO."""
-    from . import __version__
-
-    latest_version = timeout(
-        get_latest_pypi_version, timeout_duration=2, default="0.0.0"
-    )
-    if parse(__version__.rsplit(".dev")[0]) < parse(latest_version.rsplit(".dev")[0]):
-        warn(
-            "There is a newer scvelo version available on PyPI:\n",
-            "Your version: \t\t",
-            __version__,
-            "\nLatest version: \t",
-            latest_version,
-        )
-
-
-# TODO: Add docstrings
 def print_version():
     """TODO."""
     from . import __version__
 
     _write_log(
         f"Running scvelo {__version__} "
-        f"(python {python_version()}) on {get_date_string()}.",
+        f"(Python {python_version()}) on {datetime.now().strftime('%Y-%m-%d %H:%M')}.",
     )
-    check_if_latest_version()
 
 
-# TODO: Add docstrings
-def print_versions():
-    """TODO."""
-    for mod in [
-        "scvelo",
-        "scanpy",
-        "anndata",
-        "loompy",
-        "numpy",
-        "scipy",
-        "matplotlib",
-        "sklearn",
-        "pandas",
-    ]:
-        mod_name = mod[0] if isinstance(mod, tuple) else mod
-        mod_install = mod[1] if isinstance(mod, tuple) else mod
+_DEPENDENCIES_NUMERICS = [
+    "anndata",
+    "loompy",
+    "numba",
+    "numpy",
+    "pandas",
+    "scanpy",
+    "scipy",
+    ("sklearn", "scikit-learn"),
+]
+
+
+_DEPENDENCIES_PLOTTING = ["matplotlib"]
+
+
+# Adapted from https://github.com/theislab/cellrank/blob/main/src/cellrank/logging/_logging.py#L98-L128
+def _versions_dependencies(dependencies: Iterable[str]):
+    # this is not the same as the requirements!
+    for mod in dependencies:
+        mod_name, dist_name = mod if isinstance(mod, tuple) else (mod, mod)
         try:
-            mod_version = __import__(mod_name).__version__
-            _write_log(f"{mod_install}=={mod_version}", end="  ")
+            imp = __import__(mod_name)
+            yield dist_name, imp.__version__
         except (ImportError, AttributeError):
             pass
-    _write_log("")
-    check_if_latest_version()
 
 
-# TODO: Add docstrings
-def get_date_string():
-    """TODO."""
-    return datetime.now().strftime("%Y-%m-%d %H:%M")
+def print_versions():
+    """Print versions of relevant packages."""
+    from scvelo import settings
+
+    modules = ["scvelo"] + _DEPENDENCIES_NUMERICS + _DEPENDENCIES_PLOTTING
+    print(
+        " ".join(
+            f"{module}=={version}"
+            for module, version in _versions_dependencies(modules)
+        ),
+        file=settings.logfile,
+    )
 
 
 # TODO: Add docstrings
@@ -315,28 +284,3 @@ class ProgressReporter:
         if settings.verbosity > 1:
             stdout.write("\r")
             stdout.flush()
-
-
-def profiler(command, filename="profile.stats", n_stats=10):
-    """Profiler for a python program.
-
-    Runs cProfile and outputs ordered statistics that describe
-    how often and for how long various parts of the program are executed.
-
-    Stats can be visualized with `!snakeviz profile.stats`.
-
-    Parameters
-    ----------
-    command: str
-        Command string to be executed.
-    filename: str
-        Name under which to store the stats.
-    n_stats: int or None
-        Number of top stats to show.
-    """
-    import cProfile
-    import pstats
-
-    cProfile.run(command, filename)
-    stats = pstats.Stats(filename).strip_dirs().sort_stats("time")
-    return stats.print_stats(n_stats or {})

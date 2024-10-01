@@ -102,7 +102,7 @@ def _set_neighbors_data(
         adata.uns["neighbors"]["connectivities_key"] = "connectivities"
         adata.uns["neighbors"]["distances_key"] = "distances"
     except ValueError as e:
-        logg.warning(f"Could not write neighbors to `AnnData.obsp`: {e}")
+        logg.warn(f"Could not write neighbors to `AnnData.obsp`: {e}")
         adata.uns["neighbors"]["distances"] = neighbors.distances
         adata.uns["neighbors"]["connectivities"] = neighbors.connectivities
 
