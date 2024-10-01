@@ -13,8 +13,7 @@ scVelo - RNA velocity generalized through dynamical modeling
 enables the recovery of directed dynamic information by leveraging splicing kinetics
 :cite:p:`LaManno18`. scVelo collects different
 methods for inferring RNA velocity using an expectation-maximization framework
-:cite:p:`Bergen20`, deep generative modeling :cite:p:`Gayoso2023`,
-or metabolically labeled transcripts :cite:p:`Weiler2024`.
+:cite:p:`Bergen20` or metabolically labeled transcripts :cite:p:`Weiler2024`.
 
 scVelo's key applications
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -49,7 +48,7 @@ If you use the *EM* (*dynamical*) or *steady-state model*, cite
         author = {Bergen, Volker and Lange, Marius and Peidli, Stefan and Wolf, F. Alexander and Theis, Fabian J.},
         year = {2020},
         month = aug,
-        pages = {1408–1414}
+        pages = {1408-1414}
     }
 
 **RNA velocity inference through metabolic labeling information**
@@ -68,7 +67,7 @@ information, cite
         journal = {Nature Methods},
         month = jun,
         number = {7},
-        pages = {1196--1205},
+        pages = {1196-1205},
         title = {CellRank 2: unified fate mapping in multiview single-cell data},
         volume = {21},
         year = {2024},
