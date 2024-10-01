@@ -162,12 +162,6 @@ def get_passed_time():
     return elapsed
 
 
-# TODO: Add docstrings
-def print_passed_time():
-    """TODO."""
-    return _sec_to_str(get_passed_time())
-
-
 # TODO: Finish docstrings
 def timeout(func, args=(), timeout_duration=2, default=None, **kwargs):
     """Spwans thread and runs the given function using the args, kwargs, and return default value on timeout."""
