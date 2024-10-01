@@ -113,9 +113,6 @@ def msg(
             _write_log(get_memory_usage(), end=end)
 
 
-m = msg
-
-
 # TODO: Add docstrings
 def _write_log(*msg, end="\n"):
     """Write message to log output, ignoring the verbosity level.
