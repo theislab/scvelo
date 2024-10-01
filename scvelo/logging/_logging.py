@@ -5,8 +5,6 @@ from platform import python_version
 from sys import stdout
 from time import time as get_time
 
-from packaging.version import parse
-
 from anndata.logging import get_memory_usage
 
 from scvelo import settings
@@ -193,36 +191,6 @@ def timeout(func, args=(), timeout_duration=2, default=None, **kwargs):
 
 
 # TODO: Add docstrings
-def get_latest_pypi_version():
-    """TODO."""
-    from subprocess import CalledProcessError, check_output
-
-    try:  # needs to work offline as well
-        result = check_output(["pip", "search", "scvelo"])
-        return f"{result.split()[-1]}"[2:-1]
-    except CalledProcessError:
-        return "0.0.0"
-
-
-# TODO: Add docstrings
-def check_if_latest_version():
-    """TODO."""
-    from . import __version__
-
-    latest_version = timeout(
-        get_latest_pypi_version, timeout_duration=2, default="0.0.0"
-    )
-    if parse(__version__.rsplit(".dev")[0]) < parse(latest_version.rsplit(".dev")[0]):
-        warn(
-            "There is a newer scvelo version available on PyPI:\n",
-            "Your version: \t\t",
-            __version__,
-            "\nLatest version: \t",
-            latest_version,
-        )
-
-
-# TODO: Add docstrings
 def print_version():
     """TODO."""
     from . import __version__
@@ -231,7 +199,6 @@ def print_version():
         f"Running scvelo {__version__} "
         f"(Python {python_version()}) on {datetime.now().strftime('%Y-%m-%d %H:%M')}.",
     )
-    check_if_latest_version()
 
 
 _DEPENDENCIES_NUMERICS = [
