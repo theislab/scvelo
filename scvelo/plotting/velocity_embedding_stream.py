@@ -73,8 +73,8 @@ def velocity_embedding_stream(
 ):
     """Stream plot of velocities on the embedding.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
     density: `float` (default: 2)

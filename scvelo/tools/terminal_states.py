@@ -20,8 +20,8 @@ def cell_fate(
 ):
     """Computes individual cell endpoints.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
     groupby: `str` (default: `'clusters'`)
@@ -86,8 +86,8 @@ def cell_origin(
 ):
     """Computes individual cell root points.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
     groupby: `str` (default: `'clusters'`)
@@ -239,8 +239,8 @@ def terminal_states(
     Alternatively, we recommend to use :func:`cellrank.tl.terminal_states`
     providing an improved/generalized approach of identifying terminal states.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     data: :class:`~anndata.AnnData`
         Annotated data matrix.
     vkey: `str` (default: `'velocity'`)

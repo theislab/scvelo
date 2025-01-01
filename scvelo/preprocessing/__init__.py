@@ -1,5 +1,5 @@
 from .moments import moments
-from .neighbors import neighbors, pca, remove_duplicate_cells
+from .neighbors import neighbors, remove_duplicate_cells
 from .utils import (
     filter_and_normalize,
     filter_genes,
@@ -17,7 +17,6 @@ __all__ = [
     "moments",
     "neighbors",
     "normalize_per_cell",
-    "pca",
     "recipe_velocity",
     "remove_duplicate_cells",
 ]

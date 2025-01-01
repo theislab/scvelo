@@ -262,8 +262,8 @@ def set_figure_params(
 ):
     """Set resolution/size, styling and format of figures.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     style : `str` (default: `None`)
         Init default values for ``matplotlib.rcParams`` suited for `scvelo` or `scanpy`.
         Use `None` for the default matplotlib values.
@@ -289,7 +289,7 @@ def set_figure_params(
     facecolor : `str` (default: `None`)
         Sets backgrounds `rcParams['figure.facecolor']`
         and `rcParams['axes.facecolor']` to `facecolor`.
-    format : {'png', 'pdf', 'svg', etc.} (default: 'pdf')
+    format : `str` (default: 'pdf')
         This sets the default format for saving figures: `file_format_figs`.
     ipython_format : list of `str` (default: 'png2x')
         Only concerns the notebook/IPython environment; see

@@ -13,8 +13,7 @@ scVelo - RNA velocity generalized through dynamical modeling
 enables the recovery of directed dynamic information by leveraging splicing kinetics
 :cite:p:`LaManno18`. scVelo collects different
 methods for inferring RNA velocity using an expectation-maximization framework
-:cite:p:`Bergen20`, deep generative modeling :cite:p:`Gayoso2023`,
-or metabolically labeled transcripts :cite:p:`Weiler2023`.
+:cite:p:`Bergen20` or metabolically labeled transcripts :cite:p:`Weiler24`.
 
 scVelo's key applications
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -49,26 +48,7 @@ If you use the *EM* (*dynamical*) or *steady-state model*, cite
         author = {Bergen, Volker and Lange, Marius and Peidli, Stefan and Wolf, F. Alexander and Theis, Fabian J.},
         year = {2020},
         month = aug,
-        pages = {1408–1414}
-    }
-
-
-**veloVI**
-
-If you use *veloVI* (*VI model*), cite
-
-.. code-block:: bibtex
-
-    @article{Gayoso2023,
-        title = {Deep generative modeling of transcriptional dynamics for RNA velocity analysis in single cells},
-        ISSN = {1548-7105},
-        url = {http://dx.doi.org/10.1038/s41592-023-01994-w},
-        DOI = {10.1038/s41592-023-01994-w},
-        journal = {Nature Methods},
-        publisher = {Springer Science and Business Media LLC},
-        author = {Gayoso, Adam and Weiler, Philipp and Lotfollahi, Mohammad and Klein, Dominik and Hong, Justin and Streets, Aaron and Theis, Fabian J. and Yosef, Nir},
-        year = {2023},
-        month = sep
+        pages = {1408-1414}
     }
 
 **RNA velocity inference through metabolic labeling information**
@@ -78,14 +58,19 @@ information, cite
 
 .. code-block:: bibtex
 
-    @article{Weiler2023,
-        title = {Unified fate mapping in multiview single-cell data},
-        url = {http://dx.doi.org/10.1101/2023.07.19.549685},
-        DOI = {10.1101/2023.07.19.549685},
-        publisher = {Cold Spring Harbor Laboratory},
-        author = {Weiler, Philipp and Lange, Marius and Klein, Michal and Pe’er, Dana and Theis, Fabian J.},
-        year = {2023},
-        month = jul
+    @article{Weiler2024,
+        author = {Weiler, Philipp and Lange, Marius and Klein, Michal and Pe'er, Dana and Theis, Fabian},
+        publisher = {Springer Science and Business Media LLC},
+        url = {http://dx.doi.org/10.1038/s41592-024-02303-9},
+        doi = {10.1038/s41592-024-02303-9},
+        issn = {1548-7105},
+        journal = {Nature Methods},
+        month = jun,
+        number = {7},
+        pages = {1196-1205},
+        title = {CellRank 2: unified fate mapping in multiview single-cell data},
+        volume = {21},
+        year = {2024},
     }
 
 Support

@@ -45,7 +45,7 @@ dependencies = [
     "loompy>=2.0.12",
     "umap-learn>=0.3.10",
     "numba>=0.41.0",
-    "numpy>=1.17, <2.0.0",
+    "numpy>=1.17",
     "pandas>=1.1.1, !=1.4.0",
     "scipy>=1.4.1",
     "scikit-learn>=0.21.2",
@@ -53,9 +53,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-vi = [
-    "scvi-tools>=0.20.1",
-]
 louvain = [
     "igraph",
     "louvain"
@@ -88,12 +85,11 @@ docs = [
     "setuptools_scm",
     "importlib_metadata",
     "sphinx_rtd_theme>=0.3",
-    "sphinx_autodoc_typehints<=1.6",
+    "sphinx_autodoc_typehints>=1.10.3",
     "sphinxcontrib-bibtex>=2.3.0",
-    "Jinja2<3.1",
     # converting notebooks to html
     "ipykernel",
-    "sphinx>=1.7,<4.0",
+    "sphinx>=1.7,<8.0",
     "nbsphinx>=0.7,<0.8.7"
 ]
 
@@ -142,9 +138,9 @@ exclude = '''
 [tool.isort]
 profile = "black"
 use_parentheses = true
-known_num = "networkx,numpy,pandas,scipy,sklearn,statmodels,torch"
+known_num = "networkx,numpy,pandas,scipy,sklearn,statmodels"
 known_plot = "matplotlib,mpl_toolkits,seaborn"
-known_bio = "anndata,scanpy,scvi"
+known_bio = "anndata,scanpy"
 sections = "FUTURE,STDLIB,THIRDPARTY,NUM,PLOT,BIO,FIRSTPARTY,LOCALFOLDER"
 no_lines_before = "LOCALFOLDER"
 balanced_wrapping = true

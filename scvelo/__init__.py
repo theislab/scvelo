@@ -1,6 +1,5 @@
 """scvelo - RNA velocity generalized through dynamical modeling."""
 from anndata import AnnData
-from scanpy import read, read_loom
 
 from scvelo import datasets, logging
 from scvelo import plotting as pl
@@ -44,9 +43,7 @@ __all__ = [
     "Neighbors",
     "pl",
     "pp",
-    "read",
     "read_csv",
-    "read_loom",
     "round",
     "run_all",
     "set_figure_params",

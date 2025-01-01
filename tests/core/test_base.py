@@ -44,8 +44,8 @@ def get_adata(
 
     The largest possible value of a numerical entry is `1e5`.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
         n_obs
             Number of observations. If set to `None`, a random integer between `1` and
             `max_obs` will be drawn. Defaults to `None`.

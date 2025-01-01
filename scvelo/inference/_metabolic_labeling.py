@@ -15,8 +15,8 @@ from anndata import AnnData
 def _get_bounds(experiment: np.ndarray):
     """Returns bounds for constraint optimization problem.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     experiment
         Type of experiment (``"chase"`` or ``"pulse"``) that observation was generated from.
 
@@ -43,8 +43,8 @@ def get_mse(
 ):
     """Calculates mean squared error (MSE) between predicted and measurmed, newly synthesized mRNA.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     x
         Parameter estimate.
     measured_new
@@ -87,8 +87,8 @@ def _get_n_neighbors(
 ) -> pd.DataFrame:
     """Get number of neighbors required to include ``n_nontrivial_counts`` counts per labeling time.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     X
         Gene expression.
     labeling_times
@@ -143,10 +143,10 @@ def _get_n_neighbors(
 def get_labeling_times(adata, time_key) -> List:
     """Get labeling times in dataset.
 
-    See :cite:p:`Weiler2023`.
+    See :cite:p:`Weiler24`.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         AnnData object.
     time_key
@@ -164,10 +164,10 @@ def get_labeling_time_mask(
 ) -> Dict[float, np.ndarray]:
     """Get number of neighbors required to include ``n_nontrivial_counts`` counts per labeling time.
 
-    See :cite:p:`Weiler2023`.
+    See :cite:p:`Weiler24`.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         AnnData object.
     time_key
@@ -191,10 +191,10 @@ def get_obs_dist_argsort(
 ) -> Dict[float, np.ndarray]:
     """Calculate argsorted pairwise distances per labeling_time_point.
 
-    See :cite:p:`Weiler2023`.
+    See :cite:p:`Weiler24`.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         AnnData object.
     labeling_time_mask
@@ -232,10 +232,10 @@ def get_n_neighbors(
 ) -> Dict[str, pd.DataFrame]:
     """Get number of neighbors required to include ``n_nontrivial_counts`` counts per labeling time.
 
-    See :cite:p:`Weiler2023`.
+    See :cite:p:`Weiler24`.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         AnnData object.
     labeling_time_mask
@@ -285,8 +285,8 @@ def get_n_neighbors(
 def get_counts(gex, labeling_time_mask, obs_dist_argsort, obs_id, neighbors):
     """Return gex counts used for fitting parameters.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     gex
         GEX vector of a given gene.
     time_masks
@@ -329,8 +329,8 @@ def _get_parameters(
 ):
     """Estimates parameters of splicing kinetics from metabolic labeling data.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     measured_labeled
         Measured labeled RNA.
     labeling_times
@@ -389,10 +389,10 @@ def get_parameters(
 ):
     """Estimates parameters of splicing kinetics from metabolic labeling data.
 
-    See :cite:p:`Weiler2023`.
+    See :cite:p:`Weiler24`.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata
         AnnData object containing data.
     use_rep

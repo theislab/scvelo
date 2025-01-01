@@ -8,20 +8,10 @@ Import scVelo as::
    import scvelo as scv
 
 
-After reading the data (``scv.read``) or loading an in-built dataset (``scv.datasets.*``),
+After reading the data or loading an in-built dataset (``scv.datasets.*``),
 the typical workflow consists of subsequent calls of
 preprocessing (``scv.pp.*``), analysis tools (``scv.tl.*``) and plotting (``scv.pl.*``).
 Further, several utilities (``scv.utils.*``) are provided to facilitate data analysis.
-
-
-Read / Load
------------
-
-.. autosummary::
-   :toctree: .
-
-   read
-   read_loom
 
 
 Preprocessing (pp)
@@ -43,22 +33,12 @@ Preprocessing (pp)
 .. autosummary::
    :toctree: .
 
-   pp.pca
    pp.neighbors
    pp.moments
 
 
 Tools (tl)
 ----------
-
-**Clustering and embedding**
-(more at `scanpy-docs <https://scanpy.readthedocs.io/en/stable/api/>`_)
-
-.. autosummary::
-   :toctree: .
-
-   tl.louvain
-   tl.umap
 
 **Velocity estimation**
 
@@ -76,7 +56,6 @@ Tools (tl)
 
    tl.recover_dynamics
    tl.differential_kinetic_test
-   tl.VELOVI
 
 **Dynamical genes**
 
@@ -105,6 +84,7 @@ Tools (tl)
    tl.velocity_clusters
    tl.velocity_confidence
    tl.score_genes_cell_cycle
+
 
 Inference from metabolic labeling information
 ---------

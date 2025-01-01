@@ -124,8 +124,8 @@ def scatter(
 ):
     """Scatter plot along observations or variables axes.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     adata: :class:`~anndata.AnnData`
         Annotated data matrix.
     x: `str`, `np.ndarray` or `None` (default: `None`)

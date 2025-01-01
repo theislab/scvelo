@@ -10,8 +10,8 @@ from ._arithmetic import prod_sum, sum
 class LinearRegression:
     """Extreme quantile and constraint least square linear regression.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     percentile
         Percentile of data on which linear regression line is fit. If `None`, all data
         is used, if a single value is given, it is interpreted as the upper quantile.

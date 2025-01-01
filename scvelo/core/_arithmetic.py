@@ -9,8 +9,8 @@ from scipy.sparse import issparse, spmatrix
 def clipped_log(x: ndarray, lb: float = 0, ub: float = 1, eps: float = 1e-6) -> ndarray:
     """Logarithmize between [lb + epsilon, ub - epsilon].
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     x
         Array to invert.
     lb
@@ -31,8 +31,8 @@ def clipped_log(x: ndarray, lb: float = 0, ub: float = 1, eps: float = 1e-6) -> 
 def invert(x: ndarray) -> ndarray:
     """Invert array and set infinity to NaN.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     x
         Array to invert.
 
@@ -52,8 +52,8 @@ def multiply(
 ) -> Union[ndarray, spmatrix]:
     """Point-wise multiplication of arrays or sparse matrices.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     a
         First array/sparse matrix.
     b
@@ -77,8 +77,8 @@ def prod_sum(
 ) -> ndarray:
     """Take sum of product of two arrays along given axis.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     a1
         First array.
     a2
@@ -103,8 +103,8 @@ def prod_sum(
 def sum(a: Union[ndarray, spmatrix], axis: Optional[int] = None) -> ndarray:
     """Sum array elements over a given axis.
 
-    Arguments:
-    ---------
+    Parameters
+    ----------
     a
         Elements to sum.
     axis

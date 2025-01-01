@@ -1,5 +1,3 @@
-from scanpy.plotting import paga_compare, rank_genes_groups
-
 from .gridspec import gridspec
 from .heatmap import heatmap
 from .paga import paga
@@ -21,12 +19,10 @@ __all__ = [
     "heatmap",
     "hist",
     "paga",
-    "paga_compare",
     "pca",
     "phate",
     "plot",
     "proportions",
-    "rank_genes_groups",
     "scatter",
     "simulation",
     "summary",
