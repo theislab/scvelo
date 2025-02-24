@@ -184,7 +184,7 @@ def timeout(func, args=(), timeout_duration=2, default=None, **kwargs):
 # TODO: Add docstrings
 def print_version():
     """TODO."""
-    from . import __version__
+    from scvelo import __version__
 
     _write_log(
         f"Running scvelo {__version__} "
