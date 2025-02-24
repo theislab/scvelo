@@ -186,8 +186,8 @@ def velocity_clusters(
             vc = vc.cat.rename_categories({cat: f"{new_cat} ({cats_nums[new_cat]})"})
         vdata.obs["louvain"] = vc
     else:
-        vdata.obs["louvain"].cat.categories = np.arange(
-            len(vdata.obs["louvain"].cat.categories)
+        vdata.obs["louvain"].cat.set_categories(
+            np.arange(len(vdata.obs["louvain"].cat.categories))
         )
     adata.obs[f"{vkey}_clusters"] = vdata.obs["louvain"].copy()
 
