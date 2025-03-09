@@ -27,6 +27,8 @@ Preprocessing (pp)
    pp.normalize_per_cell
    pp.log1p
    pp.filter_and_normalize
+   pp.min_max_scale
+   pp.filter_on_r2
 
 **Moments** (across nearest neighbors in PCA space)
 
