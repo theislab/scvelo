@@ -507,8 +507,11 @@ def merge(
     common_vars = pd.unique(adata.var_names.intersection(ldata.var_names))
 
     if len(common_obs) == 0:
-        clean_obs_names(adata, **kwargs)
-        clean_obs_names(ldata, **kwargs)
+        if id_length in kwargs:
+            clean_obs_names(adata, **kwargs)
+            clean_obs_names(ldata, **kwargs)
+        else:
+            raise Exception("Error. There were no matching observation names and no id_length was given to clean the observation names.")
         common_obs = adata.obs_names.intersection(ldata.obs_names)
 
     if copy:
@@ -766,3 +769,41 @@ def verify_dtypes(adata: AnnData) -> None:
                 "The data might be corrupted. Please verify all annotation datatypes."
             )
             adata.uns = uns
+
+def subset_by_value(adata: AnnData, index, desired_value) -> Optional[AnnData]:
+    """The subset_by_value function is intended to provide a quick way for a user to obtain a subset of all observations in a given anndata instance
+    that have a desired value for a specific variable/index. For example, it could return all cells that are CD4T cells, 
+    or it could return all observations where the associated age was 56 (assuming "cell_type" and "age" were attribute names, or some variation thereof) 
+    
+    Arguments:
+    adata
+        Annotated data matrix (reference data set).
+    index
+        The name of the column to look for subsetted values of.
+    value
+        The specific value to subset from the column.
+
+    Returns:
+    adata
+    Annotated data matrix (An anndata object that is subsetted by the given user value along the given user axis).
+    
+    """
+    # Gather data
+    adata_total_indices = adata.obs.index #Stores the total list of all observations and their unique indices 
+    #Create list to store old indices for each adata
+    #These are used for subsetting
+    old_adata_indices=[]
+    #Create list to store new indices for each adata
+    new_adata_indices=[]
+    while_loop_range = len(adata_total_indices)
+    i=0
+    while i < while_loop_range:
+        if (adata[i][:].obs[index].iloc[0] == desired_value):
+            new_adata_indices.append(adata_total_indices[i])
+        i+=1
+    adata_subsetted = adata[new_adata_indices]
+    if (len(new_adata_indices)==0):
+        warnings.warn("Warning: no matches were found.\n")
+    elif(len(new_adata_indices)==len(old_adata_indices)):
+        warnings.warn("Warning: all observations matched. The subsetted object is equal to the original object.\n")
+    return adata_subsetted
