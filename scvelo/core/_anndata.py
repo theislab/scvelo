@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 from numpy import ndarray
 from pandas import DataFrame
-from pandas.api.types import is_categorical_dtype
 from scipy.sparse import csr_matrix, issparse, spmatrix
 
 from anndata import AnnData
@@ -254,7 +253,7 @@ def get_df(
                             [
                                 key
                                 for key in data.obs.keys()
-                                if is_categorical_dtype(data.obs[key])
+                                if isinstance(data.obs[key].dtype, pd.CategoricalDtype)
                             ]
                         )
                         num_cats = [
