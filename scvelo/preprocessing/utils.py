@@ -5,6 +5,8 @@ import pandas as pd
 from scipy.sparse import issparse
 from sklearn.utils import sparsefuncs
 
+from scanpy.pp import log1p
+
 from scvelo import logging as logg
 from scvelo.core import get_initial_size, get_size, multiply, set_initial_size, sum
 
@@ -693,5 +695,7 @@ def recipe_velocity(
         n_top_genes=n_top_genes,
         log=log,
     )
+    if log:
+        log1p(adata)
     moments(adata, n_neighbors=n_neighbors, n_pcs=n_pcs)
     return adata if copy else None
