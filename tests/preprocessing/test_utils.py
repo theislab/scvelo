@@ -571,10 +571,7 @@ class TestFilter:
 class TestFilterAndNormalize:
     @pytest.mark.parametrize("sparse_X", (False, csr_matrix, csc_matrix))
     @pytest.mark.parametrize("sparse_layers", (False, csr_matrix, csc_matrix))
-    @pytest.mark.parametrize("log", (True, False))
-    def test_X_looks_processed(
-        self, capfd, sparse_X: bool, sparse_layers: bool, log: bool
-    ):
+    def test_X_looks_processed(self, capfd, sparse_X: bool, sparse_layers: bool):
         original_X = sparse_X(np.eye(10)) if sparse_X else np.eye(10)
         if sparse_layers:
             layers_value = sparse_layers(np.triu(np.ones(10), k=0))
@@ -585,26 +582,18 @@ class TestFilterAndNormalize:
             layers={"unspliced": layers_value, "spliced": layers_value},
         )
 
-        filter_and_normalize(adata, log=log)
+        filter_and_normalize(adata)
 
         assert type(adata.X) is type(original_X)
-        if not log:
-            if issparse(original_X):
-                assert (adata.X != original_X).sum() == 0
-            else:
-                assert (adata.X == original_X).all()
 
         expected_log = "Normalized count data: X, spliced, unspliced.\n"
-        if log:
-            expected_log += "Logarithmized X.\n"
 
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
 
     @pytest.mark.parametrize("sparse_X", (False, csr_matrix, csc_matrix))
     @pytest.mark.parametrize("sparse_layers", (False, csr_matrix, csc_matrix))
-    @pytest.mark.parametrize("log", (True, False))
-    def test_X_log_advised(self, capfd, sparse_X: bool, sparse_layers: bool, log: bool):
+    def test_X_log_advised(self, capfd, sparse_X: bool, sparse_layers: bool):
         original_X = sparse_X(np.eye(10)) if sparse_X else np.eye(10)
         if sparse_layers:
             layers_value = sparse_layers(np.eye(10))
@@ -615,17 +604,11 @@ class TestFilterAndNormalize:
             layers={"unspliced": layers_value, "spliced": layers_value},
         )
 
-        filter_and_normalize(adata, log=log)
+        filter_and_normalize(adata)
 
         assert type(adata.X) is type(original_X)
-        if not log and issparse(original_X):
-            assert (adata.X != original_X).sum() == 0
-        elif not log:
-            assert (adata.X == original_X).all()
 
         expected_log = "Normalized count data: X, spliced, unspliced.\n"
-        if log:
-            expected_log += "Logarithmized X.\n"
 
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
@@ -677,7 +660,6 @@ class TestFilterAndNormalize:
             pancreas_50obs,
             min_shared_counts=20,
             counts_per_cell_after=1,
-            log=False,
             use_initial_size=False,
         )
         np.testing.assert_almost_equal(pancreas_50obs.X.sum(axis=1), 1)
@@ -686,17 +668,14 @@ class TestFilterAndNormalize:
         )
         np.testing.assert_almost_equal(pancreas_50obs.layers["spliced"].sum(axis=1), 1)
 
-    @pytest.mark.parametrize("log", (True, False))
-    def test_without_spliced(self, capfd, log: bool):
+    def test_without_spliced(self, capfd):
         adata = AnnData(np.triu(np.ones(10), k=0))
-        filter_and_normalize(adata, counts_per_cell_after=1, log=log)
+        filter_and_normalize(adata, counts_per_cell_after=1)
 
         expected_log = (
             "WARNING: Could not find spliced / unspliced counts.\n"
             "Normalized count data: X.\n"
         )
-        if log:
-            expected_log += "Logarithmized X.\n"
 
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log

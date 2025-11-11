@@ -56,10 +56,10 @@ def dentategyrus_50obs_preprocessed() -> AnnData:
             retain_genes=None,
             subset_highly_variable=True,
             flavor="seurat",
-            log=True,
             layers_normalize=None,
             copy=False,
         )
+        sc.pp.log1p(adata)
         scv.pp.neighbors(
             adata,
             n_neighbors=30,
@@ -113,10 +113,10 @@ def dentategyrus_100obs_preprocessed() -> AnnData:
             retain_genes=None,
             subset_highly_variable=True,
             flavor="seurat",
-            log=True,
             layers_normalize=None,
             copy=False,
         )
+        sc.pp.log1p(adata)
         scv.pp.neighbors(
             adata,
             n_neighbors=30,
@@ -170,10 +170,10 @@ def pancreas_50obs_preprocessed() -> AnnData:
             retain_genes=None,
             subset_highly_variable=True,
             flavor="seurat",
-            log=True,
             layers_normalize=None,
             copy=False,
         )
+        sc.pp.log1p(adata)
         scv.pp.neighbors(
             adata,
             n_neighbors=30,
@@ -227,10 +227,10 @@ def pancreas_100obs_preprocessed() -> AnnData:
             retain_genes=None,
             subset_highly_variable=True,
             flavor="seurat",
-            log=True,
             layers_normalize=None,
             copy=False,
         )
+        sc.pp.log1p(adata)
         scv.pp.neighbors(
             adata,
             n_neighbors=30,
