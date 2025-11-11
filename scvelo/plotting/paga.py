@@ -735,7 +735,6 @@ def _paga_graph(
     import networkx as nx
     import pandas as pd
     import scipy
-    from pandas.api.types import is_categorical_dtype
 
     from matplotlib import patheffects
     from matplotlib.colors import is_color_like
@@ -824,7 +823,7 @@ def _paga_graph(
     if (
         isinstance(colors, str)
         and colors in adata.obs
-        and not is_categorical_dtype(adata.obs[colors])
+        and not isinstance(adata.obs[colors].dtype, pd.CategoricalDtype)
     ):
         x_color = []
         cats = adata.obs[groups_key].cat.categories
@@ -837,7 +836,7 @@ def _paga_graph(
     if (
         isinstance(colors, str)
         and colors in adata.obs
-        and is_categorical_dtype(adata.obs[colors])
+        and isinstance(adata.obs[colors].dtype, pd.CategoricalDtype)
     ):
         from scanpy._utils import (
             compute_association_matrix_of_groups,

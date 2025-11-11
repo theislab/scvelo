@@ -59,13 +59,17 @@ def is_view(adata):
 # TODO: Add docstrings
 def is_categorical(data, c=None):
     """TODO."""
-    from pandas.api.types import is_categorical_dtype as cat
-
     if c is None:
-        return cat(data)  # if data is categorical/array
+        return isinstance(
+            data.dtype, pd.CategoricalDtype
+        )  # if data is categorical/array
     if not is_view(data):  # if data is anndata view
         strings_to_categoricals(data)
-    return isinstance(c, str) and c in data.obs.keys() and cat(data.obs[c])
+    return (
+        isinstance(c, str)
+        and c in data.obs.keys()
+        and isinstance(data.obs[c].dtype, pd.CategoricalDtype)
+    )
 
 
 # TODO: Add docstrings
