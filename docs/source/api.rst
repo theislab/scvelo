@@ -23,7 +23,6 @@ Preprocessing (pp)
    :toctree: .
 
    pp.filter_genes
-   pp.filter_genes_dispersion
    pp.normalize_per_cell
    pp.filter_and_normalize
 
