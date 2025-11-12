@@ -589,7 +589,7 @@ def filter_and_normalize(
 ):
     """Filtering, normalization and log transform.
 
-    Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
+    Expects non-logarithmized data.
 
     Runs the following steps
 
@@ -693,7 +693,6 @@ def recipe_velocity(
         min_counts=min_counts,
         min_counts_u=min_counts_u,
         n_top_genes=n_top_genes,
-        log=log,
     )
     if log:
         log1p(adata)
