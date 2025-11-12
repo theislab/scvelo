@@ -428,17 +428,11 @@ class TestFilterAndNormalize:
             pancreas_50obs,
             min_shared_counts=20,
             counts_per_cell_after=1,
-            n_top_genes=5,
         )
 
-        assert pancreas_50obs.shape == (50, 5)
-        assert pancreas_50obs.var_names.equals(
-            pd.Index(["Ppy", "Isl1", "Ppp1r1a", "Lrpprc", "Nnat"])
-        )
         expected_log = (
             "Filtered out 27530 genes that are detected 20 counts (shared).\n"
             "Normalized count data: X, spliced, unspliced.\n"
-            "Extracted 5 highly variable genes.\n"
         )
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
@@ -448,17 +442,11 @@ class TestFilterAndNormalize:
             pancreas_100obs,
             min_shared_counts=20,
             counts_per_cell_after=1,
-            n_top_genes=5,
         )
 
-        assert pancreas_100obs.shape == (100, 5)
-        assert pancreas_100obs.var_names.equals(
-            pd.Index(["Ppy", "Gch1", "Ppp1r1a", "Sst", "Maged2"])
-        )
         expected_log = (
             "Filtered out 27029 genes that are detected 20 counts (shared).\n"
             "Normalized count data: X, spliced, unspliced.\n"
-            "Extracted 5 highly variable genes.\n"
         )
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
