@@ -1,3 +1,5 @@
+import scanpy as sc
+
 from scvelo.preprocessing import filter_and_normalize, moments
 from . import velocity, velocity_embedding, velocity_graph
 
@@ -20,9 +22,9 @@ def run_all(
     start = time()
 
     adata = data.copy() if copy else data
-    filter_and_normalize(
-        adata, min_counts=min_counts, min_counts_u=min_counts_u, n_top_genes=n_top_genes
-    )
+    filter_and_normalize(adata, min_counts=min_counts, min_counts_u=min_counts_u)
+    sc.pp.log1p(adata)
+    sc.pp.highly_variable_genes(adata, n_top_genes=n_top_genes, subset=True)
     print("Number of genes to be used:", adata.X.shape[1])
     moments(adata, n_neighbors=n_neighbors, n_pcs=n_pcs)
 
