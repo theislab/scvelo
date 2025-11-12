@@ -379,17 +379,8 @@ def filter_and_normalize(
         Minimum number of counts (both unspliced and spliced) required for a gene.
     min_shared_cells: `int`, optional (default: `None`)
         Minimum number of cells required to be expressed (both unspliced and spliced).
-    n_top_genes: `int` (default: `None`)
-        Number of genes to keep.
     retain_genes: `list`, optional (default: `None`)
         List of gene names to be retained independent of thresholds.
-    subset_highly_variable: `bool` (default: True)
-        Whether to subset highly variable genes or to store in .var['highly_variable'].
-    flavor: {'seurat', 'cell_ranger', 'svr'}, optional (default: 'seurat')
-        Choose the flavor for computing normalized dispersion.
-        If choosing 'seurat', this expects non-logarithmized data.
-    log: `bool` (default: `True`)
-        Take logarithm.
     layers_normalize: list of `str` (default: None)
         List of layers to be normalized.
         If set to None, the layers {'X', 'spliced', 'unspliced'} are considered for
