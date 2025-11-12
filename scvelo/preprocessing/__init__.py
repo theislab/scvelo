@@ -5,7 +5,6 @@ from .utils import (
     filter_genes,
     filter_genes_dispersion,
     normalize_per_cell,
-    recipe_velocity,
 )
 
 __all__ = [
@@ -15,6 +14,5 @@ __all__ = [
     "moments",
     "neighbors",
     "normalize_per_cell",
-    "recipe_velocity",
     "remove_duplicate_cells",
 ]
