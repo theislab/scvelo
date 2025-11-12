@@ -5,8 +5,6 @@ import pandas as pd
 from scipy.sparse import issparse
 from sklearn.utils import sparsefuncs
 
-from scanpy.pp import log1p
-
 from scvelo import logging as logg
 from scvelo.core import get_initial_size, get_size, multiply, set_initial_size, sum
 
@@ -671,30 +669,4 @@ def filter_and_normalize(
             subset=subset_highly_variable,
         )
 
-    return adata if copy else None
-
-
-# TODO: Finish docstrings
-def recipe_velocity(
-    adata,
-    min_counts=3,
-    min_counts_u=3,
-    n_top_genes=None,
-    n_pcs=30,
-    n_neighbors=30,
-    log=True,
-    copy=False,
-):
-    """Runs pp.filter_and_normalize() and pp.moments()."""
-    from .moments import moments
-
-    filter_and_normalize(
-        adata,
-        min_counts=min_counts,
-        min_counts_u=min_counts_u,
-        n_top_genes=n_top_genes,
-    )
-    if log:
-        log1p(adata)
-    moments(adata, n_neighbors=n_neighbors, n_pcs=n_pcs)
     return adata if copy else None
