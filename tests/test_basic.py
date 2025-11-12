@@ -31,7 +31,9 @@ def test_dynamical_model():
 def test_pipeline():
     adata = scv.datasets.simulation(random_seed=0, n_vars=10)
 
-    scv.pp.filter_and_normalize(adata, n_top_genes=5)
+    scv.pp.filter_and_normalize(adata)
+    sc.pp.log1p(adata)
+    sc.pp.highly_variable_genes(adata, n_top_genes=5, subset=True)
     sc.pp.pca(adata)
     scv.pp.moments(adata)
 
