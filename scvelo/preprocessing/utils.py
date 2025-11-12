@@ -5,6 +5,8 @@ import pandas as pd
 from scipy.sparse import issparse
 from sklearn.utils import sparsefuncs
 
+from scanpy.pp import log1p
+
 from scvelo import logging as logg
 from scvelo.core import get_initial_size, get_size, multiply, set_initial_size, sum
 
@@ -569,35 +571,6 @@ def normalize_per_cell(
     return adata if copy else None
 
 
-def log1p(data, copy=False):
-    r"""Logarithmize the data matrix.
-
-    Computes :math:`X = \log(X + 1)`, where :math:`log` denotes the natural logarithm.
-
-    Parameters
-    ----------
-    data: :class:`~anndata.AnnData`
-        Annotated data matrix.
-    copy: `bool` (default: `False`)
-        Return a copy of `adata` instead of updating it.
-
-    Returns
-    -------
-    Returns or updates `adata` depending on `copy`.
-    """
-    warnings.warn(
-        "`log1p` is deprecated since scVelo v0.3.0 and will be removed in a "
-        "future version. Please use `log1p` from `scanpy.pp` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    from scanpy.pp import log1p as scanpy_log1p
-
-    res = scanpy_log1p(data, copy=copy)
-    return res if copy else None
-
-
 def filter_and_normalize(
     data,
     min_counts=None,
@@ -610,14 +583,13 @@ def filter_and_normalize(
     retain_genes=None,
     subset_highly_variable=True,
     flavor="seurat",
-    log=True,
     layers_normalize=None,
     copy=False,
     **kwargs,
 ):
     """Filtering, normalization and log transform.
 
-    Expects non-logarithmized data. If using logarithmized data, pass `log=False`.
+    Expects non-logarithmized data.
 
     Runs the following steps
 
@@ -627,8 +599,6 @@ def filter_and_normalize(
         scv.pp.normalize_per_cell(adata)
         if n_top_genes is not None:
             scv.pp.filter_genes_dispersion(adata)
-        if log:
-            scv.pp.log1p(adata)
 
 
     Parameters
@@ -701,10 +671,6 @@ def filter_and_normalize(
             subset=subset_highly_variable,
         )
 
-    if log:
-        log1p(adata)
-        logg.info("Logarithmized X.")
-
     return adata if copy else None
 
 
@@ -727,7 +693,8 @@ def recipe_velocity(
         min_counts=min_counts,
         min_counts_u=min_counts_u,
         n_top_genes=n_top_genes,
-        log=log,
     )
+    if log:
+        log1p(adata)
     moments(adata, n_neighbors=n_neighbors, n_pcs=n_pcs)
     return adata if copy else None

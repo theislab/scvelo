@@ -10,6 +10,7 @@ import pandas as pd
 from scipy.sparse import csc_matrix, csr_matrix, issparse, spmatrix
 
 from anndata import AnnData
+from scanpy.pp import log1p
 
 from scvelo.preprocessing.utils import (
     _filter,
@@ -20,7 +21,6 @@ from scvelo.preprocessing.utils import (
     filter_genes,
     filter_genes_dispersion,
     get_mean_var,
-    log1p,
     materialize_as_ndarray,
     normalize_per_cell,
     not_yet_normalized,
@@ -571,10 +571,7 @@ class TestFilter:
 class TestFilterAndNormalize:
     @pytest.mark.parametrize("sparse_X", (False, csr_matrix, csc_matrix))
     @pytest.mark.parametrize("sparse_layers", (False, csr_matrix, csc_matrix))
-    @pytest.mark.parametrize("log", (True, False))
-    def test_X_looks_processed(
-        self, capfd, sparse_X: bool, sparse_layers: bool, log: bool
-    ):
+    def test_X_looks_processed(self, capfd, sparse_X: bool, sparse_layers: bool):
         original_X = sparse_X(np.eye(10)) if sparse_X else np.eye(10)
         if sparse_layers:
             layers_value = sparse_layers(np.triu(np.ones(10), k=0))
@@ -585,26 +582,18 @@ class TestFilterAndNormalize:
             layers={"unspliced": layers_value, "spliced": layers_value},
         )
 
-        filter_and_normalize(adata, log=log)
+        filter_and_normalize(adata)
 
         assert type(adata.X) is type(original_X)
-        if not log:
-            if issparse(original_X):
-                assert (adata.X != original_X).sum() == 0
-            else:
-                assert (adata.X == original_X).all()
 
         expected_log = "Normalized count data: X, spliced, unspliced.\n"
-        if log:
-            expected_log += "Logarithmized X.\n"
 
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
 
     @pytest.mark.parametrize("sparse_X", (False, csr_matrix, csc_matrix))
     @pytest.mark.parametrize("sparse_layers", (False, csr_matrix, csc_matrix))
-    @pytest.mark.parametrize("log", (True, False))
-    def test_X_log_advised(self, capfd, sparse_X: bool, sparse_layers: bool, log: bool):
+    def test_X_log_advised(self, capfd, sparse_X: bool, sparse_layers: bool):
         original_X = sparse_X(np.eye(10)) if sparse_X else np.eye(10)
         if sparse_layers:
             layers_value = sparse_layers(np.eye(10))
@@ -615,17 +604,11 @@ class TestFilterAndNormalize:
             layers={"unspliced": layers_value, "spliced": layers_value},
         )
 
-        filter_and_normalize(adata, log=log)
+        filter_and_normalize(adata)
 
         assert type(adata.X) is type(original_X)
-        if not log and issparse(original_X):
-            assert (adata.X != original_X).sum() == 0
-        elif not log:
-            assert (adata.X == original_X).all()
 
         expected_log = "Normalized count data: X, spliced, unspliced.\n"
-        if log:
-            expected_log += "Logarithmized X.\n"
 
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
@@ -646,7 +629,6 @@ class TestFilterAndNormalize:
             "Filtered out 27530 genes that are detected 20 counts (shared).\n"
             "Normalized count data: X, spliced, unspliced.\n"
             "Extracted 5 highly variable genes.\n"
-            "Logarithmized X.\n"
         )
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
@@ -667,7 +649,6 @@ class TestFilterAndNormalize:
             "Filtered out 27029 genes that are detected 20 counts (shared).\n"
             "Normalized count data: X, spliced, unspliced.\n"
             "Extracted 5 highly variable genes.\n"
-            "Logarithmized X.\n"
         )
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
@@ -677,7 +658,6 @@ class TestFilterAndNormalize:
             pancreas_50obs,
             min_shared_counts=20,
             counts_per_cell_after=1,
-            log=False,
             use_initial_size=False,
         )
         np.testing.assert_almost_equal(pancreas_50obs.X.sum(axis=1), 1)
@@ -686,17 +666,14 @@ class TestFilterAndNormalize:
         )
         np.testing.assert_almost_equal(pancreas_50obs.layers["spliced"].sum(axis=1), 1)
 
-    @pytest.mark.parametrize("log", (True, False))
-    def test_without_spliced(self, capfd, log: bool):
+    def test_without_spliced(self, capfd):
         adata = AnnData(np.triu(np.ones(10), k=0))
-        filter_and_normalize(adata, counts_per_cell_after=1, log=log)
+        filter_and_normalize(adata, counts_per_cell_after=1)
 
         expected_log = (
             "WARNING: Could not find spliced / unspliced counts.\n"
             "Normalized count data: X.\n"
         )
-        if log:
-            expected_log += "Logarithmized X.\n"
 
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
@@ -743,7 +720,6 @@ class TestFilterAndNormalize:
                 "WARNING: Did not normalize unspliced as it looks processed already. "
                 "To enforce normalization, set `enforce=True`.\n"
             )
-        expected_log += "Logarithmized X.\n"
         actual_log, _ = capfd.readouterr()
         assert actual_log == expected_log
 
@@ -1972,61 +1948,6 @@ class TestFilterGenesDispersion:
         assert actual_log == expected_log
 
 
-class TestLog1p:
-    @given(adata=get_adata(max_obs=5, max_vars=5), copy=st.booleans())
-    def test_dense_adata(self, adata: AnnData, copy: bool):
-        original_X = adata.X.copy()
-        returned_adata = log1p(data=adata, copy=copy)
-
-        if copy:
-            assert isinstance(returned_adata, AnnData)
-            adata = returned_adata
-        else:
-            assert returned_adata is None
-
-        np.testing.assert_almost_equal(adata.X, np.log1p(original_X))
-
-    @given(
-        adata=get_adata(max_obs=5, max_vars=5, sparse_entries=True), copy=st.booleans()
-    )
-    def test_sparse_adata(self, adata: AnnData, copy: bool):
-        original_X = adata.X.copy()
-        returned_adata = log1p(data=adata, copy=copy)
-
-        if copy:
-            assert isinstance(returned_adata, AnnData)
-            adata = returned_adata
-        else:
-            assert returned_adata is None
-
-        np.testing.assert_almost_equal(adata.X.data, np.log1p(original_X.data))
-
-    @given(
-        data=arrays(
-            float,
-            shape=st.tuples(
-                st.integers(min_value=1, max_value=100),
-                st.integers(min_value=1, max_value=100),
-            ),
-            elements=st.floats(
-                min_value=0, max_value=1e3, allow_infinity=False, allow_nan=False
-            ),
-        ),
-        copy=st.booleans(),
-    )
-    def test_array(self, data: np.ndarray, copy: bool):
-        original_array = data.copy()
-        returned_data = log1p(data=data, copy=copy)
-
-        if copy:
-            assert isinstance(returned_data, np.ndarray)
-            data = returned_data
-        else:
-            assert returned_data is None
-
-        np.testing.assert_almost_equal(data, np.log1p(original_array))
-
-
 class TestMaterializeAsNdarray:
     @pytest.mark.parametrize(
         "key", (np.array([0, 1, 2]), np.eye(2), np.ones(shape=(2, 3, 4)))
@@ -2331,7 +2252,6 @@ class TestRecipeVelocity:
             "Filtered out 19269 genes that are detected 3 counts (spliced).\n"
             "Filtered out 5158 genes that are detected 3 counts (unspliced).\n"
             "Normalized count data: X, spliced, unspliced.\n"
-            "Logarithmized X.\n"
             "computing neighbors\n"
             "    finished ("
         )
@@ -2389,7 +2309,6 @@ class TestRecipeVelocity:
             "Filtered out 7068 genes that are detected 3 counts (spliced).\n"
             "Filtered out 5695 genes that are detected 3 counts (unspliced).\n"
             "Normalized count data: X, spliced, unspliced.\n"
-            "Logarithmized X.\n"
             "computing neighbors\n"
             "    finished ("
         )

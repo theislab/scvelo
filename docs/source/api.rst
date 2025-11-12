@@ -25,7 +25,6 @@ Preprocessing (pp)
    pp.filter_genes
    pp.filter_genes_dispersion
    pp.normalize_per_cell
-   pp.log1p
    pp.filter_and_normalize
 
 **Moments** (across nearest neighbors in PCA space)
