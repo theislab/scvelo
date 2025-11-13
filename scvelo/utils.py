@@ -24,7 +24,6 @@ from scvelo.read_load import (
 )
 from scvelo.tools.optimization import get_weight, leastsq
 from scvelo.tools.rank_velocity_genes import get_mean_var
-from scvelo.tools.run import convert_to_adata, convert_to_loom
 from scvelo.tools.score_genes_cell_cycle import get_phase_marker_genes
 from scvelo.tools.transition_matrix import get_cell_transitions
 from scvelo.tools.transition_matrix import transition_matrix as get_transition_matrix
@@ -37,10 +36,8 @@ __all__ = [
     "clip",
     "compute_dynamics",
     "compute_velocity_on_grid",
-    "convert_to_adata",
     "convert_to_ensembl",
     "convert_to_gene_names",
-    "convert_to_loom",
     "gene_info",
     "get_cell_transitions",
     "get_connectivities",
