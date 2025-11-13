@@ -18,6 +18,7 @@ def test_einsum():
 def test_dynamical_model():
     adata = scv.datasets.simulation(random_seed=0, n_vars=10)
     scv.pp.filter_and_normalize(adata)
+    sc.pp.log1p(adata)
     scv.pp.moments(adata)
     em_model = ExpectationMaximizationModel(
         adata=adata, var_names_key=adata.var_names[0]
@@ -25,7 +26,7 @@ def test_dynamical_model():
     em_model.fit(return_model=False, copy=False)
     adata = em_model.export_results_adata(adata)
 
-    assert np.round(adata[:, adata.var_names[0]].var["fit_alpha"][0], 4) == 4.7409
+    assert np.round(adata[:, adata.var_names[0]].var["fit_alpha"][0], 4) == 6.4272
 
 
 def test_pipeline():
