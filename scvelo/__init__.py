@@ -12,7 +12,6 @@ from scvelo.plotting.gridspec import GridSpec
 from scvelo.preprocessing.neighbors import Neighbors
 from scvelo.read_load import load, read_csv
 from scvelo.settings import set_figure_params
-from scvelo.tools.run import run_all, test
 from scvelo.tools.utils import round
 from scvelo.tools.velocity import Velocity
 from scvelo.tools.velocity_graph import VelocityGraph
@@ -45,10 +44,8 @@ __all__ = [
     "pp",
     "read_csv",
     "round",
-    "run_all",
     "set_figure_params",
     "settings",
-    "test",
     "tl",
     "utils",
     "Velocity",
