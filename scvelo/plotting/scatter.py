@@ -892,7 +892,7 @@ def draw_graph(adata, layout=None, **kwargs):
     if layout is None:
         layout = f"{adata.uns['draw_graph']['params']['layout']}"
     basis = f"draw_graph_{layout}"
-    if f"X_{basis}" not in adata.obsm_keys():
+    if f"X_{basis}" not in adata.obsm.keys():
         raise ValueError(f"Could not find draw_graph_{layout} in adata.obs.")
     return scatter(adata, basis=basis, **kwargs)
 

@@ -1428,7 +1428,7 @@ def velocity_embedding_changed(adata, basis, vkey):
     if f"X_{basis}" not in adata.obsm.keys():
         changed = False
     else:
-        changed = f"{vkey}_{basis}" not in adata.obsm_keys()
+        changed = f"{vkey}_{basis}" not in adata.obsm.keys()
         if f"{vkey}_params" in adata.uns.keys():
             sett = adata.uns[f"{vkey}_params"]
             changed |= "embeddings" not in sett or basis not in sett["embeddings"]
