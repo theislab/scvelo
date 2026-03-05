@@ -1,6 +1,7 @@
 import warnings
 
 import numpy as np
+import scanpy as sc
 
 from scvelo import logging as logg
 from scvelo import settings
@@ -323,7 +324,9 @@ def velocity(
         perc = [5, 95]
     adata = data.copy() if copy else data
     if not use_raw and "Ms" not in adata.layers.keys():
-        moments(adata)
+        sc.pp.pca(adata)
+        sc.pp.neighbors(adata, n_pcs=30, n_neighbors=30)
+        moments(adata, n_neighbors=None, n_pcs=None,)
 
     logg.info("computing velocities", r=True)
 
