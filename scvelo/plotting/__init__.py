@@ -1,5 +1,6 @@
 from .gridspec import gridspec
 from .heatmap import heatmap
+from .kinetic_clusters import kinetic_clusters
 from .paga import paga
 from .proportions import proportions
 from .scatter import diffmap, draw_graph, pca, phate, scatter, tsne, umap
@@ -33,4 +34,5 @@ __all__ = [
     "velocity_embedding_grid",
     "velocity_embedding_stream",
     "velocity_graph",
+    "kinetic_clusters",
 ]
