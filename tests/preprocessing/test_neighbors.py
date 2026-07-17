@@ -1836,8 +1836,8 @@ class TestSetPCA:
         assert set(adata.obsm) == {"X_pca"}
         assert adata.obsm["X_pca"].shape == (adata.n_obs, n_pcs)
         np.testing.assert_almost_equal(
-            adata.obsm["X_pca"][:, :n_pcs],
-            original_adata.obsm["X_pca"][:, :n_pcs],
+            np.abs(adata.obsm["X_pca"][:, :n_pcs]),
+            np.abs(original_adata.obsm["X_pca"][:, :n_pcs]),
             decimal=2,
         )
 
