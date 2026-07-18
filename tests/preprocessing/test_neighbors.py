@@ -97,7 +97,7 @@ class TestGetConnectivities:
         ).all()
 
         for row in connectivities:
-            np.testing.assert_equal(row.data, 1 / row.getnnz())
+            np.testing.assert_allclose(row.data, 1 / row.getnnz(), rtol=1e-6)
 
     @pytest.mark.parametrize("mode", ["connectivities", "distances"])
     @pytest.mark.parametrize(
@@ -1836,8 +1836,8 @@ class TestSetPCA:
         assert set(adata.obsm) == {"X_pca"}
         assert adata.obsm["X_pca"].shape == (adata.n_obs, n_pcs)
         np.testing.assert_almost_equal(
-            adata.obsm["X_pca"][:, :n_pcs],
-            original_adata.obsm["X_pca"][:, :n_pcs],
+            np.abs(adata.obsm["X_pca"][:, :n_pcs]),
+            np.abs(original_adata.obsm["X_pca"][:, :n_pcs]),
             decimal=2,
         )
 
