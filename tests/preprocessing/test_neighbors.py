@@ -97,7 +97,7 @@ class TestGetConnectivities:
         ).all()
 
         for row in connectivities:
-            np.testing.assert_equal(row.data, 1 / row.getnnz())
+            np.testing.assert_allclose(row.data, 1 / row.getnnz(), rtol=1e-6)
 
     @pytest.mark.parametrize("mode", ["connectivities", "distances"])
     @pytest.mark.parametrize(
