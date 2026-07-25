@@ -181,7 +181,7 @@ def leastsq_generalized(
     else:
         for i in range(n_var):
             A = np.c_[x[:, i]]
-            gamma[i] = np.linalg.pinv(A.T.dot(A)).dot(A.T.dot(y[:, i]))
+            gamma[i] = np.squeeze(np.linalg.pinv(A.T.dot(A)).dot(A.T.dot(y[:, i])))
 
     offset[np.isnan(offset)] = 0
     offset_ss[np.isnan(offset_ss)] = 0
