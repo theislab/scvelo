@@ -167,21 +167,27 @@ def leastsq_generalized(
                 ),
                 x[:, i],
             ]
-            offset[i], offset_ss[i], gamma[i] = np.asarray(np.linalg.pinv(A.T.dot(A)).dot(
-                A.T.dot(y[:, i])
-            )).squeeze()
+            offset[i], offset_ss[i], gamma[i] = np.asarray(
+                np.linalg.pinv(A.T.dot(A)).dot(A.T.dot(y[:, i]))
+            ).squeeze()
     elif fit_offset:
         for i in range(n_var):
             A = np.c_[np.hstack((ones / res_std[i], zeros)), x[:, i]]
-            offset[i], gamma[i] = np.asarray(np.linalg.pinv(A.T @ A) @ (A.T @ y[:, i])).squeeze()
+            offset[i], gamma[i] = np.asarray(
+                np.linalg.pinv(A.T @ A) @ (A.T @ y[:, i])
+            ).squeeze()
     elif fit_offset2:
         for i in range(n_var):
             A = np.c_[np.hstack((zeros, ones / res2_std[i])), x[:, i]]
-            offset_ss[i], gamma[i] = np.asarray(np.linalg.pinv(A.T @ A) @ (A.T @ y[:, i])).squeeze()
+            offset_ss[i], gamma[i] = np.asarray(
+                np.linalg.pinv(A.T @ A) @ (A.T @ y[:, i])
+            ).squeeze()
     else:
         for i in range(n_var):
             A = np.c_[x[:, i]]
-            gamma[i] = np.asarray(np.linalg.pinv(A.T @ A) @ (A.T @ y[:, i])).squeeze()
+            gamma[i] = np.asarray(
+                np.linalg.pinv(A.T @ A) @ (A.T @ y[:, i])
+            ).squeeze()
 
     offset[np.isnan(offset)] = 0
     offset_ss[np.isnan(offset_ss)] = 0
@@ -222,7 +228,7 @@ def maximum_likelihood(Ms, Mu, Mus, Mss, fit_offset=False, fit_offset2=False):
                 b=np.array(0, m[0]),
             )
         else:
-            sse(np.array([[1, -m, 0, 0], [1, m, 2, -2 * m]]), data, b=0)
+            sse(np.array([[1, -m, 0, 0],[1, m, 2, -2 * m]]), data, b=0)
 
     if fit_offset and fit_offset2:
         for i in range(n_var):
