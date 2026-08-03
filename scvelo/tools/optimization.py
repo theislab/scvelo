@@ -173,15 +173,15 @@ def leastsq_generalized(
     elif fit_offset:
         for i in range(n_var):
             A = np.c_[np.hstack((ones / res_std[i], zeros)), x[:, i]]
-            offset[i], gamma[i] = np.linalg.pinv(
-                A.T.dot(A)).dot(A.T.dot(y[:, i])
-            ).item()
+            offset[i], gamma[i] = (
+                np.linalg.pinv(A.T.dot(A)).dot(A.T.dot(y[:, i])).item()
+            )
     elif fit_offset2:
         for i in range(n_var):
             A = np.c_[np.hstack((zeros, ones / res2_std[i])), x[:, i]]
-            offset_ss[i], gamma[i] = np.linalg.pinv(
-                A.T.dot(A)).dot(A.T.dot(y[:, i])
-            ).item()
+            offset_ss[i], gamma[i] = (
+                np.linalg.pinv(A.T.dot(A)).dot(A.T.dot(y[:, i])).item()
+            )
     else:
         for i in range(n_var):
             A = np.c_[x[:, i]]
