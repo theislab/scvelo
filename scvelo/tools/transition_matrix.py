@@ -107,7 +107,6 @@ def transition_matrix(
 
     T = np.expm1(graph * scale)  # equivalent to np.exp(graph.A * scale) - 1
     if graph_neg is not None:
-        graph_neg = adata.uns[f"{vkey}_graph_neg"]
         if use_negative_cosines:
             T -= np.expm1(-graph_neg * scale)
         else:
